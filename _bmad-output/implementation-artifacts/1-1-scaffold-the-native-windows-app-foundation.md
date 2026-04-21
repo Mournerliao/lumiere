@@ -1,6 +1,6 @@
 # Story 1.1: Scaffold the Native Windows App Foundation
 
-Status: in-progress
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created. -->
 
@@ -52,10 +52,10 @@ so that all future HDR capture work starts from the correct native Windows runti
   - [x] Create test project placeholders only if the selected local test framework can be restored cleanly.
   - [x] Prefer first validation coverage for project configuration and future HDR constants/lifecycle scaffolding.
   - [x] Do not fake HDR graphics tests before the relevant production code exists.
-- [ ] Verify repository foundation and scaffold. (AC: 1, 2, 3, 4, 5)
-  - [ ] Run the documented formatting check or formatting command once files exist.
-  - [ ] Run `dotnet restore` on `Lumiere.sln`.
-  - [ ] Run `dotnet build Lumiere.sln -p:Platform=x64` or the repo-equivalent x64 build.
+- [x] Verify repository foundation and scaffold. (AC: 1, 2, 3, 4, 5)
+  - [x] Run the documented formatting check or formatting command once files exist.
+  - [x] Run `dotnet restore` on `Lumiere.sln`.
+  - [x] Run `dotnet build Lumiere.sln -p:Platform=x64` or the repo-equivalent x64 build.
   - [x] Confirm no web, Electron, Tauri, WPF bitmap-first, GDI, or SDR screenshot library scaffold was introduced.
 
 ## Dev Notes
@@ -219,6 +219,11 @@ GPT-5
 - 2026-04-21: Ran `xmllint --noout` for props, project, XAML, and manifest files; XML validation passed.
 - 2026-04-21: Ran static checks for target framework, x64/runtime, central package pins, project references, `Any CPU`, and rejected scaffold technologies.
 - 2026-04-21: Attempted `dotnet format Lumiere.sln`, `dotnet restore Lumiere.sln`, and `dotnet build Lumiere.sln -p:Platform=x64`; all failed because `dotnet` is not installed in this environment.
+- 2026-04-21: After .NET SDK `10.0.202` was installed, ran `dotnet format Lumiere.sln --verify-no-changes --verbosity minimal`; formatting check passed.
+- 2026-04-21: Ran `dotnet restore Lumiere.sln --disable-parallel --verbosity minimal /nr:false`; restore passed.
+- 2026-04-21: Ran `dotnet build Lumiere.sln -p:Platform=x64 --no-restore --verbosity minimal /nr:false`; build passed with 0 warnings and 0 errors.
+- 2026-04-21: Ran `dotnet test tests/Lumiere.Graphics.Tests/Lumiere.Graphics.Tests.csproj -p:Platform=x64 --no-restore --verbosity minimal /nr:false`; 7 tests passed.
+- 2026-04-21: Re-ran source-scoped anti-pattern search for Electron, Tauri, System.Drawing/GDI, BitmapImage, SoftwareBitmap, WPF, and WinForms in source/test project files; no matches found.
 
 ### Completion Notes List
 
@@ -227,8 +232,9 @@ GPT-5
 - `Lumiere.sln`, `Directory.Build.props`, and `Directory.Packages.props` were created with `net10.0-windows10.0.19041.0`, `x64`, `win-x64`, central package management, Windows App SDK `1.8.260317003`, `Vortice.Direct3D11` `3.8.3`, and `Vortice.DXGI` `3.8.3`.
 - `Microsoft.Windows.CsWinRT` was intentionally not referenced because this scaffold does not yet include concrete WinRT/native interop code; Story 1.3 remains the expected point for that dependency.
 - Source boundaries were created for App, Overlay, Capture, Graphics, Infrastructure, and Settings. The App project composes the boundary projects via project references.
-- No test project was created because the local test framework cannot be restored without an installed .NET SDK. A `tests/.gitkeep` placeholder preserves the intended test root without faking HDR tests.
-- Story is blocked from review completion until `dotnet format`, `dotnet restore`, and `dotnet build Lumiere.sln -p:Platform=x64` can run successfully on a machine with the required .NET/WinUI toolchain.
+- Initial test project creation was deferred until the SDK was available; Story 1.2 has since added `tests/Lumiere.Graphics.Tests` without fake HDR rendering tests.
+- Story validation is complete: format, restore, build, and current tests pass on the installed .NET SDK `10.0.202`.
+- Story is ready for code review.
 
 ### File List
 
@@ -256,7 +262,15 @@ GPT-5
 - `src/Lumiere.Settings/Lumiere.Settings.csproj`
 - `src/Lumiere.Settings/SettingsBoundary.cs`
 - `tests/.gitkeep`
+- `tests/Lumiere.Graphics.Tests/Lumiere.Graphics.Tests.csproj`
+- `tests/Lumiere.Graphics.Tests/Hdr/HdrConstantsTests.cs`
+- `tests/Lumiere.Graphics.Tests/Hdr/PreviewReadinessStatusTests.cs`
 
 ### Change Log
 
 - 2026-04-21: Initialized Git and added the native Windows repository foundation, WinUI app scaffold, boundary projects, central build/package configuration, and developer workflow documentation.
+- 2026-04-21: Completed scaffold validation after .NET SDK installation and moved Story 1.1 to review.
+
+### Review Findings
+
+- [x] [Review][Decision] Decide whether `.agents/skills` should be versioned - resolved by restoring `.agents/` as ignored local tooling.

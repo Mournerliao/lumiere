@@ -14,6 +14,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lumiere.Infrastructure", "s
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lumiere.Settings", "src\Lumiere.Settings\Lumiere.Settings.csproj", "{35631276-8F5C-4D07-9C1E-B67F487D5B78}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lumiere.Graphics.Tests", "tests\Lumiere.Graphics.Tests\Lumiere.Graphics.Tests.csproj", "{A6BF24D3-26BB-47DC-A767-64C2782AD4F8}"
+EndProject
 Global
   GlobalSection(SolutionConfigurationPlatforms) = preSolution
     Debug|x64 = Debug|x64
@@ -44,6 +46,10 @@ Global
     {35631276-8F5C-4D07-9C1E-B67F487D5B78}.Debug|x64.Build.0 = Debug|x64
     {35631276-8F5C-4D07-9C1E-B67F487D5B78}.Release|x64.ActiveCfg = Release|x64
     {35631276-8F5C-4D07-9C1E-B67F487D5B78}.Release|x64.Build.0 = Release|x64
+    {A6BF24D3-26BB-47DC-A767-64C2782AD4F8}.Debug|x64.ActiveCfg = Debug|x64
+    {A6BF24D3-26BB-47DC-A767-64C2782AD4F8}.Debug|x64.Build.0 = Debug|x64
+    {A6BF24D3-26BB-47DC-A767-64C2782AD4F8}.Release|x64.ActiveCfg = Release|x64
+    {A6BF24D3-26BB-47DC-A767-64C2782AD4F8}.Release|x64.Build.0 = Release|x64
   EndGlobalSection
   GlobalSection(SolutionProperties) = preSolution
     HideSolutionNode = FALSE

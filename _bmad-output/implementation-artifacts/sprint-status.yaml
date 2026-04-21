@@ -1,5 +1,5 @@
 # generated: 2026-04-21T11:35:23+0800
-# last_updated: 2026-04-21T12:00:00+0800
+# last_updated: 2026-04-22T01:30:25+0800
 # project: lumiere
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-21T11:35:23+0800
-last_updated: 2026-04-21T12:00:00+0800
+last_updated: 2026-04-22T01:30:25+0800
 project: lumiere
 project_key: NOKEY
 tracking_system: file-system
@@ -43,9 +43,9 @@ story_location: /Users/asherliao/Projects/lumiere/_bmad-output/implementation-ar
 
 development_status:
   epic-1: in-progress
-  1-1-scaffold-the-native-windows-app-foundation: in-progress
-  1-2-centralize-hdr-constants-and-preview-readiness-status: ready-for-dev
-  1-3-create-d3d11-device-and-winrt-dxgi-interop-bridge: backlog
+  1-1-scaffold-the-native-windows-app-foundation: done
+  1-2-centralize-hdr-constants-and-preview-readiness-status: done
+  1-3-create-d3d11-device-and-winrt-dxgi-interop-bridge: done
   1-4-attach-an-fp16-scrgb-swap-chain-to-swapchainpanel: backlog
   1-5-prove-minimal-wgc-fp16-capture-to-live-preview: backlog
   epic-1-retrospective: optional

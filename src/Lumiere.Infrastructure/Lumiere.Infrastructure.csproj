@@ -3,5 +3,10 @@
     <RootNamespace>Lumiere.Infrastructure</RootNamespace>
     <AssemblyName>Lumiere.Infrastructure</AssemblyName>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Vortice.Direct3D11" />
+    <PackageReference Include="Vortice.DXGI" />
+  </ItemGroup>
 </Project>
 
