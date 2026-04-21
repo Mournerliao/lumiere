@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <UseWinUI>true</UseWinUI>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <WindowsPackageType>None</WindowsPackageType>
+    <RootNamespace>Lumiere.App</RootNamespace>
+    <AssemblyName>Lumiere.App</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lumiere.Overlay\Lumiere.Overlay.csproj" />
+    <ProjectReference Include="..\Lumiere.Capture\Lumiere.Capture.csproj" />
+    <ProjectReference Include="..\Lumiere.Graphics\Lumiere.Graphics.csproj" />
+    <ProjectReference Include="..\Lumiere.Infrastructure\Lumiere.Infrastructure.csproj" />
+    <ProjectReference Include="..\Lumiere.Settings\Lumiere.Settings.csproj" />
+  </ItemGroup>
+</Project>
+

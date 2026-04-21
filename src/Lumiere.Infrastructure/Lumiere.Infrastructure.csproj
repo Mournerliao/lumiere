@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Lumiere.Infrastructure</RootNamespace>
+    <AssemblyName>Lumiere.Infrastructure</AssemblyName>
+  </PropertyGroup>
+</Project>
+

@@ -1,0 +1,56 @@
+# Build output
+bin/
+obj/
+out/
+artifacts/
+TestResults/
+*.nupkg
+*.snupkg
+
+# Visual Studio and Rider
+.vs/
+.vscode/.vsix/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# .NET tooling and caches
+.dotnet/
+.nuget/
+packages/
+project.lock.json
+project.assets.json
+*.binlog
+
+# Windows packaging output
+AppPackages/
+BundleArtifacts/
+Package.StoreAssociation.xml
+*.appx
+*.appxbundle
+*.msix
+*.msixbundle
+*.cer
+*.pfx
+
+# Logs and diagnostics
+*.log
+logs/
+crashdumps/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# AI
+.workbuddy/
+
