@@ -2,9 +2,11 @@
   <PropertyGroup>
     <RootNamespace>Lumiere.Infrastructure</RootNamespace>
     <AssemblyName>Lumiere.Infrastructure</AssemblyName>
+    <UseWinUI>true</UseWinUI>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Vortice.Direct3D11" />
     <PackageReference Include="Vortice.DXGI" />
   </ItemGroup>

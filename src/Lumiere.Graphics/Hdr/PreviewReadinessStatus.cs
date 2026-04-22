@@ -32,6 +32,12 @@ public sealed record PreviewReadinessStatus
         string? technicalDetail = null) =>
         new(PreviewReadinessState.Initializing, PreviewReadinessStage.Unknown, userMessage, technicalDetail);
 
+    public static PreviewReadinessStatus Initializing(
+        PreviewReadinessStage stage,
+        string userMessage,
+        string? technicalDetail = null) =>
+        new(PreviewReadinessState.Initializing, stage, userMessage, technicalDetail);
+
     public static PreviewReadinessStatus Ready(
         string userMessage = "HDR preview path is validated.",
         string? technicalDetail = null) =>
