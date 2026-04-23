@@ -17,7 +17,7 @@ Development and full validation require Windows:
 - .NET 10 SDK.
 - Windows SDK `10.0.26100.x` or a documented compatible Windows SDK.
 
-Non-Windows machines can inspect and edit the repository, but WinUI restore/build validation is expected to run on Windows.
+Non-Windows machines can inspect and edit the repository, but WinUI restore/build validation is expected to run on Windows. See [Mac + Windows development workflow](docs/cross-platform-development.md) for the supported split between macOS editing, Windows CI, and Windows hardware validation.
 
 ## Repository Layout
 
@@ -34,15 +34,22 @@ tests/                     Future test projects mirroring source boundaries
 
 ## Developer Workflow
 
+Lumiere supports a Mac-edit/Windows-validate workflow:
+
+- macOS is suitable for code editing, documentation, refactoring, API design, and platform-neutral test design.
+- Windows CI or a Windows development machine must run restore/build/test/format before review.
+- A real Windows machine is required for WinUI, WGC, DXGI, D3D11, HDR display, and multi-monitor validation.
+
 Before review, run the validation sequence from the repository root:
 
 ```bash
-dotnet format Lumiere.sln
-dotnet restore Lumiere.sln
-dotnet build Lumiere.sln -p:Platform=x64
+dotnet restore Lumiere.sln --disable-parallel --verbosity minimal /nr:false
+dotnet build Lumiere.sln -p:Platform=x64 --no-restore --verbosity minimal /nr:false
+dotnet test tests/Lumiere.Graphics.Tests/Lumiere.Graphics.Tests.csproj -p:Platform=x64 --no-restore --verbosity minimal /nr:false
+dotnet format Lumiere.sln --verify-no-changes --verbosity minimal
 ```
 
-When tests are added, include the relevant `dotnet test` command in the same pre-review sequence. Do not fake HDR graphics tests before the production graphics lifecycle exists.
+Do not fake HDR graphics tests before the production graphics lifecycle exists. Automated tests can cover configuration, state, and lifecycle behavior; real HDR presentation still requires Windows hardware validation.
 
 ## Commit Convention
 
@@ -60,4 +67,3 @@ Examples:
 chore: scaffold native windows solution
 docs: document hdr validation workflow
 ```
-

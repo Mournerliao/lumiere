@@ -18,6 +18,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 ## Technology Stack & Versions
 
 - Build a native Windows desktop screenshot tool focused on HDR-correct capture and rendering.
+- Supported development workflow is Mac-edit/Windows-validate: macOS may be used for source editing, documentation, refactoring, and platform-neutral design work; Windows must be used for restore/build/test/format and all WinUI/WGC/DXGI/HDR validation.
 - Target `.NET 10 LTS` for the application runtime with `TargetFramework` set to `net10.0-windows10.0.19041.0` unless scaffolding exposes a concrete tooling blocker.
 - Use `WinUI 3` with Windows App SDK for the desktop UI.
 - Use `Vortice.Windows` for Direct3D 11 and DXGI interop.
@@ -56,7 +57,9 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 ### Testing Rules
 
-- No test framework is scaffolded yet; once added, follow the repository's actual test framework and naming conventions.
+- The repository uses xUnit for automated tests under `tests/`.
+- Windows CI or a Windows development machine must run `dotnet restore Lumiere.sln`, `dotnet build Lumiere.sln -p:Platform=x64`, `dotnet test tests/Lumiere.Graphics.Tests/Lumiere.Graphics.Tests.csproj -p:Platform=x64`, and `dotnet format Lumiere.sln --verify-no-changes` before review.
+- macOS-only work may produce code and tests, but completion notes must say when Windows validation was not run.
 - Cover resource lifecycle behavior for `GraphicsEngine` and `CaptureService`: start, frame arrival, stop, repeated capture, disposal, and shutdown.
 - Test that disposal paths release frame pools, sessions, textures, swap chains, and device-bound resources even when capture startup or rendering fails.
 - Treat threading as a test boundary: frame callbacks must not update WinUI state directly and should route UI work through `DispatcherQueue`.
@@ -79,9 +82,17 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - The implementation plan is phased: scaffold infrastructure first, then capture, then rendering/WinUI bridge, then overlay crop interaction.
 - Each phase should leave the app in a coherent state and avoid mixing unrelated future-phase behavior into early infrastructure work.
 - When package/project files are introduced, update this context with exact target framework and dependency versions.
+- Keep platform-specific APIs behind narrow boundaries so macOS editing remains practical and Windows validation remains focused:
+  - `Lumiere.App` owns WinUI app startup and composition wiring.
+  - `Lumiere.Overlay` owns fullscreen overlay and crop interaction.
+  - `Lumiere.Capture` owns WGC target/frame/session lifecycle.
+  - `Lumiere.Graphics` owns D3D11/DXGI/HDR rendering and presentation.
+  - `Lumiere.Infrastructure` owns native interop, WinRT/COM bridge, Win32 window styles, and UI-thread helpers.
+- Story completion notes must distinguish `Mac-pass`, `Windows CI-pass`, and `Windows manual-pass` when work crosses WinUI, WGC, DXGI, D3D11, HDR, or multi-monitor behavior.
+- Do not mark WinUI/WGC/DXGI/HDR behavior as fully done based only on macOS editing or CI; CI cannot replace real Windows hardware validation.
 - Do not replace planned native Windows implementation with cross-platform UI, web UI, GDI, WPF bitmap preview, or SDR screenshot libraries.
 - If a change touches HDR constants, capture pixel format, swap chain format, or resource lifetime semantics, call it out explicitly in review notes.
-- There is no Git repository detected at project root as of 2026-04-20; establish repository workflow before relying on branch, commit, or PR conventions.
+- Git repository workflow exists; keep commits scoped and use Windows CI or a Windows development machine as the build verification gate.
 
 ### Critical Don't-Miss Rules
 
@@ -112,4 +123,4 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Review periodically for outdated rules.
 - Remove rules that become obvious after the codebase establishes them.
 
-Last Updated: 2026-04-20
+Last Updated: 2026-04-23

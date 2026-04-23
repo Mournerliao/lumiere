@@ -1,0 +1,36 @@
+name: Windows CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Restore, build, test, and format
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore Lumiere.sln --disable-parallel --verbosity minimal /nr:false
+
+      - name: Build
+        run: dotnet build Lumiere.sln -p:Platform=x64 --no-restore --verbosity minimal /nr:false
+
+      - name: Test
+        run: dotnet test tests/Lumiere.Graphics.Tests/Lumiere.Graphics.Tests.csproj -p:Platform=x64 --no-restore --verbosity minimal /nr:false
+
+      - name: Format check
+        run: dotnet format Lumiere.sln --verify-no-changes --verbosity minimal
+
