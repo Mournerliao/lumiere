@@ -5,20 +5,38 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
-  <Grid>
-    <StackPanel
-        HorizontalAlignment="Center"
-        VerticalAlignment="Center"
-        Spacing="8">
-      <TextBlock
-          HorizontalAlignment="Center"
-          FontSize="20"
-          FontWeight="SemiBold"
-          Text="Lumiere" />
-      <TextBlock
-          HorizontalAlignment="Center"
-          Text="Native HDR capture foundation" />
-    </StackPanel>
+  <Grid Background="#101014">
+    <SwapChainPanel x:Name="PreviewSwapChainPanel" />
+
+    <Border
+        Margin="16"
+        Padding="16"
+        HorizontalAlignment="Left"
+        VerticalAlignment="Top"
+        Background="#B31A1A1F"
+        CornerRadius="12">
+      <StackPanel MaxWidth="360" Spacing="12">
+        <TextBlock
+            FontSize="20"
+            FontWeight="SemiBold"
+            Text="Lumiere" />
+        <TextBlock
+            x:Name="PreviewStatusLabelTextBlock"
+            FontSize="16"
+            FontWeight="SemiBold"
+            Text="Initializing preview" />
+        <TextBlock
+            x:Name="PreviewStatusMessageTextBlock"
+            Text="Choose a display or window to start the minimal HDR preview." />
+        <TextBlock
+            x:Name="PreviewTechnicalDetailTextBlock"
+            Opacity="0.75"
+            TextWrapping="Wrap" />
+        <Button
+            x:Name="SelectCaptureTargetButton"
+            Click="OnSelectCaptureTargetClick"
+            Content="Select Capture Target" />
+      </StackPanel>
+    </Border>
   </Grid>
 </Window>
-

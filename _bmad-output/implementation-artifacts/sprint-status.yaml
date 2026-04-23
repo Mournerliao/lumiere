@@ -1,5 +1,5 @@
 # generated: 2026-04-21T11:35:23+0800
-# last_updated: 2026-04-23T00:21:59+0800
+# last_updated: 2026-04-23T17:29:13+0800
 # project: lumiere
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-21T11:35:23+0800
-last_updated: 2026-04-23T00:21:59+0800
+last_updated: 2026-04-23T17:29:13+0800
 project: lumiere
 project_key: NOKEY
 tracking_system: file-system
@@ -47,7 +47,7 @@ development_status:
   1-2-centralize-hdr-constants-and-preview-readiness-status: done
   1-3-create-d3d11-device-and-winrt-dxgi-interop-bridge: done
   1-4-attach-an-fp16-scrgb-swap-chain-to-swapchainpanel: done
-  1-5-prove-minimal-wgc-fp16-capture-to-live-preview: backlog
+  1-5-prove-minimal-wgc-fp16-capture-to-live-preview: in-progress
   epic-1-retrospective: optional
   epic-2: backlog
   2-1-start-capture-and-select-a-display-or-window-target: backlog
