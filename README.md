@@ -17,7 +17,7 @@ Development and full validation require Windows:
 - .NET 10 SDK.
 - Windows SDK `10.0.26100.x` or a documented compatible Windows SDK.
 
-Non-Windows machines can inspect and edit the repository, but WinUI restore/build validation is expected to run on Windows. See [Mac + Windows development workflow](docs/cross-platform-development.md) for the supported split between macOS editing, Windows CI, and Windows hardware validation.
+Non-Windows machines can inspect and edit the repository, but WinUI restore/build validation is expected to run on Windows. See [Mac + Windows development workflow](harness/workflows/cross-platform-development.md) for the supported split between macOS editing, Windows CI, and Windows hardware validation.
 
 ## Repository Layout
 
