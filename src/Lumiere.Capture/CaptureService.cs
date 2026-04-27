@@ -56,7 +56,7 @@ public sealed class CaptureService
             session = framePool.CreateCaptureSession(target.Item);
             session.StartCapture();
 
-            return CaptureStartResult.Started(
+            return CaptureStartResult.StartSucceeded(
                 new CaptureSessionResources(direct3DDevice, framePool, session, frameArrivedHandler),
                 PreviewReadinessStatus.Initializing(
                     PreviewReadinessStage.Capture,

@@ -1,16 +1,16 @@
-using Microsoft.UI.Xaml;
-
 using Lumiere.Capture;
 using Lumiere.Graphics.Devices;
 using Lumiere.Graphics.Hdr;
 using Lumiere.Graphics.Presentation;
 using Lumiere.Infrastructure.Interop;
+using Microsoft.UI.Xaml;
 using Windows.Graphics.Capture;
 
 namespace Lumiere.App;
 
 public sealed partial class MainWindow : Window
 {
+    private readonly object previewSync = new();
     private readonly GraphicsDeviceProvider deviceProvider = new();
     private CaptureService? captureService;
     private CaptureSessionResources? captureSession;
@@ -78,36 +78,79 @@ public sealed partial class MainWindow : Window
         StopPreview();
 
         var target = captureService!.CreateTarget(item);
-        swapChainResources = graphicsEngine!.CreatePreviewSwapChain(
-            new SwapChainCreationOptions(target.Size.Width, target.Size.Height),
-            new SwapChainPanelPreviewSurface(PreviewSwapChainPanel));
-        previewFramePresenter = new PreviewFramePresenter(deviceResources!, swapChainResources);
-        ApplyReadiness(swapChainResources.PresentationEvidence);
+        long currentGeneration;
+        PreviewReadinessStatus presentationEvidence;
+        lock (previewSync)
+        {
+            swapChainResources = graphicsEngine!.CreatePreviewSwapChain(
+                new SwapChainCreationOptions(target.Size.Width, target.Size.Height),
+                new SwapChainPanelPreviewSurface(PreviewSwapChainPanel));
+            previewFramePresenter = new PreviewFramePresenter(deviceResources!, swapChainResources);
+            presentationEvidence = swapChainResources.PresentationEvidence;
 
-        previewGeneration++;
-        var currentGeneration = previewGeneration;
+            previewGeneration++;
+            currentGeneration = previewGeneration;
+        }
+
+        ApplyReadiness(presentationEvidence);
+
         var captureStart = captureService.StartCapture(target, frame => OnCapturedFrameArrived(currentGeneration, frame));
-        captureSession = captureStart.SessionResources;
-        ApplyReadiness(captureStart.Readiness);
+        CaptureSessionResources? captureSessionToDispose = null;
+        SwapChainResources? swapChainToDispose = null;
+        var shouldApplyCaptureReadiness = false;
+        lock (previewSync)
+        {
+            if (currentGeneration != previewGeneration)
+            {
+                captureSessionToDispose = captureStart.SessionResources;
+            }
+            else if (captureStart.Started)
+            {
+                captureSession = captureStart.SessionResources;
+                shouldApplyCaptureReadiness = true;
+            }
+            else
+            {
+                previewFramePresenter = null;
+                swapChainToDispose = swapChainResources;
+                swapChainResources = null;
+                shouldApplyCaptureReadiness = true;
+            }
+        }
+
+        captureSessionToDispose?.Dispose();
+        swapChainToDispose?.Dispose();
+        if (shouldApplyCaptureReadiness)
+        {
+            ApplyReadiness(captureStart.Readiness);
+        }
     }
 
     private void OnCapturedFrameArrived(long generation, CapturedFrameTexture frame)
     {
+        PreviewRenderResult result;
+        using (frame)
+        {
+            lock (previewSync)
+            {
+                if (generation != previewGeneration || previewFramePresenter is null)
+                {
+                    return;
+                }
+
+                result = previewFramePresenter.PresentFrame(frame);
+            }
+        }
+
         if (!PreviewSwapChainPanel.DispatcherQueue.TryEnqueue(() =>
             {
-                using (frame)
+                if (generation == previewGeneration)
                 {
-                    if (generation != previewGeneration || previewFramePresenter is null)
-                    {
-                        return;
-                    }
-
-                    var result = previewFramePresenter.PresentFrame(frame);
                     ApplyReadiness(result.Readiness);
                 }
             }))
         {
-            frame.Dispose();
+            // The frame has already been presented and disposed; no UI status update is possible.
         }
     }
 
@@ -124,12 +167,20 @@ public sealed partial class MainWindow : Window
 
     private void StopPreview()
     {
-        previewGeneration++;
-        captureSession?.Dispose();
-        captureSession = null;
-        previewFramePresenter = null;
-        swapChainResources?.Dispose();
-        swapChainResources = null;
+        CaptureSessionResources? captureSessionToDispose;
+        SwapChainResources? swapChainToDispose;
+        lock (previewSync)
+        {
+            previewGeneration++;
+            captureSessionToDispose = captureSession;
+            captureSession = null;
+            previewFramePresenter = null;
+            swapChainToDispose = swapChainResources;
+            swapChainResources = null;
+        }
+
+        captureSessionToDispose?.Dispose();
+        swapChainToDispose?.Dispose();
     }
 
     private void ApplyReadiness(PreviewReadinessStatus readiness)

@@ -18,7 +18,7 @@ public sealed class CaptureStartResult
 
     public bool Started => SessionResources is not null;
 
-    public static CaptureStartResult Started(
+    public static CaptureStartResult StartSucceeded(
         CaptureSessionResources sessionResources,
         PreviewReadinessStatus readiness) =>
         new(sessionResources ?? throw new ArgumentNullException(nameof(sessionResources)), readiness);

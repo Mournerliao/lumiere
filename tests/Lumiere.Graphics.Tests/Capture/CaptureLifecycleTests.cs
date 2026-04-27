@@ -41,4 +41,20 @@ public sealed class CaptureLifecycleTests
         Assert.Null(result.SessionResources);
         Assert.Equal(PreviewReadinessState.Unsupported, result.Readiness.State);
     }
+
+    [Fact]
+    public void StartSucceededCaptureResultExposesSessionResources()
+    {
+        var sessionResources = new CaptureSessionResources(() => { });
+        var readiness = PreviewReadinessStatus.Initializing(
+            PreviewReadinessStage.Capture,
+            "Initializing preview",
+            "Direct3D11CaptureFramePool started.");
+
+        var result = CaptureStartResult.StartSucceeded(sessionResources, readiness);
+
+        Assert.True(result.Started);
+        Assert.Same(sessionResources, result.SessionResources);
+        Assert.Same(readiness, result.Readiness);
+    }
 }

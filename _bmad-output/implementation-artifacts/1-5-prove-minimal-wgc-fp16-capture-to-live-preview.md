@@ -1,6 +1,6 @@
 # Story 1.5: Prove Minimal WGC FP16 Capture to Live Preview
 
-Status: in-progress
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created. -->
 
@@ -18,33 +18,41 @@ Status: in-progress
 
 ## Tasks / Subtasks
 
-- [ ] 确认 Story 1.1-1.4 的现有边界与复用点，不重复创建 graphics / interop 基础。 (AC: 1, 2, 3)
-  - [ ] 复用 `src/Lumiere.Graphics/Devices/GraphicsDeviceProvider.cs`、`GraphicsDeviceResources.cs` 和 `src/Lumiere.Graphics/Presentation/GraphicsEngine.cs`，不重新创建独立 D3D11 device。
-  - [ ] 复用 `src/Lumiere.Graphics/Hdr/HdrConstants.cs`、`PreviewReadinessStatus.cs`、`PreviewReadinessStage.cs` 与现有 presentation readiness 语义，不复制 HDR format / color-space / stage 常量。
-  - [ ] 复用 `src/Lumiere.Infrastructure/Interop/Direct3D11Interop.cs`、`ISwapChainPreviewSurface.cs`、`SwapChainPanelPreviewSurface.cs` 与 `NativeInteropException.cs`，保持 WinRT / DXGI / WinUI interop 在 Infrastructure 边界内。
+- [x] 确认 Story 1.1-1.4 的现有边界与复用点，不重复创建 graphics / interop 基础。 (AC: 1, 2, 3)
+  - [x] 复用 `src/Lumiere.Graphics/Devices/GraphicsDeviceProvider.cs`、`GraphicsDeviceResources.cs` 和 `src/Lumiere.Graphics/Presentation/GraphicsEngine.cs`，不重新创建独立 D3D11 device。
+  - [x] 复用 `src/Lumiere.Graphics/Hdr/HdrConstants.cs`、`PreviewReadinessStatus.cs`、`PreviewReadinessStage.cs` 与现有 presentation readiness 语义，不复制 HDR format / color-space / stage 常量。
+  - [x] 复用 `src/Lumiere.Infrastructure/Interop/Direct3D11Interop.cs`、`ISwapChainPreviewSurface.cs`、`SwapChainPanelPreviewSurface.cs` 与 `NativeInteropException.cs`，保持 WinRT / DXGI / WinUI interop 在 Infrastructure 边界内。
 
-- [ ] 在 `Lumiere.Capture` 边界内建立最小 WGC capture session 生命周期。 (AC: 1, 2)
-  - [ ] 在 `src/Lumiere.Capture/` 下添加职责清晰的类型，例如 `CaptureService`、`CaptureSessionResources`、`CaptureTarget`、`CaptureStartResult` 或同等窄接口；不要把 WGC 生命周期塞进 `MainWindow`。
-  - [ ] 使用 Story 1.3 的 WinRT D3D device bridge 创建 `IDirect3DDevice`，并以 `DirectXPixelFormat.R16G16B16A16Float` 创建 `Direct3D11CaptureFramePool`。
-  - [ ] `FrameArrived` 处理流程显式区分后台线程与 UI 线程；不得直接从 frame 回调操作 WinUI 对象或 `SwapChainPanel`。
-  - [ ] 所有 `GraphicsCaptureSession`、`Direct3D11CaptureFramePool`、captured frame 及其持有的 COM/WinRT 资源都有确定性 `IDisposable` / `Close` 路径。
+- [x] 在 `Lumiere.Capture` 边界内建立最小 WGC capture session 生命周期。 (AC: 1, 2)
+  - [x] 在 `src/Lumiere.Capture/` 下添加职责清晰的类型，例如 `CaptureService`、`CaptureSessionResources`、`CaptureTarget`、`CaptureStartResult` 或同等窄接口；不要把 WGC 生命周期塞进 `MainWindow`。
+  - [x] 使用 Story 1.3 的 WinRT D3D device bridge 创建 `IDirect3DDevice`，并以 `DirectXPixelFormat.R16G16B16A16Float` 创建 `Direct3D11CaptureFramePool`。
+  - [x] `FrameArrived` 处理流程显式区分后台线程与 UI 线程；不得直接从 frame 回调操作 WinUI 对象或 `SwapChainPanel`。
+  - [x] 所有 `GraphicsCaptureSession`、`Direct3D11CaptureFramePool`、captured frame 及其持有的 COM/WinRT 资源都有确定性 `IDisposable` / `Close` 路径。
 
-- [ ] 在 graphics 边界内把 WGC frame 接入现有 swap-chain preview，而不引入 SDR fallback。 (AC: 2)
-  - [ ] 在 `src/Lumiere.Graphics/Presentation/` 添加最小 frame presentation 协调类型，例如 `PreviewFramePresenter`、`CapturedFrameTexture`、`PreviewRenderResult` 或同等职责类型。
-  - [ ] 从 captured frame 的 `IDirect3DSurface` 获取可供 D3D11 使用的 `ID3D11Texture2D`，并将内容复制或渲染到 Story 1.4 创建的 FP16/scRGB swap chain back buffer。
-  - [ ] 常规 frame 呈现全过程保持 GPU-resident；不得通过 `SoftwareBitmap`、`BitmapImage`、WIC、GDI、CPU map/readback 或 XAML image control 作为主预览路径。
-  - [ ] 初版仅需证明最小 live preview 成立；不要提前实现 tone mapping、导出、剪贴板、注释、历史记录或完整 crop overlay。
+- [x] 在 graphics 边界内把 WGC frame 接入现有 swap-chain preview，而不引入 SDR fallback。 (AC: 2)
+  - [x] 在 `src/Lumiere.Graphics/Presentation/` 添加最小 frame presentation 协调类型，例如 `PreviewFramePresenter`、`CapturedFrameTexture`、`PreviewRenderResult` 或同等职责类型。
+  - [x] 从 captured frame 的 `IDirect3DSurface` 获取可供 D3D11 使用的 `ID3D11Texture2D`，并将内容复制或渲染到 Story 1.4 创建的 FP16/scRGB swap chain back buffer。
+  - [x] 常规 frame 呈现全过程保持 GPU-resident；不得通过 `SoftwareBitmap`、`BitmapImage`、WIC、GDI、CPU map/readback 或 XAML image control 作为主预览路径。
+  - [x] 初版仅需证明最小 live preview 成立；不要提前实现 tone mapping、导出、剪贴板、注释、历史记录或完整 crop overlay。
 
-- [ ] 在最小 app 接缝中挂接 preview host 与状态显示，证明用户可见的 readiness 反馈。 (AC: 3)
-  - [ ] 更新 `src/Lumiere.App/MainWindow.xaml` / `MainWindow.xaml.cs`，将当前占位内容替换为最小可验证 preview host，包含 `SwapChainPanel` 与不破坏后续 overlay 坐标的简洁状态展示。
-  - [ ] readiness 展示沿用 UX 规定的明确标签：`HDR-ready`、`Degraded preview`、`Unsupported capture`、`Preview failed`、`Initializing preview`；不要使用模糊成功文案。
-  - [ ] 若当前故事需要最小化 target 选择，可接受临时 spike 入口，但选择逻辑必须保持在 `Lumiere.Capture` / Infrastructure 边界，不在 UI 代码中直连底层 interop。
+- [x] 在最小 app 接缝中挂接 preview host 与状态显示，证明用户可见的 readiness 反馈。 (AC: 3)
+  - [x] 更新 `src/Lumiere.App/MainWindow.xaml` / `MainWindow.xaml.cs`，将当前占位内容替换为最小可验证 preview host，包含 `SwapChainPanel` 与不破坏后续 overlay 坐标的简洁状态展示。
+  - [x] readiness 展示沿用 UX 规定的明确标签：`HDR-ready`、`Degraded preview`、`Unsupported capture`、`Preview failed`、`Initializing preview`；不要使用模糊成功文案。
+  - [x] 若当前故事需要最小化 target 选择，可接受临时 spike 入口，但选择逻辑必须保持在 `Lumiere.Capture` / Infrastructure 边界，不在 UI 代码中直连底层 interop。
 
-- [ ] 为 capture-to-preview 管线添加可执行测试与验证说明。 (AC: 1, 2, 3)
-  - [ ] 在 `tests/` 下新增针对 capture 配置、frame handoff、readiness mapping 与资源释放顺序的单元测试；至少锁定 frame pool pixel format、无 SDR fallback guardrail、以及 stop/dispose 顺序。
-  - [ ] 如果真实 `GraphicsCaptureItem` / `Direct3D11CaptureFramePool` 无法在纯单元测试环境中完整运行，则通过窄 abstraction 做状态/生命周期测试，并在 Completion Notes 明确哪些部分仍需 Windows 手动验证。
-  - [ ] 按仓库规范准备验证命令：`dotnet restore Lumiere.sln --disable-parallel --verbosity minimal /nr:false`、`dotnet build Lumiere.sln -p:Platform=x64 --no-restore --verbosity minimal /nr:false`、`dotnet test tests/Lumiere.Graphics.Tests/Lumiere.Graphics.Tests.csproj -p:Platform=x64 --no-restore --verbosity minimal /nr:false`、`dotnet format Lumiere.sln --verify-no-changes --verbosity minimal`。
+- [x] 为 capture-to-preview 管线添加可执行测试与验证说明。 (AC: 1, 2, 3)
+  - [x] 在 `tests/` 下新增针对 capture 配置、frame handoff、readiness mapping 与资源释放顺序的单元测试；至少锁定 frame pool pixel format、无 SDR fallback guardrail、以及 stop/dispose 顺序。
+  - [x] 如果真实 `GraphicsCaptureItem` / `Direct3D11CaptureFramePool` 无法在纯单元测试环境中完整运行，则通过窄 abstraction 做状态/生命周期测试，并在 Completion Notes 明确哪些部分仍需 Windows 手动验证。
+  - [x] 按仓库规范准备验证命令：`dotnet restore Lumiere.sln --disable-parallel --verbosity minimal /nr:false`、`dotnet build Lumiere.sln -p:Platform=x64 --no-restore --verbosity minimal /nr:false`、`dotnet test tests/Lumiere.Graphics.Tests/Lumiere.Graphics.Tests.csproj -p:Platform=x64 --no-restore --verbosity minimal /nr:false`、`dotnet format Lumiere.sln --verify-no-changes --verbosity minimal`。
 
+### Review Findings
+
+- [x] [Review][Decision] Story/sprint status overstates completion before Windows manual HDR validation - resolved: Story 1.5 remains implementation `done`; Windows manual HDR hardware validation is tracked separately and remains required before claiming final HDR behavior.
+- [x] [Review][Patch] StopPreview can deadlock with an in-flight free-threaded frame callback [src/Lumiere.App/MainWindow.xaml.cs:138]
+- [x] [Review][Patch] StartCapture failure leaves newly attached preview resources alive [src/Lumiere.App/MainWindow.xaml.cs:80]
+- [x] [Review][Patch] StartPreview can race StopPreview and lose the newly started capture session [src/Lumiere.App/MainWindow.xaml.cs:94]
+- [x] [Review][Patch] Add direct test coverage for `CaptureStartResult.StartSucceeded` [src/Lumiere.Capture/CaptureStartResult.cs:21]
+- [x] [Review][Patch] Frame surface lifetime crosses the `Direct3D11CaptureFrame` lifetime [src/Lumiere.Capture/CaptureService.cs:103]
 ## Dev Notes
 
 ### Story Scope
@@ -186,6 +194,11 @@ GPT-5
 - 2026-04-23: Started `bmad-dev-story`; moved Story 1.5 to `in-progress` and updated sprint tracking accordingly.
 - 2026-04-23: Added minimal WGC capture session types, frame-surface interop, GPU-resident frame presenter, WinUI picker-driven preview wiring, and guardrail tests for capture configuration / lifecycle / frame presentation.
 - 2026-04-23: Validation blocked locally because `dotnet` is not installed on this macOS workspace (`dotnet --info` returned `command not found`); Windows restore/build/test/manual validation remains pending.
+- 2026-04-24: Continued `bmad-dev-story` on Windows; loaded BMad config, project context, Story 1.5, and sprint status.
+- 2026-04-24: Ran Windows validation; initial build failed because `CaptureStartResult` had both a `Started` property and `Started(...)` factory method.
+- 2026-04-24: Renamed the static factory to `StartSucceeded(...)`, updated `CaptureService`, ran `dotnet format`, and re-ran build/test/format successfully.
+- 2026-04-24: Addressed code review finding by presenting captured frame textures synchronously inside the `Direct3D11CaptureFrame` lifetime and queuing only readiness updates to the UI thread.
+- 2026-04-24: Addressed Edge Case Hunter findings by moving capture/session and swap-chain disposal outside `previewSync`, rolling back preview resources when capture start fails, synchronizing accepted capture session assignment, and adding direct `StartSucceeded` test coverage.
 
 ### Completion Notes List
 
@@ -194,7 +207,11 @@ GPT-5
 - Added `CapturedFrameTexture`, `PreviewFramePresenter`, `PreviewRenderResult`, and `SwapChainFrameOutput` under `Lumiere.Graphics.Presentation` to copy live frames into the existing FP16/scRGB swap chain without CPU readback.
 - Updated `MainWindow` to host a `SwapChainPanel`, surface explicit preview readiness labels, and start the minimal live preview through the capture picker.
 - Added guardrail tests for capture configuration defaults, capture disposal ordering, and preview frame presentation readiness mapping.
-- Local validation is incomplete: `dotnet` is unavailable on this machine, so restore/build/test/format could not be run here. Windows CI and Windows manual HDR validation are still required before marking the story complete.
+- Fixed the Windows compile blocker by renaming `CaptureStartResult.Started(...)` to `CaptureStartResult.StartSucceeded(...)`, preserving the `Started` boolean status property.
+- Windows local validation pass: `dotnet restore Lumiere.sln --disable-parallel --verbosity minimal /nr:false`, `dotnet build Lumiere.sln -p:Platform=x64 --no-restore --verbosity minimal /nr:false`, `dotnet test tests/Lumiere.Graphics.Tests/Lumiere.Graphics.Tests.csproj -p:Platform=x64 --no-restore --verbosity minimal /nr:false` (37 passed), and `dotnet format Lumiere.sln --verify-no-changes --verbosity minimal`.
+- Validation level: Mac edit not used in this session; Windows local build/test/format passed; Windows manual HDR hardware validation has not been performed and is tracked separately before claiming final HDR behavior.
+- Resolved review finding: frame presentation now happens before `Direct3D11CaptureFrame` disposal; UI dispatch no longer carries `CapturedFrameTexture` beyond the WGC frame callback.
+- Resolved Edge Case Hunter findings: `StopPreview` now detaches state under `previewSync` and disposes capture/swap-chain resources after releasing the lock; failed capture startup rolls back the newly attached preview resources; successful capture session assignment is synchronized and stale startup results are disposed; `StartSucceeded` has direct unit coverage.
 
 ### File List
 
@@ -208,6 +225,7 @@ GPT-5
 - src/Lumiere.Capture/CaptureSessionResources.cs
 - src/Lumiere.Capture/CaptureStartResult.cs
 - src/Lumiere.Capture/CaptureTarget.cs
+- src/Lumiere.Capture/Properties/AssemblyInfo.cs
 - src/Lumiere.Graphics/Presentation/CapturedFrameTexture.cs
 - src/Lumiere.Graphics/Presentation/IPreviewFrameOutput.cs
 - src/Lumiere.Graphics/Presentation/PreviewFramePresenter.cs
@@ -220,3 +238,9 @@ GPT-5
 - tests/Lumiere.Graphics.Tests/Capture/CaptureSessionConfigurationTests.cs
 - tests/Lumiere.Graphics.Tests/Lumiere.Graphics.Tests.csproj
 - tests/Lumiere.Graphics.Tests/Presentation/PreviewFramePresenterTests.cs
+
+### Change Log
+
+- 2026-04-24: Completed Story 1.5 implementation validation on Windows, fixed `CaptureStartResult` factory naming conflict, updated task checkboxes, and moved the story to review.
+- 2026-04-24: Resolved code review finding for captured frame lifetime and moved the story to done.
+- 2026-04-24: Resolved follow-up Edge Case Hunter findings for stop/start races, failed capture rollback, and success-factory coverage.
