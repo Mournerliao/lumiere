@@ -6,7 +6,6 @@ using Lumiere.Graphics.Presentation;
 using Lumiere.Infrastructure.Interop;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
-using Windows.Graphics.Capture;
 
 namespace Lumiere.App;
 
@@ -51,18 +50,17 @@ public sealed partial class MainWindow : Window
                     "Choose a display or window to start the minimal HDR preview.",
                     "GraphicsCapturePicker is waiting for user selection."));
 
-            var item = await GraphicsCapturePickerInterop.PickSingleItemAsync(this);
-            if (item is null)
+            var selectionService = new CaptureTargetSelectionService(
+                new GraphicsCaptureTargetPicker(this));
+            var result = await selectionService.SelectTargetAsync();
+
+            if (result.IsSelected)
             {
-                ApplyReadiness(
-                    PreviewReadinessStatus.Initializing(
-                        PreviewReadinessStage.Capture,
-                        "Choose a display or window to start the minimal HDR preview.",
-                        "GraphicsCapturePicker was canceled."));
+                StartPreview(result.Target);
                 return;
             }
 
-            StartPreview(item);
+            ApplyReadiness(result.Readiness);
         }
         catch (Exception exception)
         {
@@ -78,21 +76,10 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void StartPreview(GraphicsCaptureItem item)
+    private void StartPreview(CaptureTarget target)
     {
         EnsureGraphicsServices();
         StopPreview();
-
-        var target = captureService!.CreateTarget(item);
-        if (target.Size.Width <= 0 || target.Size.Height <= 0)
-        {
-            ApplyReadiness(
-                PreviewReadinessStatus.Failed(
-                    PreviewReadinessStage.Capture,
-                    "Preview failed",
-                    $"Capture target reported an invalid size: {target.Size.Width}x{target.Size.Height}."));
-            return;
-        }
 
         ApplyPreviewPanelFit(target.Size.Width, target.Size.Height);
         long currentGeneration;
