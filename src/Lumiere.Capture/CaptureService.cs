@@ -1,3 +1,4 @@
+using System.Threading;
 using Lumiere.Graphics.Devices;
 using Lumiere.Graphics.Hdr;
 using Lumiere.Graphics.Presentation;
@@ -22,7 +23,9 @@ public sealed class CaptureService
 
     public CaptureStartResult StartCapture(
         CaptureTarget target,
-        Action<CapturedFrameTexture> onFrameArrived)
+        Action<CapturedFrameTexture> onFrameArrived,
+        Action<PreviewReadinessStatus>? onFrameFailed = null,
+        Action<string>? onFrameDiagnostic = null)
     {
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(onFrameArrived);
@@ -40,6 +43,7 @@ public sealed class CaptureService
         Direct3D11CaptureFramePool? framePool = null;
         GraphicsCaptureSession? session = null;
         TypedEventHandler<Direct3D11CaptureFramePool, object?>? frameArrivedHandler = null;
+        var frameFailureGate = new FrameFailureGate();
 
         try
         {
@@ -51,7 +55,20 @@ public sealed class CaptureService
                 options.BufferCount,
                 options.BufferSize);
 
-            frameArrivedHandler = (sender, _) => HandleFrameArrived(sender, onFrameArrived);
+            frameArrivedHandler = (sender, _) =>
+            {
+                if (!frameFailureGate.ShouldProcessFrame)
+                {
+                    return;
+                }
+
+                HandleFrameArrived(
+                    sender,
+                    onFrameArrived,
+                    onFrameFailed,
+                    onFrameDiagnostic,
+                    frameFailureGate);
+            };
             framePool.FrameArrived += frameArrivedHandler;
             session = framePool.CreateCaptureSession(target.Item);
             session.StartCapture();
@@ -87,40 +104,82 @@ public sealed class CaptureService
             return PreviewReadinessStatus.Failed(
                 PreviewReadinessStage.Interop,
                 "Preview failed",
-                nativeInteropException.Message);
+                InteropFailureDiagnostics.Write(nativeInteropException));
         }
 
         return PreviewReadinessStatus.Failed(
             PreviewReadinessStage.Capture,
             "Preview failed",
-            exception.Message);
+            InteropFailureDiagnostics.Write(exception));
     }
 
     private static void HandleFrameArrived(
         Direct3D11CaptureFramePool framePool,
-        Action<CapturedFrameTexture> onFrameArrived)
+        Action<CapturedFrameTexture> onFrameArrived,
+        Action<PreviewReadinessStatus>? onFrameFailed,
+        Action<string>? onFrameDiagnostic,
+        FrameFailureGate frameFailureGate)
     {
-        using var frame = framePool.TryGetNextFrame();
-        if (frame is null)
-        {
-            return;
-        }
-
-        CapturedFrameTexture? capturedFrame = null;
-
         try
         {
-            capturedFrame = new CapturedFrameTexture(
-                Direct3D11SurfaceInterop.CreateTexture(frame.Surface),
-                frame.ContentSize.Width,
-                frame.ContentSize.Height,
-                "Direct3D11CaptureFrame.Surface");
-            onFrameArrived(capturedFrame);
-            capturedFrame = null;
+            onFrameDiagnostic?.Invoke("FrameArrived event received.");
+
+            using var frame = framePool.TryGetNextFrame();
+            if (frame is null)
+            {
+                onFrameDiagnostic?.Invoke("FrameArrived event had no frame available.");
+                return;
+            }
+
+            onFrameDiagnostic?.Invoke($"Captured frame received: {frame.ContentSize.Width}x{frame.ContentSize.Height}.");
+
+            CapturedFrameTexture? capturedFrame = null;
+
+            try
+            {
+                capturedFrame = new CapturedFrameTexture(
+                    Direct3D11SurfaceInterop.CreateTexture(frame.Surface),
+                    frame.ContentSize.Width,
+                    frame.ContentSize.Height,
+                    "Direct3D11CaptureFrame.Surface");
+                onFrameDiagnostic?.Invoke("Captured frame surface unwrapped as ID3D11Texture2D.");
+                onFrameArrived(capturedFrame);
+                capturedFrame = null;
+            }
+            finally
+            {
+                capturedFrame?.Dispose();
+            }
         }
-        finally
+        catch (Exception exception)
         {
-            capturedFrame?.Dispose();
+            if (frameFailureGate.TryMarkFailed())
+            {
+                TryReportFrameFailure(exception, onFrameFailed);
+            }
         }
+    }
+
+    private static void TryReportFrameFailure(
+        Exception exception,
+        Action<PreviewReadinessStatus>? onFrameFailed)
+    {
+        try
+        {
+            onFrameFailed?.Invoke(MapFailureToReadiness(exception));
+        }
+        catch
+        {
+            // FrameArrived runs outside the UI thread; teardown races must not escape the WGC callback.
+        }
+    }
+
+    private sealed class FrameFailureGate
+    {
+        private int failed;
+
+        public bool ShouldProcessFrame => Volatile.Read(ref failed) == 0;
+
+        public bool TryMarkFailed() => Interlocked.Exchange(ref failed, 1) == 0;
     }
 }

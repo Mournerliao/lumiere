@@ -1,5 +1,6 @@
 using Lumiere.Graphics.Devices;
 using Lumiere.Graphics.Hdr;
+using Lumiere.Infrastructure.Interop;
 
 namespace Lumiere.Graphics.Presentation;
 
@@ -46,6 +47,6 @@ public sealed class PreviewFramePresenter
         return PreviewReadinessStatus.Failed(
             PreviewReadinessStage.Presentation,
             "Preview failed",
-            exception.Message);
+            InteropFailureDiagnostics.Write(exception));
     }
 }

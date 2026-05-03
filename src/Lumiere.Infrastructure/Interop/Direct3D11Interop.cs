@@ -1,5 +1,4 @@
 using System.Runtime.InteropServices;
-using Vortice.Direct3D11;
 using Vortice.DXGI;
 using Windows.Graphics.DirectX.Direct3D11;
 using WinRT;
@@ -10,6 +9,11 @@ public static class Direct3D11Interop
 {
     private const string OperationName = "CreateDirect3D11DeviceFromDXGIDevice";
 
+    [DllImport("d3d11.dll", ExactSpelling = true)]
+    private static extern int CreateDirect3D11DeviceFromDXGIDevice(
+        IntPtr dxgiDevice,
+        out IntPtr graphicsDevice);
+
     public static IDirect3DDevice CreateDirect3DDevice(IDXGIDevice dxgiDevice)
     {
         ArgumentNullException.ThrowIfNull(dxgiDevice);
@@ -18,10 +22,10 @@ public static class Direct3D11Interop
 
         try
         {
-            var result = D3D11.CreateDirect3D11DeviceFromDXGIDevice(dxgiDevice, out inspectable);
-            if (result.Failure)
+            var result = CreateDirect3D11DeviceFromDXGIDevice(dxgiDevice.NativePointer, out inspectable);
+            if (result < 0)
             {
-                throw CreateFailure(result.Code, "WinRT Direct3D device wrapping failed.");
+                throw CreateFailure(result, "WinRT Direct3D device wrapping failed.");
             }
 
             return MarshalInspectable<IDirect3DDevice>.FromAbi(inspectable);

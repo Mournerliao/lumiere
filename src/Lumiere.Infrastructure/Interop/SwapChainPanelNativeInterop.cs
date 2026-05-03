@@ -45,15 +45,15 @@ public static class SwapChainPanelNativeInterop
         string operationName)
     {
         IntPtr inspectable = IntPtr.Zero;
-        ISwapChainPanelNative? nativePanel = null;
+        IntPtr nativePanelPointer = IntPtr.Zero;
 
         try
         {
             inspectable = Marshal.GetIUnknownForObject(panel);
             var result = Marshal.QueryInterface(
                 inspectable,
-                typeof(ISwapChainPanelNative).GUID,
-                out var nativePanelPointer);
+                typeof(ISwapChainPanelNativeMarker).GUID,
+                out nativePanelPointer);
 
             if (result != 0)
             {
@@ -62,27 +62,12 @@ public static class SwapChainPanelNativeInterop
                     "SwapChainPanel did not expose ISwapChainPanelNative.");
             }
 
-            try
+            var setResult = InvokeSetSwapChain(nativePanelPointer, swapChain);
+            if (setResult != 0)
             {
-                nativePanel = Marshal.GetObjectForIUnknown(nativePanelPointer) as ISwapChainPanelNative;
-                if (nativePanel is null)
-                {
-                    throw CreateFailure(
-                        unchecked((int)0x80004002),
-                        "SwapChainPanel native pointer could not be marshaled.");
-                }
-
-                var setResult = nativePanel.SetSwapChain(swapChain);
-                if (setResult != 0)
-                {
-                    throw CreateFailure(
-                        setResult,
-                        "SetSwapChain returned a failing HRESULT. Ensure the call runs on the owning UI thread.");
-                }
-            }
-            finally
-            {
-                Marshal.Release(nativePanelPointer);
+                throw CreateFailure(
+                    setResult,
+                    "SetSwapChain returned a failing HRESULT. Ensure the call runs on the owning UI thread.");
             }
         }
         catch (COMException exception)
@@ -91,9 +76,9 @@ public static class SwapChainPanelNativeInterop
         }
         finally
         {
-            if (nativePanel is not null)
+            if (nativePanelPointer != IntPtr.Zero)
             {
-                Marshal.ReleaseComObject(nativePanel);
+                Marshal.Release(nativePanelPointer);
             }
 
             if (inspectable != IntPtr.Zero)
@@ -109,12 +94,26 @@ public static class SwapChainPanelNativeInterop
             SwapChainPanelNativeInterop.CreateFailure(operationName, hResult, technicalDetail, innerException);
     }
 
+    private static int InvokeSetSwapChain(
+        IntPtr nativePanelPointer,
+        IntPtr swapChain)
+    {
+        var vtable = Marshal.ReadIntPtr(nativePanelPointer);
+        var setSwapChainPointer = Marshal.ReadIntPtr(vtable, IntPtr.Size * 3);
+        var setSwapChain = Marshal.GetDelegateForFunctionPointer<SetSwapChainDelegate>(setSwapChainPointer);
+
+        return setSwapChain(nativePanelPointer, swapChain);
+    }
+
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+    private delegate int SetSwapChainDelegate(
+        IntPtr nativePanelPointer,
+        IntPtr swapChain);
+
     [ComImport]
     [Guid("63AAD0B8-7C24-40FF-85A8-640D944CC325")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface ISwapChainPanelNative
+    private interface ISwapChainPanelNativeMarker
     {
-        [PreserveSig]
-        int SetSwapChain(IntPtr swapChain);
     }
 }
