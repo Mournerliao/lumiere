@@ -49,8 +49,8 @@ development_status:
   1-4-attach-an-fp16-scrgb-swap-chain-to-swapchainpanel: done
   1-5-prove-minimal-wgc-fp16-capture-to-live-preview: done
   epic-1-retrospective: done
-  epic-2: backlog
-  2-1-start-capture-and-select-a-display-or-window-target: backlog
+  epic-2: in-progress
+  2-1-start-capture-and-select-a-display-or-window-target: ready-for-dev
   2-2-represent-capture-session-state-explicitly: backlog
   2-3-stop-restart-and-recreate-capture-resources: backlog
   2-4-validate-repeated-capture-lifecycle-stability: backlog
