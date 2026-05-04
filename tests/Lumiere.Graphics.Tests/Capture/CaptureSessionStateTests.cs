@@ -116,6 +116,17 @@ public sealed class CaptureSessionStateTests
     }
 
     [Fact]
+    public void DisposedStateDoesNotExposeNativeSession()
+    {
+        var state = CaptureSessionState.Disposed();
+
+        Assert.Equal(CaptureSessionStatus.Disposed, state.Status);
+        Assert.Null(state.Target);
+        Assert.False(state.HasNativeSession);
+        Assert.Contains("disposed", state.TechnicalDetail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void UnsupportedReadinessDuringActiveSessionPreservesTargetAndNativeSession()
     {
         var target = CreateTarget();

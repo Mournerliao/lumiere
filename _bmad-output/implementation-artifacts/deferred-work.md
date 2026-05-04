@@ -16,3 +16,7 @@
 ### Future story candidate
 
 - D6-MEDIUM: Add typed capture target creation for display/window paths. Picker-created production targets should continue to use `CaptureTargetKind.Unknown` because `GraphicsCapturePicker` returns only a `GraphicsCaptureItem`, not whether the user chose a display or a window. A future story should introduce explicit creation paths such as `TryCreateFromDisplayId(...) => Display` and `TryCreateFromWindowId(...) => Window`, likely behind a narrow infrastructure factory.
+
+## Deferred from: code review of 2-3-stop-restart-and-recreate-capture-resources (2026-05-04)
+
+- CaptureSessionResources disposal is not concurrency-idempotent. `Dispose()` checks a plain `bool disposed` before running the teardown action, so two racing callers could both dispose native WGC resources. This was pre-existing; the current story only added sequential double-dispose coverage.

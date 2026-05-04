@@ -63,6 +63,13 @@ public sealed class CaptureTarget
             CaptureTargetKind.Unknown);
     }
 
+    public CaptureTarget WithSize(SizeInt32 size)
+    {
+        ValidateSize(size);
+
+        return new CaptureTarget(item, size, DisplayName, Kind);
+    }
+
     private static void ValidateSize(SizeInt32 size)
     {
         if (size.Width <= 0 || size.Height <= 0)

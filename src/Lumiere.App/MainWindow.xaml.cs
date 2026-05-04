@@ -6,6 +6,7 @@ using Lumiere.Graphics.Presentation;
 using Lumiere.Infrastructure.Interop;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
+using Windows.Graphics;
 
 namespace Lumiere.App;
 
@@ -48,6 +49,7 @@ public sealed partial class MainWindow : Window
 
         try
         {
+            StopPreview(reportStopped: false);
             ApplySessionState(
                 CaptureSessionState.SelectingTarget(PreviewReadinessStatus.Initializing(
                     PreviewReadinessStage.Capture,
@@ -99,7 +101,7 @@ public sealed partial class MainWindow : Window
         }
 
         EnsureGraphicsServices();
-        StopPreview();
+        StopPreview(reportStopped: false);
 
         ApplyPreviewPanelFit(target.Size.Width, target.Size.Height);
         long currentGeneration;
@@ -163,6 +165,7 @@ public sealed partial class MainWindow : Window
         var frameNumber = Interlocked.Increment(ref frameEventCount);
         CaptureTarget? target;
         PreviewRenderResult result;
+        CaptureFrameSizeChange? sizeChange = null;
         using (frame)
         {
             lock (previewSync)
@@ -172,9 +175,28 @@ public sealed partial class MainWindow : Window
                     return;
                 }
 
-                result = previewFramePresenter.PresentFrame(frame);
-                target = activeCaptureTarget;
+                sizeChange = CaptureFrameSizeChange.Evaluate(
+                    previewSourceWidth,
+                    previewSourceHeight,
+                    frame.Width,
+                    frame.Height);
+                if (sizeChange.RequiresRecreation)
+                {
+                    result = null!;
+                    target = null;
+                }
+                else
+                {
+                    result = previewFramePresenter.PresentFrame(frame);
+                    target = activeCaptureTarget;
+                }
             }
+        }
+
+        if (sizeChange?.RequiresRecreation == true)
+        {
+            QueuePreviewRecreation(generation, sizeChange);
+            return;
         }
 
         if (!PreviewSwapChainPanel.DispatcherQueue.TryEnqueue(() =>
@@ -190,6 +212,80 @@ public sealed partial class MainWindow : Window
             }))
         {
             // The frame has already been presented and disposed; no UI status update is possible.
+        }
+    }
+
+    private void QueuePreviewRecreation(
+        long generation,
+        CaptureFrameSizeChange sizeChange)
+    {
+        CaptureTarget? target;
+        CaptureSessionResources? captureSessionToDispose;
+        SwapChainResources? swapChainToDispose;
+        long recreationGeneration;
+
+        lock (previewSync)
+        {
+            if (generation != Volatile.Read(ref previewGeneration))
+            {
+                return;
+            }
+
+            Interlocked.Increment(ref previewGeneration);
+            recreationGeneration = Volatile.Read(ref previewGeneration);
+            target = activeCaptureTarget;
+            captureSessionToDispose = captureSession;
+            captureSession = null;
+            previewFramePresenter = null;
+            activeCaptureTarget = null;
+            activePresentationEvidence = null;
+            swapChainToDispose = swapChainResources;
+            swapChainResources = null;
+        }
+
+        if (target is null)
+        {
+            captureSessionToDispose?.Dispose();
+            swapChainToDispose?.Dispose();
+            return;
+        }
+
+        var replacementTarget = target.WithSize(new SizeInt32
+        {
+            Width = sizeChange.ReplacementWidth,
+            Height = sizeChange.ReplacementHeight,
+        });
+        var recreationRequest = CapturePreviewRecreationRequest.Create(
+            replacementTarget,
+            sizeChange,
+            recreationGeneration);
+
+        captureSessionToDispose?.Dispose();
+
+        if (!PreviewSwapChainPanel.DispatcherQueue.TryEnqueue(() =>
+            {
+                swapChainToDispose?.Dispose();
+
+                if (isClosed)
+                {
+                    return;
+                }
+
+                if (!recreationRequest.MatchesGeneration(Volatile.Read(ref previewGeneration)))
+                {
+                    return;
+                }
+
+                ApplySessionState(CaptureSessionState.Initializing(
+                    recreationRequest.Target,
+                    PreviewReadinessStatus.Initializing(
+                        PreviewReadinessStage.Capture,
+                        "Rebuilding preview",
+                        $"Captured frame size changed to {sizeChange.ReplacementWidth}x{sizeChange.ReplacementHeight}; recreating WGC frame pool and FP16 scRGB swap chain resources.")));
+                StartPreview(recreationRequest.Target);
+            }))
+        {
+            swapChainToDispose?.Dispose();
         }
     }
 
@@ -285,7 +381,7 @@ public sealed partial class MainWindow : Window
         captureService ??= new CaptureService(deviceResources);
     }
 
-    private void StopPreview()
+    private void StopPreview(bool reportStopped = true)
     {
         CaptureSessionResources? captureSessionToDispose;
         SwapChainResources? swapChainToDispose;
@@ -303,6 +399,11 @@ public sealed partial class MainWindow : Window
 
         captureSessionToDispose?.Dispose();
         swapChainToDispose?.Dispose();
+
+        if (reportStopped && !isClosed)
+        {
+            ApplySessionState(CaptureSessionState.Disposed());
+        }
     }
 
     private void ApplyPreviewPanelFit(int sourceWidth, int sourceHeight)
@@ -361,7 +462,7 @@ public sealed partial class MainWindow : Window
     private void OnWindowClosed(object sender, WindowEventArgs args)
     {
         isClosed = true;
-        StopPreview();
+        StopPreview(reportStopped: false);
         captureService = null;
         graphicsEngine = null;
         deviceResources?.Dispose();

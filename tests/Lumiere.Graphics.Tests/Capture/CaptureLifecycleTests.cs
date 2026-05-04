@@ -29,6 +29,41 @@ public sealed class CaptureLifecycleTests
     }
 
     [Fact]
+    public void CaptureSessionResourcesDisposesOnlyOnce()
+    {
+        var disposeCount = 0;
+        var resources = new CaptureSessionResources(() => disposeCount++);
+
+        resources.Dispose();
+        resources.Dispose();
+
+        Assert.Equal(1, disposeCount);
+    }
+
+    [Fact]
+    public void PreviewRecreationRequestRunsOnlyForQueuedGeneration()
+    {
+        var request = CapturePreviewRecreationRequest.Create(
+            CreateTarget(2560, 1440),
+            CaptureFrameSizeChange.Evaluate(1920, 1080, 2560, 1440),
+            generation: 7);
+
+        Assert.True(request.MatchesGeneration(7));
+        Assert.False(request.MatchesGeneration(8));
+    }
+
+    [Fact]
+    public void PreviewRecreationRequestRequiresFrameSizeMismatch()
+    {
+        var sizeChange = CaptureFrameSizeChange.Evaluate(1920, 1080, 1920, 1080);
+
+        var exception = Assert.Throws<ArgumentException>(() =>
+            CapturePreviewRecreationRequest.Create(CreateTarget(1920, 1080), sizeChange, generation: 1));
+
+        Assert.Equal("sizeChange", exception.ParamName);
+    }
+
+    [Fact]
     public void NotStartedCaptureResultDoesNotExposeSessionResources()
     {
         var result = CaptureStartResult.NotStarted(
@@ -57,4 +92,9 @@ public sealed class CaptureLifecycleTests
         Assert.Same(sessionResources, result.SessionResources);
         Assert.Same(readiness, result.Readiness);
     }
+
+    private static CaptureTarget CreateTarget(int width, int height) =>
+        CaptureTarget.CreateForTest(
+            new Windows.Graphics.SizeInt32 { Width = width, Height = height },
+            "Lifecycle target");
 }
