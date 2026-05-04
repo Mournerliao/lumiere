@@ -7,17 +7,21 @@ namespace Lumiere.Capture;
 public sealed class CaptureTargetSelectionService
 {
     private readonly ICaptureTargetPicker picker;
+    private readonly Func<bool> isCaptureSupported;
 
-    public CaptureTargetSelectionService(ICaptureTargetPicker picker)
+    public CaptureTargetSelectionService(
+        ICaptureTargetPicker picker,
+        Func<bool>? isCaptureSupported = null)
     {
         this.picker = picker ?? throw new ArgumentNullException(nameof(picker));
+        this.isCaptureSupported = isCaptureSupported ?? GraphicsCaptureSession.IsSupported;
     }
 
     public async Task<CaptureTargetSelectionResult> SelectTargetAsync()
     {
         try
         {
-            if (!GraphicsCaptureSession.IsSupported())
+            if (!isCaptureSupported())
             {
                 return CaptureTargetSelectionResult.Unsupported(
                     PreviewReadinessStatus.Unsupported(

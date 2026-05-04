@@ -19,10 +19,14 @@ public sealed partial class MainWindow : Window
     private GraphicsEngine? graphicsEngine;
     private PreviewFramePresenter? previewFramePresenter;
     private SwapChainResources? swapChainResources;
+    private CaptureTarget? activeCaptureTarget;
+    private PreviewReadinessStatus? activePresentationEvidence;
+    private CaptureSessionState sessionState = CaptureSessionState.Idle();
     private long previewGeneration;
     private long frameEventCount;
     private int previewSourceWidth;
     private int previewSourceHeight;
+    private bool isClosed;
 
     public MainWindow()
     {
@@ -31,11 +35,11 @@ public sealed partial class MainWindow : Window
         Closed += OnWindowClosed;
         RootGrid.SizeChanged += OnRootGridSizeChanged;
 
-        ApplyReadiness(
-            PreviewReadinessStatus.Initializing(
+        ApplySessionState(
+            CaptureSessionState.Idle(PreviewReadinessStatus.Initializing(
                 PreviewReadinessStage.Capture,
                 "Choose a display or window to start the minimal HDR preview.",
-                "Select Capture Target uses GraphicsCapturePicker and preserves the FP16/scRGB preview path."));
+                "Select Capture Target uses GraphicsCapturePicker and preserves the FP16/scRGB preview path.")));
     }
 
     private async void OnSelectCaptureTargetClick(object sender, RoutedEventArgs e)
@@ -44,15 +48,20 @@ public sealed partial class MainWindow : Window
 
         try
         {
-            ApplyReadiness(
-                PreviewReadinessStatus.Initializing(
+            ApplySessionState(
+                CaptureSessionState.SelectingTarget(PreviewReadinessStatus.Initializing(
                     PreviewReadinessStage.Capture,
                     "Choose a display or window to start the minimal HDR preview.",
-                    "GraphicsCapturePicker is waiting for user selection."));
+                    "GraphicsCapturePicker is waiting for user selection.")));
 
             var selectionService = new CaptureTargetSelectionService(
                 new GraphicsCaptureTargetPicker(this));
             var result = await selectionService.SelectTargetAsync();
+
+            if (isClosed)
+            {
+                return;
+            }
 
             if (result.IsSelected)
             {
@@ -60,24 +69,35 @@ public sealed partial class MainWindow : Window
                 return;
             }
 
-            ApplyReadiness(result.Readiness);
+            ApplySessionState(CaptureSessionState.FromSelectionResult(result));
         }
         catch (Exception exception)
         {
-            ApplyReadiness(
-                PreviewReadinessStatus.Failed(
-                    PreviewReadinessStage.Capture,
-                    "Preview failed",
-                    InteropFailureDiagnostics.Write(exception)));
+            if (!isClosed)
+            {
+                ApplySessionState(
+                    CaptureSessionState.Failed(null, PreviewReadinessStatus.Failed(
+                        PreviewReadinessStage.Capture,
+                        "Preview failed",
+                        InteropFailureDiagnostics.Write(exception))));
+            }
         }
         finally
         {
-            SelectCaptureTargetButton.IsEnabled = true;
+            if (!isClosed)
+            {
+                SelectCaptureTargetButton.IsEnabled = true;
+            }
         }
     }
 
     private void StartPreview(CaptureTarget target)
     {
+        if (isClosed)
+        {
+            return;
+        }
+
         EnsureGraphicsServices();
         StopPreview();
 
@@ -90,16 +110,19 @@ public sealed partial class MainWindow : Window
                 new SwapChainCreationOptions(target.Size.Width, target.Size.Height),
                 new SwapChainPanelPreviewSurface(PreviewSwapChainPanel));
             previewFramePresenter = new PreviewFramePresenter(deviceResources!, swapChainResources);
+            activeCaptureTarget = target;
             presentationEvidence = swapChainResources.PresentationEvidence;
+            activePresentationEvidence = presentationEvidence;
 
-            previewGeneration++;
+            Interlocked.Increment(ref previewGeneration);
             frameEventCount = 0;
-            currentGeneration = previewGeneration;
+            currentGeneration = Volatile.Read(ref previewGeneration);
         }
 
-        ApplyReadiness(presentationEvidence);
+        ApplySessionState(CaptureSessionState.FromReadiness(target, presentationEvidence));
 
-        var captureStart = captureService.StartCapture(
+        var activeCaptureService = captureService ?? throw new InvalidOperationException("Capture service was not initialized.");
+        var captureStart = activeCaptureService.StartCapture(
             target,
             frame => OnCapturedFrameArrived(currentGeneration, frame),
             readiness => ApplyFrameReadiness(currentGeneration, readiness),
@@ -109,7 +132,7 @@ public sealed partial class MainWindow : Window
         var shouldApplyCaptureReadiness = false;
         lock (previewSync)
         {
-            if (currentGeneration != previewGeneration)
+            if (currentGeneration != Volatile.Read(ref previewGeneration))
             {
                 captureSessionToDispose = captureStart.SessionResources;
             }
@@ -131,32 +154,38 @@ public sealed partial class MainWindow : Window
         swapChainToDispose?.Dispose();
         if (shouldApplyCaptureReadiness)
         {
-            ApplyReadiness(captureStart.Readiness);
+            ApplySessionState(CreateSessionStateFromCurrentEvidence(target, captureStart.Readiness, allowCapturing: false));
         }
     }
 
     private void OnCapturedFrameArrived(long generation, CapturedFrameTexture frame)
     {
         var frameNumber = Interlocked.Increment(ref frameEventCount);
+        CaptureTarget? target;
         PreviewRenderResult result;
         using (frame)
         {
             lock (previewSync)
             {
-                if (generation != previewGeneration || previewFramePresenter is null)
+                if (generation != Volatile.Read(ref previewGeneration) || previewFramePresenter is null)
                 {
                     return;
                 }
 
                 result = previewFramePresenter.PresentFrame(frame);
+                target = activeCaptureTarget;
             }
         }
 
         if (!PreviewSwapChainPanel.DispatcherQueue.TryEnqueue(() =>
             {
-                if (generation == previewGeneration)
+                if (generation == Volatile.Read(ref previewGeneration))
                 {
-                    ApplyReadiness(AppendFrameDetail(result.Readiness, $"Presented frame #{frameNumber}."));
+                    var readiness = AppendFrameDetail(result.Readiness, $"Presented frame #{frameNumber}.");
+                    ApplySessionState(
+                        target is null
+                            ? CaptureSessionState.Failed(null, readiness)
+                            : CreateSessionStateFromCurrentEvidence(target, readiness, allowCapturing: true));
                 }
             }))
         {
@@ -168,9 +197,12 @@ public sealed partial class MainWindow : Window
     {
         if (!PreviewSwapChainPanel.DispatcherQueue.TryEnqueue(() =>
             {
-                if (generation == previewGeneration)
+                if (generation == Volatile.Read(ref previewGeneration))
                 {
-                    ApplyReadiness(readiness);
+                    ApplySessionState(
+                        sessionState.Target is null
+                            ? CaptureSessionState.Failed(null, readiness)
+                            : CreateSessionStateFromCurrentEvidence(sessionState.Target, readiness, allowCapturing: true));
                 }
             }))
         {
@@ -182,13 +214,18 @@ public sealed partial class MainWindow : Window
         var frameNumber = Interlocked.Increment(ref frameEventCount);
         if (!PreviewSwapChainPanel.DispatcherQueue.TryEnqueue(() =>
             {
-                if (generation == previewGeneration)
+                if (generation == Volatile.Read(ref previewGeneration))
                 {
-                    ApplyReadiness(
-                        PreviewReadinessStatus.Initializing(
+                    ApplySessionState(
+                        sessionState.Target is null
+                            ? CaptureSessionState.SelectingTarget(PreviewReadinessStatus.Initializing(
+                                PreviewReadinessStage.Capture,
+                                "Waiting for preview frame presentation.",
+                                $"{detail} Frame event #{frameNumber}."))
+                            : CaptureSessionState.Initializing(sessionState.Target, PreviewReadinessStatus.Initializing(
                             PreviewReadinessStage.Capture,
                             "Waiting for preview frame presentation.",
-                            $"{detail} Frame event #{frameNumber}."));
+                            $"{detail} Frame event #{frameNumber}.")));
                 }
             }))
         {
@@ -221,6 +258,22 @@ public sealed partial class MainWindow : Window
                 $"{readiness.TechnicalDetail} {detail}"),
         };
 
+    private CaptureSessionState CreateSessionStateFromCurrentEvidence(
+        CaptureTarget target,
+        PreviewReadinessStatus readiness,
+        bool allowCapturing)
+    {
+        var presentationEvidence = activePresentationEvidence;
+        if (presentationEvidence is { RequiresUserAttention: true })
+        {
+            return CaptureSessionState.FromReadiness(target, presentationEvidence);
+        }
+
+        return allowCapturing
+            ? CaptureSessionState.FromReadiness(target, readiness)
+            : CaptureSessionState.FromStartResult(target, CaptureStartResult.NotStarted(readiness));
+    }
+
     private void EnsureGraphicsServices()
     {
         if (deviceResources is null)
@@ -238,10 +291,12 @@ public sealed partial class MainWindow : Window
         SwapChainResources? swapChainToDispose;
         lock (previewSync)
         {
-            previewGeneration++;
+            Interlocked.Increment(ref previewGeneration);
             captureSessionToDispose = captureSession;
             captureSession = null;
             previewFramePresenter = null;
+            activeCaptureTarget = null;
+            activePresentationEvidence = null;
             swapChainToDispose = swapChainResources;
             swapChainResources = null;
         }
@@ -284,23 +339,31 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void ApplyReadiness(PreviewReadinessStatus readiness)
+    private void ApplySessionState(CaptureSessionState state)
     {
-        PreviewStatusLabelTextBlock.Text = readiness.State switch
+        sessionState = state ?? throw new ArgumentNullException(nameof(state));
+        PreviewStatusLabelTextBlock.Text = sessionState.Status switch
         {
-            PreviewReadinessState.Ready => "HDR-ready",
-            PreviewReadinessState.Degraded => "Degraded preview",
-            PreviewReadinessState.Unsupported => "Unsupported capture",
-            PreviewReadinessState.Failed => "Preview failed",
+            CaptureSessionStatus.Idle => "Ready to capture",
+            CaptureSessionStatus.SelectingTarget => "Selecting target",
+            CaptureSessionStatus.Initializing => "Initializing preview",
+            CaptureSessionStatus.Capturing => "HDR-ready",
+            CaptureSessionStatus.Degraded => "Degraded preview",
+            CaptureSessionStatus.Unsupported => "Unsupported capture",
+            CaptureSessionStatus.Failed => "Preview failed",
+            CaptureSessionStatus.Disposed => "Preview stopped",
             _ => "Initializing preview",
         };
-        PreviewStatusMessageTextBlock.Text = readiness.UserMessage;
-        PreviewTechnicalDetailTextBlock.Text = readiness.TechnicalDetail ?? string.Empty;
+        PreviewStatusMessageTextBlock.Text = sessionState.UserFacingReason ?? string.Empty;
+        PreviewTechnicalDetailTextBlock.Text = sessionState.TechnicalDetail ?? string.Empty;
     }
 
     private void OnWindowClosed(object sender, WindowEventArgs args)
     {
+        isClosed = true;
         StopPreview();
+        captureService = null;
+        graphicsEngine = null;
         deviceResources?.Dispose();
         deviceResources = null;
     }

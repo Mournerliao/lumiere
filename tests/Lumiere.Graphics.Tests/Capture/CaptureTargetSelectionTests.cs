@@ -103,7 +103,7 @@ public sealed class CaptureTargetSelectionTests
     public async Task FakePickerCanceledReturnsCanceledOutcome()
     {
         var fakePicker = new FakeCaptureTargetPicker((GraphicsCaptureItem?)null);
-        var service = new CaptureTargetSelectionService(fakePicker);
+        var service = new CaptureTargetSelectionService(fakePicker, () => true);
 
         var result = await service.SelectTargetAsync();
 
@@ -118,7 +118,7 @@ public sealed class CaptureTargetSelectionTests
     {
         var fakePicker = new FakeCaptureTargetPicker(
             new InvalidOperationException("Picker initialization failed."));
-        var service = new CaptureTargetSelectionService(fakePicker);
+        var service = new CaptureTargetSelectionService(fakePicker, () => true);
 
         var result = await service.SelectTargetAsync();
 
@@ -133,13 +133,45 @@ public sealed class CaptureTargetSelectionTests
     {
         var fakePicker = new FakeCaptureTargetPicker(
             new NotSupportedException("Graphics capture is not supported on this system."));
-        var service = new CaptureTargetSelectionService(fakePicker);
+        var service = new CaptureTargetSelectionService(fakePicker, () => true);
 
         var result = await service.SelectTargetAsync();
 
         Assert.Equal(SelectionOutcome.Unsupported, result.Outcome);
         Assert.Null(result.Target);
         Assert.Equal(PreviewReadinessState.Unsupported, result.Readiness.State);
+    }
+
+    [Fact]
+    public async Task UnsupportedCaptureReturnsUnsupportedBeforePickerRuns()
+    {
+        var fakePicker = new FakeCaptureTargetPicker(
+            new InvalidOperationException("Picker should not run."));
+        var service = new CaptureTargetSelectionService(fakePicker, () => false);
+
+        var result = await service.SelectTargetAsync();
+
+        Assert.Equal(SelectionOutcome.Unsupported, result.Outcome);
+        Assert.Null(result.Target);
+        Assert.Equal(PreviewReadinessState.Unsupported, result.Readiness.State);
+        Assert.Contains("IsSupported returned false", result.Readiness.TechnicalDetail);
+    }
+
+    [Fact]
+    public async Task SupportCheckNotSupportedExceptionReturnsUnsupported()
+    {
+        var fakePicker = new FakeCaptureTargetPicker(
+            new InvalidOperationException("Picker should not run."));
+        var service = new CaptureTargetSelectionService(
+            fakePicker,
+            () => throw new NotSupportedException("Support check failed."));
+
+        var result = await service.SelectTargetAsync();
+
+        Assert.Equal(SelectionOutcome.Unsupported, result.Outcome);
+        Assert.Null(result.Target);
+        Assert.Equal(PreviewReadinessState.Unsupported, result.Readiness.State);
+        Assert.Contains("Support check failed.", result.Readiness.TechnicalDetail);
     }
 
     [Fact]

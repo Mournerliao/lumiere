@@ -1,10 +1,18 @@
 ## Deferred from: code review of 2-1-start-capture-and-select-a-display-or-window-target (2026-05-04)
 
-- D1-HIGH: `CreateForTest` 使用 `null!` 传递 `GraphicsCaptureItem` ——已知变通方案（`CreateForTesting` 在目标 SDK 不可用），故事文档已记录 [src/Lumiere.Capture/CaptureTarget.cs:27]
-- D2-HIGH: 窗口关闭期间 `deviceResources` use-after-dispose——选择器显示中关闭窗口时有已有竞态 [src/Lumiere.App/MainWindow.xaml.cs:293]
-- D3-MEDIUM: `GraphicsCaptureSession.IsSupported()` 是不可测试的静态依赖——超出本故事范围 [src/Lumiere.Capture/CaptureTargetSelectionService.cs:17]
-- D4-MEDIUM: `CaptureTarget` 持有 `IDisposable`（`GraphicsCaptureItem`）但自身未实现 `IDisposable`——已有问题 [src/Lumiere.Capture/CaptureTarget.cs:8]
-- D5-MEDIUM: 取消选择时显示 "Initializing preview" 而非空闲状态——已有 UX 问题 [src/Lumiere.Capture/CaptureTargetSelectionService.cs:28]
-- D6-MEDIUM: `CaptureTargetKind` 在生产代码中始终为 `Unknown`——规格明确说本故事不实现分类 [src/Lumiere.Capture/CaptureTarget.cs:47]
-- D7-MEDIUM: 捕获尺寸无上限校验——已有问题 [src/Lumiere.Capture/CaptureTarget.cs:33]
-- D8-LOW: `previewGeneration` 在 UI dispatcher 回调中未同步读取——已有模式 [src/Lumiere.App/MainWindow.xaml.cs:138]
+### Handled on 2026-05-04
+
+- D1-HIGH: Removed the `null!` handoff from `CaptureTarget.CreateForTest`. Test targets now explicitly report `HasCaptureItem == false`, and production capture startup rejects them with a clear readiness failure instead of reaching WGC with a hidden null item.
+- D2-HIGH: Guarded capture selection/preview startup after window close and cleared capture/graphics service references when device resources are disposed.
+- D3-MEDIUM: Made capture support probing injectable for tests and kept `NotSupportedException` mapped to an unsupported readiness result.
+- D5-MEDIUM: Changed the idle target-selection UI label from "Initializing preview" to "Ready to capture" while preserving the existing readiness state model.
+- D7-MEDIUM: Added an upper-bound validation for capture target dimensions using the D3D11 2D texture limit of 16,384 pixels per dimension.
+- D8-LOW: Read `previewGeneration` through `Volatile.Read` in async/UI dispatcher callbacks and use `Interlocked.Increment` for generation bumps.
+
+### Closed by design on 2026-05-04
+
+- D4-MEDIUM: Closed as by design. `CaptureTarget` remains a typed target descriptor and does not implement `IDisposable` because `GraphicsCaptureItem` has no documented disposal contract in the API surface this project targets. WGC teardown stays with session/resource owners such as `CaptureSessionResources`.
+
+### Future story candidate
+
+- D6-MEDIUM: Add typed capture target creation for display/window paths. Picker-created production targets should continue to use `CaptureTargetKind.Unknown` because `GraphicsCapturePicker` returns only a `GraphicsCaptureItem`, not whether the user chose a display or a window. A future story should introduce explicit creation paths such as `TryCreateFromDisplayId(...) => Display` and `TryCreateFromWindowId(...) => Window`, likely behind a narrow infrastructure factory.

@@ -30,6 +30,15 @@ public sealed class CaptureService
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(onFrameArrived);
 
+        if (!target.HasCaptureItem)
+        {
+            return CaptureStartResult.NotStarted(
+                PreviewReadinessStatus.Failed(
+                    PreviewReadinessStage.Capture,
+                    "Preview failed",
+                    "CaptureTarget was created for tests and does not contain a GraphicsCaptureItem."));
+        }
+
         if (!GraphicsCaptureSession.IsSupported())
         {
             return CaptureStartResult.NotStarted(

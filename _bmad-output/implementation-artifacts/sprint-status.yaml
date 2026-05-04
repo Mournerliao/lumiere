@@ -1,5 +1,5 @@
 # generated: 2026-04-21T11:35:23+0800
-# last_updated: 2026-05-04T04:00:00+0800
+# last_updated: 2026-05-04T14:50:43+0800
 # project: lumiere
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-21T11:35:23+0800
-last_updated: 2026-05-04T04:00:00+0800
+last_updated: 2026-05-04T14:50:43+0800
 project: lumiere
 project_key: NOKEY
 tracking_system: file-system
@@ -51,7 +51,7 @@ development_status:
   epic-1-retrospective: done
   epic-2: in-progress
   2-1-start-capture-and-select-a-display-or-window-target: done
-  2-2-represent-capture-session-state-explicitly: backlog
+  2-2-represent-capture-session-state-explicitly: done
   2-3-stop-restart-and-recreate-capture-resources: backlog
   2-4-validate-repeated-capture-lifecycle-stability: backlog
   epic-2-retrospective: optional

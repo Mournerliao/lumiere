@@ -17,6 +17,19 @@ public sealed class CaptureTargetTests
         Assert.Equal(1920, target.Size.Width);
         Assert.Equal(1080, target.Size.Height);
         Assert.Equal(CaptureTargetKind.Unknown, target.Kind);
+        Assert.False(target.HasCaptureItem);
+    }
+
+    [Fact]
+    public void CreateForTestItemThrowsClearException()
+    {
+        var target = CaptureTarget.CreateForTest(
+            new SizeInt32 { Width = 1920, Height = 1080 },
+            "Test Monitor");
+
+        var exception = Assert.Throws<InvalidOperationException>(() => target.Item);
+
+        Assert.Contains("GraphicsCaptureItem", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -59,6 +72,19 @@ public sealed class CaptureTargetTests
                 "Negative Height"));
     }
 
+    [Theory]
+    [InlineData(16_385, 1080)]
+    [InlineData(1920, 16_385)]
+    public void CreateForTestRejectsTargetsBeyondD3D11TextureLimit(int width, int height)
+    {
+        var exception = Assert.Throws<ArgumentException>(
+            () => CaptureTarget.CreateForTest(
+                new SizeInt32 { Width = width, Height = height },
+                "Oversized Target"));
+
+        Assert.Contains("D3D11 texture limit", exception.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void CreateForTestDefaultsEmptyDisplayName()
     {
@@ -71,6 +97,7 @@ public sealed class CaptureTargetTests
 
     [Theory]
     [InlineData(1, 1)]
+    [InlineData(16384, 16384)]
     [InlineData(3840, 2160)]
     [InlineData(7680, 4320)]
     public void CreateForTestAcceptsValidPositiveSize(int width, int height)
