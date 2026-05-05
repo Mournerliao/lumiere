@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumiere - General Settings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Segoe UI Variable', 'Segoe UI', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Consolas', 'monospace'],
+                    },
+                    colors: {
+                        windows: {
+                            bg: '#111111',
+                            panel: 'rgba(32, 32, 32, 0.75)',
+                            border: 'rgba(255, 255, 255, 0.08)',
+                            accent: '#0078D4',
+                            accentHover: '#0086F0',
+                            text: '#FFFFFF',
+                            textMuted: '#A0A0A0',
+                        }
+                    },
+                    boxShadow: {
+                        'fluent': '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                        'fluent-inner': 'inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                    },
+                    backdropBlur: {
+                        'mica': '60px',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            background-image: radial-gradient(circle at 50% 0%, #1e3a8a 0%, #000000 70%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+        }
+        
+        .mica-panel {
+            background-color: var(--tw-colors-windows-panel, rgba(32, 32, 32, 0.75));
+            backdrop-filter: blur(60px);
+            -webkit-backdrop-filter: blur(60px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .fluent-button {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .fluent-button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .fluent-button:hover::after {
+            opacity: 1;
+        }
+
+        /* Custom Scrollbar for inner content */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Toggle Switch Styling */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #0078D4;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #0078D4;
+        }
+        .toggle-checkbox:checked + .toggle-label:after {
+            transform: translateX(100%);
+            border-color: white;
+            background-color: white;
+        }
+        .toggle-label {
+            width: 36px;
+            height: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .toggle-label:after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 14px;
+            height: 14px;
+            background-color: #A0A0A0;
+            border-radius: 50%;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        .toggle-checkbox:checked + .toggle-label:after {
+            background-color: #FFFFFF;
+        }
+    </style>
+</head>
+<body class="text-windows-text antialiased selection:bg-windows-accent selection:text-white w-full h-screen overflow-hidden">
+
+    <!-- App Container -->
+    <div class="flex w-full h-full max-w-[1440px] mx-auto p-4 gap-4">
+        
+        <!-- Left Navigation Rail -->
+        <aside id="nav-rail" class="w-64 flex-shrink-0 flex flex-col gap-6 h-full mica-panel rounded-[12px] py-6 px-4">
+            
+            <!-- Branding / App Header -->
+            <div class="flex items-center gap-3 px-2 mb-2">
+                <div class="w-8 h-8 rounded-md bg-windows-accent flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
+                    <i class="fa-solid fa-camera-retro text-white text-sm"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-sm font-semibold tracking-wide text-white">Lumiere</span>
+                    <span class="text-[10px] text-windows-textMuted uppercase tracking-widest font-mono">Capture Tool</span>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex-1 flex flex-col gap-1 overflow-y-auto">
+                
+                <!-- Section: Main -->
+                <div class="mb-4">
+                    <h4 class="text-xs font-semibold text-windows-textMuted uppercase tracking-wider mb-2 px-2">Main</h4>
+                    
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[6px] text-windows-textMuted hover:text-white hover:bg-white/5 border border-transparent transition-colors group">
+                        <i class="fa-solid fa-house w-5 text-center text-sm group-hover:text-windows-accent transition-colors"></i>
+                        <span class="text-sm font-medium">Dashboard</span>
+                    </a>
+                </div>
+
+                <!-- Section: Settings -->
+                <div class="mb-4">
+                    <h4 class="text-xs font-semibold text-windows-textMuted uppercase tracking-wider mb-2 px-2">Settings</h4>
+                    
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[6px] bg-windows-accent/10 border border-windows-accent/20 text-windows-accent relative group transition-colors">
+                        <div class="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-windows-accent rounded-r-full"></div>
+                        <i class="fa-solid fa-gear w-5 text-center text-sm"></i>
+                        <span class="text-sm font-medium">General</span>
+                    </a>
+                    
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[6px] text-windows-textMuted hover:text-white hover:bg-white/5 border border-transparent transition-colors group">
+                        <i class="fa-solid fa-keyboard w-5 text-center text-sm group-hover:text-windows-accent transition-colors"></i>
+                        <span class="text-sm font-medium">Shortcuts</span>
+                    </a>
+                    
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[6px] text-windows-textMuted hover:text-white hover:bg-white/5 border border-transparent transition-colors group">
+                        <i class="fa-solid fa-palette w-5 text-center text-sm group-hover:text-windows-accent transition-colors"></i>
+                        <span class="text-sm font-medium">HDR & Color</span>
+                    </a>
+
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[6px] text-windows-textMuted hover:text-white hover:bg-white/5 border border-transparent transition-colors group">
+                        <i class="fa-solid fa-file-export w-5 text-center text-sm group-hover:text-windows-accent transition-colors"></i>
+                        <span class="text-sm font-medium">Output</span>
+                    </a>
+                </div>
+
+                <!-- Section: Media -->
+                <div>
+                    <h4 class="text-xs font-semibold text-windows-textMuted uppercase tracking-wider mb-2 px-2">Media</h4>
+                    
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[6px] text-windows-textMuted hover:text-white hover:bg-white/5 border border-transparent transition-colors group">
+                        <i class="fa-regular fa-images w-5 text-center text-sm group-hover:text-windows-accent transition-colors"></i>
+                        <span class="text-sm font-medium">Gallery</span>
+                        <span class="ml-auto text-[10px] bg-white/10 px-2 py-0.5 rounded-full text-white/70">12</span>
+                    </a>
+                </div>
+
+            </nav>
+
+            <!-- Bottom System Status -->
+            <div class="mt-auto pt-4 border-t border-windows-border">
+                <div class="flex items-center gap-3 px-2">
+                    <div class="w-2 h-2 rounded-full bg-[#10B981] shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                    <span class="text-xs text-windows-textMuted font-mono">Service Running</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right Content Area -->
+        <main id="main-content" class="flex-1 flex flex-col h-full overflow-y-auto pr-2 gap-6">
+            
+            <!-- Header -->
+            <header class="flex items-center justify-between py-2">
+                <div>
+                    <h1 class="text-2xl font-semibold tracking-tight text-white mb-1">General Settings</h1>
+                    <p class="text-sm text-windows-textMuted">Manage app appearance, behavior, and system integration.</p>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-windows-textMuted text-sm"></i>
+                        <input type="text" placeholder="Search settings..." class="bg-black/40 border border-white/10 rounded-[6px] py-1.5 pl-9 pr-4 text-sm text-white placeholder-windows-textMuted focus:outline-none focus:border-windows-accent transition-colors w-64">
+                    </div>
+                </div>
+            </header>
+
+            <!-- Settings Content -->
+            <div class="flex flex-col gap-8 max-w-4xl pb-12">
+                
+                <!-- Section: Appearance & Personalization -->
+                <section class="flex flex-col gap-4">
+                    <h2 class="text-sm font-semibold text-white uppercase tracking-wider px-1">Appearance & Personalization</h2>
+                    
+                    <div class="mica-panel rounded-[12px] overflow-hidden flex flex-col divide-y divide-white/5">
+                        
+                        <!-- Setting Item: Theme -->
+                        <div class="p-5 flex items-center justify-between hover:bg-white/5 transition-colors">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-[8px] bg-white/5 border border-white/10 flex items-center justify-center text-white/70">
+                                    <i class="fa-solid fa-moon text-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-white mb-0.5">App Theme</h3>
+                                    <p class="text-xs text-windows-textMuted">Choose your preferred visual style</p>
+                                </div>
+                            </div>
+                            <div class="relative">
+                                <select class="appearance-none bg-black/40 border border-white/10 rounded-[6px] py-1.5 pl-3 pr-8 text-sm text-white focus:outline-none focus:border-windows-accent transition-colors cursor-pointer w-40">
+                                    <option value="system">System Default</option>
+                                    <option value="dark" selected>Dark Mode</option>
+                                    <option value="light">Light Mode</option>
+                                </select>
+                                <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-windows-textMuted text-xs pointer-events-none"></i>
+                            </div>
+                        </div>
+
+                        <!-- Setting Item: Mica Material -->
+                        <div class="p-5 flex items-center justify-between hover:bg-white/5 transition-colors">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-[8px] bg-white/5 border border-white/10 flex items-center justify-center text-white/70">
+                                    <i class="fa-solid fa-layer-group text-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-white mb-0.5">Mica Material Effect</h3>
+                                    <p class="text-xs text-windows-textMuted">Enable Windows 11 backdrop blur on supported surfaces</p>
+                                </div>
+                            </div>
+                            <div class="relative inline-block w-9 align-middle select-none transition duration-200 ease-in">
+                                <input type="checkbox" name="toggle-mica" id="toggle-mica" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer opacity-0 z-10" checked/>
+                                <label for="toggle-mica" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+                            </div>
+                        </div>
+                        
+                        <!-- Setting Item: Language -->
+                        <div class="p-5 flex items-center justify-between hover:bg-white/5 transition-colors">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-[8px] bg-white/5 border border-white/10 flex items-center justify-center text-white/70">
+                                    <i class="fa-solid fa-globe text-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-white mb-0.5">Display Language</h3>
+                                    <p class="text-xs text-windows-textMuted">Select the language used in the application</p>
+                                </div>
+                            </div>
+                            <div class="relative">
+                                <select class="appearance-none bg-black/40 border border-white/10 rounded-[6px] py-1.5 pl-3 pr-8 text-sm text-white focus:outline-none focus:border-windows-accent transition-colors cursor-pointer w-40">
+                                    <option value="en" selected>English (US)</option>
+                                    <option value="es">Español</option>
+                                    <option value="fr">Français</option>
+                                    <option value="de">Deutsch</option>
+                                    <option value="ja">日本語</option>
+                                </select>
+                                <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-windows-textMuted text-xs pointer-events-none"></i>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- Section: System & Startup Behavior -->
+                <section class="flex flex-col gap-4">
+                    <h2 class="text-sm font-semibold text-white uppercase tracking-wider px-1">System & Startup Behavior</h2>
+                    
+                    <div class="mica-panel rounded-[12px] overflow-hidden flex flex-col divide-y divide-white/5">
+                        
+                        <!-- Setting Item: Run at Startup -->
+                        <div class="p-5 flex items-center justify-between hover:bg-white/5 transition-colors">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-[8px] bg-white/5 border border-white/10 flex items-center justify-center text-white/70">
+                                    <i class="fa-solid fa-power-off text-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-white mb-0.5">Run at Startup</h3>
+                                    <p class="text-xs text-windows-textMuted">Automatically launch Lumiere in the background when Windows starts</p>
+                                </div>
+                            </div>
+                            <div class="relative inline-block w-9 align-middle select-none transition duration-200 ease-in">
+                                <input type="checkbox" name="toggle-startup" id="toggle-startup" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer opacity-0 z-10" checked/>
+                                <label for="toggle-startup" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+                            </div>
+                        </div>
+
+                        <!-- Setting Item: Minimize to Tray -->
+                        <div class="p-5 flex items-center justify-between hover:bg-white/5 transition-colors">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-[8px] bg-white/5 border border-white/10 flex items-center justify-center text-white/70">
+                                    <i class="fa-solid fa-compress text-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-white mb-0.5">Minimize to System Tray</h3>
+                                    <p class="text-xs text-windows-textMuted">Keep app running in the taskbar notification area when closed</p>
+                                </div>
+                            </div>
+                            <div class="relative inline-block w-9 align-middle select-none transition duration-200 ease-in">
+                                <input type="checkbox" name="toggle-tray" id="toggle-tray" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer opacity-0 z-10" checked/>
+                                <label for="toggle-tray" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+                            </div>
+                        </div>
+                        
+                        <!-- Setting Item: Update Channel -->
+                        <div class="p-5 flex items-center justify-between hover:bg-white/5 transition-colors">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-[8px] bg-white/5 border border-white/10 flex items-center justify-center text-white/70">
+                                    <i class="fa-solid fa-arrows-rotate text-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-white mb-0.5">Update Channel</h3>
+                                    <p class="text-xs text-windows-textMuted">Choose how early you want to receive new features</p>
+                                </div>
+                            </div>
+                            <div class="relative">
+                                <select class="appearance-none bg-black/40 border border-white/10 rounded-[6px] py-1.5 pl-3 pr-8 text-sm text-white focus:outline-none focus:border-windows-accent transition-colors cursor-pointer w-40">
+                                    <option value="stable" selected>Stable Release</option>
+                                    <option value="beta">Beta Channel</option>
+                                    <option value="dev">Dev Channel</option>
+                                </select>
+                                <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-windows-textMuted text-xs pointer-events-none"></i>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- Section: Advanced Diagnostics & Performance -->
+                <section class="flex flex-col gap-4">
+                    <h2 class="text-sm font-semibold text-white uppercase tracking-wider px-1">Advanced Diagnostics & Performance</h2>
+                    
+                    <div class="mica-panel rounded-[12px] overflow-hidden flex flex-col divide-y divide-white/5">
+                        
+                        <!-- Setting Item: Performance Mode -->
+                        <div class="p-5 flex items-center justify-between hover:bg-white/5 transition-colors">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-[8px] bg-windows-accent/10 border border-windows-accent/20 flex items-center justify-center text-windows-accent">
+                                    <i class="fa-solid fa-bolt text-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2 mb-0.5">
+                                        <h3 class="text-sm font-medium text-white">High Performance Mode</h3>
+                                        <span class="text-[10px] bg-windows-accent/20 text-windows-accent px-1.5 py-0.5 rounded border border-windows-accent/30 font-mono">Active</span>
+                                    </div>
+                                    <p class="text-xs text-windows-textMuted">Prioritize capture speed and HDR processing over background resource usage</p>
+                                </div>
+                            </div>
+                            <div class="relative inline-block w-9 align-middle select-none transition duration-200 ease-in">
+                                <input type="checkbox" name="toggle-perf" id="toggle-perf" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer opacity-0 z-10" checked/>
+                                <label for="toggle-perf" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+                            </div>
+                        </div>
+
+                        <!-- Setting Item: Telemetry -->
+                        <div class="p-5 flex items-center justify-between hover:bg-white/5 transition-colors">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-[8px] bg-white/5 border border-white/10 flex items-center justify-center text-white/70">
+                                    <i class="fa-solid fa-chart-pie text-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-white mb-0.5">Telemetry & Diagnostics</h3>
+                                    <p class="text-xs text-windows-textMuted">Send anonymous usage data and crash reports to help improve Lumiere</p>
+                                </div>
+                            </div>
+                            <div class="relative inline-block w-9 align-middle select-none transition duration-200 ease-in">
+                                <input type="checkbox" name="toggle-telemetry" id="toggle-telemetry" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer opacity-0 z-10"/>
+                                <label for="toggle-telemetry" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- Footer Actions -->
+                <div class="flex items-center justify-end gap-3 mt-4">
+                     <button class="fluent-button bg-transparent hover:bg-white/5 border border-white/10 text-white text-sm font-medium px-4 py-2 rounded-[6px] transition-all">
+                        Reset to Defaults
+                    </button>
+                    <button class="fluent-button bg-windows-accent hover:bg-windows-accentHover text-white text-sm font-medium px-4 py-2 rounded-[6px] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] transition-all">
+                        Apply Changes
+                    </button>
+                </div>
+
+            </div>
+
+        </main>
+
+    </div>
+
+</body>
+</html>

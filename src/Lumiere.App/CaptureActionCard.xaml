@@ -1,0 +1,84 @@
+<UserControl
+    x:Class="Lumiere.App.CaptureActionCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    x:Name="Root"
+    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+    Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+    mc:Ignorable="d">
+  <Button
+      HorizontalAlignment="Stretch"
+      HorizontalContentAlignment="Stretch"
+      VerticalContentAlignment="Stretch"
+      Background="Transparent"
+      BorderThickness="0"
+      Click="OnActionButtonClick"
+      CornerRadius="8"
+      Padding="0">
+    <Border
+        MinHeight="154"
+        Padding="18"
+        Background="{Binding Background, ElementName=Root}"
+        BorderBrush="{Binding BorderBrush, ElementName=Root}"
+        BorderThickness="1"
+        CornerRadius="8">
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border
+            Width="40"
+            Height="40"
+            HorizontalAlignment="Left"
+            Background="{Binding IconBackground, ElementName=Root}"
+            BorderBrush="{Binding IconBorderBrush, ElementName=Root}"
+            BorderThickness="1"
+            CornerRadius="6">
+          <FontIcon
+              FontFamily="Segoe Fluent Icons"
+              FontSize="18"
+              Foreground="{Binding IconForeground, ElementName=Root}"
+              Glyph="{Binding Glyph, ElementName=Root}" />
+        </Border>
+
+        <TextBlock
+            Grid.Row="1"
+            Margin="0,14,0,0"
+            FontSize="14"
+            FontWeight="SemiBold"
+            Foreground="{Binding Foreground, ElementName=Root}"
+            Text="{Binding Title, ElementName=Root}" />
+
+        <TextBlock
+            Grid.Row="2"
+            Margin="0,6,0,12"
+            FontSize="12"
+            Foreground="{Binding SecondaryForeground, ElementName=Root}"
+            Text="{Binding Description, ElementName=Root}"
+            TextWrapping="Wrap" />
+
+        <Border
+            Grid.Row="3"
+            HorizontalAlignment="Left"
+            Padding="6,2"
+            Background="#66000000"
+            BorderBrush="#1AFFFFFF"
+            BorderThickness="1"
+            CornerRadius="4">
+          <TextBlock
+              FontFamily="Consolas"
+              FontSize="10"
+              Foreground="{Binding ShortcutForeground, ElementName=Root}"
+              Text="{Binding ShortcutText, ElementName=Root}" />
+        </Border>
+      </Grid>
+    </Border>
+  </Button>
+</UserControl>

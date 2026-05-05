@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumiere - Gallery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Segoe UI Variable', 'Segoe UI', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Consolas', 'monospace'],
+                    },
+                    colors: {
+                        windows: {
+                            bg: '#111111',
+                            panel: 'rgba(32, 32, 32, 0.75)',
+                            border: 'rgba(255, 255, 255, 0.08)',
+                            accent: '#0078D4',
+                            accentHover: '#0086F0',
+                            text: '#FFFFFF',
+                            textMuted: '#A0A0A0',
+                        }
+                    },
+                    boxShadow: {
+                        'fluent': '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                        'fluent-inner': 'inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                    },
+                    backdropBlur: {
+                        'mica': '60px',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: transparent;
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .mica-panel {
+            background-color: var(--tw-colors-windows-panel, rgba(32, 32, 32, 0.75));
+            backdrop-filter: blur(60px);
+            -webkit-backdrop-filter: blur(60px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .fluent-button {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        
+        .fluent-button:active {
+            transform: scale(0.96);
+        }
+
+        .fluent-button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .fluent-button:hover::after {
+            opacity: 1;
+        }
+
+        .desktop-bg {
+            position: fixed;
+            inset: 0;
+            background-image: radial-gradient(circle at 50% 0%, #1e3a8a 0%, #000000 70%);
+            z-index: -1;
+        }
+
+        .hdr-badge-glow {
+            background: linear-gradient(135deg, #FF3366, #FF9933, #33CCFF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Custom Scrollbar for Gallery */
+        .gallery-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .gallery-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .gallery-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        .gallery-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Thumbnail simulated HDR highlight */
+        .thumbnail-hdr-highlight {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 70% 30%, rgba(255,255,255,0.4) 0%, transparent 40%);
+            pointer-events: none;
+            mix-blend-mode: overlay;
+        }
+    </style>
+</head>
+<body class="text-windows-text antialiased selection:bg-windows-accent selection:text-white w-full h-screen">
+
+    <!-- Simulated Desktop Background -->
+    <div class="desktop-bg"></div>
+
+    <!-- App Container -->
+    <div class="flex w-full h-full max-w-[1440px] mx-auto p-4 gap-4">
+        
+        <!-- Left Navigation Rail (Frozen Shell) -->
+        <aside id="nav-rail" class="w-64 flex-shrink-0 flex flex-col gap-6 h-full mica-panel rounded-[12px] py-6 px-4">
+            
+            <!-- Branding / App Header -->
+            <div class="flex items-center gap-3 px-2 mb-2">
+                <div class="w-8 h-8 rounded-md bg-windows-accent flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
+                    <i class="fa-solid fa-camera-retro text-white text-sm"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-sm font-semibold tracking-wide text-white">Lumiere</span>
+                    <span class="text-[10px] text-windows-textMuted uppercase tracking-widest font-mono">Capture Tool</span>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex-1 flex flex-col gap-1 overflow-y-auto gallery-scroll">
+                
+                <!-- Section: Main -->
+                <div class="mb-4">
+                    <h4 class="text-xs font-semibold text-windows-textMuted uppercase tracking-wider mb-2 px-2">Main</h4>
+                    
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[6px] text-windows-textMuted hover:text-white hover:bg-white/5 border border-transparent transition-colors group">
+                        <i class="fa-solid fa-house w-5 text-center text-sm group-hover:text-windows-accent transition-colors"></i>
+                        <span class="text-sm font-medium">Dashboard</span>
+                    </a>
+                </div>
+
+                <!-- Section: Settings -->
+                <div class="mb-4">
+                    <h4 class="text-xs font-semibold text-windows-textMuted uppercase tracking-wider mb-2 px-2">Settings</h4>
+                    
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[6px] text-windows-textMuted hover:text-white hover:bg-white/5 border border-transparent transition-colors group">
+                        <i class="fa-solid fa-gear w-5 text-center text-sm group-hover:text-windows-accent transition-colors"></i>
+                        <span class="text-sm font-medium">General</span>
+                    </a>
+                    
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[6px] text-windows-textMuted hover:text-white hover:bg-white/5 border border-transparent transition-colors group">
+                        <i class="fa-solid fa-keyboard w-5 text-center text-sm group-hover:text-windows-accent transition-colors"></i>
+                        <span class="text-sm font-medium">Shortcuts</span>
+                    </a>
+                    
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[6px] text-windows-textMuted hover:text-white hover:bg-white/5 border border-transparent transition-colors group">
+                        <i class="fa-solid fa-palette w-5 text-center text-sm group-hover:text-windows-accent transition-colors"></i>
+                        <span class="text-sm font-medium">HDR & Color</span>
+                    </a>
+
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[6px] text-windows-textMuted hover:text-white hover:bg-white/5 border border-transparent transition-colors group">
+                        <i class="fa-solid fa-file-export w-5 text-center text-sm group-hover:text-windows-accent transition-colors"></i>
+                        <span class="text-sm font-medium">Output</span>
+                    </a>
+                </div>
+
+                <!-- Section: Media -->
+                <div>
+                    <h4 class="text-xs font-semibold text-windows-textMuted uppercase tracking-wider mb-2 px-2">Media</h4>
+                    
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[6px] bg-windows-accent/10 border border-windows-accent/20 text-windows-accent relative group transition-colors">
+                        <div class="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-windows-accent rounded-r-full"></div>
+                        <i class="fa-regular fa-images w-5 text-center text-sm"></i>
+                        <span class="text-sm font-medium">Gallery</span>
+                        <span class="ml-auto text-[10px] bg-windows-accent/20 px-2 py-0.5 rounded-full text-windows-accent">12</span>
+                    </a>
+                </div>
+
+            </nav>
+        </aside>
+
+        <!-- Main Content Area: Gallery Grid -->
+        <main class="flex-1 flex flex-col gap-4 h-full">
+            
+            <!-- Header & Filter Bar -->
+            <header class="mica-panel rounded-[12px] p-4 flex items-center justify-between shadow-fluent z-10">
+                <div class="flex items-center gap-4">
+                    <h1 class="text-lg font-semibold text-white">Capture Library</h1>
+                    <div class="h-5 w-[1px] bg-white/10"></div>
+                    <span class="text-sm text-windows-textMuted">12 Items</span>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <!-- Search Input -->
+                    <div class="relative">
+                        <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-windows-textMuted text-xs"></i>
+                        <input type="text" placeholder="Search captures..." class="bg-black/20 border border-white/10 rounded-[6px] py-1.5 pl-8 pr-3 text-sm text-white placeholder:text-windows-textMuted focus:outline-none focus:border-windows-accent/50 w-64 transition-colors">
+                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                            <kbd class="font-mono text-[9px] text-windows-textMuted bg-white/5 px-1 rounded border border-white/10">Ctrl+F</kbd>
+                        </div>
+                    </div>
+
+                    <div class="h-5 w-[1px] bg-white/10 mx-1"></div>
+
+                    <!-- Filters -->
+                    <button class="fluent-button flex items-center gap-2 px-3 py-1.5 rounded-[6px] bg-white/5 border border-white/10 text-sm text-windows-textMuted hover:bg-white/10 hover:text-white transition-colors">
+                        <i class="fa-solid fa-calendar-day text-xs"></i>
+                        <span>Date</span>
+                        <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i>
+                    </button>
+
+                    <button class="fluent-button flex items-center gap-2 px-3 py-1.5 rounded-[6px] bg-white/5 border border-white/10 text-sm text-windows-textMuted hover:bg-white/10 hover:text-white transition-colors">
+                        <i class="fa-solid fa-layer-group text-xs"></i>
+                        <span>Format</span>
+                        <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i>
+                    </button>
+                    
+                    <button class="fluent-button flex items-center gap-2 px-3 py-1.5 rounded-[6px] bg-white/5 border border-white/10 text-sm text-windows-textMuted hover:bg-white/10 hover:text-white transition-colors">
+                        <i class="fa-solid fa-sliders text-xs"></i>
+                        <span>All Filters</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Gallery Grid -->
+            <div class="flex-1 mica-panel rounded-[12px] p-6 overflow-y-auto gallery-scroll shadow-fluent">
+                
+                <!-- Date Group: Today -->
+                <div class="mb-8">
+                    <h3 class="text-sm font-medium text-windows-textMuted mb-4 flex items-center gap-2">
+                        <span>Today</span>
+                        <div class="h-[1px] flex-1 bg-white/5"></div>
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        
+                        <!-- Card 1 (Selected/Active) -->
+                        <div class="group relative rounded-[8px] border-2 border-windows-accent bg-black/20 overflow-hidden cursor-pointer">
+                            <div class="aspect-video relative bg-[#1a1a1a]">
+                                <img class="w-full h-full object-cover opacity-90" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/be0a8b88b4-d7dfd276115d39d58730.png" alt="High contrast game screenshot showing bright neon lights in a dark cyberpunk city, technical feel" />
+                                <div class="thumbnail-hdr-highlight"></div>
+                                
+                                <!-- Format Badge -->
+                                <div class="absolute top-2 left-2 bg-black/60 backdrop-blur-md border border-white/10 rounded px-1.5 py-0.5 flex items-center gap-1">
+                                    <span class="text-[9px] font-bold tracking-widest hdr-badge-glow uppercase">HDR10</span>
+                                </div>
+                                
+                                <!-- Selection Checkmark -->
+                                <div class="absolute top-2 right-2 w-5 h-5 bg-windows-accent rounded-full flex items-center justify-center shadow-md">
+                                    <i class="fa-solid fa-check text-white text-[10px]"></i>
+                                </div>
+                            </div>
+                            <div class="p-3 bg-windows-panel border-t border-white/5">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-xs font-medium text-white truncate pr-2">Cyberpunk_Alley_01.jxr</h4>
+                                    <span class="text-[10px] font-mono text-windows-textMuted shrink-0">14:23</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-[10px] text-windows-textMuted font-mono">
+                                    <span>2560×1440</span>
+                                    <span>•</span>
+                                    <span class="text-[#FF9933]">1200 nits</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 2 -->
+                        <div class="group relative rounded-[8px] border border-white/10 bg-black/20 overflow-hidden cursor-pointer hover:border-white/30 transition-colors">
+                            <div class="aspect-video relative bg-[#1a1a1a]">
+                                <img class="w-full h-full object-cover opacity-80" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/577c36d7d0-f6df22b7d503ecdebbaf.png" alt="Landscape photograph with bright sun and deep shadows, technical feel" />
+                                <div class="thumbnail-hdr-highlight"></div>
+                                
+                                <!-- Format Badge -->
+                                <div class="absolute top-2 left-2 bg-black/60 backdrop-blur-md border border-white/10 rounded px-1.5 py-0.5 flex items-center gap-1">
+                                    <span class="text-[9px] font-bold tracking-widest text-[#33CCFF] uppercase">scRGB</span>
+                                </div>
+                            </div>
+                            <div class="p-3 bg-windows-panel border-t border-white/5 group-hover:bg-white/5 transition-colors">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-xs font-medium text-white/90 truncate pr-2">Desktop_Sunset_Ref.exr</h4>
+                                    <span class="text-[10px] font-mono text-windows-textMuted shrink-0">11:05</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-[10px] text-windows-textMuted font-mono">
+                                    <span>3840×2160</span>
+                                    <span>•</span>
+                                    <span class="text-[#33CCFF]">800 nits</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 3 (SDR) -->
+                        <div class="group relative rounded-[8px] border border-white/10 bg-black/20 overflow-hidden cursor-pointer hover:border-white/30 transition-colors">
+                            <div class="aspect-video relative bg-[#1a1a1a]">
+                                <img class="w-full h-full object-cover opacity-70" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/7348e3e042-93ae6791dc3675b30228.png" alt="Standard user interface screenshot of a web browser, technical feel" />
+                                
+                                <!-- Format Badge -->
+                                <div class="absolute top-2 left-2 bg-black/60 backdrop-blur-md border border-white/10 rounded px-1.5 py-0.5 flex items-center gap-1">
+                                    <span class="text-[9px] font-bold tracking-widest text-windows-textMuted uppercase">SDR</span>
+                                </div>
+                            </div>
+                            <div class="p-3 bg-windows-panel border-t border-white/5 group-hover:bg-white/5 transition-colors">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-xs font-medium text-white/90 truncate pr-2">Browser_Window.png</h4>
+                                    <span class="text-[10px] font-mono text-windows-textMuted shrink-0">09:12</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-[10px] text-windows-textMuted font-mono">
+                                    <span>1920×1080</span>
+                                    <span>•</span>
+                                    <span>sRGB</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Date Group: Yesterday -->
+                <div>
+                    <h3 class="text-sm font-medium text-windows-textMuted mb-4 flex items-center gap-2">
+                        <span>Yesterday</span>
+                        <div class="h-[1px] flex-1 bg-white/5"></div>
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        
+                        <!-- Card 4 -->
+                        <div class="group relative rounded-[8px] border border-white/10 bg-black/20 overflow-hidden cursor-pointer hover:border-white/30 transition-colors">
+                            <div class="aspect-video relative bg-[#1a1a1a]">
+                                <img class="w-full h-full object-cover opacity-90" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/fbb1f23e45-d04544b58e80ca575c12.png" alt="HDR movie frame with bright explosions, technical feel" />
+                                <div class="thumbnail-hdr-highlight"></div>
+                                
+                                <div class="absolute top-2 left-2 bg-black/60 backdrop-blur-md border border-white/10 rounded px-1.5 py-0.5 flex items-center gap-1">
+                                    <span class="text-[9px] font-bold tracking-widest hdr-badge-glow uppercase">HDR10</span>
+                                </div>
+                            </div>
+                            <div class="p-3 bg-windows-panel border-t border-white/5 group-hover:bg-white/5 transition-colors">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-xs font-medium text-white/90 truncate pr-2">Movie_Frame_04.jxr</h4>
+                                    <span class="text-[10px] font-mono text-windows-textMuted shrink-0">18:45</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-[10px] text-windows-textMuted font-mono">
+                                    <span>3840×2160</span>
+                                    <span>•</span>
+                                    <span class="text-[#FF9933]">1000 nits</span>
+                                </div>
+                            </div>
+                        </div>
+                         <!-- Card 5 -->
+                        <div class="group relative rounded-[8px] border border-white/10 bg-black/20 overflow-hidden cursor-pointer hover:border-white/30 transition-colors">
+                            <div class="aspect-video relative bg-[#1a1a1a]">
+                                <img class="w-full h-full object-cover opacity-90" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/ccfe4b9942-08afdfea213d6d44410a.png" alt="Color grading software interface with scopes, technical feel" />
+                                
+                                <div class="absolute top-2 left-2 bg-black/60 backdrop-blur-md border border-white/10 rounded px-1.5 py-0.5 flex items-center gap-1">
+                                    <span class="text-[9px] font-bold tracking-widest text-[#33CCFF] uppercase">scRGB</span>
+                                </div>
+                            </div>
+                            <div class="p-3 bg-windows-panel border-t border-white/5 group-hover:bg-white/5 transition-colors">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-xs font-medium text-white/90 truncate pr-2">Resolve_UI_Test.exr</h4>
+                                    <span class="text-[10px] font-mono text-windows-textMuted shrink-0">14:20</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-[10px] text-windows-textMuted font-mono">
+                                    <span>2560×1440</span>
+                                    <span>•</span>
+                                    <span class="text-[#33CCFF]">600 nits</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- Right Side: Technical Metadata Pane -->
+        <aside class="w-80 flex-shrink-0 flex flex-col gap-4 h-full">
+            
+            <!-- Details Panel -->
+            <div class="flex-1 mica-panel rounded-[12px] p-5 flex flex-col shadow-fluent overflow-y-auto gallery-scroll">
+                
+                <h2 class="text-sm font-semibold text-white mb-4">Metadata Details</h2>
+                
+                <!-- Preview Thumbnail -->
+                <div class="aspect-video rounded-[6px] border border-white/10 bg-black/40 overflow-hidden mb-4 relative">
+                    <img class="w-full h-full object-cover opacity-90" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/be0a8b88b4-d7dfd276115d39d58730.png" alt="High contrast game screenshot showing bright neon lights in a dark cyberpunk city, technical feel" />
+                     <div class="thumbnail-hdr-highlight"></div>
+                </div>
+
+                <!-- File Info -->
+                <div class="mb-6">
+                    <h3 class="text-xs font-medium text-white mb-1 truncate">Cyberpunk_Alley_01.jxr</h3>
+                    <p class="text-[10px] text-windows-textMuted font-mono">Captured Today, 14:23:45</p>
+                </div>
+
+                <!-- Technical Specs (Mono font) -->
+                <div class="space-y-4">
+                    
+                    <div>
+                        <h4 class="text-[10px] font-semibold text-windows-textMuted uppercase tracking-wider mb-2">Display Properties</h4>
+                        <div class="bg-black/20 border border-white/5 rounded-[6px] p-3 space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-windows-textMuted">Format</span>
+                                <span class="text-xs font-mono text-white hdr-badge-glow font-bold">JPEG XR (HDR10)</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-windows-textMuted">Resolution</span>
+                                <span class="text-xs font-mono text-white">2560 × 1440</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-windows-textMuted">Color Space</span>
+                                <span class="text-xs font-mono text-white">BT.2100 PQ</span>
+                            </div>
+                             <div class="flex justify-between items-center">
+                                <span class="text-xs text-windows-textMuted">Bit Depth</span>
+                                <span class="text-xs font-mono text-white">10-bit</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-[10px] font-semibold text-windows-textMuted uppercase tracking-wider mb-2">Luminance Data</h4>
+                        <div class="bg-black/20 border border-white/5 rounded-[6px] p-3 space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-windows-textMuted">MaxFALL</span>
+                                <span class="text-xs font-mono text-white">400 nits</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-windows-textMuted">MaxCLL</span>
+                                <span class="text-xs font-mono text-[#FF9933]">1200 nits</span>
+                            </div>
+                            
+                            <!-- Mini Histogram placeholder -->
+                            <div class="mt-3 pt-3 border-t border-white/10">
+                                <span class="text-[10px] text-windows-textMuted block mb-1">Luminance Distribution</span>
+                                <div class="h-8 w-full flex items-end gap-[1px] opacity-70">
+                                    <div class="w-full h-[20%] bg-windows-textMuted"></div>
+                                    <div class="w-full h-[40%] bg-windows-textMuted"></div>
+                                    <div class="w-full h-[60%] bg-windows-textMuted"></div>
+                                    <div class="w-full h-[30%] bg-windows-textMuted"></div>
+                                    <div class="w-full h-[80%] bg-windows-textMuted"></div>
+                                    <div class="w-full h-[100%] bg-windows-textMuted"></div>
+                                    <div class="w-full h-[40%] bg-[#FF9933]"></div>
+                                    <div class="w-full h-[15%] bg-[#FF9933]"></div>
+                                    <div class="w-full h-[5%] bg-[#FF3366]"></div>
+                                </div>
+                                <div class="flex justify-between mt-1">
+                                    <span class="text-[8px] font-mono text-windows-textMuted">0</span>
+                                    <span class="text-[8px] font-mono text-[#FF3366]">1200</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Action Toolbar (Bottom Right) -->
+            <div class="mica-panel rounded-[12px] p-4 shadow-fluent flex flex-col gap-2">
+                <button class="fluent-button w-full h-9 rounded-[6px] bg-windows-accent border border-transparent text-white hover:bg-windows-accentHover flex items-center justify-center gap-2 transition-colors text-sm font-medium shadow-[0_0_10px_rgba(0,120,212,0.3)]">
+                    <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                    <span>Open in Editor</span>
+                </button>
+                
+                <div class="flex gap-2">
+                    <button class="fluent-button flex-1 h-8 rounded-[6px] bg-white/5 border border-white/10 text-windows-textMuted hover:bg-white/10 hover:text-white flex items-center justify-center gap-2 transition-colors text-xs font-medium">
+                        <i class="fa-solid fa-copy text-[10px]"></i>
+                        <span>Copy SDR</span>
+                    </button>
+                    <button class="fluent-button flex-1 h-8 rounded-[6px] bg-white/5 border border-white/10 text-windows-textMuted hover:bg-white/10 hover:text-white flex items-center justify-center gap-2 transition-colors text-xs font-medium">
+                        <i class="fa-solid fa-file-export text-[10px]"></i>
+                        <span>Export</span>
+                    </button>
+                </div>
+                
+                <button class="fluent-button w-full h-8 rounded-[6px] text-red-400/80 hover:bg-red-500/10 hover:text-red-400 flex items-center justify-center gap-2 transition-colors text-xs font-medium mt-1">
+                    <i class="fa-regular fa-trash-can text-[10px]"></i>
+                    <span>Delete</span>
+                </button>
+            </div>
+
+        </aside>
+
+    </div>
+
+</body>
+</html>

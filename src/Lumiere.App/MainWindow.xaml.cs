@@ -8,7 +8,9 @@ using Lumiere.Overlay;
 using Lumiere.Overlay.Crop;
 using Lumiere.Overlay.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
 using Windows.Graphics;
+using Windows.UI;
 
 namespace Lumiere.App;
 
@@ -26,7 +28,6 @@ public sealed partial class MainWindow : Window
     private PreviewReadinessStatus? activePresentationEvidence;
     private CaptureSessionState sessionState = CaptureSessionState.Idle();
     private OverlayWindow? overlayWindow;
-    private ConfirmedCaptureSelection? confirmedCaptureSelection;
     private long previewGeneration;
     private long frameEventCount;
     private int previewSourceWidth;
@@ -37,7 +38,12 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        Title = "Lumiere";
+        Title = "Lumiere Tool - Dashboard - Capture Home";
+        SystemBackdrop = new MicaBackdrop();
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(TitleBarDragArea);
+        ConfigureTitleBar();
+        AppWindow.Resize(new SizeInt32(2560, 1440));
         Closed += OnWindowClosed;
 
         ApplySessionState(
@@ -49,7 +55,7 @@ public sealed partial class MainWindow : Window
 
     private async void OnSelectCaptureTargetClick(object sender, RoutedEventArgs e)
     {
-        SelectCaptureTargetButton.IsEnabled = false;
+        SetCaptureActionsEnabled(false);
 
         try
         {
@@ -95,9 +101,26 @@ public sealed partial class MainWindow : Window
         {
             if (!isClosed)
             {
-                SelectCaptureTargetButton.IsEnabled = true;
+                SetCaptureActionsEnabled(true);
             }
         }
+    }
+
+    private void ConfigureTitleBar()
+    {
+        var titleBar = AppWindow.TitleBar;
+        titleBar.BackgroundColor = Color.FromArgb(0, 0, 0, 0);
+        titleBar.ForegroundColor = Color.FromArgb(255, 160, 160, 160);
+        titleBar.InactiveBackgroundColor = Color.FromArgb(0, 0, 0, 0);
+        titleBar.InactiveForegroundColor = Color.FromArgb(255, 112, 112, 112);
+        titleBar.ButtonBackgroundColor = Color.FromArgb(0, 0, 0, 0);
+        titleBar.ButtonForegroundColor = Color.FromArgb(255, 160, 160, 160);
+        titleBar.ButtonHoverBackgroundColor = Color.FromArgb(31, 255, 255, 255);
+        titleBar.ButtonHoverForegroundColor = Color.FromArgb(255, 255, 255, 255);
+        titleBar.ButtonPressedBackgroundColor = Color.FromArgb(46, 255, 255, 255);
+        titleBar.ButtonPressedForegroundColor = Color.FromArgb(255, 255, 255, 255);
+        titleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0, 0, 0, 0);
+        titleBar.ButtonInactiveForegroundColor = Color.FromArgb(255, 112, 112, 112);
     }
 
     private void StartPreview(CaptureTarget target)
@@ -452,20 +475,6 @@ public sealed partial class MainWindow : Window
         try
         {
             sessionState = state ?? throw new ArgumentNullException(nameof(state));
-            PreviewStatusLabelTextBlock.Text = sessionState.Status switch
-            {
-                CaptureSessionStatus.Idle => "Ready to capture",
-                CaptureSessionStatus.SelectingTarget => "Selecting target",
-                CaptureSessionStatus.Initializing => "Initializing preview",
-                CaptureSessionStatus.Capturing => "HDR-ready",
-                CaptureSessionStatus.Degraded => "Degraded preview",
-                CaptureSessionStatus.Unsupported => "Unsupported capture",
-                CaptureSessionStatus.Failed => "Preview failed",
-                CaptureSessionStatus.Disposed => "Preview stopped",
-                _ => "Initializing preview",
-            };
-            PreviewStatusMessageTextBlock.Text = sessionState.UserFacingReason ?? string.Empty;
-            PreviewTechnicalDetailTextBlock.Text = sessionState.TechnicalDetail ?? string.Empty;
             var overlayState = CreateOverlayState(sessionState);
             overlayWindow?.ApplyState(overlayState);
             if (overlayWindow is not null && overlayState.RequiresFailureTeardown)
@@ -478,6 +487,12 @@ public sealed partial class MainWindow : Window
         {
             applyingSessionState = false;
         }
+    }
+
+    private void SetCaptureActionsEnabled(bool isEnabled)
+    {
+        SelectCaptureTargetButton.IsEnabled = isEnabled;
+        RegionSelectButton.IsEnabled = isEnabled;
     }
 
     private bool TryEnqueueUi(Action action)
@@ -511,7 +526,6 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        confirmedCaptureSelection = selection;
         try
         {
             StopPreview(reportStopped: false);

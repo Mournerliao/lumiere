@@ -7,6 +7,7 @@ Use `_bmad-output/` for generated planning artifacts, sprint output, story draft
 ## Directory Map
 
 - `planning/project-plan.md` - long-lived product intent, architecture direction, and implementation phases.
+- `design/index.md` - durable UX reference index, including imported UXPilot design exports.
 - `workflows/cross-platform-development.md` - supported macOS editing, Windows CI, and Windows hardware validation workflow.
 
 ## Conventions
