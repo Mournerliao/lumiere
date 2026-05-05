@@ -37,6 +37,79 @@ public sealed class SwapChainLifecycleTests
     }
 
     [Fact]
+    public void DisposalCoordinatorReturnsDetachBeforeReleaseEvidence()
+    {
+        var evidence = SwapChainDisposalCoordinator.DisposeOnce(
+            () => { },
+            () => { });
+
+        Assert.True(evidence.PreviewDetached);
+        Assert.True(evidence.ResourcesReleased);
+        Assert.True(evidence.DetachedBeforeRelease);
+        Assert.True(evidence.Completed);
+    }
+
+    [Fact]
+    public void SwapChainResourcesRetainsDisposalEvidence()
+    {
+        var released = false;
+        var resources = new SwapChainResources(
+            Lumiere.Graphics.Hdr.PreviewReadinessStatus.Ready(
+                "HDR-ready",
+                "Test presentation evidence."),
+            () => { },
+            () => released = true);
+
+        resources.Dispose();
+
+        Assert.NotNull(resources.DisposalEvidence);
+        Assert.True(resources.DisposalEvidence.Completed);
+        Assert.True(released);
+    }
+
+    [Fact]
+    public void SwapChainResourcesCanReleaseAfterFailedUiDetach()
+    {
+        var detached = false;
+        var released = false;
+        var resources = new SwapChainResources(
+            Lumiere.Graphics.Hdr.PreviewReadinessStatus.Ready(
+                "HDR-ready",
+                "Test presentation evidence."),
+            () => detached = true,
+            () => released = true);
+
+        resources.DisposeAfterFailedUiDetach();
+
+        Assert.False(detached);
+        Assert.True(released);
+        Assert.NotNull(resources.DisposalEvidence);
+        Assert.False(resources.DisposalEvidence.PreviewDetached);
+        Assert.True(resources.DisposalEvidence.ResourcesReleased);
+        Assert.False(resources.DisposalEvidence.Completed);
+    }
+
+    [Fact]
+    public void DisposalCoordinatorDoesNotClaimReleaseWhenDetachFails()
+    {
+        var evidence = SwapChainDisposalCoordinator.CreateIncompleteEvidence();
+        var releaseCalled = false;
+
+        Assert.Throws<SwapChainPresentationException>(
+            () => evidence = SwapChainDisposalCoordinator.DisposeOnce(
+                () => throw new SwapChainPresentationException(
+                    "ISwapChainPanelNative.SetSwapChain(null)",
+                    unchecked((int)0x8001010E),
+                    "SetSwapChain(null) must run on the owning UI thread."),
+                () => releaseCalled = true));
+
+        Assert.False(releaseCalled);
+        Assert.False(evidence.PreviewDetached);
+        Assert.False(evidence.ResourcesReleased);
+        Assert.False(evidence.Completed);
+    }
+
+    [Fact]
     public void SwapChainManagerDoesNotExposeRawUnattachedCreationPath()
     {
         var rawCreateMethod = typeof(SwapChainManager).GetMethod(

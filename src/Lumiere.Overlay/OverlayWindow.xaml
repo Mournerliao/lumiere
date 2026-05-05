@@ -1,0 +1,163 @@
+<Window
+    x:Class="Lumiere.Overlay.OverlayWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:shapes="using:Microsoft.UI.Xaml.Shapes">
+  <Grid
+      x:Name="RootGrid"
+      Background="Black"
+      IsTabStop="True"
+      KeyDown="OnRootGridKeyDown">
+    <Grid.KeyboardAccelerators>
+      <KeyboardAccelerator
+          Key="Escape"
+          Invoked="OnEscapeKeyboardAcceleratorInvoked" />
+    </Grid.KeyboardAccelerators>
+
+    <SwapChainPanel
+        x:Name="PreviewSwapChainPanel"
+        Canvas.ZIndex="0"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch" />
+
+    <Canvas
+        x:Name="CropCanvas"
+        Canvas.ZIndex="1"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch"
+        Background="Transparent"
+        IsHitTestVisible="True"
+        PointerCanceled="OnCropCanvasPointerCanceled"
+        PointerCaptureLost="OnCropCanvasPointerCaptureLost"
+        PointerMoved="OnCropCanvasPointerMoved"
+        PointerPressed="OnCropCanvasPointerPressed"
+        PointerReleased="OnCropCanvasPointerReleased">
+      <shapes:Rectangle
+          x:Name="TopMaskRectangle"
+          Fill="#99000000"
+          Visibility="Collapsed" />
+      <shapes:Rectangle
+          x:Name="LeftMaskRectangle"
+          Fill="#99000000"
+          Visibility="Collapsed" />
+      <shapes:Rectangle
+          x:Name="RightMaskRectangle"
+          Fill="#99000000"
+          Visibility="Collapsed" />
+      <shapes:Rectangle
+          x:Name="BottomMaskRectangle"
+          Fill="#99000000"
+          Visibility="Collapsed" />
+      <shapes:Rectangle
+          x:Name="CropOuterBorderRectangle"
+          Stroke="#F9000000"
+          StrokeThickness="4"
+          Visibility="Collapsed" />
+      <shapes:Rectangle
+          x:Name="CropInnerBorderRectangle"
+          Stroke="#FFFFFFFF"
+          StrokeThickness="2"
+          Visibility="Collapsed" />
+      <shapes:Rectangle
+          x:Name="TopLeftCropHandleRectangle"
+          Fill="#FFFFFFFF"
+          Stroke="#F9000000"
+          StrokeThickness="2"
+          Visibility="Collapsed" />
+      <shapes:Rectangle
+          x:Name="TopCropHandleRectangle"
+          Fill="#FFFFFFFF"
+          Stroke="#F9000000"
+          StrokeThickness="2"
+          Visibility="Collapsed" />
+      <shapes:Rectangle
+          x:Name="TopRightCropHandleRectangle"
+          Fill="#FFFFFFFF"
+          Stroke="#F9000000"
+          StrokeThickness="2"
+          Visibility="Collapsed" />
+      <shapes:Rectangle
+          x:Name="RightCropHandleRectangle"
+          Fill="#FFFFFFFF"
+          Stroke="#F9000000"
+          StrokeThickness="2"
+          Visibility="Collapsed" />
+      <shapes:Rectangle
+          x:Name="BottomRightCropHandleRectangle"
+          Fill="#FFFFFFFF"
+          Stroke="#F9000000"
+          StrokeThickness="2"
+          Visibility="Collapsed" />
+      <shapes:Rectangle
+          x:Name="BottomCropHandleRectangle"
+          Fill="#FFFFFFFF"
+          Stroke="#F9000000"
+          StrokeThickness="2"
+          Visibility="Collapsed" />
+      <shapes:Rectangle
+          x:Name="BottomLeftCropHandleRectangle"
+          Fill="#FFFFFFFF"
+          Stroke="#F9000000"
+          StrokeThickness="2"
+          Visibility="Collapsed" />
+      <shapes:Rectangle
+          x:Name="LeftCropHandleRectangle"
+          Fill="#FFFFFFFF"
+          Stroke="#F9000000"
+          StrokeThickness="2"
+          Visibility="Collapsed" />
+    </Canvas>
+
+    <Grid
+        Canvas.ZIndex="2"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch">
+      <Border
+          x:Name="StatusPanelBorder"
+          Margin="16"
+          Padding="12"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Top"
+          Background="#CC111827"
+          BorderBrush="#80F9FAFB"
+          BorderThickness="1"
+          CornerRadius="8">
+        <StackPanel
+            MinWidth="260"
+            MaxWidth="420"
+            Spacing="8">
+          <TextBlock
+              x:Name="StatusLabelTextBlock"
+              Foreground="#F9FAFB"
+              FontSize="16"
+              FontWeight="SemiBold"
+              Text="Initializing preview" />
+          <TextBlock
+              x:Name="StatusMessageTextBlock"
+              Foreground="#E5E7EB"
+              TextWrapping="Wrap" />
+          <TextBlock
+              x:Name="TechnicalDetailTextBlock"
+              Foreground="#D1D5DB"
+              FontSize="12"
+              TextWrapping="Wrap" />
+          <StackPanel
+              Orientation="Horizontal"
+              Spacing="8">
+            <Button
+                x:Name="ConfirmButton"
+                Click="OnConfirmButtonClick"
+                ClickMode="Press"
+                Content="Confirm crop"
+                IsEnabled="False" />
+            <Button
+                x:Name="CancelButton"
+                Click="OnCancelButtonClick"
+                ClickMode="Press"
+                Content="Cancel" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Grid>
+</Window>

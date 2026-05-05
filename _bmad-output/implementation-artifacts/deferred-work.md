@@ -20,3 +20,13 @@
 ## Deferred from: code review of 2-3-stop-restart-and-recreate-capture-resources (2026-05-04)
 
 - CaptureSessionResources disposal is not concurrency-idempotent. `Dispose()` checks a plain `bool disposed` before running the teardown action, so two racing callers could both dispose native WGC resources. This was pre-existing; the current story only added sequential double-dispose coverage.
+
+## Deferred from: code review of 3-5-manage-overlay-hit-testing-and-keyboard-escape (2026-05-05)
+
+- SwapChainResources 内部构造函数使用 `null!` 抑制编译器警告（`SwapChain = null!`），仅用于测试场景的内部构造函数，非生产路径。
+- overlayWindow 字段跨线程非同步访问：`TryEnqueueUi` 在 frame 回调线程读取，`EnsureOverlayWindow`/`CloseOverlayWindow` 在 UI 线程写入，无显式同步。延续已有模式。
+- CaptureSessionResources Action 适配器总是返回完整成功证据：接受 `Action` 的内部构造函数无条件返回四字段全 true 的证据，仅用于向后兼容的测试路径。
+- DisposeAfterFailedUiDetach 缺少诊断日志：UI 线程不可用时静默释放资源，生产排障困难。
+- TryEnqueueUi 静默回退 DispatcherQueue：overlay 的 DispatcherQueue 拒绝时静默路由到 RootGrid.DispatcherQueue。
+- DisposalEvidence 生产环境无消费者：所有证据记录仅在测试中断言，存储但未读取。作为未来诊断基础设施。
+- OnOverlayCaptureConfirmed 过早设置 Disposed 状态：StopPreview 异步清理后立即设置 Disposed 状态，与已有异步清理模式一致。

@@ -1,6 +1,6 @@
 # Story 2.4: Validate Repeated Capture Lifecycle Stability
 
-Status: ready-for-dev
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created. -->
 
@@ -18,35 +18,41 @@ so that graphics and capture resources do not leak across sessions.
 
 ## Tasks / Subtasks
 
-- [ ] Add repeatable lifecycle validation around existing stop/restart behavior without rewriting the capture pipeline. (AC: 1, 3)
-  - [ ] Add a resource-independent lifecycle validation seam that can record repeated start, stop, cancel, restart, resize/recreate, failure, and close attempts.
-  - [ ] Use the existing `CaptureSessionState` vocabulary: `Idle`, `SelectingTarget`, `Initializing`, `Capturing`, `Degraded`, `Unsupported`, `Failed`, and `Disposed`.
-  - [ ] Verify each repeated flow ends in `Idle`, `Disposed`, `Unsupported`, `Degraded`, or `Failed`; it must not remain stuck in `SelectingTarget`, `Initializing`, or stale `Capturing`.
-  - [ ] Preserve the `previewGeneration` stale-callback guard in `MainWindow`; do not introduce callbacks that can revive old targets or old status.
+- [x] Add repeatable lifecycle validation around existing stop/restart behavior without rewriting the capture pipeline. (AC: 1, 3)
+  - [x] Add a resource-independent lifecycle validation seam that can record repeated start, stop, cancel, restart, resize/recreate, failure, and close attempts.
+  - [x] Use the existing `CaptureSessionState` vocabulary: `Idle`, `SelectingTarget`, `Initializing`, `Capturing`, `Degraded`, `Unsupported`, `Failed`, and `Disposed`.
+  - [x] Verify each repeated flow ends in `Idle`, `Disposed`, `Unsupported`, `Degraded`, or `Failed`; it must not remain stuck in `SelectingTarget`, `Initializing`, or stale `Capturing`.
+  - [x] Preserve the `previewGeneration` stale-callback guard in `MainWindow`; do not introduce callbacks that can revive old targets or old status.
 
-- [ ] Strengthen deterministic teardown evidence for capture and presentation resources. (AC: 2, 3)
-  - [ ] Preserve capture teardown order: unsubscribe `FrameArrived`, dispose/stop `GraphicsCaptureSession`, dispose `Direct3D11CaptureFramePool`, dispose WinRT `IDirect3DDevice`.
-  - [ ] Preserve preview teardown order: call `SetSwapChain(null)` through the preview surface before releasing DXGI swap-chain resources.
-  - [ ] Add tests proving teardown evidence is recorded even when flows are repeated, cancelled, or fail during initialization.
-  - [ ] Do not dispose shared `GraphicsDeviceResources` during ordinary capture restart; device-level disposal remains window/app close or explicit device recovery scope.
+- [x] Strengthen deterministic teardown evidence for capture and presentation resources. (AC: 2, 3)
+  - [x] Preserve capture teardown order: unsubscribe `FrameArrived`, dispose/stop `GraphicsCaptureSession`, dispose `Direct3D11CaptureFramePool`, dispose WinRT `IDirect3DDevice`.
+  - [x] Preserve preview teardown order: call `SetSwapChain(null)` through the preview surface before releasing DXGI swap-chain resources.
+  - [x] Add tests proving teardown evidence is recorded even when flows are repeated, cancelled, or fail during initialization.
+  - [x] Do not dispose shared `GraphicsDeviceResources` during ordinary capture restart; device-level disposal remains window/app close or explicit device recovery scope.
 
-- [ ] Add diagnostics or validation records that make repeated lifecycle stability inspectable. (AC: 1, 3)
-  - [ ] Record lifecycle attempt count, final state, teardown completion, detach-before-release evidence, and any degraded/failed readiness detail.
-  - [ ] Keep diagnostics local-only and content-free; do not record screenshot pixels, frame contents, or target image data.
-  - [ ] If diagnostics are surfaced in code, place models under the owning boundary (`Lumiere.Capture` for capture lifecycle state, `Lumiere.Graphics` for presentation lifecycle evidence, or `Lumiere.Infrastructure` only for cross-cutting diagnostic primitives).
-  - [ ] Avoid adding user-facing advanced diagnostics UI in this story; Epic 4 owns broader diagnostics surfaces.
+- [x] Add diagnostics or validation records that make repeated lifecycle stability inspectable. (AC: 1, 3)
+  - [x] Record lifecycle attempt count, final state, teardown completion, detach-before-release evidence, and any degraded/failed readiness detail.
+  - [x] Keep diagnostics local-only and content-free; do not record screenshot pixels, frame contents, or target image data.
+  - [x] If diagnostics are surfaced in code, place models under the owning boundary (`Lumiere.Capture` for capture lifecycle state, `Lumiere.Graphics` for presentation lifecycle evidence, or `Lumiere.Infrastructure` only for cross-cutting diagnostic primitives).
+  - [x] Avoid adding user-facing advanced diagnostics UI in this story; Epic 4 owns broader diagnostics surfaces.
 
-- [ ] Cover repeated lifecycle paths with focused automated tests. (AC: 1, 2, 3)
-  - [ ] Extend `tests/Lumiere.Graphics.Tests/Capture/CaptureLifecycleTests.cs` or add narrowly named test files for repeated flow validation.
-  - [ ] Preserve existing tests for `CaptureSessionResources` idempotent disposal, `CaptureSessionDisposalCoordinator` order, `SwapChainDisposalCoordinator` detach-before-release, and resize/recreate request generation matching.
-  - [ ] Add tests for multiple validation iterations and for recoverable failure states.
-  - [ ] Keep tests hardware-independent; real WGC, WinUI, DXGI, D3D11, HDR display, and GPU memory behavior remain Windows manual validation.
+- [x] Cover repeated lifecycle paths with focused automated tests. (AC: 1, 2, 3)
+  - [x] Extend `tests/Lumiere.Graphics.Tests/Capture/CaptureLifecycleTests.cs` or add narrowly named test files for repeated flow validation.
+  - [x] Preserve existing tests for `CaptureSessionResources` idempotent disposal, `CaptureSessionDisposalCoordinator` order, `SwapChainDisposalCoordinator` detach-before-release, and resize/recreate request generation matching.
+  - [x] Add tests for multiple validation iterations and for recoverable failure states.
+  - [x] Keep tests hardware-independent; real WGC, WinUI, DXGI, D3D11, HDR display, and GPU memory behavior remain Windows manual validation.
 
-- [ ] Document the manual lifecycle stability checklist needed before claiming Windows manual-pass. (AC: 3)
-  - [ ] Create or update `docs/validation/lifecycle-validation.md` if the repository does not already contain it.
-  - [ ] Include start, stop, cancel target selection, restart with same target, restart with different target, frame-size recreate, failed initialization, window close, and repeated sequence loops.
-  - [ ] Include what to inspect: final state, stuck overlay/window behavior, frame arrival after stop, detach-before-release logs/evidence, and GPU memory trend.
-  - [ ] State that GPU memory stability and real frame pool/swap-chain behavior require Windows hardware/manual validation.
+- [x] Document the manual lifecycle stability checklist needed before claiming Windows manual-pass. (AC: 3)
+  - [x] Create or update `docs/validation/lifecycle-validation.md` if the repository does not already contain it.
+  - [x] Include start, stop, cancel target selection, restart with same target, restart with different target, frame-size recreate, failed initialization, window close, and repeated sequence loops.
+  - [x] Include what to inspect: final state, stuck overlay/window behavior, frame arrival after stop, detach-before-release logs/evidence, and GPU memory trend.
+  - [x] State that GPU memory stability and real frame pool/swap-chain behavior require Windows hardware/manual validation.
+
+### Review Findings
+
+- [x] [Review][Patch] Capture teardown evidence is returned but discarded by the production resource owner [`src/Lumiere.Capture/CaptureSessionResources.cs:18`]
+- [x] [Review][Patch] Swap-chain detach/release evidence is returned but discarded by the production resource owner [`src/Lumiere.Graphics/Presentation/SwapChainResources.cs:32`]
+- [x] [Review][Patch] Empty or unmeasured lifecycle summaries can report a clean validation result [`src/Lumiere.Capture/CaptureLifecycleValidationSummary.cs:16`]
 
 ## Dev Notes
 
@@ -194,14 +200,41 @@ Automated tests should cover lifecycle sequencing, repeated validation iteration
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+GPT-5.5
 
 ### Debug Log References
 
+- 2026-05-04: Red phase confirmed missing capture lifecycle validation seam with `CaptureLifecycleValidationTests` compile failures.
+- 2026-05-04: Red phase confirmed teardown evidence expectations with coordinator return-type compile failures.
+- 2026-05-04: Focused lifecycle validation tests passed after adding capture validation records and summary.
+- 2026-05-04: Focused capture/presentation lifecycle tests passed after adding teardown evidence return values.
+- 2026-05-04: Full Windows CI-pass validation succeeded: `dotnet restore`, `dotnet build`, `dotnet test`, and `dotnet format --verify-no-changes`.
+- 2026-05-04: Code review fixes retained production disposal evidence on capture and swap-chain resources, tightened lifecycle summary aggregate validation, and passed `dotnet test tests/Lumiere.Graphics.Tests/Lumiere.Graphics.Tests.csproj -p:Platform=x64 --no-restore --verbosity minimal /m:1 /nr:false`.
+
 ### Completion Notes List
 
+- Added capture-owned lifecycle validation models for repeated attempts, final recoverable state inspection, teardown completion, detach-before-release evidence, resource growth evidence, and failed/degraded readiness technical detail.
+- Added capture and graphics teardown evidence records returned by existing disposal coordinators while preserving disposal order and retry behavior.
+- Added hardware-independent tests for repeated recoverable lifecycle summaries, stuck final states, resource growth evidence, capture teardown evidence, and swap-chain detach-before-release evidence.
+- Added `docs/validation/lifecycle-validation.md` manual Windows checklist covering start, stop, cancel, same/different-target restart, frame-size recreate, failed initialization, window close, repeated loops, and GPU memory inspection.
+- Validation level: Windows CI-pass completed; Windows manual-pass remains gated on running the new checklist with real WGC/DXGI/D3D11/HDR hardware conditions.
+
 ### File List
+
+- docs/validation/lifecycle-validation.md
+- src/Lumiere.Capture/CaptureLifecycleAttemptKind.cs
+- src/Lumiere.Capture/CaptureLifecycleValidationRecord.cs
+- src/Lumiere.Capture/CaptureLifecycleValidationSummary.cs
+- src/Lumiere.Capture/CaptureResourceGrowthEvidence.cs
+- src/Lumiere.Capture/CaptureSessionDisposalCoordinator.cs
+- src/Lumiere.Capture/CaptureSessionDisposalEvidence.cs
+- src/Lumiere.Graphics/Presentation/SwapChainDisposalCoordinator.cs
+- src/Lumiere.Graphics/Presentation/SwapChainDisposalEvidence.cs
+- tests/Lumiere.Graphics.Tests/Capture/CaptureLifecycleTests.cs
+- tests/Lumiere.Graphics.Tests/Capture/CaptureLifecycleValidationTests.cs
+- tests/Lumiere.Graphics.Tests/Presentation/SwapChainLifecycleTests.cs
 
 ### Change Log
 
 - 2026-05-04: Created Story 2.4 context and marked ready for development.
+- 2026-05-04: Implemented repeated lifecycle validation records, teardown evidence, focused tests, and manual validation checklist.

@@ -2,7 +2,7 @@ namespace Lumiere.Capture;
 
 public static class CaptureSessionDisposalCoordinator
 {
-    public static void DisposeOnce(
+    public static CaptureSessionDisposalEvidence DisposeOnce(
         Action unsubscribeFrameHandler,
         Action stopSession,
         Action disposeFramePool,
@@ -17,5 +17,11 @@ public static class CaptureSessionDisposalCoordinator
         stopSession();
         disposeFramePool();
         disposeDevice();
+
+        return new CaptureSessionDisposalEvidence(
+            FrameHandlerUnsubscribed: true,
+            SessionStopped: true,
+            FramePoolDisposed: true,
+            DeviceDisposed: true);
     }
 }

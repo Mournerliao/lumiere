@@ -8,11 +8,6 @@
   <Grid
       x:Name="RootGrid"
       Background="#F3F4F6">
-    <SwapChainPanel
-        x:Name="PreviewSwapChainPanel"
-        HorizontalAlignment="Left"
-        VerticalAlignment="Top" />
-
     <Border
         Margin="16"
         Padding="16"

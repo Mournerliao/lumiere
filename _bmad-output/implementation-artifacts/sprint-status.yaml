@@ -1,5 +1,5 @@
 # generated: 2026-04-21T11:35:23+0800
-# last_updated: 2026-05-04T15:32:27+0800
+# last_updated: 2026-05-05T03:04:42+0800
 # project: lumiere
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-21T11:35:23+0800
-last_updated: 2026-05-04T15:32:27+0800
+last_updated: 2026-05-05T03:04:42+0800
 project: lumiere
 project_key: NOKEY
 tracking_system: file-system
@@ -53,15 +53,15 @@ development_status:
   2-1-start-capture-and-select-a-display-or-window-target: done
   2-2-represent-capture-session-state-explicitly: done
   2-3-stop-restart-and-recreate-capture-resources: done
-  2-4-validate-repeated-capture-lifecycle-stability: ready-for-dev
-  epic-2-retrospective: optional
-  epic-3: backlog
-  3-1-show-a-fullscreen-overlay-above-the-hdr-preview: backlog
-  3-2-create-a-crop-selection-by-dragging: backlog
-  3-3-adjust-or-recreate-the-crop-selection: backlog
-  3-4-confirm-or-cancel-the-capture-overlay: backlog
-  3-5-manage-overlay-hit-testing-and-keyboard-escape: backlog
-  epic-3-retrospective: optional
+  2-4-validate-repeated-capture-lifecycle-stability: done
+  epic-2-retrospective: done
+  epic-3: in-progress
+  3-1-show-a-fullscreen-overlay-above-the-hdr-preview: done
+  3-2-create-a-crop-selection-by-dragging: done
+  3-3-adjust-or-recreate-the-crop-selection: done
+  3-4-confirm-or-cancel-the-capture-overlay: done
+  3-5-manage-overlay-hit-testing-and-keyboard-escape: done
+  epic-3-retrospective: done
   epic-4: backlog
   4-1-show-user-facing-capture-and-preview-status: backlog
   4-2-provide-advanced-technical-diagnostics: backlog

@@ -29,6 +29,22 @@ public sealed class CaptureLifecycleTests
     }
 
     [Fact]
+    public void DisposalCoordinatorReturnsCompletedTeardownEvidence()
+    {
+        var evidence = CaptureSessionDisposalCoordinator.DisposeOnce(
+            () => { },
+            () => { },
+            () => { },
+            () => { });
+
+        Assert.True(evidence.FrameHandlerUnsubscribed);
+        Assert.True(evidence.SessionStopped);
+        Assert.True(evidence.FramePoolDisposed);
+        Assert.True(evidence.DeviceDisposed);
+        Assert.True(evidence.Completed);
+    }
+
+    [Fact]
     public void CaptureSessionResourcesDisposesOnlyOnce()
     {
         var disposeCount = 0;
@@ -38,6 +54,22 @@ public sealed class CaptureLifecycleTests
         resources.Dispose();
 
         Assert.Equal(1, disposeCount);
+    }
+
+    [Fact]
+    public void CaptureSessionResourcesRetainsDisposalEvidence()
+    {
+        var resources = new CaptureSessionResources(
+            () => new CaptureSessionDisposalEvidence(
+                FrameHandlerUnsubscribed: true,
+                SessionStopped: true,
+                FramePoolDisposed: true,
+                DeviceDisposed: true));
+
+        resources.Dispose();
+
+        Assert.NotNull(resources.DisposalEvidence);
+        Assert.True(resources.DisposalEvidence.Completed);
     }
 
     [Fact]

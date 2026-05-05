@@ -6,7 +6,7 @@ namespace Lumiere.Capture;
 
 public sealed class CaptureSessionResources : IDisposable
 {
-    private readonly Action disposeAction;
+    private readonly Func<CaptureSessionDisposalEvidence> disposeAction;
     private bool disposed;
 
     public CaptureSessionResources(
@@ -24,9 +24,24 @@ public sealed class CaptureSessionResources : IDisposable
     }
 
     internal CaptureSessionResources(Action disposeAction)
+        : this(() =>
+        {
+            disposeAction();
+            return new CaptureSessionDisposalEvidence(
+                FrameHandlerUnsubscribed: true,
+                SessionStopped: true,
+                FramePoolDisposed: true,
+                DeviceDisposed: true);
+        })
+    {
+    }
+
+    internal CaptureSessionResources(Func<CaptureSessionDisposalEvidence> disposeAction)
     {
         this.disposeAction = disposeAction ?? throw new ArgumentNullException(nameof(disposeAction));
     }
+
+    public CaptureSessionDisposalEvidence? DisposalEvidence { get; private set; }
 
     public void Dispose()
     {
@@ -35,7 +50,7 @@ public sealed class CaptureSessionResources : IDisposable
             return;
         }
 
-        disposeAction();
+        DisposalEvidence = disposeAction();
         disposed = true;
     }
 }

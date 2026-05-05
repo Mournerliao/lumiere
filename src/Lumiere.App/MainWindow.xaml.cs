@@ -4,8 +4,10 @@ using Lumiere.Graphics.Devices;
 using Lumiere.Graphics.Hdr;
 using Lumiere.Graphics.Presentation;
 using Lumiere.Infrastructure.Interop;
+using Lumiere.Overlay;
+using Lumiere.Overlay.Crop;
+using Lumiere.Overlay.Windowing;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Media;
 using Windows.Graphics;
 
 namespace Lumiere.App;
@@ -23,18 +25,20 @@ public sealed partial class MainWindow : Window
     private CaptureTarget? activeCaptureTarget;
     private PreviewReadinessStatus? activePresentationEvidence;
     private CaptureSessionState sessionState = CaptureSessionState.Idle();
+    private OverlayWindow? overlayWindow;
+    private ConfirmedCaptureSelection? confirmedCaptureSelection;
     private long previewGeneration;
     private long frameEventCount;
     private int previewSourceWidth;
     private int previewSourceHeight;
     private bool isClosed;
+    private bool applyingSessionState;
 
     public MainWindow()
     {
         InitializeComponent();
         Title = "Lumiere";
         Closed += OnWindowClosed;
-        RootGrid.SizeChanged += OnRootGridSizeChanged;
 
         ApplySessionState(
             CaptureSessionState.Idle(PreviewReadinessStatus.Initializing(
@@ -50,6 +54,7 @@ public sealed partial class MainWindow : Window
         try
         {
             StopPreview(reportStopped: false);
+            CloseOverlayWindow();
             ApplySessionState(
                 CaptureSessionState.SelectingTarget(PreviewReadinessStatus.Initializing(
                     PreviewReadinessStage.Capture,
@@ -77,11 +82,13 @@ public sealed partial class MainWindow : Window
         {
             if (!isClosed)
             {
+                StopPreview(reportStopped: false);
                 ApplySessionState(
                     CaptureSessionState.Failed(null, PreviewReadinessStatus.Failed(
                         PreviewReadinessStage.Capture,
                         "Preview failed",
                         InteropFailureDiagnostics.Write(exception))));
+                CloseOverlayWindow();
             }
         }
         finally
@@ -102,19 +109,21 @@ public sealed partial class MainWindow : Window
 
         EnsureGraphicsServices();
         StopPreview(reportStopped: false);
+        EnsureOverlayWindow(target);
 
-        ApplyPreviewPanelFit(target.Size.Width, target.Size.Height);
         long currentGeneration;
         PreviewReadinessStatus presentationEvidence;
         lock (previewSync)
         {
             swapChainResources = graphicsEngine!.CreatePreviewSwapChain(
                 new SwapChainCreationOptions(target.Size.Width, target.Size.Height),
-                new SwapChainPanelPreviewSurface(PreviewSwapChainPanel));
+                overlayWindow!.PreviewSurface);
             previewFramePresenter = new PreviewFramePresenter(deviceResources!, swapChainResources);
             activeCaptureTarget = target;
             presentationEvidence = swapChainResources.PresentationEvidence;
             activePresentationEvidence = presentationEvidence;
+            previewSourceWidth = target.Size.Width;
+            previewSourceHeight = target.Size.Height;
 
             Interlocked.Increment(ref previewGeneration);
             frameEventCount = 0;
@@ -199,7 +208,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        if (!PreviewSwapChainPanel.DispatcherQueue.TryEnqueue(() =>
+        if (!TryEnqueueUi(() =>
             {
                 if (generation == Volatile.Read(ref previewGeneration))
                 {
@@ -239,6 +248,8 @@ public sealed partial class MainWindow : Window
             previewFramePresenter = null;
             activeCaptureTarget = null;
             activePresentationEvidence = null;
+            previewSourceWidth = 0;
+            previewSourceHeight = 0;
             swapChainToDispose = swapChainResources;
             swapChainResources = null;
         }
@@ -262,7 +273,7 @@ public sealed partial class MainWindow : Window
 
         captureSessionToDispose?.Dispose();
 
-        if (!PreviewSwapChainPanel.DispatcherQueue.TryEnqueue(() =>
+        if (!TryEnqueueUi(() =>
             {
                 swapChainToDispose?.Dispose();
 
@@ -285,13 +296,13 @@ public sealed partial class MainWindow : Window
                 StartPreview(recreationRequest.Target);
             }))
         {
-            swapChainToDispose?.Dispose();
+            swapChainToDispose?.DisposeAfterFailedUiDetach();
         }
     }
 
     private void ApplyFrameReadiness(long generation, PreviewReadinessStatus readiness)
     {
-        if (!PreviewSwapChainPanel.DispatcherQueue.TryEnqueue(() =>
+        if (!TryEnqueueUi(() =>
             {
                 if (generation == Volatile.Read(ref previewGeneration))
                 {
@@ -308,7 +319,7 @@ public sealed partial class MainWindow : Window
     private void ApplyFrameDiagnostic(long generation, string detail)
     {
         var frameNumber = Interlocked.Increment(ref frameEventCount);
-        if (!PreviewSwapChainPanel.DispatcherQueue.TryEnqueue(() =>
+        if (!TryEnqueueUi(() =>
             {
                 if (generation == Volatile.Read(ref previewGeneration))
                 {
@@ -381,6 +392,30 @@ public sealed partial class MainWindow : Window
         captureService ??= new CaptureService(deviceResources);
     }
 
+    private void EnsureOverlayWindow(CaptureTarget target)
+    {
+        if (target.Size.Width <= 0 || target.Size.Height <= 0)
+        {
+            return;
+        }
+
+        var frameSize = new CaptureFrameSize(target.Size.Width, target.Size.Height);
+        if (overlayWindow is not null)
+        {
+            overlayWindow.ApplyCaptureFrameSize(frameSize);
+            return;
+        }
+
+        overlayWindow = new OverlayWindow();
+        overlayWindow.CloseRequested += OnOverlayCloseRequested;
+        overlayWindow.CaptureConfirmed += OnOverlayCaptureConfirmed;
+        overlayWindow.Closed += OnOverlayClosed;
+        overlayWindow.ApplyCaptureFrameSize(frameSize);
+        overlayWindow.ApplyPresenter(CreateOverlayPlacementRequest(target));
+        overlayWindow.Activate();
+        overlayWindow.ApplyState(CreateOverlayState(sessionState));
+    }
+
     private void StopPreview(bool reportStopped = true)
     {
         CaptureSessionResources? captureSessionToDispose;
@@ -406,63 +441,157 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void ApplyPreviewPanelFit(int sourceWidth, int sourceHeight)
+    private void ApplySessionState(CaptureSessionState state)
     {
-        if (sourceWidth <= 0 || sourceHeight <= 0)
+        if (applyingSessionState)
         {
             return;
         }
 
-        previewSourceWidth = sourceWidth;
-        previewSourceHeight = sourceHeight;
-
-        PreviewSwapChainPanel.Width = sourceWidth;
-        PreviewSwapChainPanel.Height = sourceHeight;
-
-        var availableWidth = Math.Max(1, RootGrid.ActualWidth);
-        var availableHeight = Math.Max(1, RootGrid.ActualHeight);
-        var scale = Math.Min(availableWidth / sourceWidth, availableHeight / sourceHeight);
-
-        PreviewSwapChainPanel.RenderTransform = new CompositeTransform
+        applyingSessionState = true;
+        try
         {
-            ScaleX = scale,
-            ScaleY = scale,
-            TranslateX = Math.Max(0, (availableWidth - (sourceWidth * scale)) / 2),
-            TranslateY = Math.Max(0, (availableHeight - (sourceHeight * scale)) / 2),
-        };
-    }
-
-    private void OnRootGridSizeChanged(object sender, SizeChangedEventArgs args)
-    {
-        if (previewSourceWidth > 0 && previewSourceHeight > 0)
+            sessionState = state ?? throw new ArgumentNullException(nameof(state));
+            PreviewStatusLabelTextBlock.Text = sessionState.Status switch
+            {
+                CaptureSessionStatus.Idle => "Ready to capture",
+                CaptureSessionStatus.SelectingTarget => "Selecting target",
+                CaptureSessionStatus.Initializing => "Initializing preview",
+                CaptureSessionStatus.Capturing => "HDR-ready",
+                CaptureSessionStatus.Degraded => "Degraded preview",
+                CaptureSessionStatus.Unsupported => "Unsupported capture",
+                CaptureSessionStatus.Failed => "Preview failed",
+                CaptureSessionStatus.Disposed => "Preview stopped",
+                _ => "Initializing preview",
+            };
+            PreviewStatusMessageTextBlock.Text = sessionState.UserFacingReason ?? string.Empty;
+            PreviewTechnicalDetailTextBlock.Text = sessionState.TechnicalDetail ?? string.Empty;
+            var overlayState = CreateOverlayState(sessionState);
+            overlayWindow?.ApplyState(overlayState);
+            if (overlayWindow is not null && overlayState.RequiresFailureTeardown)
+            {
+                StopPreview(reportStopped: false);
+                CloseOverlayWindow();
+            }
+        }
+        finally
         {
-            ApplyPreviewPanelFit(previewSourceWidth, previewSourceHeight);
+            applyingSessionState = false;
         }
     }
 
-    private void ApplySessionState(CaptureSessionState state)
+    private bool TryEnqueueUi(Action action)
     {
-        sessionState = state ?? throw new ArgumentNullException(nameof(state));
-        PreviewStatusLabelTextBlock.Text = sessionState.Status switch
+        ArgumentNullException.ThrowIfNull(action);
+
+        var overlayDispatcher = overlayWindow?.DispatcherQueue;
+        if (overlayDispatcher is not null && overlayDispatcher.TryEnqueue(() => action()))
         {
-            CaptureSessionStatus.Idle => "Ready to capture",
-            CaptureSessionStatus.SelectingTarget => "Selecting target",
-            CaptureSessionStatus.Initializing => "Initializing preview",
-            CaptureSessionStatus.Capturing => "HDR-ready",
-            CaptureSessionStatus.Degraded => "Degraded preview",
-            CaptureSessionStatus.Unsupported => "Unsupported capture",
-            CaptureSessionStatus.Failed => "Preview failed",
-            CaptureSessionStatus.Disposed => "Preview stopped",
-            _ => "Initializing preview",
+            return true;
+        }
+
+        return RootGrid.DispatcherQueue.TryEnqueue(() => action());
+    }
+
+    private void OnOverlayCloseRequested(object? sender, EventArgs args)
+    {
+        if (isClosed)
+        {
+            return;
+        }
+
+        StopPreview();
+        CloseOverlayWindow();
+    }
+
+    private void OnOverlayCaptureConfirmed(object? sender, ConfirmedCaptureSelection selection)
+    {
+        if (!ReferenceEquals(sender, overlayWindow) || isClosed)
+        {
+            return;
+        }
+
+        confirmedCaptureSelection = selection;
+        try
+        {
+            StopPreview(reportStopped: false);
+        }
+        finally
+        {
+            ApplySessionState(CaptureSessionState.Disposed(PreviewReadinessStatus.Ready(
+                "Crop confirmed. Preview resources are stopping.",
+                CreateConfirmedSelectionDetail(selection))));
+            CloseOverlayWindow();
+        }
+    }
+
+    private void OnOverlayClosed(object sender, WindowEventArgs args)
+    {
+        if (ReferenceEquals(sender, overlayWindow))
+        {
+            overlayWindow.CloseRequested -= OnOverlayCloseRequested;
+            overlayWindow.CaptureConfirmed -= OnOverlayCaptureConfirmed;
+            overlayWindow.Closed -= OnOverlayClosed;
+            overlayWindow = null;
+
+            if (!isClosed && sessionState.HasNativeSession)
+            {
+                StopPreview();
+            }
+        }
+    }
+
+    private void CloseOverlayWindow()
+    {
+        if (overlayWindow is null)
+        {
+            return;
+        }
+
+        overlayWindow.CloseRequested -= OnOverlayCloseRequested;
+        overlayWindow.CaptureConfirmed -= OnOverlayCaptureConfirmed;
+        overlayWindow.Closed -= OnOverlayClosed;
+        var window = overlayWindow;
+        overlayWindow = null;
+        window.CloseSafely();
+    }
+
+    private static string CreateConfirmedSelectionDetail(ConfirmedCaptureSelection selection)
+    {
+        var degradedPrefix = selection.Status is OverlayDisplayStatus.DegradedPreview
+            ? "Confirmed from degraded preview. "
+            : string.Empty;
+        return $"{degradedPrefix}DIP crop={selection.DipRegion.X:0.##},{selection.DipRegion.Y:0.##},{selection.DipRegion.Width:0.##}x{selection.DipRegion.Height:0.##}; pixel crop={selection.PixelRegion.X},{selection.PixelRegion.Y},{selection.PixelRegion.Width}x{selection.PixelRegion.Height}; frame={selection.FrameSize.Width}x{selection.FrameSize.Height}. {selection.TechnicalDetail}";
+    }
+
+    private static OverlayPlacementRequest CreateOverlayPlacementRequest(CaptureTarget target) =>
+        new(
+            target.Size,
+            target.Kind is CaptureTargetKind.Display,
+            target.DisplayName);
+
+    private static OverlayState CreateOverlayState(CaptureSessionState sessionState)
+    {
+        ArgumentNullException.ThrowIfNull(sessionState);
+
+        var message = sessionState.UserFacingReason ?? string.Empty;
+        var detail = sessionState.TechnicalDetail ?? string.Empty;
+        return sessionState.Status switch
+        {
+            CaptureSessionStatus.Capturing => OverlayState.HdrReady(message, detail),
+            CaptureSessionStatus.Degraded => OverlayState.DegradedPreview(message, detail),
+            CaptureSessionStatus.Unsupported => OverlayState.UnsupportedCapture(message, detail),
+            CaptureSessionStatus.Failed => OverlayState.PreviewFailed(message, detail),
+            CaptureSessionStatus.Disposed => OverlayState.Disposed(message, detail),
+            _ => OverlayState.Initializing(message, detail),
         };
-        PreviewStatusMessageTextBlock.Text = sessionState.UserFacingReason ?? string.Empty;
-        PreviewTechnicalDetailTextBlock.Text = sessionState.TechnicalDetail ?? string.Empty;
     }
 
     private void OnWindowClosed(object sender, WindowEventArgs args)
     {
         isClosed = true;
         StopPreview(reportStopped: false);
+        CloseOverlayWindow();
         captureService = null;
         graphicsEngine = null;
         deviceResources?.Dispose();
