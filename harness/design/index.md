@@ -2,27 +2,33 @@
 
 This folder stores durable UX reference material for Lumiere. These files are design references, not implementation source and not generated sprint output.
 
-## UXPilot Export - 2026-05-05
+## Interactive Prototype
 
-Source: local UXPilot export provided by the project owner on 2026-05-05.
+Path: `interactive-prototype/`
 
-Path: `uxpilot-export-2026-05-05/`
-
-Use this export as visual and interaction reference when implementing app shell, onboarding, settings, capture overlay, and gallery screens. Do not treat HTML/CSS from the export as production UI code; Lumiere remains a native WinUI 3 application.
+可连续交互的设计稿原型，包含完整的页面导航流程。在浏览器中打开 `interactive-prototype/index.html` 即可开始浏览。
 
 ### Page Map
 
-- `uxpilot-export-2026-05-05/1-Lumiere Tool - Welcome.html` - Welcome / first-run entry.
-- `uxpilot-export-2026-05-05/2-Lumiere Tool - Onboarding - Pe.html` - System readiness and permissions onboarding.
-- `uxpilot-export-2026-05-05/3-Lumiere Tool - Onboarding - De.html` - Default configuration onboarding.
-- `uxpilot-export-2026-05-05/4-Lumiere Tool - Settings - Gene.html` - General settings.
-- `uxpilot-export-2026-05-05/5-Lumiere Tool - Settings - Shor.html` - Keyboard shortcuts settings.
-- `uxpilot-export-2026-05-05/6-Lumiere Tool - Settings - HDR.html` - HDR and color settings.
-- `uxpilot-export-2026-05-05/7-Lumiere Tool - Settings - Outp.html` - Output and export settings.
-- `uxpilot-export-2026-05-05/8-Lumiere Tool - Capture Overlay.html` - Capture region selection overlay state.
-- `uxpilot-export-2026-05-05/9-Lumiere Tool - Capture Overlay.html` - Alternate capture region overlay state.
-- `uxpilot-export-2026-05-05/10-Lumiere Tool - Gallery.html` - Capture library / gallery.
-- `uxpilot-export-2026-05-05/11-Lumiere Tool - Dashboard - Cap.html` - Capture home dashboard.
+- `interactive-prototype/index.html` - 目录页面，提供所有页面的链接入口。
+- `interactive-prototype/1-welcome.html` - Welcome / first-run entry.
+- `interactive-prototype/2-onboarding-permissions.html` - System readiness and permissions onboarding.
+- `interactive-prototype/3-onboarding-configuration.html` - Default configuration onboarding.
+- `interactive-prototype/4-settings-general.html` - General settings.
+- `interactive-prototype/5-settings-shortcuts.html` - Keyboard shortcuts settings.
+- `interactive-prototype/6-settings-hdr.html` - HDR and color settings.
+- `interactive-prototype/7-settings-output.html` - Output and export settings.
+- `interactive-prototype/8-capture-overlay.html` - Capture region selection overlay state.
+- `interactive-prototype/9-capture-overlay-annotated.html` - Capture overlay with annotation toolbar.
+- `interactive-prototype/10-gallery.html` - Capture library / gallery.
+- `interactive-prototype/11-dashboard.html` - Capture home dashboard.
+
+### Navigation Flow
+
+- Welcome → Onboarding (Permissions → Configuration) → Dashboard
+- Dashboard ↔ Capture Overlay (Region Select → Annotated)
+- Dashboard ↔ Settings (General / Shortcuts / HDR / Output)
+- Dashboard ↔ Gallery
 
 ### Implementation Guidance
 
