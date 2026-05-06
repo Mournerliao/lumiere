@@ -53,11 +53,7 @@ desktop.ini
 
 # AI tool configs (project uses AGENTS.md as the single source)
 .workbuddy/
-.agents/*
-!.agents/skills/
-.agents/skills/*
-!.agents/skills/impeccable/
-!.agents/skills/impeccable/**
+.agents/
 .claude/
 CLAUDE.md
 .cursorrules
