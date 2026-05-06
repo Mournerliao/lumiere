@@ -51,7 +51,7 @@ desktop.ini
 .env.*
 !.env.example
 
-# AI
+# AI tool configs (project uses AGENTS.md as the single source)
 .workbuddy/
 .agents/*
 !.agents/skills/
@@ -59,3 +59,8 @@ desktop.ini
 !.agents/skills/impeccable/
 !.agents/skills/impeccable/**
 .claude/
+CLAUDE.md
+.cursorrules
+.windsurfrules
+.clinerules
+.aider*

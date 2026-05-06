@@ -8,6 +8,8 @@ Use `_bmad-output/` for generated planning artifacts, sprint output, story draft
 
 - `planning/project-plan.md` - long-lived product intent, architecture direction, and implementation phases.
 - `design/index.md` - durable UX reference index, including imported UXPilot design exports.
+- `skills/` - project-specific skills for AI-assisted development.
+  - `winui-gallery-reference/` - WinUI 3 component reference skill for fetching official code examples.
 - `workflows/cross-platform-development.md` - supported macOS editing, Windows CI, and Windows hardware validation workflow.
 
 ## Conventions
