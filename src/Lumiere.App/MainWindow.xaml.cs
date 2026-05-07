@@ -49,8 +49,8 @@ public sealed partial class MainWindow : Window
         ApplySessionState(
             CaptureSessionState.Idle(PreviewReadinessStatus.Initializing(
                 PreviewReadinessStage.Capture,
-                "Choose a display or window to start the minimal HDR preview.",
-                "Select Capture Target uses GraphicsCapturePicker and preserves the FP16/scRGB preview path.")));
+                "Click Capture to start HDR preview of your current display.",
+                "Direct monitor capture bypasses the picker and starts preview immediately.")));
     }
 
     private async void OnSelectCaptureTargetClick(object sender, RoutedEventArgs e)
@@ -64,12 +64,14 @@ public sealed partial class MainWindow : Window
             ApplySessionState(
                 CaptureSessionState.SelectingTarget(PreviewReadinessStatus.Initializing(
                     PreviewReadinessStage.Capture,
-                    "Choose a display or window to start the minimal HDR preview.",
-                    "GraphicsCapturePicker is waiting for user selection.")));
+                    "Starting direct monitor capture...",
+                    "Resolving current monitor for direct capture.")));
 
-            var selectionService = new CaptureTargetSelectionService(
-                new GraphicsCaptureTargetPicker(this));
-            var result = await selectionService.SelectTargetAsync();
+            var directService = new DirectMonitorCaptureTargetSelectionService(
+                MonitorSelectionInterop.GetCurrentMonitorFromCursor,
+                GraphicsCaptureMonitorInterop.CreateForMonitor,
+                fallbackPicker: new GraphicsCaptureTargetPicker(this));
+            var result = await directService.SelectDirectMonitorTargetAsync();
 
             if (isClosed)
             {

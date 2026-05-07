@@ -1,5 +1,5 @@
 # generated: 2026-04-21T11:35:23+0800
-# last_updated: 2026-05-07T15:12:00+0800
+# last_updated: 2026-05-07T15:45:13+0800
 # project: lumiere
 # project_key: NOKEY
 # tracking_system: file-system
@@ -38,7 +38,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-21T11:35:23+0800
-last_updated: 2026-05-07T15:12:00+0800
+last_updated: 2026-05-07T18:00:00+0800
 project: lumiere
 project_key: NOKEY
 tracking_system: file-system
@@ -52,12 +52,12 @@ development_status:
   1-4-attach-an-fp16-scrgb-swap-chain-to-swapchainpanel: done
   1-5-prove-minimal-wgc-fp16-capture-to-live-preview: done
   epic-1-retrospective: done
-  epic-2: in-progress
+  epic-2: done
   2-1-start-capture-and-select-a-display-or-window-target: done
   2-2-represent-capture-session-state-explicitly: done
   2-3-stop-restart-and-recreate-capture-resources: done
   2-4-validate-repeated-capture-lifecycle-stability: done
-  2-5-create-monitor-capture-targets-without-picker: backlog
+  2-5-create-monitor-capture-targets-without-picker: done
   epic-2-retrospective: done
   epic-3: in-progress
   3-1-show-a-fullscreen-overlay-above-the-hdr-preview: done

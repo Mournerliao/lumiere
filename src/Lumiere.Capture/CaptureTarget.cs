@@ -63,6 +63,24 @@ public sealed class CaptureTarget
             CaptureTargetKind.Unknown);
     }
 
+    public static CaptureTarget FromDisplayItem(GraphicsCaptureItem item, string? displayName = null)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        ValidateSize(item.Size);
+
+        var resolvedName = string.IsNullOrWhiteSpace(displayName)
+            ? item.DisplayName
+            : displayName;
+
+        return new CaptureTarget(
+            item,
+            item.Size,
+            string.IsNullOrWhiteSpace(resolvedName)
+                ? "Display"
+                : resolvedName,
+            CaptureTargetKind.Display);
+    }
+
     public CaptureTarget WithSize(SizeInt32 size)
     {
         ValidateSize(size);

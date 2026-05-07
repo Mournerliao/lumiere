@@ -30,3 +30,9 @@
 - TryEnqueueUi 静默回退 DispatcherQueue：overlay 的 DispatcherQueue 拒绝时静默路由到 RootGrid.DispatcherQueue。
 - DisposalEvidence 生产环境无消费者：所有证据记录仅在测试中断言，存储但未读取。作为未来诊断基础设施。
 - OnOverlayCaptureConfirmed 过早设置 Disposed 状态：StopPreview 异步清理后立即设置 Disposed 状态，与已有异步清理模式一致。
+
+## Deferred from: code review of 2-5-create-monitor-capture-targets-without-picker (2026-05-07)
+
+- `GetMonitorDisplayName` returns raw `DeviceName` (`\\.\DISPLAY1`) instead of a user-friendly name. Pre-existing UX concern, not caused by this change.
+- `GetMonitorFromWindow` is public but unused in this changeset. Future use for window-handle fallback path.
+- `MonitorFromPoint` with `MONITOR_DEFAULTTONEAREST` never returns null — the `IntPtr.Zero` check is dead code. Harmless but could be cleaned up.
