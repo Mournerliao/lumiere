@@ -249,7 +249,7 @@ public sealed class DirectMonitorCaptureTargetSelectionServiceTests
 
         Assert.Equal(SelectionOutcome.Failed, result.Outcome);
         Assert.Null(result.Target);
-        Assert.Contains("No fallback picker available", result.Readiness.TechnicalDetail);
+        Assert.Contains("no fallback picker was configured", result.Readiness.TechnicalDetail);
     }
 
     [Fact]
