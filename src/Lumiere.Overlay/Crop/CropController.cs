@@ -158,47 +158,66 @@ public sealed class CropController
         }
     }
 
-    public void Commit(Point current, Rect previewBounds)
+    public CropCommitResult Commit(Point current, Rect previewBounds)
     {
         if (replacementGestureSelection.IsCreating && replacementGestureSelection.DragStart is { } replacementStart)
         {
             var geometry = CropGeometry.FromDrag(replacementStart, current, previewBounds, minimumSize);
-            Selection = geometry.IsValid
-                ? new CropSelection(CropSelectionPhase.Active, geometry, null)
-                : previousCommittedSelection;
-            previousCommittedSelection = Selection.Phase is CropSelectionPhase.Active
-                ? Selection
-                : CropSelection.Empty;
+            if (!geometry.IsValid)
+            {
+                Selection = previousCommittedSelection;
+                replacementGestureSelection = CropSelection.Empty;
+                adjustmentHandle = CropAdjustmentHandle.None;
+                return CropCommitResult.InvalidGeometry;
+            }
+
+            Selection = new CropSelection(CropSelectionPhase.Active, geometry, null);
+            previousCommittedSelection = Selection;
             replacementGestureSelection = CropSelection.Empty;
             adjustmentHandle = CropAdjustmentHandle.None;
-            return;
+            return CropCommitResult.Activated;
         }
 
         if (Selection.IsCreating && Selection.DragStart is { } start)
         {
             var geometry = CropGeometry.FromDrag(start, current, previewBounds, minimumSize);
-            Selection = geometry.IsValid
-                ? new CropSelection(CropSelectionPhase.Active, geometry, null)
-                : previousCommittedSelection;
-            previousCommittedSelection = Selection.Phase is CropSelectionPhase.Active
-                ? Selection
-                : CropSelection.Empty;
+            if (!geometry.IsValid)
+            {
+                Selection = previousCommittedSelection;
+                adjustmentHandle = CropAdjustmentHandle.None;
+                return CropCommitResult.InvalidGeometry;
+            }
+
+            Selection = new CropSelection(CropSelectionPhase.Active, geometry, null);
+            previousCommittedSelection = Selection;
             adjustmentHandle = CropAdjustmentHandle.None;
-            return;
+            return CropCommitResult.Activated;
         }
 
         if (!Selection.IsAdjusting)
         {
-            return;
+            return CropCommitResult.NoGesture;
         }
 
         var finalGeometry = CreateAdjustedGeometry(current, previewBounds);
+        if (!finalGeometry.IsValid)
+        {
+            Selection = new CropSelection(
+                CropSelectionPhase.Active,
+                Selection.Geometry,
+                null);
+            previousCommittedSelection = Selection;
+            adjustmentHandle = CropAdjustmentHandle.None;
+            return CropCommitResult.InvalidGeometry;
+        }
+
         Selection = new CropSelection(
             CropSelectionPhase.Active,
-            finalGeometry.IsValid ? finalGeometry : Selection.Geometry,
+            finalGeometry,
             null);
         previousCommittedSelection = Selection;
         adjustmentHandle = CropAdjustmentHandle.None;
+        return CropCommitResult.Adjusted;
     }
 
     public void Cancel()

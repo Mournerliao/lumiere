@@ -14,8 +14,9 @@ public sealed class CropControllerTests
 
         controller.Begin(new Point(20, 10), bounds);
         controller.Update(new Point(120, 90), bounds);
-        controller.Commit(new Point(160, 95), bounds);
+        var result = controller.Commit(new Point(160, 95), bounds);
 
+        Assert.Equal(CropCommitResult.Activated, result);
         Assert.Equal(CropSelectionPhase.Active, controller.Selection.Phase);
         Assert.Equal(new Rect(20, 10, 140, 85), controller.Selection.Geometry.Region);
     }
@@ -40,8 +41,9 @@ public sealed class CropControllerTests
         var bounds = new Rect(0, 0, 200, 100);
 
         controller.Begin(new Point(20, 10), bounds);
-        controller.Commit(new Point(21, 11), bounds);
+        var result = controller.Commit(new Point(21, 11), bounds);
 
+        Assert.Equal(CropCommitResult.InvalidGeometry, result);
         Assert.Equal(CropSelectionPhase.Empty, controller.Selection.Phase);
         Assert.True(controller.Selection.Geometry.IsEmpty);
     }
@@ -114,8 +116,9 @@ public sealed class CropControllerTests
 
         Assert.True(controller.BeginGesture(new Point(120, 50), bounds));
         controller.Update(new Point(150, 60), bounds);
-        controller.Commit(new Point(150, 60), bounds);
+        var result = controller.Commit(new Point(150, 60), bounds);
 
+        Assert.Equal(CropCommitResult.Adjusted, result);
         Assert.Equal(CropSelectionPhase.Active, controller.Selection.Phase);
         Assert.Equal(new Rect(20, 10, 130, 80), controller.Selection.Geometry.Region);
     }
@@ -128,8 +131,9 @@ public sealed class CropControllerTests
 
         Assert.True(controller.BeginGesture(new Point(20, 10), bounds));
         controller.Update(new Point(140, 95), bounds);
-        controller.Commit(new Point(140, 95), bounds);
+        var result = controller.Commit(new Point(140, 95), bounds);
 
+        Assert.Equal(CropCommitResult.Adjusted, result);
         Assert.Equal(new Rect(120, 90, 20, 5), controller.Selection.Geometry.Region);
     }
 
@@ -141,8 +145,9 @@ public sealed class CropControllerTests
 
         Assert.True(controller.BeginGesture(new Point(120, 50), bounds));
         controller.Update(new Point(200, 50), bounds);
-        controller.Commit(new Point(200, 50), bounds);
+        var result = controller.Commit(new Point(200, 50), bounds);
 
+        Assert.Equal(CropCommitResult.Adjusted, result);
         Assert.Equal(new Rect(20, 10, 110, 80), controller.Selection.Geometry.Region);
     }
 
@@ -154,8 +159,9 @@ public sealed class CropControllerTests
 
         Assert.True(controller.BeginGesture(new Point(120, 50), bounds));
         controller.Update(new Point(22, 50), bounds);
-        controller.Commit(new Point(22, 50), bounds);
+        var result = controller.Commit(new Point(22, 50), bounds);
 
+        Assert.Equal(CropCommitResult.InvalidGeometry, result);
         Assert.Equal(new Rect(20, 10, 100, 80), controller.Selection.Geometry.Region);
     }
 
@@ -173,8 +179,9 @@ public sealed class CropControllerTests
         Assert.Equal(CropSelectionPhase.Creating, controller.DisplaySelection.Phase);
         Assert.Equal(new Rect(140, 20, 40, 50), controller.DisplaySelection.Geometry.Region);
 
-        controller.Commit(new Point(180, 70), bounds);
+        var result = controller.Commit(new Point(180, 70), bounds);
 
+        Assert.Equal(CropCommitResult.Activated, result);
         Assert.Equal(CropSelectionPhase.Active, controller.Selection.Phase);
         Assert.Equal(new Rect(140, 20, 40, 50), controller.Selection.Geometry.Region);
     }
@@ -186,8 +193,9 @@ public sealed class CropControllerTests
         var bounds = new Rect(0, 0, 200, 100);
 
         Assert.True(controller.BeginGesture(new Point(140, 20), bounds));
-        controller.Commit(new Point(141, 21), bounds);
+        var result = controller.Commit(new Point(141, 21), bounds);
 
+        Assert.Equal(CropCommitResult.InvalidGeometry, result);
         Assert.Equal(CropSelectionPhase.Active, controller.Selection.Phase);
         Assert.Equal(new Rect(20, 10, 100, 80), controller.Selection.Geometry.Region);
     }
@@ -204,6 +212,93 @@ public sealed class CropControllerTests
 
         Assert.Equal(CropSelectionPhase.Active, controller.Selection.Phase);
         Assert.Equal(new Rect(20, 10, 100, 80), controller.Selection.Geometry.Region);
+    }
+
+    [Fact]
+    public void Commit_AfterBeginGesture_ReturnsActivatedWhenValid()
+    {
+        var controller = new CropController(minimumSize: 4);
+        var bounds = new Rect(0, 0, 200, 100);
+
+        controller.BeginGesture(new Point(20, 10), bounds);
+        controller.Update(new Point(120, 90), bounds);
+        var result = controller.Commit(new Point(160, 95), bounds);
+
+        Assert.Equal(CropCommitResult.Activated, result);
+    }
+
+    [Fact]
+    public void Commit_AfterBeginGesture_ReturnsInvalidGeometryWhenTooSmall()
+    {
+        var controller = new CropController(minimumSize: 4);
+        var bounds = new Rect(0, 0, 200, 100);
+
+        controller.BeginGesture(new Point(20, 10), bounds);
+        var result = controller.Commit(new Point(21, 11), bounds);
+
+        Assert.Equal(CropCommitResult.InvalidGeometry, result);
+    }
+
+    [Fact]
+    public void Commit_WithNoGesture_ReturnsNoGesture()
+    {
+        var controller = new CropController(minimumSize: 4);
+        var bounds = new Rect(0, 0, 200, 100);
+
+        var result = controller.Commit(new Point(50, 50), bounds);
+
+        Assert.Equal(CropCommitResult.NoGesture, result);
+    }
+
+    [Fact]
+    public void Commit_AfterAdjustment_ReturnsAdjustedWhenValid()
+    {
+        var controller = CreateActiveController(new Rect(20, 10, 100, 80));
+        var bounds = new Rect(0, 0, 200, 100);
+
+        controller.BeginGesture(new Point(120, 50), bounds);
+        controller.Update(new Point(150, 60), bounds);
+        var result = controller.Commit(new Point(150, 60), bounds);
+
+        Assert.Equal(CropCommitResult.Adjusted, result);
+    }
+
+    [Fact]
+    public void Commit_AfterAdjustment_ReturnsInvalidGeometryWhenTooSmall()
+    {
+        var controller = CreateActiveController(new Rect(20, 10, 100, 80), minimumSize: 10);
+        var bounds = new Rect(0, 0, 200, 100);
+
+        controller.BeginGesture(new Point(120, 50), bounds);
+        controller.Update(new Point(22, 50), bounds);
+        var result = controller.Commit(new Point(22, 50), bounds);
+
+        Assert.Equal(CropCommitResult.InvalidGeometry, result);
+    }
+
+    [Fact]
+    public void Commit_ReplacementGesture_ReturnsActivatedWhenValid()
+    {
+        var controller = CreateActiveController(new Rect(20, 10, 100, 80));
+        var bounds = new Rect(0, 0, 200, 100);
+
+        controller.BeginGesture(new Point(140, 20), bounds);
+        controller.Update(new Point(180, 70), bounds);
+        var result = controller.Commit(new Point(180, 70), bounds);
+
+        Assert.Equal(CropCommitResult.Activated, result);
+    }
+
+    [Fact]
+    public void Commit_ReplacementGesture_ReturnsInvalidGeometryWhenTooSmall()
+    {
+        var controller = CreateActiveController(new Rect(20, 10, 100, 80));
+        var bounds = new Rect(0, 0, 200, 100);
+
+        controller.BeginGesture(new Point(140, 20), bounds);
+        var result = controller.Commit(new Point(141, 21), bounds);
+
+        Assert.Equal(CropCommitResult.InvalidGeometry, result);
     }
 
     private static CropController CreateActiveController(Rect region, double minimumSize = 4)

@@ -3,6 +3,7 @@ using Lumiere.Capture;
 using Lumiere.Graphics.Devices;
 using Lumiere.Graphics.Hdr;
 using Lumiere.Graphics.Presentation;
+using Lumiere.Infrastructure.Clipboard;
 using Lumiere.Infrastructure.Interop;
 using Lumiere.Overlay;
 using Lumiere.Overlay.Crop;
@@ -28,6 +29,7 @@ public sealed partial class MainWindow : Window
     private PreviewReadinessStatus? activePresentationEvidence;
     private CaptureSessionState sessionState = CaptureSessionState.Idle();
     private OverlayWindow? overlayWindow;
+    private ClipboardOutputService? clipboardOutputService;
     private long previewGeneration;
     private long frameEventCount;
     private int previewSourceWidth;
@@ -417,6 +419,7 @@ public sealed partial class MainWindow : Window
 
         graphicsEngine ??= new GraphicsEngine(deviceResources);
         captureService ??= new CaptureService(deviceResources);
+        clipboardOutputService ??= new ClipboardOutputService(deviceResources);
     }
 
     private void EnsureOverlayWindow(CaptureTarget target)
@@ -532,6 +535,7 @@ public sealed partial class MainWindow : Window
 
         try
         {
+            _ = TryCopyCropToClipboardAsync(selection);
             StopPreview(reportStopped: false);
         }
         finally
@@ -540,6 +544,36 @@ public sealed partial class MainWindow : Window
                 "Crop confirmed. Preview resources are stopping.",
                 CreateConfirmedSelectionDetail(selection))));
             CloseOverlayWindow();
+        }
+    }
+
+    private async Task TryCopyCropToClipboardAsync(ConfirmedCaptureSelection selection)
+    {
+        if (clipboardOutputService is null || swapChainResources is null)
+        {
+            return;
+        }
+
+        try
+        {
+            // Capture back buffer reference before async operation
+            var backBuffer = swapChainResources.SwapChain.GetBuffer<Vortice.Direct3D11.ID3D11Texture2D>(0);
+            try
+            {
+                await clipboardOutputService.TryCopyToClipboardAsync(
+                    backBuffer,
+                    selection.PixelRegion,
+                    selection.FrameSize.Width,
+                    selection.FrameSize.Height);
+            }
+            finally
+            {
+                backBuffer?.Dispose();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Clipboard output failed: {ex.Message}");
         }
     }
 

@@ -123,7 +123,10 @@ public sealed partial class OverlayWindow : Window
     private void OnCancelButtonClick(object sender, RoutedEventArgs args) =>
         RequestClose();
 
-    private void OnConfirmButtonClick(object sender, RoutedEventArgs args)
+    private void OnConfirmButtonClick(object sender, RoutedEventArgs args) =>
+        RequestCaptureConfirm();
+
+    private void RequestCaptureConfirm()
     {
         if (isClosingRequested)
         {
@@ -142,8 +145,11 @@ public sealed partial class OverlayWindow : Window
         }
 
         isClosingRequested = true;
+        var closingMessage = confirmed.Status is OverlayDisplayStatus.DegradedPreview
+            ? "Crop confirmed (degraded preview). Closing..."
+            : "Crop confirmed. Closing...";
         ApplyState(OverlayState.Closing(
-            "Crop confirmed. Closing preview.",
+            closingMessage,
             confirmed.Status is OverlayDisplayStatus.DegradedPreview
                 ? $"Confirmed degraded preview crop: {confirmed.TechnicalDetail}"
                 : $"Confirmed crop: {confirmed.TechnicalDetail}"));
@@ -197,13 +203,19 @@ public sealed partial class OverlayWindow : Window
             return;
         }
 
-        cropController.Commit(
+        var commitResult = cropController.Commit(
             args.GetCurrentPoint(CropCanvas).Position,
             currentPreviewLayout.PreviewBounds);
         CropCanvas.ReleasePointerCapture(args.Pointer);
         activeCropPointerId = null;
         UpdateCropVisuals();
         UpdateConfirmAvailability();
+
+        if (commitResult is CropCommitResult.Activated or CropCommitResult.Adjusted)
+        {
+            RequestCaptureConfirm();
+        }
+
         args.Handled = true;
     }
 

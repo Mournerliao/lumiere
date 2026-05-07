@@ -38,7 +38,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-21T11:35:23+0800
-last_updated: 2026-05-07T18:00:00+0800
+last_updated: 2026-05-07T20:00:00+0800
 project: lumiere
 project_key: NOKEY
 tracking_system: file-system
@@ -65,7 +65,7 @@ development_status:
   3-3-adjust-or-recreate-the-crop-selection: done
   3-4-confirm-or-cancel-the-capture-overlay: done
   3-5-manage-overlay-hit-testing-and-keyboard-escape: done
-  3-6-release-to-capture-and-copy: backlog
+  3-6-release-to-capture-and-copy: in-progress
   epic-3-retrospective: done
   epic-4: backlog
   4-1-show-user-facing-capture-and-preview-status: backlog

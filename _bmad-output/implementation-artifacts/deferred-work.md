@@ -36,3 +36,10 @@
 - `GetMonitorDisplayName` returns raw `DeviceName` (`\\.\DISPLAY1`) instead of a user-friendly name. Pre-existing UX concern, not caused by this change.
 - `GetMonitorFromWindow` is public but unused in this changeset. Future use for window-handle fallback path.
 - `MonitorFromPoint` with `MONITOR_DEFAULTTONEAREST` never returns null — the `IntPtr.Zero` check is dead code. Harmless but could be cleaned up.
+
+## Deferred from: code review of 3-6-release-to-capture-and-copy (2026-05-07)
+
+- 无 HDR→SDR 色调映射 — 故事规格明确说明"basic usable bitmap without claiming HDR-preserving semantics"，Story 4.2 定义完整语义。
+- 测试文件重复 — `ReleaseToCaptureTests.cs` 与 `CropControllerTests.cs` 测试用例重复。代码清理，不影响功能。
+- `CropCommitResult.InvalidGeometry` 路径创建多余 `CropSelection` — 对象身份变化但区域不变，下游引用相等性检查可能受影响。低风险。
+- 架构边界违规 — `Lumiere.Infrastructure` 直接创建 D3D11 纹理，绕过 `Lumiere.Graphics` 边界。应移至 `Lumiere.Graphics` 或通过窄接口委托。需要更深入的重构，MVP 阶段可接受。
