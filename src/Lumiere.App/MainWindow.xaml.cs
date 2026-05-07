@@ -69,7 +69,9 @@ public sealed partial class MainWindow : Window
 
             var directService = new DirectMonitorCaptureTargetSelectionService(
                 MonitorSelectionInterop.GetCurrentMonitorFromCursor,
-                GraphicsCaptureMonitorInterop.CreateForMonitor,
+                monitor => CaptureTarget.FromDisplayItem(
+                    GraphicsCaptureMonitorInterop.CreateForMonitor(monitor),
+                    monitor.DisplayName),
                 fallbackPicker: new GraphicsCaptureTargetPicker(this));
             var result = await directService.SelectDirectMonitorTargetAsync();
 

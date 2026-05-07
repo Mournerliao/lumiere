@@ -9,23 +9,54 @@ public sealed class DirectMonitorCaptureTargetSelectionService
     private const int E_NOTIMPL = unchecked((int)0x80004001);
 
     private readonly Func<MonitorHandle> monitorResolver;
-    private readonly Func<MonitorHandle, GraphicsCaptureItem> monitorItemFactory;
+    private readonly Func<MonitorHandle, CaptureTarget> monitorTargetFactory;
     private readonly Func<bool> isCaptureSupported;
     private readonly ICaptureTargetPicker? fallbackPicker;
+    private readonly Func<Task<CaptureTarget?>>? fallbackTargetProvider;
 
     public DirectMonitorCaptureTargetSelectionService(
         Func<MonitorHandle> monitorResolver,
-        Func<MonitorHandle, GraphicsCaptureItem> monitorItemFactory,
+        Func<MonitorHandle, CaptureTarget> monitorTargetFactory,
         Func<bool>? isCaptureSupported = null,
         ICaptureTargetPicker? fallbackPicker = null)
+        : this(
+            monitorResolver,
+            monitorTargetFactory,
+            isCaptureSupported,
+            fallbackPicker,
+            null)
     {
-        this.monitorResolver = monitorResolver ?? throw new ArgumentNullException(nameof(monitorResolver));
-        this.monitorItemFactory = monitorItemFactory ?? throw new ArgumentNullException(nameof(monitorItemFactory));
-        this.isCaptureSupported = isCaptureSupported ?? GraphicsCaptureSession.IsSupported;
-        this.fallbackPicker = fallbackPicker;
     }
 
-    public bool HasFallbackPicker => fallbackPicker is not null;
+    internal DirectMonitorCaptureTargetSelectionService(
+        Func<MonitorHandle> monitorResolver,
+        Func<MonitorHandle, CaptureTarget> monitorTargetFactory,
+        Func<bool>? isCaptureSupported,
+        Func<Task<CaptureTarget?>> fallbackTargetProvider)
+        : this(
+            monitorResolver,
+            monitorTargetFactory,
+            isCaptureSupported,
+            null,
+            fallbackTargetProvider)
+    {
+    }
+
+    private DirectMonitorCaptureTargetSelectionService(
+        Func<MonitorHandle> monitorResolver,
+        Func<MonitorHandle, CaptureTarget> monitorTargetFactory,
+        Func<bool>? isCaptureSupported,
+        ICaptureTargetPicker? fallbackPicker,
+        Func<Task<CaptureTarget?>>? fallbackTargetProvider)
+    {
+        this.monitorResolver = monitorResolver ?? throw new ArgumentNullException(nameof(monitorResolver));
+        this.monitorTargetFactory = monitorTargetFactory ?? throw new ArgumentNullException(nameof(monitorTargetFactory));
+        this.isCaptureSupported = isCaptureSupported ?? GraphicsCaptureSession.IsSupported;
+        this.fallbackPicker = fallbackPicker;
+        this.fallbackTargetProvider = fallbackTargetProvider;
+    }
+
+    public bool HasFallbackPicker => fallbackPicker is not null || fallbackTargetProvider is not null;
 
     public Task<CaptureTargetSelectionResult> SelectDirectMonitorTargetAsync()
     {
@@ -41,8 +72,8 @@ public sealed class DirectMonitorCaptureTargetSelectionService
             }
 
             var monitor = monitorResolver();
-            var item = monitorItemFactory(monitor);
-            var target = CaptureTarget.FromDisplayItem(item, monitor.DisplayName);
+            var target = monitorTargetFactory(monitor)
+                ?? throw new InvalidOperationException("Monitor target factory returned null.");
 
             return Task.FromResult(CaptureTargetSelectionResult.Selected(
                 target,
@@ -83,7 +114,7 @@ public sealed class DirectMonitorCaptureTargetSelectionService
 
     public async Task<CaptureTargetSelectionResult> SelectWithFallbackPickerAsync()
     {
-        if (fallbackPicker is null)
+        if (fallbackPicker is null && fallbackTargetProvider is null)
         {
             return CaptureTargetSelectionResult.Failed(
                 PreviewReadinessStatus.Failed(
@@ -103,8 +134,8 @@ public sealed class DirectMonitorCaptureTargetSelectionService
                         "GraphicsCaptureSession.IsSupported returned false."));
             }
 
-            var item = await fallbackPicker.PickSingleItemAsync();
-            if (item is null)
+            var target = await PickFallbackTargetAsync();
+            if (target is null)
             {
                 return CaptureTargetSelectionResult.Canceled(
                     PreviewReadinessStatus.Initializing(
@@ -113,7 +144,6 @@ public sealed class DirectMonitorCaptureTargetSelectionService
                         "GraphicsCapturePicker was canceled."));
             }
 
-            var target = CaptureTarget.FromItem(item);
             return CaptureTargetSelectionResult.Selected(
                 target,
                 PreviewReadinessStatus.Initializing(
@@ -172,5 +202,18 @@ public sealed class DirectMonitorCaptureTargetSelectionService
                 stage,
                 "Preview failed",
                 InteropFailureDiagnostics.Write(exception)));
+    }
+
+    private async Task<CaptureTarget?> PickFallbackTargetAsync()
+    {
+        if (fallbackTargetProvider is not null)
+        {
+            return await fallbackTargetProvider();
+        }
+
+        var item = await fallbackPicker!.PickSingleItemAsync();
+        return item is null
+            ? null
+            : CaptureTarget.FromItem(item);
     }
 }

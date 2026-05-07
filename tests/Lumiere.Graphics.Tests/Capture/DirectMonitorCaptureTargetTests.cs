@@ -90,7 +90,7 @@ public sealed class DirectMonitorCaptureTargetSelectionServiceTests
         var fakeMonitor = new MonitorHandle(new IntPtr(12345), "DISPLAY1");
         var service = new DirectMonitorCaptureTargetSelectionService(
             () => fakeMonitor,
-            _ => CreateFakeCaptureItem(1920, 1080),
+            monitor => CreateFakeDisplayTarget(monitor, 1920, 1080),
             () => true);
 
         var result = await service.SelectDirectMonitorTargetAsync();
@@ -127,7 +127,7 @@ public sealed class DirectMonitorCaptureTargetSelectionServiceTests
         var fakePicker = new ThrowingFakeCaptureTargetPicker(() => pickerCalled = true);
         var service = new DirectMonitorCaptureTargetSelectionService(
             () => fakeMonitor,
-            _ => CreateFakeCaptureItem(1920, 1080),
+            monitor => CreateFakeDisplayTarget(monitor, 1920, 1080),
             () => true,
             fakePicker);
 
@@ -203,15 +203,16 @@ public sealed class DirectMonitorCaptureTargetSelectionServiceTests
     }
 
     [Fact]
-    public async Task FallbackPickerReturnsSelectedWhenPickerSucceeds()
+    public async Task FallbackProviderReturnsSelectedWhenTargetProvided()
     {
-        var fakePicker = new FakeCaptureTargetPicker(
-            CreateFakeCaptureItem(800, 600));
         var service = new DirectMonitorCaptureTargetSelectionService(
             () => throw new InvalidOperationException("Should not be called"),
             _ => throw new InvalidOperationException("Should not be called"),
             () => true,
-            fakePicker);
+            () => Task.FromResult<CaptureTarget?>(
+                CaptureTarget.CreateForTest(
+                    new SizeInt32 { Width = 800, Height = 600 },
+                    "Picked target")));
 
         var result = await service.SelectWithFallbackPickerAsync();
 
@@ -290,19 +291,15 @@ public sealed class DirectMonitorCaptureTargetSelectionServiceTests
         Assert.False(service.HasFallbackPicker);
     }
 
-    private static GraphicsCaptureItem CreateFakeCaptureItem(
+    private static CaptureTarget CreateFakeDisplayTarget(
+        MonitorHandle monitor,
         int width,
         int height)
     {
-        var item = GraphicsCaptureItem.TryCreateFromDisplayId(0);
-        if (item is not null)
-        {
-            return item;
-        }
-
-        throw new PlatformNotSupportedException(
-            "GraphicsCaptureItem.TryCreateFromDisplayId(0) returned null — " +
-            "this test requires a Windows environment with display support.");
+        return CaptureTarget.CreateForTest(
+            new SizeInt32 { Width = width, Height = height },
+            monitor.DisplayName,
+            CaptureTargetKind.Display);
     }
 
     private sealed class FakeCaptureTargetPicker : ICaptureTargetPicker
