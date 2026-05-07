@@ -4,7 +4,6 @@ inputDocuments:
   - '/Users/asherliao/Projects/lumiere/_bmad-output/planning-artifacts/prd.md'
   - '/Users/asherliao/Projects/lumiere/_bmad-output/planning-artifacts/architecture.md'
   - '/Users/asherliao/Projects/lumiere/_bmad-output/planning-artifacts/epics.md'
-  - '/Users/asherliao/Projects/lumiere/_bmad-output/planning-artifacts/implementation-readiness-report-2026-04-20.md'
   - '/Users/asherliao/Projects/lumiere/_bmad-output/planning-artifacts/research/technical-lumiere-hdr-capture-research-2026-04-20.md'
   - '/Users/asherliao/Projects/lumiere/_bmad-output/project-context.md'
 workflowType: 'ux-design'
@@ -610,7 +609,7 @@ Key considerations:
 
 ### Design Directions Explored
 
-Six design directions were explored in `_bmad-output/planning-artifacts/ux-design-directions.html`:
+Six historical design directions were explored in `_bmad-output/planning-artifacts/archive/2026-05-cleanup/ux-design-directions.html`:
 
 1. Native Minimal
    A sparse Windows-native overlay with a compact HDR trust badge, direct crop rectangle, and simple confirm/cancel controls.

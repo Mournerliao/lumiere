@@ -5,7 +5,7 @@ created: '2026-04-21'
 status: 'done'
 route: 'one-shot'
 context:
-  - '_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-21.md'
+  - '_bmad-output/planning-artifacts/archive/2026-05-cleanup/sprint-change-proposal-2026-04-21.md'
 supersededBy:
   - '_bmad-output/planning-artifacts/sprint-change-proposal-2026-05-07-canonical-mvp-1-0-rebaseline.md'
   - '_bmad-output/planning-artifacts/epics.md'
