@@ -28,6 +28,16 @@ public sealed class DirectMonitorCaptureTargetSelectionService
     {
     }
 
+    public static DirectMonitorCaptureTargetSelectionService CreateDirectOnly(
+        Func<MonitorHandle> monitorResolver,
+        Func<MonitorHandle, CaptureTarget> monitorTargetFactory,
+        Func<bool>? isCaptureSupported = null) =>
+        new(
+            monitorResolver,
+            monitorTargetFactory,
+            isCaptureSupported,
+            fallbackPicker: null);
+
     internal DirectMonitorCaptureTargetSelectionService(
         Func<MonitorHandle> monitorResolver,
         Func<MonitorHandle, CaptureTarget> monitorTargetFactory,

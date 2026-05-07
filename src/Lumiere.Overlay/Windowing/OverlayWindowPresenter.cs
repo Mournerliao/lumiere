@@ -1,19 +1,21 @@
+using System.Runtime.InteropServices;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Windows.Graphics;
+using WinRT.Interop;
 
 namespace Lumiere.Overlay.Windowing;
 
 public sealed class OverlayWindowPresenter
 {
+    public double DpiScale { get; private set; } = 1.0;
+
     public string Apply(Window window, OverlayPlacementRequest placement)
     {
         ArgumentNullException.ThrowIfNull(window);
         ArgumentNullException.ThrowIfNull(placement);
 
-        var presenter = OverlappedPresenter.Create();
-        presenter.SetBorderAndTitleBar(false, false);
-        presenter.IsAlwaysOnTop = true;
+        var presenter = FullScreenPresenter.Create();
 
         window.AppWindow.SetPresenter(presenter);
         var fallbackDisplayArea = DisplayArea.GetFromWindowId(
@@ -29,7 +31,17 @@ public sealed class OverlayWindowPresenter
             placement,
             displayAreas,
             fallbackDisplayArea.OuterBounds);
+
         window.AppWindow.MoveAndResize(overlayBounds);
+
+        var hwnd = WindowNative.GetWindowHandle(window);
+        DpiScale = GetDpiForWindow(hwnd) / 96.0;
+        var margins = new MARGINS { leftWidth = -1, rightWidth = -1, topHeight = -1, bottomHeight = -1 };
+        DwmExtendFrameIntoClientArea(hwnd, ref margins);
+        var ncRenderingPolicy = 1; // DWMNCRP_DISABLED
+        DwmSetWindowAttribute(hwnd, 2, ref ncRenderingPolicy, sizeof(int)); // DWMWA_NCRENDERING_POLICY = 2
+        var borderColor = unchecked((int)0xFFFFFFFE); // DWMWA_COLOR_NONE: suppress border drawing entirely
+        DwmSetWindowAttribute(hwnd, 34, ref borderColor, sizeof(int)); // DWMWA_BORDER_COLOR = 34
 
         return CreatePresenterApplication(
                 placement.TargetDisplayName,
@@ -76,5 +88,23 @@ public sealed class OverlayWindowPresenter
         }
 
         return fallbackBounds;
+    }
+
+    [DllImport("user32.dll", ExactSpelling = true)]
+    private static extern uint GetDpiForWindow(IntPtr hwnd);
+
+    [DllImport("dwmapi.dll", ExactSpelling = true)]
+    private static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref MARGINS margins);
+
+    [DllImport("dwmapi.dll", ExactSpelling = true)]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MARGINS
+    {
+        public int leftWidth;
+        public int rightWidth;
+        public int topHeight;
+        public int bottomHeight;
     }
 }

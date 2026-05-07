@@ -7,7 +7,9 @@ public static class CropCoordinateMapper
     public static CropPixelRect MapToCapturePixels(
         Rect crop,
         Rect previewBounds,
-        CaptureFrameSize frameSize)
+        CaptureFrameSize frameSize,
+        double dpiScaleX = 1.0,
+        double dpiScaleY = 1.0)
     {
         if (previewBounds.Width <= 0 || previewBounds.Height <= 0)
         {
@@ -22,10 +24,10 @@ public static class CropCoordinateMapper
         var scaleX = frameSize.Width / previewBounds.Width;
         var scaleY = frameSize.Height / previewBounds.Height;
 
-        var left = (crop.X - previewBounds.X) * scaleX;
-        var top = (crop.Y - previewBounds.Y) * scaleY;
-        var right = (crop.X + crop.Width - previewBounds.X) * scaleX;
-        var bottom = (crop.Y + crop.Height - previewBounds.Y) * scaleY;
+        var left = (crop.X * dpiScaleX - previewBounds.X) * scaleX;
+        var top = (crop.Y * dpiScaleY - previewBounds.Y) * scaleY;
+        var right = ((crop.X + crop.Width) * dpiScaleX - previewBounds.X) * scaleX;
+        var bottom = ((crop.Y + crop.Height) * dpiScaleY - previewBounds.Y) * scaleY;
 
         var pixelLeft = Clamp((int)Math.Floor(left), 0, frameSize.Width);
         var pixelTop = Clamp((int)Math.Floor(top), 0, frameSize.Height);

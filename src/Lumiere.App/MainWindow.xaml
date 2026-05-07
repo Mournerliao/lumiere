@@ -210,6 +210,34 @@
                   Title="Region Select" />
             </Grid>
 
+            <Border
+                Padding="14"
+                Background="{StaticResource DashboardPanelBrush}"
+                BorderBrush="{StaticResource DashboardBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+              <StackPanel Spacing="6">
+                <TextBlock
+                    x:Name="CaptureStatusTitle"
+                    FontSize="13"
+                    FontWeight="SemiBold"
+                    Foreground="{StaticResource DashboardTextBrush}"
+                    Text="Ready" />
+                <TextBlock
+                    x:Name="CaptureStatusMessage"
+                    FontSize="12"
+                    Foreground="{StaticResource DashboardMutedTextBrush}"
+                    Text="Click Capture Now to start direct monitor capture."
+                    TextWrapping="Wrap" />
+                <TextBlock
+                    x:Name="CaptureStatusDetail"
+                    FontFamily="Consolas"
+                    FontSize="10"
+                    Foreground="{StaticResource DashboardSubtleTextBrush}"
+                    TextWrapping="WrapWholeWords" />
+              </StackPanel>
+            </Border>
+
           </StackPanel>
         </ScrollViewer>
       </Grid>

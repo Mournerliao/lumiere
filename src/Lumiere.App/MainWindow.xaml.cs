@@ -72,12 +72,11 @@ public sealed partial class MainWindow : Window
                     "Starting direct monitor capture...",
                     "Resolving current monitor for direct capture.")));
 
-            var directService = new DirectMonitorCaptureTargetSelectionService(
+            var directService = DirectMonitorCaptureTargetSelectionService.CreateDirectOnly(
                 MonitorSelectionInterop.GetCurrentMonitorFromCursor,
                 monitor => CaptureTarget.FromDisplayItem(
                     GraphicsCaptureMonitorInterop.CreateForMonitor(monitor),
-                    monitor.DisplayName),
-                fallbackPicker: new GraphicsCaptureTargetPicker(this));
+                    monitor.DisplayName));
             var result = await directService.SelectDirectMonitorTargetAsync();
 
             if (isClosed)
@@ -448,6 +447,7 @@ public sealed partial class MainWindow : Window
         overlayWindow.ApplyCaptureFrameSize(frameSize);
         overlayWindow.ApplyPresenter(CreateOverlayPlacementRequest(target));
         overlayWindow.Activate();
+        overlayWindow.ExcludeFromCapture();
         overlayWindow.ApplyState(CreateOverlayState(sessionState));
     }
 
@@ -487,6 +487,7 @@ public sealed partial class MainWindow : Window
         try
         {
             sessionState = state ?? throw new ArgumentNullException(nameof(state));
+            UpdateCaptureStatus(sessionState);
             var overlayState = CreateOverlayState(sessionState);
             overlayWindow?.ApplyState(overlayState);
             if (overlayWindow is not null && overlayState.RequiresFailureTeardown)
@@ -499,6 +500,28 @@ public sealed partial class MainWindow : Window
         {
             applyingSessionState = false;
         }
+    }
+
+    private void UpdateCaptureStatus(CaptureSessionState state)
+    {
+        CaptureStatusTitle.Text = state.Status switch
+        {
+            CaptureSessionStatus.Idle => "Ready",
+            CaptureSessionStatus.SelectingTarget => "Selecting capture target",
+            CaptureSessionStatus.Initializing => "Starting preview",
+            CaptureSessionStatus.Capturing => "HDR preview running",
+            CaptureSessionStatus.Degraded => "Preview degraded",
+            CaptureSessionStatus.Unsupported => "Capture unsupported",
+            CaptureSessionStatus.Failed => "Preview failed",
+            CaptureSessionStatus.Disposed => "Preview stopped",
+            _ => "Capture status",
+        };
+        CaptureStatusMessage.Text = string.IsNullOrWhiteSpace(state.UserFacingReason)
+            ? "Capture status changed."
+            : state.UserFacingReason;
+        CaptureStatusDetail.Text = string.IsNullOrWhiteSpace(state.TechnicalDetail)
+            ? string.Empty
+            : state.TechnicalDetail;
     }
 
     private void SetCaptureActionsEnabled(bool isEnabled)
@@ -543,32 +566,36 @@ public sealed partial class MainWindow : Window
         CloseOverlayWindow();
     }
 
-    private void OnOverlayCaptureConfirmed(object? sender, ConfirmedCaptureSelection selection)
+    private async void OnOverlayCaptureConfirmed(object? sender, ConfirmedCaptureSelection selection)
     {
         if (!ReferenceEquals(sender, overlayWindow) || isClosed)
         {
             return;
         }
 
+        var copied = false;
         try
         {
-            _ = TryCopyCropToClipboardAsync(selection);
+            copied = await TryCopyCropToClipboardAsync(selection);
             StopPreview(reportStopped: false);
         }
         finally
         {
+            overlayWindow?.ApplyClipboardResult(copied, selection.Status);
             ApplySessionState(CaptureSessionState.Disposed(PreviewReadinessStatus.Ready(
-                "Crop confirmed. Preview resources are stopping.",
+                copied
+                    ? "Crop copied. Preview resources are stopping."
+                    : "Crop confirmed, but clipboard output failed. Preview resources are stopping.",
                 CreateConfirmedSelectionDetail(selection))));
             CloseOverlayWindow();
         }
     }
 
-    private async Task TryCopyCropToClipboardAsync(ConfirmedCaptureSelection selection)
+    private async Task<bool> TryCopyCropToClipboardAsync(ConfirmedCaptureSelection selection)
     {
         if (clipboardOutputService is null || swapChainResources is null)
         {
-            return;
+            return false;
         }
 
         try
@@ -577,7 +604,7 @@ public sealed partial class MainWindow : Window
             var backBuffer = swapChainResources.SwapChain.GetBuffer<Vortice.Direct3D11.ID3D11Texture2D>(0);
             try
             {
-                await clipboardOutputService.TryCopyToClipboardAsync(
+                return await clipboardOutputService.TryCopyToClipboardAsync(
                     backBuffer,
                     selection.PixelRegion.X,
                     selection.PixelRegion.Y,
@@ -594,6 +621,7 @@ public sealed partial class MainWindow : Window
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Clipboard output failed: {ex.Message}");
+            return false;
         }
     }
 

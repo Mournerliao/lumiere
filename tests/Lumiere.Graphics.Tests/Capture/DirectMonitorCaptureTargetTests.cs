@@ -138,6 +138,21 @@ public sealed class DirectMonitorCaptureTargetSelectionServiceTests
     }
 
     [Fact]
+    public async Task DirectOnlyFactoryDoesNotCarryFallbackPicker()
+    {
+        var service = DirectMonitorCaptureTargetSelectionService.CreateDirectOnly(
+            () => new MonitorHandle(new IntPtr(12345), "DISPLAY1"),
+            _ => throw new NotSupportedException("CreateForMonitor not supported"),
+            () => true);
+
+        var result = await service.SelectDirectMonitorTargetAsync();
+
+        Assert.False(service.HasFallbackPicker);
+        Assert.Equal(SelectionOutcome.Unsupported, result.Outcome);
+        Assert.Null(result.Target);
+    }
+
+    [Fact]
     public async Task DirectSelectionMapsNativeInteropExceptionToFailed()
     {
         var service = new DirectMonitorCaptureTargetSelectionService(

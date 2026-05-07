@@ -20,6 +20,8 @@ public sealed record ConfirmedCaptureSelection(
         Rect previewBounds,
         CaptureFrameSize frameSize,
         OverlayState overlayState,
+        double dpiScaleX,
+        double dpiScaleY,
         out ConfirmedCaptureSelection confirmed)
     {
         ArgumentNullException.ThrowIfNull(selection);
@@ -32,7 +34,8 @@ public sealed record ConfirmedCaptureSelection(
         }
 
         var dipRegion = selection.Geometry.Region;
-        var pixelRegion = CropCoordinateMapper.MapToCapturePixels(dipRegion, previewBounds, frameSize);
+        var pixelRegion = CropCoordinateMapper.MapToCapturePixels(
+            dipRegion, previewBounds, frameSize, dpiScaleX, dpiScaleY);
         confirmed = new ConfirmedCaptureSelection(
             dipRegion,
             pixelRegion,

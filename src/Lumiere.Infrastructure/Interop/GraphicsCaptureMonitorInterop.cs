@@ -6,7 +6,9 @@ namespace Lumiere.Infrastructure.Interop;
 public static class GraphicsCaptureMonitorInterop
 {
     private const string OperationName = "IGraphicsCaptureItemInterop.CreateForMonitor";
+    private const string GraphicsCaptureItemRuntimeClassName = "Windows.Graphics.Capture.GraphicsCaptureItem";
     private static readonly Guid GraphicsCaptureItemInteropId = new("3628E81B-3CAC-4C60-B7F4-23CE0E0C3356");
+    private static readonly Guid GraphicsCaptureItemInterfaceId = new("79C3F95B-31F7-4EC2-A464-632EF5D30760");
 
     public static GraphicsCaptureItem CreateForMonitor(MonitorHandle monitor)
     {
@@ -41,7 +43,7 @@ public static class GraphicsCaptureMonitorInterop
             var createResult = InvokeCreateForMonitor(
                 interopPointer,
                 monitor.RawHandle,
-                typeof(GraphicsCaptureItem).GUID,
+                GraphicsCaptureItemInterfaceId,
                 out itemPointer);
 
             if (createResult < 0)
@@ -77,19 +79,22 @@ public static class GraphicsCaptureMonitorInterop
 
     private static IntPtr GetGraphicsCaptureItemFactory()
     {
+        var classId = IntPtr.Zero;
         var factoryPtr = IntPtr.Zero;
         try
         {
+            classId = CreateHString(GraphicsCaptureItemRuntimeClassName);
+            var interfaceId = typeof(IGraphicsCaptureItemInterop).GUID;
             var result = RoGetActivationFactory(
-                "Windows.Graphics.Capture.GraphicsCaptureItem",
-                typeof(IGraphicsCaptureItemInterop).GUID,
+                classId,
+                in interfaceId,
                 out factoryPtr);
 
             if (result < 0)
             {
                 throw CreateFailure(
                     result,
-                    "RoGetActivationFactory failed for Windows.Graphics.Capture.GraphicsCaptureItem.");
+                    $"RoGetActivationFactory failed for {GraphicsCaptureItemRuntimeClassName}.");
             }
 
             return factoryPtr;
@@ -103,6 +108,26 @@ public static class GraphicsCaptureMonitorInterop
 
             throw;
         }
+        finally
+        {
+            if (classId != IntPtr.Zero)
+            {
+                _ = WindowsDeleteString(classId);
+            }
+        }
+    }
+
+    private static IntPtr CreateHString(string value)
+    {
+        var result = WindowsCreateString(value, value.Length, out var hstring);
+        if (result < 0)
+        {
+            throw CreateFailure(
+                result,
+                $"WindowsCreateString failed for {value}.");
+        }
+
+        return hstring;
     }
 
     private static int InvokeCreateForMonitor(
@@ -120,11 +145,20 @@ public static class GraphicsCaptureMonitorInterop
         return createForMonitor(interopPointer, monitorHandle, in resultInterfaceId, out resultPointer);
     }
 
-    [DllImport("combase.dll", PreserveSig = true)]
+    [DllImport("combase.dll", ExactSpelling = true, PreserveSig = true)]
     private static extern int RoGetActivationFactory(
-        [MarshalAs(UnmanagedType.HString)] string classId,
-        Guid interfaceId,
+        IntPtr activatableClassId,
+        in Guid interfaceId,
         out IntPtr factory);
+
+    [DllImport("combase.dll", ExactSpelling = true, PreserveSig = true)]
+    private static extern int WindowsCreateString(
+        [MarshalAs(UnmanagedType.LPWStr)] string sourceString,
+        int length,
+        out IntPtr hstring);
+
+    [DllImport("combase.dll", ExactSpelling = true, PreserveSig = true)]
+    private static extern int WindowsDeleteString(IntPtr hstring);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     private delegate int CreateForMonitorDelegate(

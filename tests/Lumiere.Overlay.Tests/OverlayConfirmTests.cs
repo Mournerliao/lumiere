@@ -20,6 +20,8 @@ public sealed class OverlayConfirmTests
             new Rect(0, 0, 100, 100),
             new CaptureFrameSize(1000, 500),
             state,
+            1.0,
+            1.0,
             out var confirmed);
 
         Assert.True(result);
@@ -38,6 +40,8 @@ public sealed class OverlayConfirmTests
             new Rect(0, 0, 100, 100),
             new CaptureFrameSize(1000, 500),
             OverlayState.HdrReady("Ready"),
+            1.0,
+            1.0,
             out _);
 
         Assert.False(result);
@@ -57,6 +61,8 @@ public sealed class OverlayConfirmTests
             new Rect(0, 0, 100, 100),
             new CaptureFrameSize(200, 100),
             state,
+            1.0,
+            1.0,
             out var confirmed);
 
         Assert.True(result);
@@ -82,6 +88,8 @@ public sealed class OverlayConfirmTests
             new Rect(0, 0, 100, 100),
             new CaptureFrameSize(1000, 500),
             state,
+            1.0,
+            1.0,
             out _);
 
         Assert.False(result);

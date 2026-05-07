@@ -40,6 +40,9 @@ public sealed partial class OverlayWindow : Window
 
         Title = "Lumiere Capture Overlay";
         PreviewSurface = new SwapChainPanelPreviewSurface(PreviewSwapChainPanel);
+        PreviewSwapChainPanel.Loaded += OnSwapChainPanelLoaded;
+        PreviewSwapChainPanel.HorizontalAlignment = HorizontalAlignment.Left;
+        PreviewSwapChainPanel.VerticalAlignment = VerticalAlignment.Top;
         RootGrid.SizeChanged += OnRootGridSizeChanged;
         RootGrid.Loaded += OnRootGridLoaded;
         Closed += OnClosed;
@@ -52,9 +55,21 @@ public sealed partial class OverlayWindow : Window
 
     public ISwapChainPreviewSurface PreviewSurface { get; }
 
+    public double DpiScale => presenter.DpiScale;
+
     public void ApplyPresenter(OverlayPlacementRequest placement)
     {
         presenterTechnicalDetail = presenter.Apply(this, placement);
+        UpdateTechnicalDetail();
+        UpdatePreviewLayout(RootGrid.ActualWidth, RootGrid.ActualHeight);
+    }
+
+    public void ExcludeFromCapture()
+    {
+        presenterTechnicalDetail = string.Join(
+            " ",
+            new[] { presenterTechnicalDetail, WindowCaptureExclusionInterop.ExcludeFromCapture(this) }
+                .Where(detail => !string.IsNullOrWhiteSpace(detail)));
         UpdateTechnicalDetail();
     }
 
@@ -79,6 +94,7 @@ public sealed partial class OverlayWindow : Window
         }
 
         currentCaptureFrameSize = frameSize;
+        UpdatePreviewLayout(RootGrid.ActualWidth, RootGrid.ActualHeight);
     }
 
     public void CloseSafely()
@@ -92,11 +108,58 @@ public sealed partial class OverlayWindow : Window
         Close();
     }
 
-    private void OnRootGridSizeChanged(object sender, SizeChangedEventArgs args)
+    private void OnRootGridSizeChanged(object sender, SizeChangedEventArgs args) =>
+        UpdatePreviewLayout(args.NewSize.Width, args.NewSize.Height);
+
+    private void UpdatePreviewLayout(double availableWidth, double availableHeight)
     {
-        currentPreviewLayout = OverlayPreviewLayout.FillSurface(args.NewSize.Width, args.NewSize.Height);
+        // Use the window DPI scale from GetDpiForWindow instead of SwapChainPanel.CompositionScale.
+        // WinUI 3's CompositionScale can report 1.0 after the panel Loaded event even when
+        // the actual DPI is higher (e.g. 1.5x), causing the preview to appear zoomed in.
+        var dpiScale = presenter.DpiScale;
+        WriteDebugLog(
+            $"UpdatePreviewLayout: " +
+            $"frameSize=({currentCaptureFrameSize.Width}x{currentCaptureFrameSize.Height}), " +
+            $"dpiScale={dpiScale:0.###}, " +
+            $"available=({availableWidth:0.##}x{availableHeight:0.##}), " +
+            $"physicalAvailable=({availableWidth * dpiScale:0.##}x{availableHeight * dpiScale:0.##})");
+
+        // Convert available size to physical pixels so FitFrameToSurface operates
+        // in the same coordinate space as currentCaptureFrameSize (physical pixels).
+        // The RenderTransform + DPI scaling then maps back to logical coordinates.
+        var physicalAvailableWidth = availableWidth * dpiScale;
+        var physicalAvailableHeight = availableHeight * dpiScale;
+        currentPreviewLayout = OverlayPreviewLayout.FitFrameToSurface(
+            currentCaptureFrameSize.Width,
+            currentCaptureFrameSize.Height,
+            physicalAvailableWidth,
+            physicalAvailableHeight);
+        PreviewSwapChainPanel.Margin = new Thickness(
+            currentPreviewLayout.PreviewBounds.X,
+            currentPreviewLayout.PreviewBounds.Y,
+            0,
+            0);
         PreviewSwapChainPanel.Width = currentPreviewLayout.PreviewBounds.Width;
         PreviewSwapChainPanel.Height = currentPreviewLayout.PreviewBounds.Height;
+
+        if (dpiScale > 0 && Math.Abs(dpiScale - 1.0) > 0.001)
+        {
+            PreviewSwapChainPanel.RenderTransform = new ScaleTransform
+            {
+                ScaleX = 1.0 / dpiScale,
+                ScaleY = 1.0 / dpiScale,
+            };
+        }
+        else
+        {
+            PreviewSwapChainPanel.RenderTransform = null;
+        }
+
+        WriteDebugLog(
+            $"Panel size: " +
+            $"({PreviewSwapChainPanel.Width:0.##}x{PreviewSwapChainPanel.Height:0.##}), " +
+            $"PreviewBounds: ({currentPreviewLayout.PreviewBounds.Width:0.##}x{currentPreviewLayout.PreviewBounds.Height:0.##}), " +
+            $"RenderTransform: ScaleX={1.0 / dpiScale:0.###}, ScaleY={1.0 / dpiScale:0.###}");
         UpdateCropVisuals();
     }
 
@@ -120,6 +183,17 @@ public sealed partial class OverlayWindow : Window
     private void OnRootGridLoaded(object sender, RoutedEventArgs args) =>
         RootGrid.Focus(FocusState.Programmatic);
 
+    private void OnSwapChainPanelLoaded(object sender, RoutedEventArgs args)
+    {
+        // Diagnostic only: logs CompositionScale for debugging WinUI 3 DPI behavior.
+        // This handler does NOT trigger UpdatePreviewLayout — the layout is driven by
+        // ApplyPresenter, ApplyCaptureFrameSize, and RootGrid.SizeChanged.
+        WriteDebugLog(
+            $"SwapChainPanel loaded: " +
+            $"CompositionScaleX={PreviewSwapChainPanel.CompositionScaleX}, " +
+            $"CompositionScaleY={PreviewSwapChainPanel.CompositionScaleY}");
+    }
+
     private void OnCancelButtonClick(object sender, RoutedEventArgs args) =>
         RequestClose();
 
@@ -138,6 +212,8 @@ public sealed partial class OverlayWindow : Window
                 currentPreviewLayout.PreviewBounds,
                 currentCaptureFrameSize,
                 currentState,
+                presenter.DpiScale,
+                presenter.DpiScale,
                 out var confirmed))
         {
             UpdateConfirmAvailability();
@@ -146,11 +222,19 @@ public sealed partial class OverlayWindow : Window
 
         isClosingRequested = true;
         ApplyState(OverlayState.Closing(
-            CreateClipboardClosingMessage(confirmed.Status),
+            CreateClipboardProgressMessage(confirmed.Status),
             confirmed.Status is OverlayDisplayStatus.DegradedPreview
                 ? $"Confirmed degraded preview crop: {confirmed.TechnicalDetail}"
                 : $"Confirmed crop: {confirmed.TechnicalDetail}"));
         CaptureConfirmed?.Invoke(this, confirmed);
+    }
+
+    public void ApplyClipboardResult(bool copied, OverlayDisplayStatus status)
+    {
+        ApplyState(OverlayState.Closing(
+            copied
+                ? CreateClipboardClosingMessage(status)
+                : CreateClipboardFailureClosingMessage(status)));
     }
 
     private void OnCropCanvasPointerPressed(object sender, PointerRoutedEventArgs args)
@@ -406,8 +490,34 @@ public sealed partial class OverlayWindow : Window
             ? "Copied to clipboard (degraded preview). Closing..."
             : "Copied to clipboard. Closing...";
 
+    internal static string CreateClipboardProgressMessage(OverlayDisplayStatus status) =>
+        status is OverlayDisplayStatus.DegradedPreview
+            ? "Copying degraded preview to clipboard..."
+            : "Copying to clipboard...";
+
+    internal static string CreateClipboardFailureClosingMessage(OverlayDisplayStatus status) =>
+        status is OverlayDisplayStatus.DegradedPreview
+            ? "Clipboard copy failed (degraded preview). Closing..."
+            : "Clipboard copy failed. Closing...";
+
     private void OnClosed(object sender, WindowEventArgs args)
     {
         isClosed = true;
+    }
+
+    private static void WriteDebugLog(string message)
+    {
+        try
+        {
+            var logPath = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Lumiere", "overlay-debug.log");
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(logPath)!);
+            System.IO.File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] {message}{Environment.NewLine}");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"WriteDebugLog failed: {ex.Message}");
+        }
     }
 }
