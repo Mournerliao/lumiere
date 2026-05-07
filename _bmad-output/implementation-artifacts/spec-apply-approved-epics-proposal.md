@@ -6,9 +6,14 @@ status: 'done'
 route: 'one-shot'
 context:
   - '_bmad-output/planning-artifacts/sprint-change-proposal-2026-04-21.md'
+supersededBy:
+  - '_bmad-output/planning-artifacts/sprint-change-proposal-2026-05-07-canonical-mvp-1-0-rebaseline.md'
+  - '_bmad-output/planning-artifacts/epics.md'
 ---
 
 # Apply Approved Epics Proposal
+
+> Superseded note (2026-05-07): this file records the completed 2026-04-21 one-shot application of an older epics proposal. It is historical execution evidence, not the active implementation route. Current sprint planning should use the canonical MVP-to-1.0 rebaseline in `_bmad-output/planning-artifacts/epics.md`, with Epic 1-4 as MVP feature implementation, Epic 5 as the MVP completion gate, and Epic 6 as installer/1.0 release.
 
 ## Intent
 
@@ -17,6 +22,8 @@ context:
 **Approach:** Apply the approved Sprint Change Proposal directly to `epics.md`, preserving PRD, architecture, and UX documents unchanged.
 
 ## Suggested Review Order
+
+Historical review order for the 2026-04-21 change only:
 
 - [epics.md UX requirements](../planning-artifacts/epics.md:193) -- verify the standalone UX specification is now referenced as an implementation input.
 - [epics.md FR37 mapping](../planning-artifacts/epics.md:273) -- confirm FR37 is marked Deferred/Post-MVP instead of Epic 5 implementation coverage.
