@@ -16,13 +16,6 @@ public static class MonitorSelectionInterop
         }
 
         var monitor = MonitorFromPoint(point, MonitorFromPointFlags.MONITOR_DEFAULTTONEAREST);
-        if (monitor == IntPtr.Zero)
-        {
-            throw MonitorSelectionFailure(
-                "MonitorFromPoint",
-                $"MonitorFromPoint returned NULL for cursor position ({point.X}, {point.Y}).");
-        }
-
         return new MonitorHandle(monitor, GetMonitorDisplayName(monitor));
     }
 

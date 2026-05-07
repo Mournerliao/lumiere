@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Lumiere.Graphics.Hdr;
 using Vortice.DXGI;
 
@@ -7,6 +8,7 @@ public sealed class SwapChainResources : IDisposable
 {
     private readonly Action detachPreview;
     private readonly Action releaseResources;
+    private readonly IDXGISwapChain1? swapChain;
     private bool disposed;
 
     public SwapChainResources(
@@ -14,10 +16,10 @@ public sealed class SwapChainResources : IDisposable
         PreviewReadinessStatus presentationEvidence,
         Action detachPreview)
     {
-        SwapChain = swapChain ?? throw new ArgumentNullException(nameof(swapChain));
+        this.swapChain = swapChain ?? throw new ArgumentNullException(nameof(swapChain));
         PresentationEvidence = presentationEvidence ?? throw new ArgumentNullException(nameof(presentationEvidence));
         this.detachPreview = detachPreview ?? throw new ArgumentNullException(nameof(detachPreview));
-        releaseResources = SwapChain.Dispose;
+        releaseResources = this.swapChain.Dispose;
     }
 
     internal SwapChainResources(
@@ -25,13 +27,13 @@ public sealed class SwapChainResources : IDisposable
         Action detachPreview,
         Action releaseResources)
     {
-        SwapChain = null!;
         PresentationEvidence = presentationEvidence ?? throw new ArgumentNullException(nameof(presentationEvidence));
         this.detachPreview = detachPreview ?? throw new ArgumentNullException(nameof(detachPreview));
         this.releaseResources = releaseResources ?? throw new ArgumentNullException(nameof(releaseResources));
     }
 
-    public IDXGISwapChain1 SwapChain { get; }
+    public IDXGISwapChain1 SwapChain =>
+        swapChain ?? throw new InvalidOperationException("This test-only resource wrapper was created without a swap chain.");
 
     public PreviewReadinessStatus PresentationEvidence { get; }
 
@@ -47,6 +49,7 @@ public sealed class SwapChainResources : IDisposable
         DisposalEvidence = SwapChainDisposalCoordinator.DisposeOnce(
             detachPreview,
             releaseResources);
+        Debug.WriteLine($"Swap chain disposed. {FormatDisposalEvidence(DisposalEvidence)}");
 
         disposed = true;
     }
@@ -68,7 +71,11 @@ public sealed class SwapChainResources : IDisposable
                 PreviewDetached: false,
                 ResourcesReleased: true,
                 DetachedBeforeRelease: false);
+            Debug.WriteLine($"Swap chain released after failed UI detach. {FormatDisposalEvidence(DisposalEvidence)}");
             disposed = true;
         }
     }
+
+    private static string FormatDisposalEvidence(SwapChainDisposalEvidence evidence) =>
+        $"previewDetached={evidence.PreviewDetached}; resourcesReleased={evidence.ResourcesReleased}; detachedBeforeRelease={evidence.DetachedBeforeRelease}; completed={evidence.Completed}.";
 }

@@ -57,6 +57,17 @@ public sealed class CaptureLifecycleTests
     }
 
     [Fact]
+    public void CaptureSessionResourcesDisposesOnlyOnceAcrossConcurrentCallers()
+    {
+        var disposeCount = 0;
+        var resources = new CaptureSessionResources(() => Interlocked.Increment(ref disposeCount));
+
+        Parallel.For(0, 32, _ => resources.Dispose());
+
+        Assert.Equal(1, disposeCount);
+    }
+
+    [Fact]
     public void CaptureSessionResourcesRetainsDisposalEvidence()
     {
         var resources = new CaptureSessionResources(

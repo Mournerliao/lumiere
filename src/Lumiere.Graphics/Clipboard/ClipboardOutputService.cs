@@ -1,15 +1,17 @@
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.WindowsRuntime;
 using Lumiere.Graphics.Devices;
 using Lumiere.Graphics.Hdr;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
+using Vortice.Mathematics;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics.Imaging;
 using Windows.Storage.Streams;
 using Half = System.Half;
 
-namespace Lumiere.Infrastructure.Clipboard;
+namespace Lumiere.Graphics.Clipboard;
 
 public sealed class ClipboardOutputService : IDisposable
 {
@@ -23,21 +25,24 @@ public sealed class ClipboardOutputService : IDisposable
 
     public async Task<bool> TryCopyToClipboardAsync(
         ID3D11Texture2D sourceTexture,
-        CropPixelRect pixelRegion,
+        int pixelX,
+        int pixelY,
+        int pixelWidth,
+        int pixelHeight,
         int sourceWidth,
         int sourceHeight)
     {
         try
         {
-            if (!ValidateRegion(pixelRegion, sourceWidth, sourceHeight))
+            if (!ValidateRegion(pixelX, pixelY, pixelWidth, pixelHeight, sourceWidth, sourceHeight))
             {
                 return false;
             }
 
-            using var croppedTexture = CropTexture(sourceTexture, pixelRegion);
-            using var bgra8Texture = ConvertToBgra8(croppedTexture, pixelRegion.Width, pixelRegion.Height);
-            var pngBytes = await EncodeAsPngAsync(bgra8Texture, pixelRegion.Width, pixelRegion.Height);
-            await WriteToClipboardAsync(pngBytes, pixelRegion.Width, pixelRegion.Height);
+            using var croppedTexture = CropTexture(sourceTexture, pixelX, pixelY, pixelWidth, pixelHeight);
+            using var bgra8Texture = ConvertToBgra8(croppedTexture, pixelWidth, pixelHeight);
+            var pngBytes = await EncodeAsPngAsync(bgra8Texture, pixelWidth, pixelHeight);
+            await WriteToClipboardAsync(pngBytes);
             return true;
         }
         catch (Exception ex)
@@ -47,25 +52,36 @@ public sealed class ClipboardOutputService : IDisposable
         }
     }
 
-    private bool ValidateRegion(CropPixelRect region, int sourceWidth, int sourceHeight)
+    private static bool ValidateRegion(
+        int x,
+        int y,
+        int width,
+        int height,
+        int sourceWidth,
+        int sourceHeight)
     {
-        return region.X >= 0
-            && region.Y >= 0
-            && region.Width > 0
-            && region.Height > 0
-            && region.X + region.Width <= sourceWidth
-            && region.Y + region.Height <= sourceHeight;
+        return x >= 0
+            && y >= 0
+            && width > 0
+            && height > 0
+            && x + width <= sourceWidth
+            && y + height <= sourceHeight;
     }
 
-    private ID3D11Texture2D CropTexture(ID3D11Texture2D sourceTexture, CropPixelRect region)
+    private ID3D11Texture2D CropTexture(
+        ID3D11Texture2D sourceTexture,
+        int x,
+        int y,
+        int width,
+        int height)
     {
         var device = deviceResources.Device;
         var context = deviceResources.ImmediateContext;
 
         var cropDesc = new Texture2DDescription
         {
-            Width = region.Width,
-            Height = region.Height,
+            Width = (uint)width,
+            Height = (uint)height,
             MipLevels = 1,
             ArraySize = 1,
             Format = HdrConstants.DxgiSwapChainFormat,
@@ -78,7 +94,7 @@ public sealed class ClipboardOutputService : IDisposable
 
         var cropTexture = device.CreateTexture2D(cropDesc);
 
-        var sourceBox = new Box(region.X, region.Y, 0, region.X + region.Width, region.Y + region.Height, 1);
+        var sourceBox = new Box(x, y, 0, x + width, y + height, 1);
         context.CopySubresourceRegion(cropTexture, 0, 0, 0, 0, sourceTexture, 0, sourceBox);
 
         return cropTexture;
@@ -92,8 +108,8 @@ public sealed class ClipboardOutputService : IDisposable
         // Create staging texture to read FP16 data
         var stagingDesc = new Texture2DDescription
         {
-            Width = width,
-            Height = height,
+            Width = (uint)width,
+            Height = (uint)height,
             MipLevels = 1,
             ArraySize = 1,
             Format = HdrConstants.DxgiSwapChainFormat,
@@ -113,7 +129,7 @@ public sealed class ClipboardOutputService : IDisposable
         {
             var bgra8Data = new byte[width * height * 4];
             var sourcePtr = map.DataPointer;
-            var stride = map.RowPitch;
+            var stride = checked((int)map.RowPitch);
 
             for (int y = 0; y < height; y++)
             {
@@ -123,10 +139,10 @@ public sealed class ClipboardOutputService : IDisposable
                     var destOffset = (y * width + x) * 4;
 
                     // Read FP16 values (R16G16B16A16_FLOAT)
-                    var r = Half.ToHalf(BitConverter.ReadInt16(sourcePtr + sourceOffset));
-                    var g = Half.ToHalf(BitConverter.ReadInt16(sourcePtr + sourceOffset + 2));
-                    var b = Half.ToHalf(BitConverter.ReadInt16(sourcePtr + sourceOffset + 4));
-                    var a = Half.ToHalf(BitConverter.ReadInt16(sourcePtr + sourceOffset + 6));
+                    var r = ReadHalf(sourcePtr, sourceOffset);
+                    var g = ReadHalf(sourcePtr, sourceOffset + 2);
+                    var b = ReadHalf(sourcePtr, sourceOffset + 4);
+                    var a = ReadHalf(sourcePtr, sourceOffset + 6);
 
                     // Convert scRGB linear to sRGB (simple gamma correction)
                     r = LinearToSrgb(r);
@@ -134,18 +150,18 @@ public sealed class ClipboardOutputService : IDisposable
                     b = LinearToSrgb(b);
 
                     // Clamp to [0, 1] and convert to 8-bit
-                    bgra8Data[destOffset] = (byte)(Math.Clamp(b, 0f, 1f) * 255); // B
-                    bgra8Data[destOffset + 1] = (byte)(Math.Clamp(g, 0f, 1f) * 255); // G
-                    bgra8Data[destOffset + 2] = (byte)(Math.Clamp(r, 0f, 1f) * 255); // R
-                    bgra8Data[destOffset + 3] = (byte)(Math.Clamp(a, 0f, 1f) * 255); // A
+                    bgra8Data[destOffset] = ToByte(b); // B
+                    bgra8Data[destOffset + 1] = ToByte(g); // G
+                    bgra8Data[destOffset + 2] = ToByte(r); // R
+                    bgra8Data[destOffset + 3] = ToByte(a); // A
                 }
             }
 
             // Create BGRA8 texture
             var bgra8Desc = new Texture2DDescription
             {
-                Width = width,
-                Height = height,
+                Width = (uint)width,
+                Height = (uint)height,
                 MipLevels = 1,
                 ArraySize = 1,
                 Format = Format.B8G8R8A8_UNorm,
@@ -161,8 +177,8 @@ public sealed class ClipboardOutputService : IDisposable
             // Upload converted data
             var uploadDesc = new Texture2DDescription
             {
-                Width = width,
-                Height = height,
+                Width = (uint)width,
+                Height = (uint)height,
                 MipLevels = 1,
                 ArraySize = 1,
                 Format = Format.B8G8R8A8_UNorm,
@@ -179,7 +195,10 @@ public sealed class ClipboardOutputService : IDisposable
             {
                 for (int y = 0; y < height; y++)
                 {
-                    Marshal.Copy(bgra8Data, y * width * 4, uploadMap.DataPointer + y * uploadMap.RowPitch, width * 4);
+                    var destination = IntPtr.Add(
+                        uploadMap.DataPointer,
+                        checked((int)(y * uploadMap.RowPitch)));
+                    Marshal.Copy(bgra8Data, y * width * 4, destination, width * 4);
                 }
             }
             finally
@@ -204,6 +223,15 @@ public sealed class ClipboardOutputService : IDisposable
         return (Half)(1.055f * MathF.Pow(f, 1.0f / 2.4f) - 0.055f);
     }
 
+    private static Half ReadHalf(IntPtr source, int offset)
+    {
+        var bits = unchecked((ushort)Marshal.ReadInt16(source, offset));
+        return BitConverter.UInt16BitsToHalf(bits);
+    }
+
+    private static byte ToByte(Half value) =>
+        (byte)(Math.Clamp((float)value, 0f, 1f) * 255);
+
     private async Task<byte[]> EncodeAsPngAsync(ID3D11Texture2D bgra8Texture, int width, int height)
     {
         var device = deviceResources.Device;
@@ -211,8 +239,8 @@ public sealed class ClipboardOutputService : IDisposable
 
         var stagingDesc = new Texture2DDescription
         {
-            Width = width,
-            Height = height,
+            Width = (uint)width,
+            Height = (uint)height,
             MipLevels = 1,
             ArraySize = 1,
             Format = Format.B8G8R8A8_UNorm,
@@ -232,11 +260,11 @@ public sealed class ClipboardOutputService : IDisposable
         {
             var pixelData = new byte[width * height * 4];
             var sourcePtr = map.DataPointer;
-            var stride = map.RowPitch;
+            var stride = checked((int)map.RowPitch);
 
             for (int y = 0; y < height; y++)
             {
-                Marshal.Copy(sourcePtr + y * stride, pixelData, y * width * 4, width * 4);
+                Marshal.Copy(IntPtr.Add(sourcePtr, y * stride), pixelData, y * width * 4, width * 4);
             }
 
             return await EncodeAsPngAsync(pixelData, width, height);
@@ -264,13 +292,13 @@ public sealed class ClipboardOutputService : IDisposable
         await encoder.FlushAsync();
 
         stream.Seek(0);
-        var bytes = new byte[stream.Size];
+        var bytes = new byte[checked((int)stream.Size)];
         await stream.ReadAsync(bytes.AsBuffer(), (uint)bytes.Length, InputStreamOptions.None);
 
         return bytes;
     }
 
-    private static async Task WriteToClipboardAsync(byte[] pngBytes, int width, int height)
+    private static async Task WriteToClipboardAsync(byte[] pngBytes)
     {
         using var stream = new InMemoryRandomAccessStream();
         await stream.WriteAsync(pngBytes.AsBuffer());
@@ -280,7 +308,7 @@ public sealed class ClipboardOutputService : IDisposable
         var dataPackage = new DataPackage();
         dataPackage.SetBitmap(reference);
 
-        Clipboard.SetContent(dataPackage);
+        Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dataPackage);
     }
 
     public void Dispose()

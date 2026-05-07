@@ -1,9 +1,10 @@
+using System.Diagnostics;
 using System.Threading;
 using Lumiere.Capture;
+using Lumiere.Graphics.Clipboard;
 using Lumiere.Graphics.Devices;
 using Lumiere.Graphics.Hdr;
 using Lumiere.Graphics.Presentation;
-using Lumiere.Infrastructure.Clipboard;
 using Lumiere.Infrastructure.Interop;
 using Lumiere.Overlay;
 using Lumiere.Overlay.Crop;
@@ -36,6 +37,8 @@ public sealed partial class MainWindow : Window
     private int previewSourceHeight;
     private bool isClosed;
     private bool applyingSessionState;
+    private int overlayDispatcherFallbackReported;
+    private int uiDispatchFailureReported;
 
     public MainWindow()
     {
@@ -437,6 +440,8 @@ public sealed partial class MainWindow : Window
         }
 
         overlayWindow = new OverlayWindow();
+        Interlocked.Exchange(ref overlayDispatcherFallbackReported, 0);
+        Interlocked.Exchange(ref uiDispatchFailureReported, 0);
         overlayWindow.CloseRequested += OnOverlayCloseRequested;
         overlayWindow.CaptureConfirmed += OnOverlayCaptureConfirmed;
         overlayWindow.Closed += OnOverlayClosed;
@@ -512,7 +517,19 @@ public sealed partial class MainWindow : Window
             return true;
         }
 
-        return RootGrid.DispatcherQueue.TryEnqueue(() => action());
+        if (overlayDispatcher is not null &&
+            Interlocked.Exchange(ref overlayDispatcherFallbackReported, 1) == 0)
+        {
+            Debug.WriteLine("Overlay dispatcher rejected UI work; falling back to RootGrid dispatcher.");
+        }
+
+        var enqueued = RootGrid.DispatcherQueue.TryEnqueue(() => action());
+        if (!enqueued && Interlocked.Exchange(ref uiDispatchFailureReported, 1) == 0)
+        {
+            Debug.WriteLine("RootGrid dispatcher rejected UI work; preview status update was dropped.");
+        }
+
+        return enqueued;
     }
 
     private void OnOverlayCloseRequested(object? sender, EventArgs args)
@@ -562,7 +579,10 @@ public sealed partial class MainWindow : Window
             {
                 await clipboardOutputService.TryCopyToClipboardAsync(
                     backBuffer,
-                    selection.PixelRegion,
+                    selection.PixelRegion.X,
+                    selection.PixelRegion.Y,
+                    selection.PixelRegion.Width,
+                    selection.PixelRegion.Height,
                     selection.FrameSize.Width,
                     selection.FrameSize.Height);
             }

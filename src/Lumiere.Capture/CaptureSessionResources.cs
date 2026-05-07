@@ -7,7 +7,7 @@ namespace Lumiere.Capture;
 public sealed class CaptureSessionResources : IDisposable
 {
     private readonly Func<CaptureSessionDisposalEvidence> disposeAction;
-    private bool disposed;
+    private int disposed;
 
     public CaptureSessionResources(
         IDirect3DDevice device,
@@ -45,12 +45,11 @@ public sealed class CaptureSessionResources : IDisposable
 
     public void Dispose()
     {
-        if (disposed)
+        if (Interlocked.Exchange(ref disposed, 1) == 1)
         {
             return;
         }
 
         DisposalEvidence = disposeAction();
-        disposed = true;
     }
 }
