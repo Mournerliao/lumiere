@@ -76,26 +76,50 @@ The core insight is that HDR screenshot quality depends on preserving FP16/scRGB
 
 ## Product Scope
 
+### Approved MVP-to-1.0 Rebaseline (2026-05-07)
+
+The product roadmap is now organized into six canonical epics that cover the revised MVP and the path to a 1.0 installable release:
+
+1. **Epic 1: HDR Preview Foundation** - already completed foundation for WinUI, WGC, D3D11/DXGI, FP16/scRGB preview, and readiness state.
+2. **Epic 2: Direct Capture Session Lifecycle** - capture/session lifecycle plus pickerless monitor capture for the default screenshot path.
+3. **Epic 3: Release-to-Copy Overlay Workflow** - full-screen overlay, crop interaction, keyboard cancel, and release-to-capture behavior.
+4. **Epic 4: MVP Output, Status, and Validation** - narrow MVP clipboard output, concise user-facing status, and manual validation.
+5. **Epic 5: MVP Completion Gate** - explicit MVP completion checklist, blocker/deferred-work triage, Windows validation confirmation, and go/no-go.
+6. **Epic 6: Installer and 1.0 Release** - packaging strategy, installer build, install/uninstall validation, release notes, versioning, and 1.0 release.
+
+MVP is complete when Epic 5 is done. The 1.0 release is complete when Epic 6 is done.
+
 ### MVP - Minimum Viable Product
 
 - Phase 0 technical spike proving the HDR capture/rendering chain on real HDR hardware.
 - Native Windows desktop shell using `.NET 10 LTS`, WinUI 3, and Windows App SDK 1.8 stable.
 - Full-screen overlay window with hardware-rendered HDR preview via `SwapChainPanel`.
-- WGC-based screen/display capture using FP16 frame pool configuration.
+- WGC-based direct monitor capture using FP16 frame pool configuration; the default MVP flow must not require a picker-first target selection step.
 - Direct3D 11/DXGI rendering path preserving scRGB/FP16 preview fidelity.
-- Basic crop interaction: mouse down, drag, resize/adjust selection, confirm, cancel.
-- Explicit error/degraded-state reporting for unsupported capture, missing HDR capability, or graphics initialization failure.
+- Direct region screenshot flow: click Capture, enter a full-screen overlay, drag a region, release to capture/copy, and show lightweight completion feedback.
+- Escape cancels the overlay. Explicit confirm controls are not part of the default MVP path.
+- Narrow MVP clipboard output with explicit semantics; it must not be described as HDR-preserving unless technically proven.
+- Concise error/degraded-state reporting for unsupported capture, missing HDR capability, graphics initialization failure, or clipboard failure.
 - Deterministic disposal for WGC, WinRT, COM, Direct3D, DXGI, and swap-chain resources.
+- Windows manual validation covering HDR, SDR, full-screen app, multi-monitor start-monitor behavior, release-to-copy, and repeated lifecycle teardown.
 
-### Growth Features (Post-MVP)
+### Installer and 1.0 Release
+
+- Approved packaging strategy for WinUI 3 / Windows App SDK / .NET 10 / x64.
+- Build an installable package or installer.
+- Validate install, launch, MVP capture workflow, and uninstall on Windows.
+- Prepare 1.0 versioning, release notes, known limitations, and release artifact/tag.
+
+### Post-1.0 Roadmap
 
 - HDR-aware export formats and SDR tone-mapping presets.
+- Configurable clipboard behavior beyond the MVP default output.
 - Cursor inclusion/exclusion controls.
 - Multi-monitor target selection and diagnostics.
-- Copy-to-clipboard behavior with explicit HDR/SDR handling.
 - Lightweight annotations that preserve preview correctness.
 - Global hotkey and tray integration.
-- Packaged installer and update flow.
+- Capture history and project organization.
+- Update flow and broader installer polish.
 
 ### Vision (Future)
 
@@ -111,15 +135,15 @@ The core insight is that HDR screenshot quality depends on preserving FP16/scRGB
 
 Maya is a video colorist reviewing HDR footage on a Mini-LED HDR monitor. She wants to capture a region of the screen to share a visual issue with a collaborator. Her current screenshot tools flatten highlights and make the image look gray, so screenshots undermine the point she is trying to communicate.
 
-She launches Lumiere, starts capture, and sees a full-screen preview that preserves the HDR appearance of the source display. She drags a crop rectangle over the relevant frame area, adjusts the selection, and confirms. The key moment is visual trust: the preview does not wash out the shot, so she believes the capture is worth using.
+She launches Lumiere, clicks Capture, immediately enters a full-screen overlay, and sees a preview that preserves the HDR appearance of the source display. She drags a crop rectangle over the relevant frame area and releases to capture/copy. The key moment is visual trust: the preview does not wash out the shot, so she believes the capture is worth using.
 
-This journey reveals requirements for HDR-correct preview, full-screen overlay capture, crop interaction, confirmation/cancel controls, and a clear distinction between primary HDR workflow and later export behavior.
+This journey reveals requirements for HDR-correct preview, direct full-screen overlay capture, release-to-copy crop interaction, keyboard cancel, and clear distinction between MVP clipboard output and later advanced export behavior.
 
 ### Journey 2: Gamer Captures an HDR Scene Without Washed-Out Highlights
 
 Ryan is playing a game in HDR and wants to capture a dramatic high-contrast scene. Standard screenshot tools produce a dull image where neon highlights and shadow contrast are wrong. He needs a fast capture flow that does not require color-management expertise.
 
-He triggers Lumiere, selects the active display, drags a crop region over the game scene, and sees a preview that keeps the intended HDR look. If the game or display cannot be captured correctly, Lumiere tells him the pipeline is degraded instead of pretending the screenshot is valid.
+He triggers Lumiere, enters screenshot mode without first choosing a window, drags a crop region over the game scene, and sees a preview that keeps the intended HDR look. If the game or display cannot be captured correctly, Lumiere tells him the pipeline is degraded instead of pretending the screenshot is valid.
 
 This journey reveals requirements for fast capture startup, display/window target selection, responsive overlay interaction, clear degraded-state messaging, and eventual global hotkey support.
 
@@ -142,10 +166,10 @@ This journey reveals requirements for lifecycle tests, diagnostic logging, deter
 ### Journey Requirements Summary
 
 - Full-screen capture overlay with HDR preview and crop interaction.
-- WGC capture target selection for display/window workflows.
+- WGC direct monitor capture for the default MVP workflow, with picker-based selection retained only as fallback/debug or later explicit selection behavior.
 - FP16 capture and scRGB presentation with explicit validation.
 - Clear degraded/unsupported-state messages.
-- Responsive crop selection, adjustment, confirm, and cancel flows.
+- Responsive crop selection, release-to-capture/copy, and cancel flows.
 - Multi-monitor and HDR/SDR capability awareness.
 - Deterministic graphics resource ownership and teardown.
 - Diagnostics for developers and advanced users.

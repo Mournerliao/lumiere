@@ -2,6 +2,8 @@
 
 Story 3.1 adds the first fullscreen overlay host for the HDR preview path. Automated tests cover the hardware-independent state and layout seams; the following checks require a Windows desktop with WinUI, WGC, DXGI, D3D11, and HDR-capable display validation.
 
+MVP rebaseline note: the default user path is direct monitor capture with no picker-first interruption, then drag a region and release the pointer to capture/copy. Explicit confirm controls are historical/internal foundation behavior unless a debug or fallback path exposes them.
+
 ## Automated Checks
 
 Run from the repository root on Windows:
@@ -17,13 +19,14 @@ dotnet format Lumiere.sln --verify-no-changes --verbosity minimal
 ## Manual Windows Checks
 
 1. Start Lumiere on a Windows x64 machine with the Windows App SDK runtime installed.
-2. Choose a display target and confirm the overlay opens as a borderless topmost window.
-3. Confirm the hardware preview is attached through the overlay `SwapChainPanel` and fills the overlay surface.
-4. Confirm the status/control layer appears above the preview and does not resize or shift the preview when status text changes.
-5. Press Cancel and verify the overlay closes and WGC frame pool/session plus swap-chain resources are torn down.
-6. Reopen capture repeatedly and verify stale callbacks do not update a closed or replaced overlay.
-7. Force or simulate a preview startup failure where practical and verify no unusable topmost overlay remains.
-8. Repeat on HDR and SDR displays, with Windows scaling enabled, and record whether behavior is `Windows manual-pass`, degraded, or failed.
+2. Click the default Capture action and confirm no picker appears before overlay entry.
+3. Confirm the direct monitor target is resolved and the overlay opens as a borderless topmost window on the intended monitor.
+4. Confirm the hardware preview is attached through the overlay `SwapChainPanel` and fills the overlay surface.
+5. Confirm the status/control layer appears above the preview and does not resize or shift the preview when status text changes.
+6. Press Escape and verify the overlay closes and WGC frame pool/session plus swap-chain resources are torn down.
+7. Reopen capture repeatedly and verify stale callbacks do not update a closed or replaced overlay.
+8. Force or simulate a preview startup failure where practical and verify no unusable topmost overlay remains.
+9. Repeat on HDR and SDR displays, with Windows scaling enabled, and record whether behavior is `Windows manual-pass`, degraded, or failed.
 
 ## Story 3.2 Crop Drag Checks
 
@@ -37,7 +40,7 @@ Story 3.2 adds crop creation over the live preview. In addition to the Story 3.1
 6. Press Escape or Cancel while creating a crop and verify overlay teardown still works without leaving a stuck creating state.
 7. Repeat on high-DPI scaling, HDR/SDR displays, and multi-monitor placements; record whether behavior is `Windows manual-pass`, degraded, or failed.
 
-Story 3.2 does not validate resize handles, final confirm output, export/clipboard behavior, annotations, or HDR export fidelity; those remain later Epic 3 and Epic 6 work.
+Story 3.2 does not validate resize handles, release-to-copy output, annotations, or HDR export fidelity. Release-to-copy is covered by Story 3.6 and MVP clipboard output is covered by Epic 4.
 
 ## Story 3.3 Crop Adjustment Checks
 
@@ -54,15 +57,15 @@ Story 3.3 adds adjustment handles, edge resizing, crop recreation, and the pure 
 9. Confirm the white filled handles with dark strokes, dual crop boundary, and dimmed mask remain visible over bright, dark, and high-contrast HDR preview content.
 10. Repeat handle and recreation gestures on common Windows scaling values, HDR and SDR displays, and multi-monitor placements; record whether behavior is `Windows manual-pass`, degraded, or failed.
 
-Story 3.3 does not implement final confirm output, export/clipboard behavior, annotations, global hotkeys, tray workflow, or HDR export fidelity. Coordinate mapping is covered by automated tests and is ready for later confirm/output stories to consume.
+Story 3.3 does not implement release-to-copy output, annotations, global hotkeys, tray workflow, or HDR export fidelity. Coordinate mapping is covered by automated tests and is ready for release-to-copy and MVP clipboard output stories to consume.
 
-## Story 3.4 Confirm and Cancel Checks
+## Story 3.4 Confirm and Cancel Foundation Checks
 
-Story 3.4 adds the MVP overlay decision point: confirming a valid crop records an in-app confirmed selection state, while cancel keeps using deterministic preview teardown. In addition to the Story 3.1 through 3.3 checks:
+Story 3.4 adds the typed confirmation/cancel foundation used internally by the later release-to-copy MVP path. These checks validate the foundation where it remains exposed through tests, debug UI, or fallback flows; explicit confirm controls are not the default MVP overlay interaction. In addition to the Story 3.1 through 3.3 checks:
 
-1. Open the overlay without a crop and verify `Confirm crop` is disabled while `Cancel` remains available.
-2. Create a valid crop and verify `Confirm crop` enables without resizing or shifting the `SwapChainPanel`, crop canvas, status panel, mask, or crop coordinate mapping.
-3. Confirm the crop and verify the app status reports a confirmed crop, including DIP crop, mapped pixel crop, and source frame size details.
+1. If explicit controls are exposed, open the overlay without a crop and verify `Confirm crop` is disabled while `Cancel` remains available.
+2. If explicit controls are exposed, create a valid crop and verify `Confirm crop` enables without resizing or shifting the `SwapChainPanel`, crop canvas, status panel, mask, or crop coordinate mapping.
+3. Confirm the crop through the available foundation path and verify the app status reports a confirmed crop, including DIP crop, mapped pixel crop, and source frame size details.
 4. Confirm that post-confirm teardown follows the existing resource order: WGC capture session/frame pool, preview surface detach through `SetSwapChain(null)`, then DXGI swap-chain resources.
 5. Reopen capture after confirming and verify stale callbacks from the previous preview generation do not update the new overlay.
 6. Cancel from a ready preview, a degraded preview, and while a crop gesture is in progress; verify the overlay closes and desktop state is restored.
@@ -71,7 +74,7 @@ Story 3.4 adds the MVP overlay decision point: confirming a valid crop records a
 9. Force or simulate unsupported capture, preview failure, closing, and disposed states; verify confirm is disabled or rejected, while cancel still closes wherever safe.
 10. Repeat confirm and cancel checks on common Windows scaling values, HDR and SDR displays, and multi-monitor placements; record whether behavior is `Windows manual-pass`, degraded, or failed.
 
-Story 3.4 still does not implement file export, clipboard output, annotation, capture history, tone mapping, HDR still image encoding, global hotkeys, tray workflow, or final HDR/SDR output semantics.
+Story 3.4 still does not implement the default release-to-copy interaction, file export, annotation, capture history, tone mapping, HDR still image encoding, global hotkeys, tray workflow, or final HDR/SDR output semantics. The MVP completion path is validated in Story 3.6 and Epic 4.
 
 ## Story 3.5 Hit Testing and Escape Checks
 
@@ -79,10 +82,23 @@ Story 3.5 hardens overlay input routing while preserving the borderless topmost 
 
 1. Open the overlay and verify the technical detail mentions interactive hit testing for crop input.
 2. Drag on empty preview space over the `SwapChainPanel` and verify the transparent crop canvas receives pointer input instead of passing all input through the window.
-3. Click visible status, confirm, and cancel controls and verify only their visible bounds consume pointer input; nearby empty overlay space should still start or adjust crop gestures.
-4. Press Escape while focus is on the root overlay surface, `Confirm crop`, `Cancel`, status text/details, and after tab navigation; verify all routes raise the same cancel flow.
+3. Click visible status and any exposed fallback controls and verify only their visible bounds consume pointer input; nearby empty overlay space should still start or adjust crop gestures.
+4. Press Escape while focus is on the root overlay surface, visible controls, status text/details, and after tab navigation; verify all routes raise the same cancel flow.
 5. Press Escape repeatedly during ready, degraded, in-progress crop creation, and adjustment states; verify teardown remains idempotent with no double-dispose crash, stuck overlay, or resurrected status update.
-6. Verify `Cancel` remains keyboard reachable whenever the overlay can safely close, and `Confirm crop` remains enabled only for valid confirmable crops in HDR-ready or degraded preview states.
+6. Verify cancel remains keyboard reachable whenever the overlay can safely close; if explicit confirm controls are exposed, verify `Confirm crop` remains enabled only for valid confirmable crops in HDR-ready or degraded preview states.
 7. Repeat on common Windows scaling values, HDR and SDR displays, and multi-monitor placements; record whether behavior is `Windows manual-pass`, degraded, or failed.
 
-Story 3.5 does not introduce whole-window pass-through mode for crop-capable overlay states, export/clipboard output, annotation, capture history, global hotkeys, tray workflow, HDR still-image encoding, or SDR tone mapping.
+Story 3.5 does not introduce whole-window pass-through mode for crop-capable overlay states, release-to-copy output, annotation, capture history, global hotkeys, tray workflow, HDR still-image encoding, or SDR tone mapping.
+
+## Story 3.6 Release-to-Capture Checks
+
+Story 3.6 changes the MVP overlay completion path from explicit confirm controls to release-to-capture/copy. In addition to the Story 3.1 through 3.5 checks:
+
+1. Click the default Capture action and confirm no picker appears before overlay entry.
+2. Drag a valid crop and release the pointer; verify the crop is confirmed without clicking a Confirm button.
+3. Verify the overlay does not expose a multi-action toolbar, output choices, annotation tools, tray controls, or settings controls.
+4. Verify lightweight copied-to-clipboard or output-in-progress feedback appears without resizing or shifting the preview/crop coordinate mapping.
+5. Press Escape before release and verify the overlay cancels with deterministic teardown.
+6. Try a tiny or invalid crop and verify no output is produced.
+7. Reopen capture repeatedly and verify no stale callbacks from the previous preview generation update the new overlay or copied-feedback state.
+8. Repeat release-to-capture over bright, dark, and high-contrast HDR content, SDR displays, fullscreen apps, and multi-monitor placements; record whether behavior is `Windows manual-pass`, degraded, or failed.

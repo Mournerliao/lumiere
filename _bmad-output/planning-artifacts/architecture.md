@@ -19,6 +19,19 @@ completedAt: '2026-04-20'
 **Date:** 2026-04-20
 **Status:** Complete
 
+## Approved MVP-to-1.0 Rebaseline (2026-05-07)
+
+The active implementation plan is now the six-epic MVP-to-1.0 route documented in `_bmad-output/planning-artifacts/epics.md`.
+
+Architecturally, this means:
+
+- The default MVP capture path is direct monitor capture and must not require `GraphicsCapturePicker` before the user can draw a region.
+- `GraphicsCapturePicker` remains a fallback/debug or later explicit target-selection path, not the default screenshot path.
+- MVP output includes only a narrow clipboard result with explicit semantics. It must not weaken or redefine the FP16/scRGB live preview path.
+- Settings, tray, global hotkey, annotation, advanced export, and capture history are post-1.0 roadmap items unless separately promoted.
+- MVP completion is not claimed when feature stories alone are done; it is claimed only after the MVP completion gate epic validates Windows manual scenarios and deferred-work triage.
+- Installer and 1.0 release work is isolated in the installer/release epic and must preserve WinUI 3, Windows App SDK, `.NET 10`, `net10.0-windows10.0.19041.0`, x64, WGC, D3D11, DXGI, and Vortice constraints.
+
 ## Executive Architecture Summary
 
 Lumiere is a native Windows desktop application whose architecture is shaped by one non-negotiable product promise: HDR capture preview must preserve FP16/scRGB fidelity instead of silently falling back to SDR bitmap paths. The system is therefore a modular Windows graphics application, not a conventional screenshot utility with a UI wrapper.

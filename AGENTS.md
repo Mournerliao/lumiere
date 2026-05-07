@@ -46,13 +46,19 @@ Lumiere is a native Windows HDR screenshot tool: WinUI 3 on Windows App SDK, .NE
 ### Data Flow
 
 ```
-GraphicsCapturePicker → CaptureService.StartCapture()
+Default MVP path:
+Direct monitor target (HMONITOR → GraphicsCaptureItem)
+  → CaptureService.StartCapture()
   → Direct3D11CaptureFramePool (FP16 frames on background thread)
   → HandleFrameArrived: interop texture via Direct3D11SurfaceInterop
   → MainWindow.OnCapturedFrameArrived (stale check via previewGeneration)
   → PreviewFramePresenter.PresentFrame() (CopyFrame + Present on GPU)
   → SwapChainPanel (UI thread, via DispatcherQueue.TryEnqueue)
+  → Overlay crop interaction
+  → Release pointer to capture/copy
 ```
+
+`GraphicsCapturePicker` is retained only for fallback/debug or future explicit target-selection workflows. The default MVP capture action must enter direct monitor capture without requiring picker-first display/window selection.
 
 ### Lifecycle & Stale-Frame Guard
 

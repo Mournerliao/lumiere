@@ -1,5 +1,5 @@
 # generated: 2026-04-21T11:35:23+0800
-# last_updated: 2026-05-05T03:04:42+0800
+# last_updated: 2026-05-07T15:12:00+0800
 # project: lumiere
 # project_key: NOKEY
 # tracking_system: file-system
@@ -29,13 +29,16 @@
 #
 # WORKFLOW NOTES:
 # ===============
-# - Epic transitions to 'in-progress' automatically when first story is created
-# - Stories can be worked in parallel if team capacity allows
-# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Rebaselined on 2026-05-07 to track only the revised MVP plus installer-to-1.0 route.
+# - Epic 1-4 done means MVP feature implementation is complete.
+# - Epic 5 done means MVP is complete and validated.
+# - Epic 6 done means 1.0 installable release is complete.
+# - Deferred post-1.0 roadmap items live in epics.md, not active sprint tracking.
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings.
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-21T11:35:23+0800
-last_updated: 2026-05-05T03:04:42+0800
+last_updated: 2026-05-07T15:12:00+0800
 project: lumiere
 project_key: NOKEY
 tracking_system: file-system
@@ -54,6 +57,7 @@ development_status:
   2-2-represent-capture-session-state-explicitly: done
   2-3-stop-restart-and-recreate-capture-resources: done
   2-4-validate-repeated-capture-lifecycle-stability: done
+  2-5-create-monitor-capture-targets-without-picker: backlog
   epic-2-retrospective: done
   epic-3: in-progress
   3-1-show-a-fullscreen-overlay-above-the-hdr-preview: done
@@ -61,20 +65,22 @@ development_status:
   3-3-adjust-or-recreate-the-crop-selection: done
   3-4-confirm-or-cancel-the-capture-overlay: done
   3-5-manage-overlay-hit-testing-and-keyboard-escape: done
+  3-6-release-to-capture-and-copy: backlog
   epic-3-retrospective: done
   epic-4: backlog
   4-1-show-user-facing-capture-and-preview-status: backlog
-  4-2-provide-advanced-technical-diagnostics: backlog
-  4-3-detect-hdr-sdr-and-multi-monitor-capability-differences: backlog
-  4-4-document-manual-hdr-validation-scenarios: backlog
+  4-2-define-and-implement-mvp-clipboard-output: backlog
+  4-3-document-mvp-manual-validation-scenarios: backlog
   epic-4-retrospective: optional
   epic-5: backlog
-  5-1-add-a-minimal-local-settings-store: backlog
-  5-2-control-advanced-diagnostics-visibility: backlog
+  5-1-define-mvp-completion-gate: backlog
+  5-2-run-mvp-completion-validation-and-triage: backlog
+  5-3-complete-mvp-retrospective-and-go-no-go: backlog
   epic-5-retrospective: optional
   epic-6: backlog
-  6-1-define-hdr-export-and-clipboard-semantics: backlog
-  6-2-implement-explicit-hdr-or-sdr-capture-output: backlog
-  6-3-add-global-hotkey-and-tray-workflow: backlog
-  6-4-add-lightweight-annotation-over-confirmed-capture-output: backlog
+  6-1-decide-packaging-strategy: backlog
+  6-2-build-installer-package: backlog
+  6-3-validate-install-launch-and-uninstall: backlog
+  6-4-prepare-1-0-versioning-and-release-notes: backlog
+  6-5-cut-1-0-release: backlog
   epic-6-retrospective: optional

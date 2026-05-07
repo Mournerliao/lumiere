@@ -25,15 +25,30 @@ completedAt: '2026-04-20'
 
 <!-- UX design content will be appended sequentially through collaborative workflow steps -->
 
+## Approved MVP-to-1.0 Rebaseline (2026-05-07)
+
+The active MVP UX direction is now defined by the six-epic route in `_bmad-output/planning-artifacts/epics.md` and the MVP design board at `/Users/asherliao/Projects/lumiere/harness/design/mvp/lumiere-mvp-design.png`.
+
+For MVP, the default capture flow is:
+
+1. Click Capture.
+2. Enter a full-screen overlay without a picker-first step.
+3. Drag a region.
+4. Release to capture/copy.
+5. Show lightweight copied-to-clipboard feedback.
+6. Use Escape as the reliable cancel path.
+
+The MVP overlay should not expose a multi-action toolbar, output choices, annotation tools, tray controls, or settings controls. Those surfaces remain post-1.0 roadmap direction unless separately promoted.
+
 ## Executive Summary
 
 ### Project Vision
 
 Lumiere is a native Windows screenshot tool designed around one trust-critical promise: HDR screen captures should preview with the same brightness, contrast, and color relationships users see on their HDR display, instead of being flattened by ordinary SDR screenshot workflows.
 
-From a UX perspective, Lumiere should feel like a precise capture instrument rather than a general-purpose annotation app. The first experience must help users select a display or window, inspect an HDR-faithful live preview, crop the region they care about, and understand whether the preview can be trusted. The product should make HDR correctness visible without requiring users to understand Direct3D, DXGI, scRGB, or Windows.Graphics.Capture.
+From a UX perspective, Lumiere should feel like a precise capture instrument rather than a general-purpose annotation app. The first MVP experience must let users click Capture, enter a full-screen selection overlay without picker-first target selection, inspect an HDR-faithful live preview, drag the region they care about, release to capture/copy, and understand whether the preview/output can be trusted. The product should make HDR correctness visible without requiring users to understand Direct3D, DXGI, scRGB, or Windows.Graphics.Capture.
 
-The MVP should prioritize confidence, clarity, and low-friction capture over broad workflow features. Export, clipboard behavior, annotations, hotkeys, tray integration, and history are future capabilities and should not distract from proving the core HDR preview and crop workflow.
+The MVP should prioritize confidence, clarity, and low-friction capture over broad workflow features. A narrow default clipboard output is now part of the MVP completion moment, but advanced export, configurable clipboard behavior, annotations, hotkeys, tray integration, settings, and history remain post-1.0 capabilities.
 
 ### Target Users
 
@@ -50,9 +65,9 @@ These users range from non-technical screenshot users to highly technical graphi
 
 The first major challenge is visual trust. The preview is the product's proof of value, so the UI must clearly communicate when the HDR preview is ready, degraded, unsupported, or failed. Silent SDR fallback would damage trust and must be avoided both technically and visually.
 
-The second challenge is interaction over a live GPU-backed preview. The full-screen overlay must place crop controls, masks, handles, toolbar actions, and status messaging above a `SwapChainPanel` without breaking hit testing, layout stability, or crop coordinate mapping.
+The second challenge is interaction over a live GPU-backed preview. The full-screen overlay must place crop controls, masks, handles, lightweight completion feedback, and status messaging above a `SwapChainPanel` without breaking hit testing, layout stability, or crop coordinate mapping.
 
-The third challenge is keeping technical complexity understandable. Lumiere must expose enough information for power users to diagnose capture format, swap-chain format, color space, and monitor capability, while keeping the default flow simple enough for users who only want to select, crop, confirm, or cancel.
+The third challenge is keeping technical complexity understandable. Lumiere must expose enough information for users to understand ready/degraded/failed states, while keeping the default flow simple enough for users who only want to click Capture, drag a region, release to copy, or press Escape to cancel.
 
 The fourth challenge is safe escape and recovery. Because the product uses a full-screen overlay, users must always have clear cancel paths, keyboard escape behavior, and visible feedback when capture initialization, preview setup, or graphics resources fail.
 
@@ -70,21 +85,21 @@ The crop workflow can become a reliability signal. Responsive selection, clear n
 
 ### Defining Experience
 
-The defining Lumiere experience is: start capture, choose a target, see a trustworthy HDR live preview, drag a crop region, and confirm without leaving the full-screen flow.
+The defining Lumiere MVP experience is: start capture, enter direct full-screen region selection, see a trustworthy HDR live preview, drag a crop region, release to capture/copy, and return to work with lightweight completion feedback.
 
 The most important user action is drawing and adjusting a crop over a live HDR preview. This action must feel immediate, stable, and visually clear because it is where Lumiere's technical promise becomes usable. If the preview is faithful but the crop interaction feels fragile, the product will still feel untrustworthy.
 
-The core loop is:
+The MVP core loop is:
 
 1. Start capture.
-2. Select a display or window target through Windows-supported capture mechanisms.
+2. Resolve the current monitor through the direct monitor capture path.
 3. Enter a full-screen overlay with live HDR preview.
 4. Read the preview trust status at a glance.
 5. Drag to create or adjust a crop.
-6. Confirm or cancel safely.
+6. Release to capture/copy, or press Escape to cancel safely.
 7. Tear down capture and preview resources predictably.
 
-For MVP, the confirmed result is a validated crop selection and capture state inside the app, not a final export or clipboard artifact. Export semantics remain post-MVP until HDR-preserving and SDR tone-mapped output behavior is separately specified.
+For MVP, the completed result is a usable clipboard output with explicit semantics. If the clipboard result is SDR or tone-mapped, Lumiere must not describe it as HDR-preserving. Advanced export semantics remain post-1.0 until HDR-preserving and SDR tone-mapped output behavior is separately specified.
 
 ### Platform Strategy
 
@@ -97,7 +112,7 @@ Platform decisions:
 - Primary surface: full-screen WinUI 3 overlay containing a DirectX-backed `SwapChainPanel`.
 - Preview model: GPU-rendered HDR preview, not a bitmap or ordinary image control.
 - Runtime mode: local and offline for all MVP capture workflows.
-- OS integration: Windows.Graphics.Capture consent, picker, border behavior, display/window targeting, and monitor capability awareness.
+- OS integration: Windows.Graphics.Capture consent/capability behavior, direct monitor capture, fallback/debug picker behavior, and monitor capability awareness.
 - Escape behavior: keyboard cancel must always be available where practical, especially because the overlay is full-screen.
 
 The UI must respect platform constraints. WinUI/XAML controls should own crop, toolbar, and status interactions, while the HDR preview stays in the DirectX presentation layer. The user should not experience that technical split; the preview and controls should feel like one coherent capture surface.
@@ -107,12 +122,13 @@ The UI must respect platform constraints. WinUI/XAML controls should own crop, t
 The following interactions should require little or no thought:
 
 - Start capture from the app's primary action.
-- Cancel target selection without side effects.
+- Enter direct region selection without a picker-first step.
 - Understand whether the preview is HDR-ready, degraded, unsupported, or failed.
 - Drag to create a crop rectangle.
 - See the selected area and non-selected area clearly while dragging.
 - Adjust or recreate a crop without restarting the capture.
-- Confirm when the crop is valid.
+- Release to capture/copy when the crop is valid.
+- Press Escape to cancel without side effects.
 - Cancel the overlay with an obvious control and keyboard escape path.
 - Recover from unsupported or degraded capture states without guessing what went wrong.
 
@@ -438,7 +454,7 @@ Established patterns:
 - Windows-style region selection.
 - Full-screen screenshot overlay.
 - Direct manipulation with mouse drag.
-- Confirm/cancel task completion.
+- Release-to-capture task completion.
 - Keyboard Escape as a safe cancel path.
 - Progressive disclosure for advanced details.
 
@@ -457,7 +473,7 @@ The UX should not teach users a new crop interaction unless absolutely necessary
 
 The user begins from a clear primary capture action in the app shell. In MVP, capture starts from the app rather than global hotkey or tray, which are post-MVP.
 
-After initiation, Windows-supported target selection begins. The user can choose a display or window, or cancel before a capture session starts.
+After initiation, Lumiere resolves the current monitor and begins the direct monitor capture path. The default MVP flow must not require the user to choose a display or window before drawing a region. Picker-based selection remains a fallback/debug or future explicit targeting path.
 
 #### Overlay Entry
 
@@ -488,15 +504,15 @@ Feedback should be immediate and layered:
 - Pointer movement updates crop geometry.
 - The crop boundary remains visible over bright and dark content.
 - The non-selected mask clarifies what is outside the crop.
-- Confirm becomes available only when the crop is valid.
+- Releasing a valid crop completes the MVP capture flow.
 - Status messaging remains visible without covering the main selection area.
 - Advanced diagnostics are available through disclosure, not shown by default.
 
-Mistakes should be recoverable. Users can adjust, recreate, cancel, or retry without restarting the whole application.
+Mistakes should be recoverable. Users can adjust, recreate, press Escape, or retry without restarting the whole application.
 
 #### Completion
 
-When the user confirms, MVP stores or advances the validated crop selection and capture state inside the app. It does not imply that HDR export or clipboard output has been solved.
+When the user releases a valid crop, MVP advances to clipboard output and shows lightweight completion feedback. If output is SDR or tone-mapped, the UI must avoid implying the clipboard result is HDR-preserving.
 
 When the user cancels, capture and preview teardown begins, and the overlay closes without leaving capture resources running.
 
@@ -682,30 +698,31 @@ The design should avoid decorative chrome, heavy panels, and editor-like complex
 
 ### HDR Creator Captures a Reference Image
 
-Maya's journey focuses on visual trust and precise region selection. She needs to capture a frame region from HDR content and believe the preview before she confirms the crop.
+Maya's journey focuses on visual trust and precise region selection. She needs to capture a frame region from HDR content and believe the preview before she releases to copy.
 
 ```mermaid
 flowchart TD
     A["User opens Lumiere"] --> B["Start capture"]
-    B --> C["Windows target selection"]
-    C --> D{Target selected?}
-    D -- "No, cancelled" --> E["Return to idle state"]
+    B --> C["Resolve current monitor target"]
+    C --> D{Target ready?}
+    D -- "No, unsupported or failed" --> E["Show actionable failure and safe exit"]
     D -- "Yes" --> F["Initialize capture and preview"]
     F --> G{Preview status}
     G -- "HDR-ready" --> H["Show full-screen HDR preview"]
     G -- "Degraded" --> I["Show warning with reason and retry/details"]
     G -- "Unsupported or failed" --> J["Show actionable failure and safe exit"]
-    I --> K{Continue or retry?}
-    K -- "Retry" --> C
+    I --> K{Continue degraded or retry?}
+    K -- "Retry" --> B
     K -- "Continue degraded" --> H
     H --> L["User drags crop region"]
     L --> M["Crop mask and handles update immediately"]
     M --> N{Crop valid?}
     N -- "No" --> L
-    N -- "Yes" --> O["Enable confirm"]
+    N -- "Yes" --> O["Release pointer"]
     O --> P{User action}
-    P -- "Confirm" --> Q["Store validated crop selection and capture state"]
+    P -- "Release" --> Q["Copy MVP output to clipboard"]
     P -- "Cancel or Escape" --> R["Tear down capture and close overlay"]
+    Q --> S["Show copied-to-clipboard feedback"]
 ```
 
 Key UX requirements:
@@ -713,7 +730,7 @@ Key UX requirements:
 - HDR-ready state must be visible before the user relies on the preview.
 - The selected region should remain visually faithful and unobscured.
 - Degraded state should be honest but not panic-inducing.
-- Confirm should not imply export or clipboard output in MVP.
+- Release-to-copy should complete the MVP capture without implying advanced export, annotation, or history.
 
 ### Gamer Captures an HDR Scene
 
@@ -723,8 +740,8 @@ Ryan's journey emphasizes speed, low friction, and a clear escape path. He may n
 flowchart TD
     A["Game or HDR scene is active"] --> B["User opens Lumiere"]
     B --> C["Start capture"]
-    C --> D["Select active display or window"]
-    D --> E["Overlay opens over selected target"]
+    C --> D["Resolve active monitor target"]
+    D --> E["Overlay opens over target"]
     E --> F{HDR readiness visible?}
     F -- "HDR-ready" --> G["User crops scene quickly"]
     F -- "Degraded" --> H["Plain-language warning appears"]
@@ -732,8 +749,9 @@ flowchart TD
     I -- "Retry target" --> D
     I -- "Continue anyway" --> G
     I -- "Cancel" --> J["Safe teardown"]
-    G --> K["Confirm crop"]
-    K --> L["Overlay closes or advances to MVP confirmed state"]
+    G --> K["Release pointer"]
+    K --> L["Copy MVP output to clipboard"]
+    L --> M["Show copied feedback"]
 ```
 
 Key UX requirements:
@@ -749,7 +767,7 @@ Alex's journey focuses on target capability, status transparency, and optional a
 
 ```mermaid
 flowchart TD
-    A["User starts capture on multi-monitor setup"] --> B["Select display or window target"]
+    A["User starts capture on multi-monitor setup"] --> B["Resolve current monitor target"]
     B --> C["Initialize capture pipeline"]
     C --> D["Run capability and preview validation"]
     D --> E{Status}
@@ -987,7 +1005,8 @@ The design system does not cover Lumiere's specialized capture surface. The foll
 
 **Accessibility:** Buttons should use standard WinUI focus and keyboard behavior. Escape should cancel where practical.
 
-**Content Guidelines:** Keep labels short: "Cancel", "Confirm crop", "Retry target", "Details".
+**Content Guidelines:** Keep labels short: "Cancel", "Copied", "Retry", "Details".
+For MVP default overlay states, avoid exposing explicit confirm labels unless the fallback/foundation path is intentionally visible.
 
 #### DiagnosticsDisclosure
 
@@ -1120,7 +1139,7 @@ Button hierarchy should follow WinUI / Fluent conventions while staying strict a
 Primary actions:
 
 - Use one primary action per state.
-- In the happy path, the primary action is `Confirm crop` once a valid crop exists.
+- In the MVP happy path, pointer release is the primary completion action once a valid crop exists; visible primary buttons should be avoided unless the fallback/foundation path is intentionally exposed.
 - In degraded or failed recovery states, the primary action may become `Retry target` or another recovery action.
 - Primary actions should not appear before they are valid.
 

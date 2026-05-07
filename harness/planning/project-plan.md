@@ -1,7 +1,7 @@
 # Lumiere - HDR 原生 Windows 截图工具
 
 > 项目规划文档 / AI 协作上下文 Harness
-> 最后更新：2026-04-20
+> 最后更新：2026-05-07
 
 ---
 
@@ -75,6 +75,8 @@ WinUI 3 窗口默认不透明。需要通过 Win32 API（`SetWindowLong`、`WS_E
 
 ## 执行计划（分步实现逻辑）
 
+> 2026-05-07 路线重整：当前执行来源以 `_bmad-output/planning-artifacts/epics.md` 为准。下面 Phase 1-4 保留为技术演进背景，不再作为 MVP 完成判定清单。
+
 按以下阶段逐步推进，每一阶段需等待确认后再进入下一步。
 
 ### Phase 1 · 基础设施搭建
@@ -94,7 +96,30 @@ WinUI 3 窗口默认不透明。需要通过 Win32 API（`SetWindowLong`、`WS_E
 ## 当前状态
 
 - [x] Harness 文档落盘
-- [ ] Phase 1：基础设施搭建
-- [ ] Phase 2：捕获模块
-- [ ] Phase 3：渲染与桥接
-- [ ] Phase 4：UI 交互与裁剪
+- [x] Phase 1：基础设施搭建
+- [x] Phase 2：捕获模块
+- [x] Phase 3：渲染与桥接
+- [~] Phase 4：UI 交互与裁剪（基础 overlay/crop 已建立，MVP 仍需 direct monitor capture 与 release-to-copy 收尾）
+
+## 2026-05-07 MVP 到 1.0 路线
+
+Lumiere 当前路线已从“补丁式扩展 epic”重整为 6 个 canonical epic，只覆盖 MVP、MVP 完成门禁、installer 和 1.0 发布。完整需求与故事以 `_bmad-output/planning-artifacts/prd.md`、`_bmad-output/planning-artifacts/epics.md`、`_bmad-output/planning-artifacts/architecture.md` 和 `_bmad-output/planning-artifacts/ux-design-specification.md` 为准。
+
+- Epic 1-4 完成表示 MVP 功能实现完成。
+- Epic 5 完成表示 MVP 已通过完成门禁与验证，可以进入安装包流程。
+- Epic 6 完成表示可安装的 1.0 发布完成。
+
+MVP 的默认截图体验是：点击 Capture 后不先弹窗口/显示器选择器，直接解析当前显示器捕获目标，打开全屏框选 overlay；用户拖拽区域并松手即截图/复制；只保留轻提示与 Escape 取消。`GraphicsCapturePicker` 仅保留为 fallback/debug 或未来显式选择路径。
+
+MVP 设计图已纳入实现规划：
+
+- `harness/design/mvp/lumiere-mvp-design.png`
+
+当前 durable 状态：
+
+- Epic 1：HDR Preview Foundation 已完成。
+- Epic 2：Direct Capture Session Lifecycle 进行中，下一步重点是 `2.5` direct monitor capture target。
+- Epic 3：Release-to-Copy Overlay Workflow 进行中，下一步重点是 `3.6` 松手截图复制。
+- Epic 4：MVP Output, Status, and Validation 待实现。
+- Epic 5：MVP Completion Gate 待实现。
+- Epic 6：Installer and 1.0 Release 待实现。

@@ -37,10 +37,25 @@ The prototype is a durable visual and interaction reference. Treat it as UX mate
 - Dashboard -> Settings: General, Shortcuts, HDR, Output.
 - Dashboard -> Gallery.
 
+## MVP Design
+
+Path: `mvp/`
+
+The MVP design board is the active visual input for the current MVP implementation route. It takes precedence over broader prototype screens when there is a scope conflict.
+
+- `mvp/lumiere-mvp-design.png` - MVP design reference covering main window, settings, tray menu, and direct capture selection overlay.
+
+MVP interaction intent:
+
+- Main window keeps Capture primary and avoids wrapped control labels.
+- Capture opens direct region selection without a picker-first interruption.
+- Releasing a valid crop completes capture/copy and shows lightweight feedback.
+- Multi-button overlay toolbars, annotation, gallery, and expanded output settings are post-MVP or post-1.0 references unless reintroduced by a story.
+
 ## Implementation Guidance
 
 - Prefer Windows 11 native WinUI patterns over copying web-specific layout code.
 - Preserve the existing native architecture boundaries from `harness/README.md`.
 - Use dashboard and settings pages as layout references, but keep implementation scoped to available features unless a task explicitly asks to build future screens.
-- Use overlay pages as interaction references for crop UI states; actual preview must remain the native FP16/scRGB pipeline.
+- Use the MVP design board as the current overlay interaction reference. Use broader overlay prototype pages only for future crop UI states; actual preview must remain the native FP16/scRGB pipeline.
 - Use Impeccable for critique, polish, hardening, and anti-pattern detection. Do not let it override Lumiere's native Windows, HDR-first product direction.
