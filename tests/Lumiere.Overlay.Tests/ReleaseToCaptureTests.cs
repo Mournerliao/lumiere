@@ -167,6 +167,23 @@ public sealed class ReleaseToCaptureTests
         Assert.False(result);
     }
 
+    [Fact]
+    public void CreateClipboardClosingMessage_ReportsCopiedFeedback()
+    {
+        var message = OverlayWindow.CreateClipboardClosingMessage(OverlayDisplayStatus.HdrReady);
+
+        Assert.Contains("Copied to clipboard", message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CreateClipboardClosingMessage_ReportsDegradedCopiedFeedback()
+    {
+        var message = OverlayWindow.CreateClipboardClosingMessage(OverlayDisplayStatus.DegradedPreview);
+
+        Assert.Contains("Copied to clipboard", message, StringComparison.Ordinal);
+        Assert.Contains("degraded preview", message, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static CropController CreateActiveController(Rect region, double minimumSize = 4)
     {
         var controller = new CropController(minimumSize);

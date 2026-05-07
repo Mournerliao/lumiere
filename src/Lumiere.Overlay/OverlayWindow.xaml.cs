@@ -145,11 +145,8 @@ public sealed partial class OverlayWindow : Window
         }
 
         isClosingRequested = true;
-        var closingMessage = confirmed.Status is OverlayDisplayStatus.DegradedPreview
-            ? "Crop confirmed (degraded preview). Closing..."
-            : "Crop confirmed. Closing...";
         ApplyState(OverlayState.Closing(
-            closingMessage,
+            CreateClipboardClosingMessage(confirmed.Status),
             confirmed.Status is OverlayDisplayStatus.DegradedPreview
                 ? $"Confirmed degraded preview crop: {confirmed.TechnicalDetail}"
                 : $"Confirmed crop: {confirmed.TechnicalDetail}"));
@@ -403,6 +400,11 @@ public sealed partial class OverlayWindow : Window
         ApplyState(OverlayState.Closing("Closing overlay."));
         CloseRequested?.Invoke(this, EventArgs.Empty);
     }
+
+    internal static string CreateClipboardClosingMessage(OverlayDisplayStatus status) =>
+        status is OverlayDisplayStatus.DegradedPreview
+            ? "Copied to clipboard (degraded preview). Closing..."
+            : "Copied to clipboard. Closing...";
 
     private void OnClosed(object sender, WindowEventArgs args)
     {

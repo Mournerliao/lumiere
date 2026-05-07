@@ -300,15 +300,25 @@ public sealed class ClipboardOutputService : IDisposable
 
     private static async Task WriteToClipboardAsync(byte[] pngBytes)
     {
-        using var stream = new InMemoryRandomAccessStream();
-        await stream.WriteAsync(pngBytes.AsBuffer());
-        stream.Seek(0);
+        var stream = new InMemoryRandomAccessStream();
+        try
+        {
+            await stream.WriteAsync(pngBytes.AsBuffer());
+            stream.Seek(0);
 
-        var reference = RandomAccessStreamReference.CreateFromStream(stream);
-        var dataPackage = new DataPackage();
-        dataPackage.SetBitmap(reference);
+            // The clipboard may open the stream after SetContent returns, so the stream
+            // must outlive this method once ownership is handed to the data package.
+            var reference = RandomAccessStreamReference.CreateFromStream(stream);
+            var dataPackage = new DataPackage();
+            dataPackage.SetBitmap(reference);
 
-        Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dataPackage);
+            Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dataPackage);
+        }
+        catch
+        {
+            stream.Dispose();
+            throw;
+        }
     }
 
     public void Dispose()

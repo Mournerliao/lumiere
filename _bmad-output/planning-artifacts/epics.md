@@ -54,7 +54,7 @@ Users and developers can prove that Lumiere's core HDR capture and preview found
 
 Users can start a capture session from the app, avoid picker-first target selection on the default MVP path, and trust the app to start, stop, restart, resize, and tear down capture resources without stale frames or resource leaks.
 
-**Status:** In progress.
+**Status:** Done.
 
 **Stories:**
 
@@ -62,13 +62,13 @@ Users can start a capture session from the app, avoid picker-first target select
 - 2.2 Represent Capture Session State Explicitly - done
 - 2.3 Stop, Restart, and Recreate Capture Resources - done
 - 2.4 Validate Repeated Capture Lifecycle Stability - done
-- 2.5 Create Monitor Capture Targets Without Picker - backlog
+- 2.5 Create Monitor Capture Targets Without Picker - done
 
 ### Epic 3: Release-to-Copy Overlay Workflow
 
 Users can interact with a full-screen capture overlay, create and adjust a crop selection over the HDR preview, release to complete the MVP capture flow, or press Escape to cancel and return safely to the desktop.
 
-**Status:** In progress.
+**Status:** Done.
 
 **Stories:**
 
@@ -77,7 +77,7 @@ Users can interact with a full-screen capture overlay, create and adjust a crop 
 - 3.3 Adjust or Recreate the Crop Selection - done
 - 3.4 Confirm or Cancel the Capture Overlay - done
 - 3.5 Manage Overlay Hit Testing and Keyboard Escape - done
-- 3.6 Release to Capture and Copy - backlog
+- 3.6 Release to Capture and Copy - done
 
 ### Epic 4: MVP Output, Status, and Validation
 

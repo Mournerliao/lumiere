@@ -111,13 +111,13 @@ public static class GraphicsCaptureMonitorInterop
         Guid resultInterfaceId,
         out IntPtr resultPointer)
     {
-        // IGraphicsCaptureItemInterop inherits IInspectable (3 IUnknown + 3 IInspectable = 6 slots).
-        // CreateForMonitor is the first declared method, so it sits at vtable index 6.
+        // IGraphicsCaptureItemInterop inherits IUnknown. Slot 3 is CreateForWindow;
+        // slot 4 is CreateForMonitor(HMONITOR, REFIID, void**).
         var vtable = Marshal.ReadIntPtr(interopPointer);
-        var createForMonitorPtr = Marshal.ReadIntPtr(vtable, IntPtr.Size * 6);
+        var createForMonitorPtr = Marshal.ReadIntPtr(vtable, IntPtr.Size * 4);
         var createForMonitor = Marshal.GetDelegateForFunctionPointer<CreateForMonitorDelegate>(createForMonitorPtr);
 
-        return createForMonitor(interopPointer, monitorHandle, resultInterfaceId, out resultPointer);
+        return createForMonitor(interopPointer, monitorHandle, in resultInterfaceId, out resultPointer);
     }
 
     [DllImport("combase.dll", PreserveSig = true)]
@@ -130,7 +130,7 @@ public static class GraphicsCaptureMonitorInterop
     private delegate int CreateForMonitorDelegate(
         IntPtr interopPointer,
         IntPtr monitorHandle,
-        Guid resultInterfaceId,
+        in Guid resultInterfaceId,
         out IntPtr resultPointer);
 
     [ComImport]
