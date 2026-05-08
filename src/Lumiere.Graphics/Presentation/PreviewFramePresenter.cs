@@ -1,11 +1,14 @@
 using Lumiere.Graphics.Devices;
 using Lumiere.Graphics.Hdr;
+using Lumiere.Infrastructure.Diagnostics;
 using Lumiere.Infrastructure.Interop;
+using Microsoft.Extensions.Logging;
 
 namespace Lumiere.Graphics.Presentation;
 
 public sealed class PreviewFramePresenter
 {
+    private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Graphics);
     private readonly IPreviewFrameOutput output;
 
     public PreviewFramePresenter(
@@ -29,6 +32,8 @@ public sealed class PreviewFramePresenter
             output.CopyFrame(frame.Texture);
             output.Present();
 
+            Logger.LogDebug("Frame presented to swap chain: {Width}x{Height}, source={Source}", frame.Width, frame.Height, frame.SourceDescription);
+
             return new PreviewRenderResult(
                 PreviewReadinessStatus.Ready(
                     "HDR-ready",
@@ -36,6 +41,7 @@ public sealed class PreviewFramePresenter
         }
         catch (Exception exception)
         {
+            Logger.LogError(exception, "Frame present FAILED");
             return new PreviewRenderResult(MapFailureToReadiness(exception));
         }
     }

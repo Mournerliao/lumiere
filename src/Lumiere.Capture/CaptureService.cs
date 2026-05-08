@@ -2,7 +2,9 @@ using System.Threading;
 using Lumiere.Graphics.Devices;
 using Lumiere.Graphics.Hdr;
 using Lumiere.Graphics.Presentation;
+using Lumiere.Infrastructure.Diagnostics;
 using Lumiere.Infrastructure.Interop;
+using Microsoft.Extensions.Logging;
 using Windows.Foundation;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX.Direct3D11;
@@ -11,6 +13,7 @@ namespace Lumiere.Capture;
 
 public sealed class CaptureService
 {
+    private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Capture);
     private readonly GraphicsDeviceResources deviceResources;
 
     public CaptureService(GraphicsDeviceResources deviceResources)
@@ -32,6 +35,7 @@ public sealed class CaptureService
 
         if (!target.HasCaptureItem)
         {
+            Logger.LogWarning("StartCapture FAILED: CaptureTarget has no GraphicsCaptureItem");
             return CaptureStartResult.NotStarted(
                 PreviewReadinessStatus.Failed(
                     PreviewReadinessStage.Capture,
@@ -41,6 +45,7 @@ public sealed class CaptureService
 
         if (!GraphicsCaptureSession.IsSupported())
         {
+            Logger.LogWarning("StartCapture FAILED: GraphicsCaptureSession.IsSupported=false");
             return CaptureStartResult.NotStarted(
                 PreviewReadinessStatus.Unsupported(
                     PreviewReadinessStage.Capture,
@@ -64,6 +69,8 @@ public sealed class CaptureService
                 options.BufferCount,
                 options.BufferSize);
 
+            Logger.LogDebug("WGC FramePool created: pixelFormat={PixelFormat}, bufferSize={BufferSize}, target={DisplayName} ({Width}x{Height})", options.PixelFormat, options.BufferCount, target.DisplayName, target.Size.Width, target.Size.Height);
+
             frameArrivedHandler = (sender, _) =>
             {
                 if (!frameFailureGate.ShouldProcessFrame)
@@ -82,6 +89,8 @@ public sealed class CaptureService
             session = framePool.CreateCaptureSession(target.Item);
             session.StartCapture();
 
+            Logger.LogInformation("WGC session started: IsSupported=true, target={DisplayName} ({Width}x{Height}), kind={Kind}", target.DisplayName, target.Size.Width, target.Size.Height, target.Kind);
+
             return CaptureStartResult.StartSucceeded(
                 new CaptureSessionResources(direct3DDevice, framePool, session, frameArrivedHandler),
                 PreviewReadinessStatus.Initializing(
@@ -99,6 +108,8 @@ public sealed class CaptureService
             (session as IDisposable)?.Dispose();
             (framePool as IDisposable)?.Dispose();
             (direct3DDevice as IDisposable)?.Dispose();
+
+            Logger.LogError(exception, "StartCapture EXCEPTION");
 
             return CaptureStartResult.NotStarted(MapFailureToReadiness(exception));
         }
@@ -164,6 +175,7 @@ public sealed class CaptureService
         {
             if (frameFailureGate.TryMarkFailed())
             {
+                Logger.LogError(exception, "FrameArrived FAILED");
                 TryReportFrameFailure(exception, onFrameFailed);
             }
         }

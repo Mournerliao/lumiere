@@ -84,6 +84,60 @@ D3D11 devices, DXGI swap chains, WGC sessions/frame pools, and WinRT interop wra
 - Do not introduce Electron, Tauri, WPF bitmap-first, WinForms, GDI, web UI, cloud upload, telemetry, or SDR screenshot-library foundations.
 - Put platform APIs behind the existing boundary projects before exposing small interfaces to other modules.
 - Manage WGC, Vortice, DXGI, and COM resources explicitly with correct disposal semantics.
+- **Add structured logging to all new code** — see Logging Conventions below.
+
+## Logging Conventions
+
+All production code MUST use `ILogger` via `LumiereLoggerFactory`. Do NOT use `Console.WriteLine`, `Debug.WriteLine`, or create new static logger classes.
+
+### Logger Declaration
+
+Each class declares a static logger at the top:
+
+```csharp
+private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Graphics);
+```
+
+Use the category matching the module: `LogCategories.App`, `.Capture`, `.Graphics`, `.Overlay`, `.Infrastructure`.
+
+### Log Levels
+
+| Level | When to use |
+|---|---|
+| `LogDebug` | Device creation, swap chain config, frame details — off in production |
+| `LogInformation` | Lifecycle events: capture started, frame presented, overlay created |
+| `LogWarning` | Degraded but recoverable: unsupported color space, dispatcher fallback |
+| `LogError` | Failures with exceptions: frame present failed, clipboard output failed |
+| `LogCritical` | Fatal: D3D11 device lost |
+
+### Structured Message Template
+
+Use `{Placeholder}` syntax, never string interpolation:
+
+```csharp
+// ✅ Correct
+Logger.LogInformation("Capture started: generation={Generation}, target={DisplayName}", generation, target.DisplayName);
+
+// ❌ Wrong — defeats structured logging
+Logger.LogInformation($"Capture started: generation={generation}, target={target.DisplayName}");
+```
+
+### What to Log
+
+- **Every public method entry** at Debug level
+- **Every exception catch** at Error level with the exception object
+- **Every state transition** (idle → capturing → stopped) at Information level
+- **Every degradation/fallback** at Warning level
+- **Resource disposal** at Debug level
+
+### Files
+
+| File | Role |
+|---|---|
+| `src/Lumiere.Infrastructure/Diagnostics/LumiereLoggerFactory.cs` | Static factory, call `Initialize()` once at startup |
+| `src/Lumiere.Infrastructure/Diagnostics/LogCategories.cs` | Category constants per module |
+| `src/Lumiere.Infrastructure/Diagnostics/FileLoggerProvider.cs` | File output, auto-rotation |
+| `src/Lumiere.Infrastructure/Diagnostics/ValidationLogger.cs` | Legacy bridge — do NOT use in new code |
 
 ## Validation Commands
 

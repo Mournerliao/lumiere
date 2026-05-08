@@ -2,6 +2,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Lumiere.Graphics.Devices;
 using Lumiere.Graphics.Hdr;
+using Lumiere.Infrastructure.Diagnostics;
+using Microsoft.Extensions.Logging;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
@@ -15,6 +17,7 @@ namespace Lumiere.Graphics.Clipboard;
 
 public sealed class ClipboardOutputService : IDisposable
 {
+    private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Graphics);
     private readonly GraphicsDeviceResources deviceResources;
     private bool disposed;
 
@@ -36,6 +39,7 @@ public sealed class ClipboardOutputService : IDisposable
         {
             if (!ValidateRegion(pixelX, pixelY, pixelWidth, pixelHeight, sourceWidth, sourceHeight))
             {
+                Logger.LogWarning("Clipboard region INVALID: ({X},{Y},{Width}x{Height}) in {SourceWidth}x{SourceHeight}", pixelX, pixelY, pixelWidth, pixelHeight, sourceWidth, sourceHeight);
                 return false;
             }
 
@@ -43,11 +47,13 @@ public sealed class ClipboardOutputService : IDisposable
             using var bgra8Texture = ConvertToBgra8(croppedTexture, pixelWidth, pixelHeight);
             var pngBytes = await EncodeAsPngAsync(bgra8Texture, pixelWidth, pixelHeight);
             await WriteToClipboardAsync(pngBytes);
+
+            Logger.LogInformation("Clipboard output success: PNG encoded, {Bytes} bytes, crop=({X},{Y},{Width}x{Height})", pngBytes.Length, pixelX, pixelY, pixelWidth, pixelHeight);
             return true;
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Clipboard output failed: {ex.Message}");
+            Logger.LogError(ex, "Clipboard output FAILED");
             return false;
         }
     }

@@ -1,5 +1,7 @@
 using Lumiere.Graphics.Hdr;
+using Lumiere.Infrastructure.Diagnostics;
 using Lumiere.Infrastructure.Interop;
+using Microsoft.Extensions.Logging;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
@@ -8,6 +10,7 @@ namespace Lumiere.Graphics.Devices;
 
 public sealed class GraphicsDeviceProvider
 {
+    private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Graphics);
     private const string OperationName = "D3D11CreateDevice";
 
     private readonly GraphicsDeviceCreationOptions options;
@@ -37,6 +40,8 @@ public sealed class GraphicsDeviceProvider
             immediateContext = device.ImmediateContext;
             dxgiDevice = device.QueryInterface<IDXGIDevice>();
 
+            Logger.LogDebug("D3D11Device created: featureLevel={FeatureLevel}, flags={Flags}", selectedFeatureLevel, creationFlags);
+
             var evidence = PreviewReadinessStatus.Initializing(
                 "Graphics device creation succeeded; HDR preview still needs presentation validation.",
                 $"{OperationName} selected {selectedFeatureLevel} with {creationFlags}.");
@@ -53,6 +58,8 @@ public sealed class GraphicsDeviceProvider
             dxgiDevice?.Dispose();
             immediateContext?.Dispose();
             device?.Dispose();
+
+            Logger.LogError(exception, "D3D11Device FAILED: {Detail}", FormatExceptionDetail(exception));
 
             throw CreateFailure(FormatExceptionDetail(exception), exception);
         }

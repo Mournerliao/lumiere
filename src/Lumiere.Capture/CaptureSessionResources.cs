@@ -1,3 +1,5 @@
+using Lumiere.Infrastructure.Diagnostics;
+using Microsoft.Extensions.Logging;
 using Windows.Foundation;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX.Direct3D11;
@@ -6,6 +8,7 @@ namespace Lumiere.Capture;
 
 public sealed class CaptureSessionResources : IDisposable
 {
+    private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Capture);
     private readonly Func<CaptureSessionDisposalEvidence> disposeAction;
     private int disposed;
 
@@ -51,5 +54,6 @@ public sealed class CaptureSessionResources : IDisposable
         }
 
         DisposalEvidence = disposeAction();
+        Logger.LogDebug("CaptureSession disposed: {DisposalEvidence}", DisposalEvidence);
     }
 }

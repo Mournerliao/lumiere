@@ -1,11 +1,14 @@
 using System.Diagnostics;
 using Lumiere.Graphics.Hdr;
+using Lumiere.Infrastructure.Diagnostics;
+using Microsoft.Extensions.Logging;
 using Vortice.DXGI;
 
 namespace Lumiere.Graphics.Presentation;
 
 public sealed class SwapChainResources : IDisposable
 {
+    private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Graphics);
     private readonly Action detachPreview;
     private readonly Action releaseResources;
     private readonly IDXGISwapChain1? swapChain;
@@ -49,7 +52,7 @@ public sealed class SwapChainResources : IDisposable
         DisposalEvidence = SwapChainDisposalCoordinator.DisposeOnce(
             detachPreview,
             releaseResources);
-        Debug.WriteLine($"Swap chain disposed. {FormatDisposalEvidence(DisposalEvidence)}");
+        Logger.LogDebug("SwapChain disposed: {Evidence}", FormatDisposalEvidence(DisposalEvidence));
 
         disposed = true;
     }
@@ -71,7 +74,7 @@ public sealed class SwapChainResources : IDisposable
                 PreviewDetached: false,
                 ResourcesReleased: true,
                 DetachedBeforeRelease: false);
-            Debug.WriteLine($"Swap chain released after failed UI detach. {FormatDisposalEvidence(DisposalEvidence)}");
+            Logger.LogDebug("Swap chain released after failed UI detach. {Evidence}", FormatDisposalEvidence(DisposalEvidence));
             disposed = true;
         }
     }

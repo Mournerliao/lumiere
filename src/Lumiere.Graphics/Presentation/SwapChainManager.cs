@@ -1,12 +1,15 @@
 using Lumiere.Graphics.Devices;
 using Lumiere.Graphics.Hdr;
+using Lumiere.Infrastructure.Diagnostics;
 using Lumiere.Infrastructure.Interop;
+using Microsoft.Extensions.Logging;
 using Vortice.DXGI;
 
 namespace Lumiere.Graphics.Presentation;
 
 public sealed class SwapChainManager
 {
+    private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Graphics);
     private const string OperationName = "IDXGIFactory2.CreateSwapChainForComposition";
 
     public SwapChainResources CreateAttachedCompositionSwapChain(
@@ -47,11 +50,15 @@ public sealed class SwapChainManager
                 restrictToOutput: null);
             swapChain3 = swapChain.QueryInterface<IDXGISwapChain3>();
 
+            Logger.LogDebug("SwapChain created: format={Format}, colorSpace={ColorSpace}", options.CreateDescription().Format, options.ColorSpace);
+
             var presentationEvidence = SwapChainColorSpaceConfigurator.Configure(
                 new SwapChainColorSpaceController(swapChain3),
                 options.ColorSpace);
 
             attachPreview(swapChain);
+
+            Logger.LogDebug("SwapChainPanel attached: success");
 
             return new SwapChainResources(swapChain, presentationEvidence, detachPreview);
         }
@@ -59,6 +66,8 @@ public sealed class SwapChainManager
         {
             swapChain3?.Dispose();
             swapChain?.Dispose();
+
+            Logger.LogError(exception, "SwapChain FAILED: {Detail}", FormatExceptionDetail(exception));
 
             throw CreateFailure(FormatExceptionDetail(exception), exception);
         }

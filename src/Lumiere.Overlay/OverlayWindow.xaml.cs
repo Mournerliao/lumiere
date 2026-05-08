@@ -1,7 +1,9 @@
+using Lumiere.Infrastructure.Diagnostics;
 using Lumiere.Infrastructure.Interop;
 using Lumiere.Overlay.Crop;
 using Lumiere.Overlay.Input;
 using Lumiere.Overlay.Windowing;
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -15,6 +17,7 @@ namespace Lumiere.Overlay;
 
 public sealed partial class OverlayWindow : Window
 {
+    private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Overlay);
     private const double CropHandleVisualSize = 12;
 
     private readonly OverlayWindowPresenter presenter;
@@ -204,6 +207,7 @@ public sealed partial class OverlayWindow : Window
     {
         if (isClosingRequested)
         {
+            Logger.LogWarning("RequestCaptureConfirm BLOCKED: isClosingRequested=true");
             return;
         }
 
@@ -216,9 +220,15 @@ public sealed partial class OverlayWindow : Window
                 presenter.DpiScale,
                 out var confirmed))
         {
+            Logger.LogWarning("RequestCaptureConfirm BLOCKED: TryCreate failed (selection invalid or status not confirmable)");
             UpdateConfirmAvailability();
             return;
         }
+
+        Logger.LogInformation(
+            "RequestCaptureConfirm: confirmed crop=({X},{Y},{Width}x{Height}), status={Status}",
+            confirmed.PixelRegion.X, confirmed.PixelRegion.Y, confirmed.PixelRegion.Width, confirmed.PixelRegion.Height,
+            confirmed.Status);
 
         isClosingRequested = true;
         ApplyState(OverlayState.Closing(
@@ -259,6 +269,13 @@ public sealed partial class OverlayWindow : Window
         CropCanvas.CapturePointer(args.Pointer);
         UpdateCropVisuals();
         UpdateConfirmAvailability();
+
+        var pos = pointerPoint.Position;
+        var bounds = currentPreviewLayout.PreviewBounds;
+        Logger.LogDebug(
+            "Crop gesture begin: pos=({X:0.#},{Y:0.#}), previewBounds=({BX:0.#},{BY:0.#},{BW:0.#},{BH:0.#})",
+            pos.X, pos.Y, bounds.X, bounds.Y, bounds.Width, bounds.Height);
+
         args.Handled = true;
     }
 
@@ -292,8 +309,15 @@ public sealed partial class OverlayWindow : Window
         UpdateCropVisuals();
         UpdateConfirmAvailability();
 
+        var selection = cropController.Selection;
+        var canConfirm = ConfirmedCaptureSelection.CanConfirm(selection, currentState.Status);
+        Logger.LogDebug(
+            "Crop commit: result={Result}, canConfirm={CanConfirm}, isClosingRequested={IsClosing}, overlayStatus={Status}",
+            commitResult, canConfirm, isClosingRequested, currentState.Status);
+
         if (commitResult is CropCommitResult.Activated or CropCommitResult.Adjusted)
         {
+            Logger.LogDebug("Release-to-capture: auto-confirming (commitResult={CommitResult})", commitResult);
             RequestCaptureConfirm();
         }
 
@@ -477,10 +501,12 @@ public sealed partial class OverlayWindow : Window
     {
         if (isClosingRequested || !cancelRequestGate.TryRequestCancel())
         {
+            Logger.LogWarning("Escape cancel BLOCKED: isClosingRequested={IsClosing}", isClosingRequested);
             return;
         }
 
         isClosingRequested = true;
+        Logger.LogDebug("Escape cancel: closing overlay");
         ApplyState(OverlayState.Closing("Closing overlay."));
         CloseRequested?.Invoke(this, EventArgs.Empty);
     }
@@ -507,17 +533,6 @@ public sealed partial class OverlayWindow : Window
 
     private static void WriteDebugLog(string message)
     {
-        try
-        {
-            var logPath = System.IO.Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Lumiere", "overlay-debug.log");
-            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(logPath)!);
-            System.IO.File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] {message}{Environment.NewLine}");
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"WriteDebugLog failed: {ex.Message}");
-        }
+        Logger.LogDebug("{Message}", message);
     }
 }

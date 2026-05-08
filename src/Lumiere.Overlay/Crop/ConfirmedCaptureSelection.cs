@@ -1,3 +1,5 @@
+using Lumiere.Infrastructure.Diagnostics;
+using Microsoft.Extensions.Logging;
 using Windows.Foundation;
 
 namespace Lumiere.Overlay.Crop;
@@ -10,10 +12,13 @@ public sealed record ConfirmedCaptureSelection(
     string StatusText,
     string TechnicalDetail)
 {
+    private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Overlay);
     public static bool CanConfirm(CropSelection selection, OverlayDisplayStatus status) =>
         selection.Phase is CropSelectionPhase.Active
         && selection.Geometry.IsValid
-        && status is OverlayDisplayStatus.HdrReady or OverlayDisplayStatus.DegradedPreview;
+        && status is OverlayDisplayStatus.HdrReady
+            or OverlayDisplayStatus.DegradedPreview
+            or OverlayDisplayStatus.Initializing;
 
     public static bool TryCreate(
         CropSelection selection,
@@ -36,11 +41,21 @@ public sealed record ConfirmedCaptureSelection(
         var dipRegion = selection.Geometry.Region;
         var pixelRegion = CropCoordinateMapper.MapToCapturePixels(
             dipRegion, previewBounds, frameSize, dpiScaleX, dpiScaleY);
+
+        var effectiveStatus = overlayState.Status is OverlayDisplayStatus.Initializing
+            ? OverlayDisplayStatus.DegradedPreview
+            : overlayState.Status;
+
+        if (overlayState.Status is OverlayDisplayStatus.Initializing)
+        {
+            Logger.LogDebug("Confirm during Initializing: mapping to DegradedPreview (frames arriving but HDR status not yet confirmed)");
+        }
+
         confirmed = new ConfirmedCaptureSelection(
             dipRegion,
             pixelRegion,
             frameSize,
-            overlayState.Status,
+            effectiveStatus,
             overlayState.Message,
             overlayState.TechnicalDetail);
         return true;

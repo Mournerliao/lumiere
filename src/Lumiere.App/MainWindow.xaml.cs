@@ -5,10 +5,12 @@ using Lumiere.Graphics.Clipboard;
 using Lumiere.Graphics.Devices;
 using Lumiere.Graphics.Hdr;
 using Lumiere.Graphics.Presentation;
+using Lumiere.Infrastructure.Diagnostics;
 using Lumiere.Infrastructure.Interop;
 using Lumiere.Overlay;
 using Lumiere.Overlay.Crop;
 using Lumiere.Overlay.Windowing;
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using Windows.Graphics;
@@ -18,6 +20,8 @@ namespace Lumiere.App;
 
 public sealed partial class MainWindow : Window
 {
+    private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.App);
+
     private readonly object previewSync = new();
     private readonly GraphicsDeviceProvider deviceProvider = new();
     private CaptureService? captureService;
@@ -51,6 +55,16 @@ public sealed partial class MainWindow : Window
         AppWindow.Resize(new SizeInt32(2560, 1440));
         Closed += OnWindowClosed;
 
+        LumiereLoggerFactory.InitializeWithHeader(
+            LogLevel.Information,
+            "Lumiere Validation Log",
+            $"Started: {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
+            $"OS: {Environment.OSVersion}",
+            $".NET: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}",
+            $"HdrConstants: WgcPixelFormat={HdrConstants.WgcFramePoolPixelFormat}, DxgiFormat={HdrConstants.DxgiSwapChainFormat}, ColorSpace={HdrConstants.DxgiColorSpace}");
+
+        ValidationLogger.SetBridgeLogger(Logger);
+
         ApplySessionState(
             CaptureSessionState.Idle(PreviewReadinessStatus.Initializing(
                 PreviewReadinessStage.Capture,
@@ -71,6 +85,8 @@ public sealed partial class MainWindow : Window
                     PreviewReadinessStage.Capture,
                     "Starting direct monitor capture...",
                     "Resolving current monitor for direct capture.")));
+
+            Logger.LogDebug("Direct capture started (no picker)");
 
             var directService = DirectMonitorCaptureTargetSelectionService.CreateDirectOnly(
                 MonitorSelectionInterop.GetCurrentMonitorFromCursor,
@@ -96,6 +112,7 @@ public sealed partial class MainWindow : Window
         {
             if (!isClosed)
             {
+                Logger.LogError(exception, "Direct capture failed");
                 StopPreview(reportStopped: false);
                 ApplySessionState(
                     CaptureSessionState.Failed(null, PreviewReadinessStatus.Failed(
@@ -160,6 +177,10 @@ public sealed partial class MainWindow : Window
             frameEventCount = 0;
             currentGeneration = Volatile.Read(ref previewGeneration);
         }
+
+        Logger.LogInformation(
+            "Capture started: generation={Generation}, target={DisplayName} ({Width}x{Height}), kind={Kind}",
+            currentGeneration, target.DisplayName, target.Size.Width, target.Size.Height, target.Kind);
 
         ApplySessionState(CaptureSessionState.FromReadiness(target, presentationEvidence));
 
@@ -233,8 +254,16 @@ public sealed partial class MainWindow : Window
             }
         }
 
+        if (frameNumber == 1 && !sizeChange?.RequiresRecreation == true)
+        {
+            Logger.LogDebug("First frame arrived: {Width}x{Height}, source={Source}", frame.Width, frame.Height, frame.SourceDescription);
+        }
+
         if (sizeChange?.RequiresRecreation == true)
         {
+            Logger.LogInformation(
+                "Frame size changed: {OldWidth}x{OldHeight} -> {NewWidth}x{NewHeight}, requiresRecreation=true",
+                previewSourceWidth, previewSourceHeight, frame.Width, frame.Height);
             QueuePreviewRecreation(generation, sizeChange);
             return;
         }
@@ -284,6 +313,10 @@ public sealed partial class MainWindow : Window
             swapChainToDispose = swapChainResources;
             swapChainResources = null;
         }
+
+        Logger.LogInformation(
+            "Preview recreation queued: newSize={Width}x{Height}, newGeneration={Generation}",
+            sizeChange.ReplacementWidth, sizeChange.ReplacementHeight, recreationGeneration);
 
         if (target is null)
         {
@@ -449,15 +482,21 @@ public sealed partial class MainWindow : Window
         overlayWindow.Activate();
         overlayWindow.ExcludeFromCapture();
         overlayWindow.ApplyState(CreateOverlayState(sessionState));
+
+        Logger.LogInformation(
+            "Overlay created: fullscreen, frameSize={Width}x{Height}, displayName={DisplayName}",
+            target.Size.Width, target.Size.Height, target.DisplayName);
     }
 
     private void StopPreview(bool reportStopped = true)
     {
         CaptureSessionResources? captureSessionToDispose;
         SwapChainResources? swapChainToDispose;
+        long stoppedGeneration;
         lock (previewSync)
         {
             Interlocked.Increment(ref previewGeneration);
+            stoppedGeneration = Volatile.Read(ref previewGeneration);
             captureSessionToDispose = captureSession;
             captureSession = null;
             previewFramePresenter = null;
@@ -469,6 +508,10 @@ public sealed partial class MainWindow : Window
 
         captureSessionToDispose?.Dispose();
         swapChainToDispose?.Dispose();
+
+        Logger.LogDebug(
+            "StopPreview: generation={Generation}, captureDisposed={CaptureDisposed}, swapChainDisposed={SwapChainDisposed}",
+            stoppedGeneration, captureSessionToDispose is not null, swapChainToDispose is not null);
 
         if (reportStopped && !isClosed)
         {
@@ -543,13 +586,13 @@ public sealed partial class MainWindow : Window
         if (overlayDispatcher is not null &&
             Interlocked.Exchange(ref overlayDispatcherFallbackReported, 1) == 0)
         {
-            Debug.WriteLine("Overlay dispatcher rejected UI work; falling back to RootGrid dispatcher.");
+            Logger.LogWarning("Overlay dispatcher rejected UI work; falling back to RootGrid dispatcher.");
         }
 
         var enqueued = RootGrid.DispatcherQueue.TryEnqueue(() => action());
         if (!enqueued && Interlocked.Exchange(ref uiDispatchFailureReported, 1) == 0)
         {
-            Debug.WriteLine("RootGrid dispatcher rejected UI work; preview status update was dropped.");
+            Logger.LogWarning("RootGrid dispatcher rejected UI work; preview status update was dropped.");
         }
 
         return enqueued;
@@ -562,6 +605,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        Logger.LogDebug("Overlay close requested (Escape/cancel), StopPreview called");
         StopPreview();
         CloseOverlayWindow();
     }
@@ -572,6 +616,11 @@ public sealed partial class MainWindow : Window
         {
             return;
         }
+
+        Logger.LogInformation(
+            "CaptureConfirmed received: pixelRegion=({X},{Y},{Width}x{Height}), status={Status}, frame={FrameW}x{FrameH}",
+            selection.PixelRegion.X, selection.PixelRegion.Y, selection.PixelRegion.Width, selection.PixelRegion.Height,
+            selection.Status, selection.FrameSize.Width, selection.FrameSize.Height);
 
         var copied = false;
         try
@@ -595,16 +644,22 @@ public sealed partial class MainWindow : Window
     {
         if (clipboardOutputService is null || swapChainResources is null)
         {
+            Logger.LogWarning("Clipboard output SKIPPED: clipboardOutputService or swapChainResources is null");
             return false;
         }
 
         try
         {
+            Logger.LogDebug(
+                "Clipboard output started: crop=({X},{Y},{Width}x{Height}), frame={FrameW}x{FrameH}",
+                selection.PixelRegion.X, selection.PixelRegion.Y, selection.PixelRegion.Width, selection.PixelRegion.Height,
+                selection.FrameSize.Width, selection.FrameSize.Height);
+
             // Capture back buffer reference before async operation
             var backBuffer = swapChainResources.SwapChain.GetBuffer<Vortice.Direct3D11.ID3D11Texture2D>(0);
             try
             {
-                return await clipboardOutputService.TryCopyToClipboardAsync(
+                var result = await clipboardOutputService.TryCopyToClipboardAsync(
                     backBuffer,
                     selection.PixelRegion.X,
                     selection.PixelRegion.Y,
@@ -612,6 +667,20 @@ public sealed partial class MainWindow : Window
                     selection.PixelRegion.Height,
                     selection.FrameSize.Width,
                     selection.FrameSize.Height);
+
+                if (result)
+                {
+                    Logger.LogInformation(
+                        "Clipboard output SUCCESS: crop=({X},{Y},{Width}x{Height})",
+                        selection.PixelRegion.X, selection.PixelRegion.Y, selection.PixelRegion.Width, selection.PixelRegion.Height);
+                }
+                else
+                {
+                    Logger.LogWarning(
+                        "Clipboard output FAILED: crop=({X},{Y},{Width}x{Height})",
+                        selection.PixelRegion.X, selection.PixelRegion.Y, selection.PixelRegion.Width, selection.PixelRegion.Height);
+                }
+                return result;
             }
             finally
             {
@@ -620,7 +689,7 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Clipboard output failed: {ex.Message}");
+            Logger.LogError(ex, "Clipboard output EXCEPTION");
             return false;
         }
     }

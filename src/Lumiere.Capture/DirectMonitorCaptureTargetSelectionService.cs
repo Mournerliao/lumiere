@@ -1,11 +1,14 @@
 using Lumiere.Graphics.Hdr;
+using Lumiere.Infrastructure.Diagnostics;
 using Lumiere.Infrastructure.Interop;
+using Microsoft.Extensions.Logging;
 using Windows.Graphics.Capture;
 
 namespace Lumiere.Capture;
 
 public sealed class DirectMonitorCaptureTargetSelectionService
 {
+    private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Capture);
     private const int E_NOTIMPL = unchecked((int)0x80004001);
 
     private readonly Func<MonitorHandle> monitorResolver;
@@ -74,6 +77,7 @@ public sealed class DirectMonitorCaptureTargetSelectionService
         {
             if (!isCaptureSupported())
             {
+                Logger.LogWarning("Direct capture FAILED: GraphicsCaptureSession.IsSupported=false");
                 return Task.FromResult(CaptureTargetSelectionResult.Unsupported(
                     PreviewReadinessStatus.Unsupported(
                         PreviewReadinessStage.Capture,
@@ -85,6 +89,8 @@ public sealed class DirectMonitorCaptureTargetSelectionService
             var target = monitorTargetFactory(monitor)
                 ?? throw new InvalidOperationException("Monitor target factory returned null.");
 
+            Logger.LogInformation("Monitor resolved: displayName={DisplayName}, size={Width}x{Height}, kind={Kind}", target.DisplayName, target.Size.Width, target.Size.Height, target.Kind);
+
             return Task.FromResult(CaptureTargetSelectionResult.Selected(
                 target,
                 PreviewReadinessStatus.Initializing(
@@ -94,10 +100,12 @@ public sealed class DirectMonitorCaptureTargetSelectionService
         }
         catch (NativeInteropException exception)
         {
+            Logger.LogError(exception, "Direct capture NativeInterop FAILED");
             return Task.FromResult(MapNativeInteropFailure(exception));
         }
         catch (NotSupportedException exception)
         {
+            Logger.LogWarning(exception, "Direct capture NOT SUPPORTED");
             return Task.FromResult(CaptureTargetSelectionResult.Unsupported(
                 PreviewReadinessStatus.Unsupported(
                     PreviewReadinessStage.Capture,
@@ -106,6 +114,7 @@ public sealed class DirectMonitorCaptureTargetSelectionService
         }
         catch (ArgumentException exception)
         {
+            Logger.LogError(exception, "Direct capture FAILED (ArgumentException)");
             return Task.FromResult(CaptureTargetSelectionResult.Failed(
                 PreviewReadinessStatus.Failed(
                     PreviewReadinessStage.Capture,
@@ -114,6 +123,7 @@ public sealed class DirectMonitorCaptureTargetSelectionService
         }
         catch (Exception exception)
         {
+            Logger.LogError(exception, "Direct capture FAILED (Exception)");
             return Task.FromResult(CaptureTargetSelectionResult.Failed(
                 PreviewReadinessStatus.Failed(
                     PreviewReadinessStage.Interop,
