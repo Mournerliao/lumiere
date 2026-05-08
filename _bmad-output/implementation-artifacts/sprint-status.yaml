@@ -1,5 +1,5 @@
 # generated: 2026-04-21T11:35:23+0800
-# last_updated: 2026-05-07T15:45:13+0800
+# last_updated: 2026-05-08T10:00:00+0800
 # project: lumiere
 # project_key: NOKEY
 # tracking_system: file-system
@@ -29,16 +29,17 @@
 #
 # WORKFLOW NOTES:
 # ===============
-# - Rebaselined on 2026-05-07 to track only the revised MVP plus installer-to-1.0 route.
-# - Epic 1-4 done means MVP feature implementation is complete.
-# - Epic 5 done means MVP is complete and validated.
-# - Epic 6 done means 1.0 installable release is complete.
+# - Rebaselined on 2026-05-08 (v2) to track expanded MVP scope based on v0 design reference.
+# - Epic 1-7 done means MVP feature implementation is complete.
+# - Epic 8 done means MVP output and validation is complete.
+# - Epic 9 done means MVP is complete and validated.
+# - Epic 10 done means 1.0 installable release is complete.
 # - Deferred post-1.0 roadmap items live in epics.md, not active sprint tracking.
 # - Developer typically creates next story after previous one is 'done' to incorporate learnings.
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-21T11:35:23+0800
-last_updated: 2026-05-07T21:58:18+0800
+last_updated: 2026-05-08T10:00:00+0800
 project: lumiere
 project_key: NOKEY
 tracking_system: file-system
@@ -68,19 +69,43 @@ development_status:
   3-6-release-to-capture-and-copy: done
   epic-3-retrospective: done
   epic-4: backlog
-  4-1-show-user-facing-capture-and-preview-status: backlog
-  4-2-define-and-implement-mvp-clipboard-output: backlog
-  4-3-document-mvp-manual-validation-scenarios: backlog
+  4-1-refactor-main-panel-layout: backlog
+  4-2-implement-dual-capture-buttons: backlog
+  4-3-implement-hdr-status-indicator: backlog
+  4-4-add-settings-button-entry: backlog
   epic-4-retrospective: optional
   epic-5: backlog
-  5-1-define-mvp-completion-gate: backlog
-  5-2-run-mvp-completion-validation-and-triage: backlog
-  5-3-complete-mvp-retrospective-and-go-no-go: backlog
+  5-1-implement-full-screen-capture-action: backlog
+  5-2-skip-crop-overlay-for-full-screen-mode: backlog
+  5-3-show-lightweight-completion-feedback: backlog
   epic-5-retrospective: optional
   epic-6: backlog
-  6-1-decide-packaging-strategy: backlog
-  6-2-build-installer-package: backlog
-  6-3-validate-install-launch-and-uninstall: backlog
-  6-4-prepare-1-0-versioning-and-release-notes: backlog
-  6-5-cut-1-0-release: backlog
+  6-1-create-settings-panel-shell: backlog
+  6-2-implement-shortcut-configuration: backlog
+  6-3-implement-hdr-settings: backlog
+  6-4-implement-output-target-configuration: backlog
+  6-5-implement-save-path-configuration: backlog
+  6-6-implement-about-section: backlog
   epic-6-retrospective: optional
+  epic-7: backlog
+  7-1-implement-system-tray-integration: backlog
+  7-2-implement-tray-context-menu: backlog
+  7-3-implement-tray-hdr-status-display: backlog
+  epic-7-retrospective: optional
+  epic-8: backlog
+  8-1-show-user-facing-capture-and-preview-status: backlog
+  8-2-define-and-implement-mvp-clipboard-output: backlog
+  8-3-document-mvp-manual-validation-scenarios: backlog
+  epic-8-retrospective: optional
+  epic-9: backlog
+  9-1-define-mvp-completion-gate: backlog
+  9-2-run-mvp-completion-validation-and-triage: backlog
+  9-3-complete-mvp-retrospective-and-go-no-go: backlog
+  epic-9-retrospective: optional
+  epic-10: backlog
+  10-1-decide-packaging-strategy: backlog
+  10-2-build-installer-package: backlog
+  10-3-validate-install-launch-and-uninstall: backlog
+  10-4-prepare-1-0-versioning-and-release-notes: backlog
+  10-5-cut-1-0-release: backlog
+  epic-10-retrospective: optional

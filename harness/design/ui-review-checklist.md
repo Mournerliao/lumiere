@@ -1,6 +1,6 @@
 # Lumiere UI Review Checklist
 
-Use this checklist for onboarding, settings, dashboard, gallery, overlay, and prototype reviews.
+Use this checklist for the current MVP surfaces: main panel, settings panel, tray context menu, direct screenshot entry, HDR status language, and capture overlay behavior. Onboarding, gallery, annotation-heavy overlays, and expanded export workflows are post-MVP unless a story explicitly brings them back.
 
 ## Native Windows Fit
 
@@ -16,7 +16,7 @@ Use this checklist for onboarding, settings, dashboard, gallery, overlay, and pr
 - Capture entry is fast and visible without becoming noisy.
 - Region selection shows clear bounds, dimensions, and reversible cancel/confirm actions.
 - Window and screen selection states are visually distinct when supported.
-- Annotation controls are compact, stable, and familiar.
+- Annotation controls are treated as post-MVP unless explicitly reintroduced.
 - Copy, save, and export outcomes are explicit enough to build trust.
 - Failure states tell the user what happened and what they can do next.
 
@@ -30,11 +30,20 @@ Use this checklist for onboarding, settings, dashboard, gallery, overlay, and pr
 
 ## Settings And Onboarding
 
-- Permissions onboarding explains why each permission is needed and how to recover if unavailable.
+- MVP settings are scannable and limited to current behavior: shortcuts, HDR/readiness preferences, output target, save path, and about/status information.
+- Permissions onboarding is post-MVP unless required by a story; any permission copy must explain why each permission is needed and how to recover if unavailable.
 - Defaults are safe for a first capture.
 - Expert settings are grouped and described without overwhelming first-time users.
 - Shortcut conflicts are discoverable and recoverable.
 - Settings text is short, concrete, and action-oriented.
+
+## v0 MVP Reference Pass
+
+- Main panel keeps screenshot actions primary and does not wrap key control labels.
+- Settings panel follows native Windows settings density instead of web page composition.
+- Tray context menu is compact, command-oriented, and works as a Windows tray menu reference.
+- HDR status wording distinguishes readiness, availability, unsupported states, and validation level.
+- Any React/Tailwind interaction is translated into WinUI/Fluent behavior before implementation.
 
 ## Impeccable Anti-Pattern Pass
 

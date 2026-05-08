@@ -19,16 +19,17 @@ completedAt: '2026-04-20'
 **Date:** 2026-04-20
 **Status:** Complete
 
-## Approved MVP-to-1.0 Rebaseline (2026-05-07)
+## Approved MVP-to-1.0 Rebaseline (2026-05-08 v2)
 
-The active implementation plan is now the six-epic MVP-to-1.0 route documented in `_bmad-output/planning-artifacts/epics.md`.
+The active implementation plan is now the ten-epic MVP-to-1.0 route documented in `_bmad-output/planning-artifacts/epics.md`.
 
 Architecturally, this means:
 
 - The default MVP capture path is direct monitor capture and must not require `GraphicsCapturePicker` before the user can draw a region.
 - `GraphicsCapturePicker` remains a fallback/debug or later explicit target-selection path, not the default screenshot path.
 - MVP output includes only a narrow clipboard result with explicit semantics. It must not weaken or redefine the FP16/scRGB live preview path.
-- Settings, tray, global hotkey, annotation, advanced export, and capture history are post-1.0 roadmap items unless separately promoted.
+- **Settings panel, tray context menu, and full screen capture mode are now part of the expanded MVP scope** based on the v0 design reference.
+- Global hotkey beyond tray integration, annotation, advanced export, and capture history remain post-1.0 roadmap items.
 - MVP completion is not claimed when feature stories alone are done; it is claimed only after the MVP completion gate epic validates Windows manual scenarios and deferred-work triage.
 - Installer and 1.0 release work is isolated in the installer/release epic and must preserve WinUI 3, Windows App SDK, `.NET 10`, `net10.0-windows10.0.19041.0`, x64, WGC, D3D11, DXGI, and Vortice constraints.
 
@@ -50,7 +51,7 @@ All native interop, COM/DXGI/WinRT bridge code, and Win32 window style manipulat
 
 **Functional Requirements:**
 
-The PRD defines 42 functional requirements across capture target selection, HDR preview fidelity, crop interaction, overlay behavior, diagnostics, resource lifecycle, MVP validation, settings, and post-MVP export/workflow capabilities. Architecturally, these requirements map to four MVP capability groups:
+The PRD defines 54 functional requirements across capture target selection, HDR preview fidelity, crop interaction, overlay behavior, diagnostics, resource lifecycle, MVP validation, settings, full screen capture, tray integration, and post-MVP export/workflow capabilities. Architecturally, these requirements map to six MVP capability groups:
 
 - Capture orchestration: initiate capture, choose display/window target, cancel selection, detect unsupported/degraded states, and restart sessions safely.
 - HDR preview pipeline: preserve FP16/scRGB data from WGC frames through D3D11/DXGI presentation, validate HDR readiness, and surface degraded states visibly.
@@ -648,13 +649,28 @@ No external API boundary in MVP. Internal service boundaries are typed C# interf
 - `docs/validation/lifecycle-validation.md`
 - tests under `tests/`
 
-**Settings and Preferences (FR36-FR38):**
+**Settings and Preferences (FR36-FR43):**
 
-- `src/Lumiere.Settings/`
+- `src/Lumiere.Settings/AppSettings.cs`
+- `src/Lumiere.Settings/SettingsStore.cs`
+- `src/Lumiere.Settings/SettingsViewModel.cs`
+- `src/Lumiere.App/SettingsPanel.xaml`
 
-**Post-MVP Output and Workflow (FR39-FR42):**
+**Full Screen Capture (FR44-FR46):**
 
-- Deferred. Do not create export/hotkey/annotation modules until separate stories define semantics.
+- `src/Lumiere.App/MainPanel.xaml` (Full Screen button)
+- `src/Lumiere.Capture/CaptureService.cs` (full screen capture action)
+- `src/Lumiere.Graphics/ClipboardOutputService.cs` (clipboard copy)
+
+**Tray Integration (FR47-FR50):**
+
+- `src/Lumiere.App/TrayIcon.cs`
+- `src/Lumiere.App/TrayContextMenu.xaml`
+- `src/Lumiere.App/TrayStatusDisplay.cs`
+
+**Post-MVP Output and Workflow (FR51-FR54):**
+
+- Deferred. Do not create export/annotation modules until separate stories define semantics.
 
 ### Integration Points
 

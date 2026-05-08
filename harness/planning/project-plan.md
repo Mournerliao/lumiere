@@ -101,25 +101,37 @@ WinUI 3 窗口默认不透明。需要通过 Win32 API（`SetWindowLong`、`WS_E
 - [x] Phase 3：渲染与桥接
 - [~] Phase 4：UI 交互与裁剪（基础 overlay/crop 已建立，MVP 仍需 direct monitor capture 与 release-to-copy 收尾）
 
-## 2026-05-07 MVP 到 1.0 路线
+## 2026-05-08 v0 MVP 范围扩展
 
-Lumiere 当前路线已从“补丁式扩展 epic”重整为 6 个 canonical epic，只覆盖 MVP、MVP 完成门禁、installer 和 1.0 发布。完整需求与故事以 `_bmad-output/planning-artifacts/prd.md`、`_bmad-output/planning-artifacts/epics.md`、`_bmad-output/planning-artifacts/architecture.md` 和 `_bmad-output/planning-artifacts/ux-design-specification.md` 为准。
+Lumiere 当前路线已从 6 个 canonical epic 扩展为 10 个，新增了 v0 MVP 设计参考中的功能：主面板 UI 重构、全屏截图模式、设置面板、托盘上下文菜单。完整需求与故事以 `_bmad-output/planning-artifacts/prd.md`、`_bmad-output/planning-artifacts/epics.md`、`_bmad-output/planning-artifacts/architecture.md` 和 `_bmad-output/planning-artifacts/ux-design-specification.md` 为准。
 
-- Epic 1-4 完成表示 MVP 功能实现完成。
-- Epic 5 完成表示 MVP 已通过完成门禁与验证，可以进入安装包流程。
-- Epic 6 完成表示可安装的 1.0 发布完成。
+- Epic 1-7 完成表示 MVP 功能实现完成。
+- Epic 8 完成表示 MVP 输出和验证完成。
+- Epic 9 完成表示 MVP 已通过完成门禁与验证，可以进入安装包流程。
+- Epic 10 完成表示可安装的 1.0 发布完成。
 
-MVP 的默认截图体验是：点击 Capture 后不先弹窗口/显示器选择器，直接解析当前显示器捕获目标，打开全屏框选 overlay；用户拖拽区域并松手即截图/复制；只保留轻提示与 Escape 取消。`GraphicsCapturePicker` 仅保留为 fallback/debug 或未来显式选择路径。
+MVP 的默认截图体验包括：
+- **全屏截图**：点击 Full Screen 按钮，直接截取整个屏幕并复制到剪贴板。
+- **区域截图**：点击 Region 按钮，进入全屏 overlay，拖拽区域并松手即截图/复制。
+- **设置面板**：配置快捷键、HDR 设置、输出目标、保存路径。
+- **托盘菜单**：从系统托盘快速访问截图、打开、设置、退出。
 
-MVP 设计图已纳入实现规划：
+`GraphicsCapturePicker` 仅保留为 fallback/debug 或未来显式选择路径。
 
-- `harness/design/mvp/lumiere-mvp-design.png`
+MVP 设计参考已纳入实现规划：
+
+- `harness/design/v0-mvp-reference/`
 
 当前 durable 状态：
 
 - Epic 1：HDR Preview Foundation 已完成。
-- Epic 2：Direct Capture Session Lifecycle 进行中，下一步重点是 `2.5` direct monitor capture target。
-- Epic 3：Release-to-Copy Overlay Workflow 进行中，下一步重点是 `3.6` 松手截图复制。
-- Epic 4：MVP Output, Status, and Validation 待实现。
-- Epic 5：MVP Completion Gate 待实现。
+- Epic 2：Direct Capture Session Lifecycle 已完成。
+- Epic 3：Release-to-Copy Overlay Workflow 已完成。
+- Epic 4：Main Panel UI Refactoring 待实现。
+- Epic 5：Full Screen Capture Mode 待实现。
+- Epic 6：Settings Panel 待实现。
+- Epic 7：Tray Context Menu 待实现。
+- Epic 8：MVP Output, Status, and Validation 待实现。
+- Epic 9：MVP Completion Gate 待实现。
+- Epic 10：Installer and 1.0 Release 待实现。
 - Epic 6：Installer and 1.0 Release 待实现。

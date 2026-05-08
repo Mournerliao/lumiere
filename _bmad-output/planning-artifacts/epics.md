@@ -2,37 +2,40 @@
 workflowType: epics-and-stories
 project_name: lumiere
 user_name: Asherliao
-date: 2026-05-07
-status: rebaselined
+date: 2026-05-08
+status: rebaselined-v2
 rebaseline:
   source:
     - /Users/asherliao/Projects/lumiere/_bmad-output/planning-artifacts/sprint-change-proposal-2026-05-07-mvp-direct-capture.md
     - /Users/asherliao/Projects/lumiere/_bmad-output/planning-artifacts/sprint-change-proposal-2026-05-07-canonical-mvp-1-0-rebaseline.md
-    - /Users/asherliao/Projects/lumiere/harness/design/mvp/lumiere-mvp-design.png
-  approved_by_user: 2026-05-07
+    - /Users/asherliao/Projects/lumiere/_bmad-output/planning-artifacts/sprint-change-proposal-2026-05-08-v0-mvp-scope-expansion.md
+    - /Users/asherliao/Projects/lumiere/harness/design/v0-mvp-reference/
+  approved_by_user: 2026-05-08
 ---
 
-# Lumiere - Rebaselined Epic Breakdown
+# Lumiere - Rebaselined Epic Breakdown (v2)
 
 ## Overview
 
-This document is the canonical epic and story breakdown after the 2026-05-07 MVP-to-1.0 rebaseline.
+This document is the canonical epic and story breakdown after the 2026-05-08 v0 MVP scope expansion.
 
-The previous plan mixed MVP, post-MVP settings, output, diagnostics, tray, hotkey, annotation, and installer work in a way that made BMad phase completion ambiguous. The current plan intentionally keeps only the revised MVP and installer-to-1.0 route in the active epic list.
+The previous 6-Epic structure has been expanded to 10 Epics to accommodate the new v0 MVP design reference features: main panel UI refactoring, full screen capture mode, settings panel, and tray context menu.
 
 ## Completion Semantics
 
-- **Epic 1-4 done** means MVP feature implementation is complete.
-- **Epic 5 done** means MVP is complete and validated.
-- **Epic 6 done** means the 1.0 installable release is complete.
+- **Epic 1-7 done** means MVP feature implementation is complete.
+- **Epic 8 done** means MVP output and validation is complete.
+- **Epic 9 done** means MVP is complete and validated.
+- **Epic 10 done** means the 1.0 installable release is complete.
 
 ## Required MVP Design Input
 
-All MVP implementation stories must use this design asset as the visual and interaction reference:
+All MVP implementation stories must use these design assets as the visual and interaction reference:
 
-- `/Users/asherliao/Projects/lumiere/harness/design/mvp/lumiere-mvp-design.png`
+- `/Users/asherliao/Projects/lumiere/harness/design/v0-mvp-reference/` — v0.dev prototype for layout, density, copy intent, and interaction hierarchy.
+- `/Users/asherliao/Projects/lumiere/harness/design/v0-mvp-reference/components/lumiere/` — Lumiere-specific screen components.
 
-The design board defines the intended MVP interaction model: compact main capture entry, direct full-screen region selection, release-to-capture/copy, lightweight copied-to-clipboard feedback, and no multi-action toolbar in the capture overlay. Settings, tray, and broader output surfaces shown in the design remain product direction only unless a story explicitly includes them.
+The v0 design reference defines the intended MVP interaction model: compact main panel with dual capture buttons (Full Screen + Region), HDR status indicator, settings panel, tray context menu, and release-to-capture/copy feedback.
 
 ## Active Epic List
 
@@ -79,19 +82,71 @@ Users can interact with a full-screen capture overlay, create and adjust a crop 
 - 3.5 Manage Overlay Hit Testing and Keyboard Escape - done
 - 3.6 Release to Capture and Copy - done
 
-### Epic 4: MVP Output, Status, and Validation
+### Epic 4: Main Panel UI Refactoring
 
-Users can complete the revised MVP flow with a usable clipboard result, concise status/feedback, and documented Windows validation evidence without pulling in settings, tray, hotkey, annotation, or advanced export scope.
+Users see a compact main panel with dual capture buttons (Full Screen + Region), HDR status indicator, and settings entry, matching the v0 MVP design reference layout.
 
 **Status:** Backlog.
 
 **Stories:**
 
-- 4.1 Show User-Facing Capture and Preview Status - backlog
-- 4.2 Define and Implement MVP Clipboard Output - backlog
-- 4.3 Document MVP Manual Validation Scenarios - backlog
+- 4.1 Refactor Main Panel Layout (Dashboard → Compact) - backlog
+- 4.2 Implement Dual Capture Buttons (Full Screen + Region) - backlog
+- 4.3 Implement HDR Status Indicator (Ready/Available/Unavailable) - backlog
+- 4.4 Add Settings Button Entry - backlog
 
-### Epic 5: MVP Completion Gate
+### Epic 5: Full Screen Capture Mode
+
+Users can perform a full screen capture with a single click, without entering the crop overlay. The capture result is automatically copied to the clipboard with lightweight completion feedback.
+
+**Status:** Backlog.
+
+**Stories:**
+
+- 5.1 Implement Full Screen Capture Action - backlog
+- 5.2 Skip Crop Overlay for Full Screen Mode - backlog
+- 5.3 Show Lightweight Completion Feedback - backlog
+
+### Epic 6: Settings Panel
+
+Users can access a settings panel to configure capture shortcuts, HDR preferences, output targets, and save paths.
+
+**Status:** Backlog.
+
+**Stories:**
+
+- 6.1 Create Settings Panel Shell - backlog
+- 6.2 Implement Shortcut Configuration - backlog
+- 6.3 Implement HDR Settings (Warnings, Export Format) - backlog
+- 6.4 Implement Output Target Configuration (Clipboard/Folder/Both) - backlog
+- 6.5 Implement Save Path Configuration - backlog
+- 6.6 Implement About Section - backlog
+
+### Epic 7: Tray Context Menu
+
+Users can access Lumiere from the system tray with a context menu offering capture actions, open, settings, and quit.
+
+**Status:** Backlog.
+
+**Stories:**
+
+- 7.1 Implement System Tray Integration - backlog
+- 7.2 Implement Tray Context Menu (Capture, Open, Settings, Quit) - backlog
+- 7.3 Implement Tray HDR Status Display - backlog
+
+### Epic 8: MVP Output, Status, and Validation
+
+Users can complete the revised MVP flow with a usable clipboard result, concise status/feedback, and documented Windows validation evidence.
+
+**Status:** Backlog.
+
+**Stories:**
+
+- 8.1 Show User-Facing Capture and Preview Status - backlog
+- 8.2 Define and Implement MVP Clipboard Output - backlog
+- 8.3 Document MVP Manual Validation Scenarios - backlog
+
+### Epic 9: MVP Completion Gate
 
 The project can explicitly determine when the MVP is complete, validated, and ready to move into installer and release work.
 
@@ -99,23 +154,23 @@ The project can explicitly determine when the MVP is complete, validated, and re
 
 **Stories:**
 
-- 5.1 Define MVP Completion Gate - backlog
-- 5.2 Run MVP Completion Validation and Triage - backlog
-- 5.3 Complete MVP Retrospective and Go/No-Go - backlog
+- 9.1 Define MVP Completion Gate - backlog
+- 9.2 Run MVP Completion Validation and Triage - backlog
+- 9.3 Complete MVP Retrospective and Go/No-Go - backlog
 
-### Epic 6: Installer and 1.0 Release
+### Epic 10: Installer and 1.0 Release
 
 Users can install Lumiere on Windows, launch the validated MVP reliably, and receive a clearly versioned 1.0 release package.
 
-**Status:** Backlog until Epic 5 is done.
+**Status:** Backlog until Epic 9 is done.
 
 **Stories:**
 
-- 6.1 Decide Packaging Strategy - backlog
-- 6.2 Build Installer Package - backlog
-- 6.3 Validate Install, Launch, and Uninstall - backlog
-- 6.4 Prepare 1.0 Versioning and Release Notes - backlog
-- 6.5 Cut 1.0 Release - backlog
+- 10.1 Decide Packaging Strategy - backlog
+- 10.2 Build Installer Package - backlog
+- 10.3 Validate Install, Launch, and Uninstall - backlog
+- 10.4 Prepare 1.0 Versioning and Release Notes - backlog
+- 10.5 Cut 1.0 Release - backlog
 
 ## Story Details
 
@@ -243,7 +298,7 @@ So that I can screenshot whatever is currently visible without first choosing a 
 - Given monitor target creation fails or is unsupported, when the default path cannot continue, then Lumiere reports a recoverable unsupported/failed status and may offer picker fallback outside the default MVP path.
 - Given the target is created through monitor interop, when `CaptureTarget` is created, then its kind is `Display` and its size/display name are validated before WGC frame-pool startup.
 - Given the implementation adds native monitor interop, when files are organized, then HMONITOR/COM/Win32 details remain inside `Lumiere.Infrastructure` and only narrow typed APIs are exposed.
-- Given MVP design is consulted, when the story is implemented, then the flow aligns with `/Users/asherliao/Projects/lumiere/harness/design/mvp/lumiere-mvp-design.png`.
+- Given MVP design is consulted, when the story is implemented, then the flow aligns with `/Users/asherliao/Projects/lumiere/harness/design/v0-mvp-reference/`.
 
 ## Epic 3: Release-to-Copy Overlay Workflow
 
@@ -321,9 +376,226 @@ So that the screenshot flow is fast and familiar.
 - Given release-to-capture is enabled, when crop is too small or invalid, then overlay remains active or cancels according to a clearly defined MVP rule without producing output.
 - Given MVP design is consulted, when overlay UI is updated, then the implementation preserves crop selection, optional size feedback, and lightweight `Copied to clipboard` feedback only.
 
-## Epic 4: MVP Output, Status, and Validation
+## Epic 4: Main Panel UI Refactoring
 
-### Story 4.1: Show User-Facing Capture and Preview Status
+### Story 4.1: Refactor Main Panel Layout (Dashboard → Compact)
+
+As a user,
+I want a compact main panel that matches the v0 MVP design reference,
+So that the app feels like a focused capture tool rather than a dashboard.
+
+**Acceptance Criteria:**
+
+- Given the main panel is refactored, when the user opens Lumiere, then the panel is 360px wide with a compact layout.
+- Given the panel is visible, when the user inspects it, then it shows Lumiere logo, capture buttons, HDR status, and settings entry.
+- Given the layout matches v0 design, when compared with `v0-mvp-reference/components/lumiere/main-panel.tsx`, then the structure and hierarchy are equivalent.
+- Given the refactoring is complete, when the user interacts with the panel, then all existing capture functionality remains working.
+
+### Story 4.2: Implement Dual Capture Buttons (Full Screen + Region)
+
+As a user,
+I want two distinct capture buttons: Full Screen and Region,
+So that I can choose between capturing the entire screen or selecting a region.
+
+**Acceptance Criteria:**
+
+- Given the main panel is visible, when the user inspects the capture buttons, then "Full Screen" and "Region" buttons are displayed with clear labels and icons.
+- Given the "Full Screen" button is clicked, when capture starts, then the app captures the entire current monitor without entering crop overlay.
+- Given the "Region" button is clicked, when capture starts, then the app enters the full-screen overlay for region selection (existing crop workflow).
+- Given each button has a shortcut, when the user views the button, then the shortcut key is displayed (e.g., "Shift+S" for Full Screen, "Shift+A" for Region).
+- Given the buttons match v0 design, when compared with `v0-mvp-reference/components/lumiere/main-panel.tsx`, then the button layout and styling are equivalent.
+
+### Story 4.3: Implement HDR Status Indicator (Ready/Available/Unavailable)
+
+As a user,
+I want to see the current HDR status at a glance,
+So that I know whether the capture will preserve HDR fidelity.
+
+**Acceptance Criteria:**
+
+- Given HDR is available and enabled, when the user views the status indicator, then it shows "HDR Ready" with a green indicator.
+- Given HDR is available but not enabled, when the user views the status indicator, then it shows "Enable HDR" with a yellow indicator.
+- Given HDR is not available, when the user views the status indicator, then it shows "HDR unavailable" with a red indicator.
+- Given the status changes, when HDR state is updated, then the indicator updates immediately.
+- Given the indicator matches v0 design, when compared with `v0-mvp-reference/components/lumiere/prototype-state.ts`, then the status types and colors are equivalent.
+
+### Story 4.4: Add Settings Button Entry
+
+As a user,
+I want a settings button in the main panel header,
+So that I can access the settings panel easily.
+
+**Acceptance Criteria:**
+
+- Given the main panel header is visible, when the user inspects it, then a settings icon button is shown in the top-right corner.
+- Given the settings button is clicked, when the action is triggered, then the settings panel opens.
+- Given the button matches v0 design, when compared with `v0-mvp-reference/components/lumiere/main-panel.tsx`, then the button position and styling are equivalent.
+
+## Epic 5: Full Screen Capture Mode
+
+### Story 5.1: Implement Full Screen Capture Action
+
+As a user,
+I want to capture the entire screen with a single click,
+So that I don't have to manually select a region for full-screen captures.
+
+**Acceptance Criteria:**
+
+- Given the user clicks "Full Screen" button, when capture starts, then the app resolves the current monitor and begins capture.
+- Given capture is initiated, when the frame is captured, then the app copies the full screen to the clipboard.
+- Given the capture uses the same HDR pipeline, when the frame is processed, then FP16/scRGB fidelity is preserved.
+- Given the action matches v0 design, when the user interacts with the button, then the behavior matches the "Full Screen" capture mode in the prototype.
+
+### Story 5.2: Skip Crop Overlay for Full Screen Mode
+
+As a user,
+I want full screen capture to skip the crop overlay,
+So that the capture is immediate and doesn't require additional interaction.
+
+**Acceptance Criteria:**
+
+- Given full screen capture is initiated, when the frame is captured, then no crop overlay appears.
+- Given the overlay is skipped, when capture completes, then the result is directly copied to clipboard.
+- Given the user wants to cancel, when Escape is pressed during capture initialization, then the capture is canceled safely.
+
+### Story 5.3: Show Lightweight Completion Feedback
+
+As a user,
+I want to see feedback when full screen capture completes,
+So that I know the capture was successful.
+
+**Acceptance Criteria:**
+
+- Given full screen capture completes, when the result is copied, then a lightweight "Copied to clipboard" feedback appears.
+- Given the feedback is shown, when a short duration passes, then the feedback auto-dismisses.
+- Given the feedback matches v0 design, when compared with the prototype, then the feedback style and behavior are equivalent.
+
+## Epic 6: Settings Panel
+
+### Story 6.1: Create Settings Panel Shell
+
+As a user,
+I want a settings panel that I can access from the main panel,
+So that I can configure Lumiere's behavior.
+
+**Acceptance Criteria:**
+
+- Given the settings button is clicked, when the panel opens, then a 360px wide settings panel appears with a back button and "Settings" title.
+- Given the panel is open, when the user inspects it, then sections for Shortcuts, HDR, Output, and About are visible.
+- Given the back button is clicked, when the action is triggered, then the panel closes and returns to the main panel.
+- Given the panel matches v0 design, when compared with `v0-mvp-reference/components/lumiere/settings-panel.tsx`, then the layout and styling are equivalent.
+
+### Story 6.2: Implement Shortcut Configuration
+
+As a user,
+I want to configure capture shortcuts,
+So that I can use keyboard shortcuts that match my workflow.
+
+**Acceptance Criteria:**
+
+- Given the Shortcuts section is visible, when the user inspects it, then input fields for "Full Screen" and "Region" shortcuts are shown.
+- Given a shortcut input is clicked, when the user presses a key combination, then the shortcut is captured and displayed (e.g., "Shift+S").
+- Given a shortcut is changed, when the user saves, then the new shortcut is persisted and used for capture actions.
+- Given the implementation matches v0 design, when compared with `v0-mvp-reference/components/lumiere/settings-panel.tsx`, then the shortcut input behavior is equivalent.
+
+### Story 6.3: Implement HDR Settings (Warnings, Export Format)
+
+As a user,
+I want to configure HDR settings,
+So that I can control how Lumiere handles HDR capture and export.
+
+**Acceptance Criteria:**
+
+- Given the HDR section is visible, when the user inspects it, then a toggle for "HDR alerts" and export format options are shown.
+- Given the "HDR alerts" toggle is clicked, when the state changes, then the setting is persisted.
+- Given the export format options are shown, when the user selects an option (HDR10/P3/sRGB), then the selection is persisted.
+- Given the implementation matches v0 design, when compared with `v0-mvp-reference/components/lumiere/settings-panel.tsx`, then the HDR settings UI is equivalent.
+
+### Story 6.4: Implement Output Target Configuration (Clipboard/Folder/Both)
+
+As a user,
+I want to configure where captures are saved,
+So that I can choose between clipboard, folder, or both.
+
+**Acceptance Criteria:**
+
+- Given the Output section is visible, when the user inspects it, then segmented control for "Clipboard", "Folder", and "Both" is shown.
+- Given an output target is selected, when the selection changes, then the setting is persisted.
+- Given "Folder" or "Both" is selected, when the section expands, then a save path field and "Browse" button are shown.
+- Given the implementation matches v0 design, when compared with `v0-mvp-reference/components/lumiere/settings-panel.tsx`, then the output target UI is equivalent.
+
+### Story 6.5: Implement Save Path Configuration
+
+As a user,
+I want to configure the save path for captures,
+So that I can choose where my screenshots are saved.
+
+**Acceptance Criteria:**
+
+- Given the save path field is visible, when the user inspects it, then the current path is displayed.
+- Given the "Browse" button is clicked, when a folder is selected, then the path is updated and persisted.
+- Given the path is changed, when the user saves, then future captures use the new path.
+- Given the implementation matches v0 design, when compared with `v0-mvp-reference/components/lumiere/settings-panel.tsx`, then the save path UI is equivalent.
+
+### Story 6.6: Implement About Section
+
+As a user,
+I want to see information about Lumiere,
+So that I know the version and description.
+
+**Acceptance Criteria:**
+
+- Given the About section is visible, when the user inspects it, then "Lumiere" name, version (e.g., "v0.1.0"), and description are shown.
+- Given the implementation matches v0 design, when compared with `v0-mvp-reference/components/lumiere/settings-panel.tsx`, then the About section is equivalent.
+
+## Epic 7: Tray Context Menu
+
+### Story 7.1: Implement System Tray Integration
+
+As a user,
+I want Lumiere to appear in the system tray,
+So that I can access it quickly without opening the main window.
+
+**Acceptance Criteria:**
+
+- Given Lumiere is running, when the user views the system tray, then a Lumiere icon is displayed.
+- Given the tray icon is visible, when the user right-clicks it, then a context menu appears.
+- Given the tray icon is visible, when the user double-clicks it, then the main window opens.
+- Given the implementation matches v0 design, when compared with `v0-mvp-reference/components/lumiere/tray-context-menu.tsx`, then the tray behavior is equivalent.
+
+### Story 7.2: Implement Tray Context Menu (Capture, Open, Settings, Quit)
+
+As a user,
+I want a context menu when I right-click the tray icon,
+So that I can perform capture actions, open the app, access settings, or quit.
+
+**Acceptance Criteria:**
+
+- Given the context menu is open, when the user inspects it, then "Full Screen", "Region", "Open Lumiere", "Settings", and "Quit" items are shown.
+- Given "Full Screen" is clicked, when the action is triggered, then full screen capture begins.
+- Given "Region" is clicked, when the action is triggered, then region capture begins (crop overlay).
+- Given "Open Lumiere" is clicked, when the action is triggered, then the main window opens.
+- Given "Settings" is clicked, when the action is triggered, then the settings panel opens.
+- Given "Quit" is clicked, when the action is triggered, then Lumiere exits.
+- Given the implementation matches v0 design, when compared with `v0-mvp-reference/components/lumiere/tray-context-menu.tsx`, then the menu items and behavior are equivalent.
+
+### Story 7.3: Implement Tray HDR Status Display
+
+As a user,
+I want to see HDR status in the tray context menu,
+So that I know the current HDR state before capturing.
+
+**Acceptance Criteria:**
+
+- Given the context menu is open, when the user views the header, then Lumiere logo and HDR status are displayed.
+- Given HDR is ready, when the status is shown, then "HDR Ready" with green indicator appears.
+- Given HDR is available but not enabled, when the status is shown, then "Enable HDR" with yellow indicator appears.
+- Given HDR is unavailable, when the status is shown, then "HDR unavailable" with red indicator appears.
+- Given the implementation matches v0 design, when compared with `v0-mvp-reference/components/lumiere/tray-context-menu.tsx`, then the status display is equivalent.
+
+## Epic 8: MVP Output, Status, and Validation
+
+### Story 8.1: Show User-Facing Capture and Preview Status
 
 As an HDR screenshot user,
 I want concise status messages for capture, preview, and output health,
@@ -336,7 +608,7 @@ So that I know whether I can trust what happened.
 - Given capture, preview, or clipboard output fails, when status is shown, then the message is actionable and does not require graphics API knowledge.
 - Given status is shown during capture, when technical details exist, then concise user status remains separate from advanced diagnostics.
 
-### Story 4.2: Define and Implement MVP Clipboard Output
+### Story 8.2: Define and Implement MVP Clipboard Output
 
 As a screenshot user,
 I want my selected region copied to the clipboard after release,
@@ -349,7 +621,7 @@ So that the MVP produces a usable screenshot result.
 - Given clipboard operation fails, when the user releases a valid crop, then Lumiere reports a concise recoverable failure and does not leave capture resources active.
 - Given the live preview path is FP16/scRGB, when clipboard output code is added, then it is isolated from the main live preview path and does not introduce SDR fallback into routine preview presentation.
 
-### Story 4.3: Document MVP Manual Validation Scenarios
+### Story 8.3: Document MVP Manual Validation Scenarios
 
 As a developer,
 I want a manual MVP validation matrix,
@@ -361,9 +633,9 @@ So that hardware-dependent fidelity and release-to-copy behavior can be checked 
 - Given lifecycle validation docs are updated, when repeated capture sessions are tested, then the checklist covers direct capture, release-to-copy, Escape cancel, target changes, resize, and teardown.
 - Given output guidance is documented, when an MVP issue is investigated, then the guide maps user-visible status to capture, graphics, presentation, clipboard, overlay, interop, or lifecycle causes.
 
-## Epic 5: MVP Completion Gate
+## Epic 9: MVP Completion Gate
 
-### Story 5.1: Define MVP Completion Gate
+### Story 9.1: Define MVP Completion Gate
 
 As a project owner,
 I want a concrete MVP completion checklist,
@@ -373,9 +645,9 @@ So that BMad and future agents can tell when MVP is actually done.
 
 - Given the revised direct-capture route, when the MVP completion gate is documented, then it lists exact required stories, validation commands, Windows manual scenarios, design-input checks, and deferred-work triage rules.
 - Given a story is not required for MVP, when it is listed in the roadmap, then the gate explicitly marks it post-MVP and does not block MVP completion.
-- Given sprint status is inspected, when Epic 5 is not done, then BMad must not treat MVP as complete.
+- Given sprint status is inspected, when Epic 9 is not done, then BMad must not treat MVP as complete.
 
-### Story 5.2: Run MVP Completion Validation and Triage
+### Story 9.2: Run MVP Completion Validation and Triage
 
 As a developer,
 I want to run MVP validation and triage known deferred work,
@@ -387,7 +659,7 @@ So that MVP completion is not claimed from macOS edits or unit tests alone.
 - Given deferred work exists, when triage runs, then each item is classified as MVP blocker, release blocker, post-1.0 backlog, or closed-by-design.
 - Given any MVP blocker is found, when the gate is evaluated, then MVP cannot be marked complete until the blocker is resolved or explicitly downgraded with rationale.
 
-### Story 5.3: Complete MVP Retrospective and Go/No-Go
+### Story 9.3: Complete MVP Retrospective and Go/No-Go
 
 As a project owner,
 I want an MVP retrospective and go/no-go decision,
@@ -396,12 +668,12 @@ So that the project intentionally moves into installer work.
 **Acceptance Criteria:**
 
 - Given MVP validation and deferred-work triage are complete, when retrospective is written, then it records what shipped, what is deferred, remaining risks, validation level, and go/no-go decision.
-- Given decision is go, when sprint status is updated, then Epic 5 can be marked done and Epic 6 can begin.
+- Given decision is go, when sprint status is updated, then Epic 9 can be marked done and Epic 10 can begin.
 - Given decision is no-go, when follow-up is planned, then blocker stories are created before installer work starts.
 
-## Epic 6: Installer and 1.0 Release
+## Epic 10: Installer and 1.0 Release
 
-### Story 6.1: Decide Packaging Strategy
+### Story 10.1: Decide Packaging Strategy
 
 As a developer,
 I want a documented packaging strategy,
@@ -412,7 +684,7 @@ So that Lumiere can become an installable Windows application without disrupting
 - Given the app uses WinUI 3, Windows App SDK, .NET 10, and x64, when packaging options are evaluated, then the chosen strategy documents runtime dependency handling, architecture, install location expectations, and signing/not-signing status for MVP/1.0.
 - Given packaging decisions are made, when project files are inspected, then they preserve `net10.0-windows10.0.19041.0`, x64/win-x64, Windows App SDK, and existing module boundaries.
 
-### Story 6.2: Build Installer Package
+### Story 10.2: Build Installer Package
 
 As a user,
 I want an installable Lumiere package,
@@ -423,7 +695,7 @@ So that I can install the app without running it from the development environmen
 - Given packaging strategy is approved, when the installer/package is built, then it installs the app with correct version, app identity, icon/name metadata, and x64 runtime assumptions.
 - Given packaging introduces new artifacts, when they are committed, then generated build outputs remain ignored unless explicitly required for release documentation.
 
-### Story 6.3: Validate Install, Launch, and Uninstall
+### Story 10.3: Validate Install, Launch, and Uninstall
 
 As a release owner,
 I want install/uninstall validation,
@@ -435,7 +707,7 @@ So that the 1.0 package does not fail before users reach the capture workflow.
 - Given uninstall is invoked, when it completes, then app registration/files are removed according to the chosen packaging strategy.
 - Given installer validation fails, when results are documented, then the failure is classified as release blocker or known limitation.
 
-### Story 6.4: Prepare 1.0 Versioning and Release Notes
+### Story 10.4: Prepare 1.0 Versioning and Release Notes
 
 As a project owner,
 I want clear versioning and release notes,
@@ -446,7 +718,7 @@ So that users know what 1.0 includes and what remains post-1.0.
 - Given MVP and installer validation are complete, when release notes are written, then they list MVP capabilities, validation level, known limitations, and deferred post-1.0 features.
 - Given versioning is prepared, when metadata is inspected, then app/package/release version values are consistent.
 
-### Story 6.5: Cut 1.0 Release
+### Story 10.5: Cut 1.0 Release
 
 As a release owner,
 I want to tag and publish the 1.0 release,
@@ -455,7 +727,7 @@ So that the project has a stable release milestone.
 **Acceptance Criteria:**
 
 - Given release validation passes, when 1.0 is cut, then the repo has a versioned release/tag, release notes, and the validated installer artifact.
-- Given release is complete, when sprint status is inspected, then Epic 6 is done and BMad can report 1.0 complete.
+- Given release is complete, when sprint status is inspected, then Epic 10 is done and BMad can report 1.0 complete.
 
 ## Deferred Post-1.0 Roadmap
 
@@ -466,7 +738,7 @@ The following work is intentionally outside the active MVP-to-1.0 epic list:
 - Configurable clipboard behavior beyond the MVP default output.
 - Cursor inclusion/exclusion controls.
 - Full HDR/SDR/multi-monitor capability diagnostics beyond MVP validation needs.
-- Global hotkey and system tray workflows.
+- Global hotkey beyond tray integration.
 - Lightweight annotations.
 - Capture history.
 - Installer update flow and broader distribution polish.

@@ -45,3 +45,7 @@ Any UI copy, design doc, or review note that references HDR, WinUI, WGC, DXGI, D
 - Mac edit: structure, docs, and platform-neutral design only.
 - Windows CI: restore, build, automated tests, and formatting on Windows.
 - Windows manual validation: real Windows hardware, HDR display behavior, multi-monitor capture, and visual inspection.
+
+## Prototype Boundary
+
+The imported v0.dev MVP prototype is a visual reference, not a source of verified product behavior. Any SDR fallback wording, HDR completeness claim, color format option, or preview guarantee in the prototype must be reviewed against Lumiere's HDR invariants before it is implemented.

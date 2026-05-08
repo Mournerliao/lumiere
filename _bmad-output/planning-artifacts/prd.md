@@ -76,28 +76,37 @@ The core insight is that HDR screenshot quality depends on preserving FP16/scRGB
 
 ## Product Scope
 
-### Approved MVP-to-1.0 Rebaseline (2026-05-07)
+### Approved MVP-to-1.0 Rebaseline (2026-05-08 v2)
 
-The product roadmap is now organized into six canonical epics that cover the revised MVP and the path to a 1.0 installable release:
+The product roadmap is now organized into ten canonical epics that cover the expanded MVP (based on v0 design reference) and the path to a 1.0 installable release:
 
 1. **Epic 1: HDR Preview Foundation** - already completed foundation for WinUI, WGC, D3D11/DXGI, FP16/scRGB preview, and readiness state.
 2. **Epic 2: Direct Capture Session Lifecycle** - capture/session lifecycle plus pickerless monitor capture for the default screenshot path.
 3. **Epic 3: Release-to-Copy Overlay Workflow** - full-screen overlay, crop interaction, keyboard cancel, and release-to-capture behavior.
-4. **Epic 4: MVP Output, Status, and Validation** - narrow MVP clipboard output, concise user-facing status, and manual validation.
-5. **Epic 5: MVP Completion Gate** - explicit MVP completion checklist, blocker/deferred-work triage, Windows validation confirmation, and go/no-go.
-6. **Epic 6: Installer and 1.0 Release** - packaging strategy, installer build, install/uninstall validation, release notes, versioning, and 1.0 release.
+4. **Epic 4: Main Panel UI Refactoring** - compact layout, dual capture buttons (Full Screen + Region), HDR status indicator, settings entry.
+5. **Epic 5: Full Screen Capture Mode** - direct screen capture without crop interaction, automatic clipboard copy.
+6. **Epic 6: Settings Panel** - shortcuts, HDR settings, output target, save path configuration.
+7. **Epic 7: Tray Context Menu** - system tray integration with capture, open, settings, quit actions.
+8. **Epic 8: MVP Output, Status, and Validation** - narrow MVP clipboard output, concise user-facing status, and manual validation.
+9. **Epic 9: MVP Completion Gate** - explicit MVP completion checklist, blocker/deferred-work triage, Windows validation confirmation, and go/no-go.
+10. **Epic 10: Installer and 1.0 Release** - packaging strategy, installer build, install/uninstall validation, release notes, versioning, and 1.0 release.
 
-MVP is complete when Epic 5 is done. The 1.0 release is complete when Epic 6 is done.
+MVP is complete when Epic 9 is done. The 1.0 release is complete when Epic 10 is done.
 
 ### MVP - Minimum Viable Product
 
 - Phase 0 technical spike proving the HDR capture/rendering chain on real HDR hardware.
 - Native Windows desktop shell using `.NET 10 LTS`, WinUI 3, and Windows App SDK 1.8 stable.
+- **Main panel UI** with compact layout (360px), dual capture buttons (Full Screen + Region), HDR status indicator, and settings entry (v0 design reference).
 - Full-screen overlay window with hardware-rendered HDR preview via `SwapChainPanel`.
 - WGC-based direct monitor capture using FP16 frame pool configuration; the default MVP flow must not require a picker-first target selection step.
 - Direct3D 11/DXGI rendering path preserving scRGB/FP16 preview fidelity.
-- Direct region screenshot flow: click Capture, enter a full-screen overlay, drag a region, release to capture/copy, and show lightweight completion feedback.
+- **Full Screen capture mode**: single-click capture of entire screen without crop overlay, automatic clipboard copy.
+- **Region capture mode**: click Region, enter a full-screen overlay, drag a region, release to capture/copy, and show lightweight completion feedback.
 - Escape cancels the overlay. Explicit confirm controls are not part of the default MVP path.
+- **Settings panel**: shortcuts configuration, HDR settings (warnings, export format), output target (clipboard/folder/both), save path configuration.
+- **Tray context menu**: system tray integration with capture actions, open, settings, quit, and HDR status display.
+- HDR status indicator showing Ready (green), Available (yellow), or Unavailable (red) states.
 - Narrow MVP clipboard output with explicit semantics; it must not be described as HDR-preserving unless technically proven.
 - Concise error/degraded-state reporting for unsupported capture, missing HDR capability, graphics initialization failure, or clipboard failure.
 - Deterministic disposal for WGC, WinRT, COM, Direct3D, DXGI, and swap-chain resources.
@@ -117,7 +126,7 @@ MVP is complete when Epic 5 is done. The 1.0 release is complete when Epic 6 is 
 - Cursor inclusion/exclusion controls.
 - Multi-monitor target selection and diagnostics.
 - Lightweight annotations that preserve preview correctness.
-- Global hotkey and tray integration.
+- Global hotkey beyond tray integration.
 - Capture history and project organization.
 - Update flow and broader installer polish.
 
@@ -407,16 +416,34 @@ Lumiere is a Windows-native desktop application. It must integrate with Windows 
 
 ### Settings and Preferences
 
-- FR36: Users can access minimal local preferences needed for capture behavior once those preferences exist.
-- FR37: Users can choose whether future capture sessions include cursor capture when that option is implemented.
-- FR38: Users can enable or disable advanced diagnostics when diagnostic UI is available.
+- FR36: Users can access settings panel from main panel to configure capture behavior.
+- FR37: Users can configure capture shortcuts (Full Screen and Region).
+- FR38: Users can configure HDR settings (warnings toggle, export format: HDR10/P3/sRGB).
+- FR39: Users can configure output target (clipboard/folder/both).
+- FR40: Users can configure save path for captures.
+- FR41: Users can see About information (version, description).
+- FR42: Users can choose whether future capture sessions include cursor capture when that option is implemented.
+- FR43: Users can enable or disable advanced diagnostics when diagnostic UI is available.
+
+### Full Screen Capture
+
+- FR44: Users can capture the entire current monitor with a single click (Full Screen mode).
+- FR45: Full Screen capture skips the crop overlay and directly copies to clipboard.
+- FR46: Users see lightweight "Copied to clipboard" feedback after Full Screen capture completes.
+
+### Tray Integration
+
+- FR47: Users can access Lumiere from the system tray.
+- FR48: Users can perform capture actions (Full Screen, Region) from tray context menu.
+- FR49: Users can open main window, access settings, or quit from tray context menu.
+- FR50: Users can see HDR status in the tray context menu.
 
 ### Post-MVP Output and Workflow Capabilities
 
-- FR39: Users can export or copy capture output after HDR/SDR output semantics are defined.
-- FR40: Users can choose between HDR-preserving output and SDR tone-mapped output when export support exists.
-- FR41: Users can use global hotkey or tray workflows when post-MVP desktop integration is implemented.
-- FR42: Users can add lightweight annotations when post-MVP annotation support is implemented.
+- FR51: Users can export or copy capture output after HDR/SDR output semantics are defined.
+- FR52: Users can choose between HDR-preserving output and SDR tone-mapped output when export support exists.
+- FR53: Users can use global hotkey beyond tray integration when post-MVP desktop integration is implemented.
+- FR54: Users can add lightweight annotations when post-MVP annotation support is implemented.
 
 ## Non-Functional Requirements
 

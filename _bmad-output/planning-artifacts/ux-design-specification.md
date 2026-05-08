@@ -10,34 +10,46 @@ workflowType: 'ux-design'
 project_name: 'lumiere'
 user_name: 'Asherliao'
 date: '2026-04-20'
+lastRevised: '2026-05-08'
 lastStep: 14
-status: 'complete'
+status: 'revised'
 completedAt: '2026-04-20'
+rebaselineDate: '2026-05-07'
 ---
 
-# UX Design Specification lumiere
+# UX Design Specification — Lumiere
 
 **Author:** Asherliao
-**Date:** 2026-04-20
+**Original:** 2026-04-20
+**Revised:** 2026-05-08 (aligned with 6-Epic MVP-to-1.0 rebaseline)
 
 ---
 
-<!-- UX design content will be appended sequentially through collaborative workflow steps -->
+## MVP Scope Anchor
 
-## Approved MVP-to-1.0 Rebaseline (2026-05-07)
+This document is aligned with the 2026-05-08 v0 MVP scope expansion. The canonical MVP route is the ten-epic structure in `_bmad-output/planning-artifacts/epics.md`. The visual and interaction reference is the v0 MVP prototype at `harness/design/v0-mvp-reference/`.
 
-The active MVP UX direction is now defined by the six-epic route in `_bmad-output/planning-artifacts/epics.md` and the MVP design board at `/Users/asherliao/Projects/lumiere/harness/design/mvp/lumiere-mvp-design.png`.
+**MVP default capture flows:**
 
-For MVP, the default capture flow is:
-
-1. Click Capture.
-2. Enter a full-screen overlay without a picker-first step.
+**Region capture (existing):**
+1. Click Region button (or press shortcut).
+2. Enter a full-screen overlay without a picker-first step (direct monitor capture).
 3. Drag a region.
 4. Release to capture/copy.
 5. Show lightweight copied-to-clipboard feedback.
 6. Use Escape as the reliable cancel path.
 
-The MVP overlay should not expose a multi-action toolbar, output choices, annotation tools, tray controls, or settings controls. Those surfaces remain post-1.0 roadmap direction unless separately promoted.
+**Full screen capture (new):**
+1. Click Full Screen button (or press shortcut).
+2. Capture the entire current monitor.
+3. Automatically copy to clipboard.
+4. Show lightweight copied-to-clipboard feedback.
+
+**MVP now includes:** main panel UI refactoring, full screen capture mode, settings panel (shortcuts, HDR, output, path), and tray context menu. These were previously deferred post-1.0 but are now part of the expanded MVP scope based on the v0 design reference.
+
+**MVP does not include:** multi-action toolbar, annotation tools, advanced diagnostics, or capture history. These remain deferred post-1.0 (see `epics.md` Deferred Post-1.0 Roadmap).
+
+**Completion semantics:** Epic 1-7 done = MVP feature implementation complete. Epic 8 done = MVP output and validation complete. Epic 9 done = MVP validated. Epic 10 done = 1.0 installable release complete.
 
 ## Executive Summary
 
@@ -143,7 +155,7 @@ The second critical success moment is crop creation. The crop rectangle should a
 
 The third critical success moment is degraded-state honesty. If Lumiere cannot prove HDR correctness, it should say so clearly and give the user a next action instead of pretending the capture is valid.
 
-The fourth critical success moment is safe exit. Confirm, cancel, initialization failure, and teardown should never leave the user trapped in a full-screen overlay or uncertain about whether capture is still running.
+The fourth critical success moment is safe exit. Release-to-capture, cancel, initialization failure, and teardown should never leave the user trapped in a full-screen overlay or uncertain about whether capture is still running.
 
 The make-or-break flows are:
 
@@ -215,7 +227,7 @@ The fifth is satisfaction over delight. Lumiere may create a delightful moment w
 
 Confidence requires visible preview trust status. The overlay should distinguish HDR-ready, degraded, unsupported, and failed states with clear labels, concise explanations, and optional technical details.
 
-Control requires stable crop interaction. Dragging, resizing, replacing, confirming, and cancelling a crop should not move the preview surface, change coordinate mapping, or surprise the user.
+Control requires stable crop interaction. Dragging, resizing, replacing, and releasing a crop should not move the preview surface, change coordinate mapping, or surprise the user.
 
 Relief requires reducing repeated workaround behavior. The app should avoid asking users to manually choose color formats, HDR modes, or graphics settings in the default flow.
 
@@ -231,7 +243,7 @@ Honesty requires explicit degraded states. The app should never use friendly suc
    The preview and status model must prove that Lumiere is handling HDR differently from ordinary screenshot tools.
 
 2. Make control visible.
-   Users should always know what they can do next: select, drag, adjust, confirm, cancel, retry, or inspect diagnostics.
+   Users should always know what they can do next: select, drag, adjust, release to capture, cancel, retry, or inspect diagnostics.
 
 3. Prefer calm precision over spectacle.
    The UI should stay quiet enough that the captured content remains the focus.
@@ -300,9 +312,9 @@ Lumiere should adapt Snipping Tool's simplicity for HDR trust. The default UI sh
 
 Lumiere should extend the pattern with progressive diagnostics. Basic users see clear status and next actions; advanced users can expand details about capture format, preview format, color space, target display, and failure stage.
 
-Lumiere should keep the capture overlay as a task mode, not a workspace. The overlay exists to preview, crop, confirm, cancel, and report trust status. Broader workflow features belong outside the MVP overlay until export and output semantics are designed.
+Lumiere should keep the capture overlay as a task mode, not a workspace. The overlay exists to preview, crop, release-to-capture, cancel, and report trust status. Broader workflow features belong outside the MVP overlay until export and output semantics are designed.
 
-Lumiere should use native Windows interaction expectations as a baseline: mouse drag to select, handles or edges to adjust, Escape to cancel, visible confirm/cancel controls, and no hidden dependency on network, account, or cloud behavior.
+Lumiere should use native Windows interaction expectations as a baseline: mouse drag to select, handles or edges to adjust, release to capture, Escape to cancel, visible cancel controls, and no hidden dependency on network, account, or cloud behavior.
 
 ## Design System Foundation
 
@@ -354,7 +366,7 @@ Lumiere-specific custom components:
 - Degraded, unsupported, and failed state messaging.
 - Crop rectangle and non-selected mask.
 - Crop edges and handles.
-- Floating confirm/cancel toolbar.
+- Floating cancel toolbar with lightweight completion feedback.
 - Advanced diagnostics disclosure panel.
 - Overlay-safe keyboard and pointer interaction states.
 
@@ -383,7 +395,7 @@ Design token areas:
   - Minimum crop dimensions
   - Hit target size
 - Floating controls:
-  - Compact confirm/cancel actions
+  - Compact cancel action and lightweight completion feedback
   - Stable positioning
   - Non-overlap with crop handles where possible
 - Diagnostics:
@@ -405,14 +417,14 @@ The interaction users should remember is not "I opened a screenshot app." It is 
 
 The defining interaction combines a familiar Windows screenshot pattern with Lumiere's unique trust layer:
 
-- Familiar pattern: start capture, drag a rectangle, confirm or cancel.
+- Familiar pattern: start capture, drag a rectangle, release to capture or cancel.
 - Lumiere-specific twist: the preview explicitly communicates whether HDR fidelity is trusted, degraded, unsupported, or failed.
 
 If this one experience is excellent, the rest of the product has a strong foundation. If it fails, later export, annotation, hotkey, or history features will not matter.
 
 ### 2.2 User Mental Model
 
-Users arrive with the mental model of Windows screenshot tools: press a capture action, select a region, release or confirm, and return to the desktop. They expect fast startup, direct mouse selection, obvious cancel behavior, and minimal configuration.
+Users arrive with the mental model of Windows screenshot tools: press a capture action, select a region, release or cancel, and return to the desktop. They expect fast startup, direct mouse selection, obvious cancel behavior, and minimal configuration.
 
 HDR users also bring a second mental model: screenshots often lie. They may expect ordinary capture tools to flatten highlights, shift contrast, or make an HDR scene look dull. Lumiere must actively overcome that skepticism.
 
@@ -438,7 +450,7 @@ The core experience succeeds when users can say "this just works" because:
 - Degraded or unsupported states are honest and actionable.
 - The user can drag a crop immediately without UI lag or layout shifts.
 - The crop rectangle remains legible over bright, dark, and high-contrast content.
-- Confirm and cancel are always clear.
+- Release-to-capture and cancel are always clear.
 - Escape cancels the overlay where practical.
 - Teardown returns the user to a stable desktop/app state.
 
@@ -584,7 +596,7 @@ General layout principles:
 Overlay positioning principles:
 
 - Status should be visible immediately, likely near an edge or corner where it does not dominate the crop region.
-- Confirm/cancel controls should be reachable after crop creation and stable across states.
+- Cancel controls should be reachable after crop creation and stable across states.
 - Crop handles should meet usable pointer target sizes without becoming visually heavy.
 - Error/degraded messages should be prominent enough to prevent false trust but not styled like blocking modals unless action is required.
 
@@ -595,7 +607,7 @@ Accessibility must be designed into the MVP rather than added after the overlay 
 Key considerations:
 
 - Keyboard Escape should cancel the overlay where practical.
-- Confirm and cancel controls should have visible focus states when keyboard reachable.
+- Cancel controls should have visible focus states when keyboard reachable.
 - Status should not rely on color alone; labels such as HDR-ready, Degraded, Unsupported, and Failed must be present.
 - Crop boundaries must remain visible over both bright and dark content.
 - Warning and error messages should be plain-language and actionable.
@@ -612,7 +624,7 @@ Key considerations:
 Six historical design directions were explored in `_bmad-output/planning-artifacts/archive/2026-05-cleanup/ux-design-directions.html`:
 
 1. Native Minimal
-   A sparse Windows-native overlay with a compact HDR trust badge, direct crop rectangle, and simple confirm/cancel controls.
+   A sparse Windows-native overlay with a compact HDR trust badge, direct crop rectangle, and simple cancel controls.
 
 2. Trust Strip
    A persistent top strip that makes preview trust, target display, and capture context more visible.
@@ -639,7 +651,7 @@ Default happy path:
 - Keep the HDR preview as the dominant visual surface.
 - Show a compact but visible HDR readiness badge.
 - Keep crop creation and adjustment familiar and direct.
-- Use a floating confirm/cancel toolbar only when useful.
+- Use a floating cancel toolbar with lightweight completion feedback.
 - Keep diagnostics hidden behind disclosure by default.
 
 Enhanced trust context:
@@ -679,7 +691,7 @@ The MVP overlay should be implemented as a restrained full-screen capture surfac
 - XAML crop canvas above the preview.
 - Compact HDR readiness badge near an edge or corner.
 - Clear crop rectangle, handles, and non-selected mask.
-- Floating confirm/cancel controls after a valid crop exists.
+- Floating cancel controls and lightweight completion feedback.
 - Keyboard Escape cancel behavior where practical.
 - Advanced diagnostics as a disclosure panel, not an always-visible rail.
 
@@ -798,7 +810,7 @@ flowchart TD
     A["Developer starts validation session"] --> B["Start capture"]
     B --> C["Select target"]
     C --> D["Open overlay and preview"]
-    D --> E["Cancel, confirm, resize, or change target"]
+    D --> E["Cancel, release-to-capture, resize, or change target"]
     E --> F["Tear down capture and graphics resources"]
     F --> G["Detach swap chain before releasing graphics resources"]
     G --> H{Repeat session}
@@ -821,12 +833,13 @@ Key UX requirements:
 Common journey patterns across the product:
 
 - Start from a clear primary capture action.
-- Use Windows-supported target selection.
+- Use direct monitor capture (MVP) or Windows-supported target selection (post-1.0).
 - Validate capture and preview before treating the overlay as trustworthy.
 - Show status before or alongside crop interaction.
 - Keep crop manipulation direct and reversible.
-- Provide confirm, cancel, retry, and details as state-appropriate actions.
-- Use progressive disclosure for diagnostics.
+- Use release-to-capture as the MVP completion gesture.
+- Provide cancel, retry, and details as state-appropriate actions (retry/details post-1.0).
+- Use progressive disclosure for diagnostics (post-1.0).
 - Tear down resources visibly and safely when the flow ends.
 
 Decision patterns:
@@ -848,17 +861,17 @@ Feedback patterns:
 
 ### Flow Optimization Principles
 
-Minimize steps to value by keeping the default path short: start capture, choose target, preview, crop, confirm.
+Minimize steps to value by keeping the default path short: start capture, direct monitor target, preview, crop, release to capture/copy.
 
 Reduce cognitive load by showing one primary status and one primary next action at a time. Advanced diagnostics should be available but not forced into the crop moment.
 
-Optimize for trust by making degraded and unsupported states visible before confirmation. Hidden failure is worse than explicit limitation.
+Optimize for trust by making degraded and unsupported states visible before release-to-capture. Hidden failure is worse than explicit limitation.
 
 Optimize for recovery by making retry and cancel available whenever setup or validation fails.
 
 Optimize for stability by ensuring loading, warning, and diagnostics UI do not resize the preview surface or alter crop coordinate mapping.
 
-Optimize for MVP scope by treating confirm as a validated in-app crop state, not export, clipboard, annotation, or history.
+Optimize for MVP scope by treating release-to-capture as the completion gesture, not export, clipboard, annotation, or history.
 
 ## Component Strategy
 
@@ -870,7 +883,7 @@ Use standard components for:
 
 - Main app window structure.
 - Primary "Start capture" action.
-- Buttons for confirm, cancel, retry, and details.
+- Buttons for cancel, retry, and details (retry/details post-1.0).
 - Settings surfaces.
 - Toggles for future preferences.
 - Dialogs or message surfaces outside the full-screen overlay.
@@ -965,101 +978,70 @@ The design system does not cover Lumiere's specialized capture surface. The foll
 
 **Variants:**
 
-- Minimal crop mode for quick capture.
-- Precision crop mode with optional dimensions.
+- Minimal crop mode for quick capture (MVP).
+- Precision crop mode with optional dimensions (post-1.0).
 - Disabled/read-only mode when preview state blocks interaction.
 
-**Accessibility:** Confirm/cancel controls should be keyboard reachable. Crop itself is pointer-first in MVP, but keyboard escape must remain available.
+**Accessibility:** Cancel controls should be keyboard reachable. Crop itself is pointer-first in MVP, but keyboard escape must remain available.
 
 **Interaction Behavior:** Pointer down starts selection, pointer move updates geometry, pointer up commits active crop. Existing crop can be adjusted or replaced according to the final interaction rules. Geometry must remain clamped to preview bounds.
 
 #### OverlayActionToolbar
 
-**Purpose:** Provides state-appropriate actions during capture.
+**Purpose:** Provides minimal state-appropriate actions during capture.
 
-**Usage:** Appears after overlay entry and adapts to crop and preview state.
+**Usage:** Appears after overlay entry. In MVP, the primary completion action is pointer release (release-to-capture), not a Confirm button.
 
-**Anatomy:**
+**Anatomy (MVP):**
 
-- Cancel action.
-- Confirm action when crop is valid.
+- Cancel action (always available).
+- Lightweight "Copied to clipboard" feedback after release-to-capture completes.
+
+**Anatomy (post-1.0):**
+
 - Retry target action when degraded/failed.
 - Details action when diagnostics are available.
 
 **States:**
 
-- No crop
-- Valid crop
-- Degraded
-- Unsupported
-- Failed
-- Confirming
-- Closing
-
-**Variants:**
-
-- Minimal floating toolbar.
-- Warning toolbar with retry/details.
-- Compact top toolbar for power-user layouts if needed later.
+- No crop (Cancel only)
+- Valid crop (Cancel + pointer release completes)
+- Copied feedback (auto-dismiss)
+- Degraded / Unsupported / Failed (post-1.0: retry/details)
 
 **Accessibility:** Buttons should use standard WinUI focus and keyboard behavior. Escape should cancel where practical.
 
-**Content Guidelines:** Keep labels short: "Cancel", "Copied", "Retry", "Details".
-For MVP default overlay states, avoid exposing explicit confirm labels unless the fallback/foundation path is intentionally visible.
+**Content Guidelines:** Keep labels short: "Cancel", "Copied to clipboard".
+MVP does not expose a Confirm button. Pointer release on a valid crop region is the completion gesture.
 
-#### DiagnosticsDisclosure
+#### DiagnosticsDisclosure — Post-1.0
 
 **Purpose:** Reveals advanced capture, graphics, presentation, and lifecycle details without burdening the default flow.
 
-**Usage:** Accessed from `PreviewTrustBadge` or degraded/failed state messages.
+**Status:** Deferred post-1.0. MVP shows only concise user-facing status (see `PreviewTrustBadge`). Advanced diagnostics disclosure will be promoted when HDR-preserving export semantics and multi-monitor diagnostics are designed.
 
-**Anatomy:**
+**Anatomy (planned):**
 
 - Summary.
 - Stage label.
 - User-facing reason.
 - Technical details.
 - Suggested next action.
-- Optional copy diagnostic action in future.
 
-**States:**
+**Content Guidelines (planned):** Separate user message from technical detail. Technical values may include capture pixel format, swap-chain format, color space, target display, and HRESULT/native operation where available.
 
-- Collapsed
-- Expanded
-- Warning
-- Error
-- Developer validation mode
-
-**Variants:**
-
-- Compact popover or flyout for normal users.
-- Side rail for developer or validation builds.
-
-**Accessibility:** Must be keyboard reachable when opened and dismissible without trapping focus.
-
-**Content Guidelines:** Separate user message from technical detail. Technical values may include capture pixel format, swap-chain format, color space, target display, and HRESULT/native operation where available.
-
-#### TargetContextStrip
+#### TargetContextStrip — Post-1.0
 
 **Purpose:** Shows selected target context when needed, especially for multi-monitor or HDR/SDR ambiguity.
 
-**Usage:** Optional overlay element for target display/window, resolution, and readiness context.
+**Status:** Deferred post-1.0. MVP uses direct monitor capture without target switching UI. Target context display will be promoted when multi-monitor explicit selection is designed.
 
-**Anatomy:**
+**Anatomy (planned):**
 
 - Target name.
 - Display/window type.
 - Capability summary.
 - Current trust state.
-
-**States:**
-
-- Hidden for simple happy path.
-- Visible for multi-monitor.
-- Visible for degraded target mismatch.
-- Visible when user opens details.
-
-**Accessibility:** Target context should be text-based and not rely only on iconography.
 
 #### RecoveryMessage
 
@@ -1099,35 +1081,72 @@ Implementation principles:
 
 ### Implementation Roadmap
 
-Phase 1 - Core MVP overlay components:
+Implementation follows the 10-Epic structure in `epics.md`. UX components are introduced at the epic where they become functionally required.
 
-- `HdrPreviewSurface`
-- `PreviewTrustBadge`
-- `CropSelectionLayer`
-- `OverlayActionToolbar`
-- `RecoveryMessage`
+**Epic 1 (HDR Preview Foundation) — Done:**
 
-Phase 2 - Trust and diagnostics support:
+- `HdrPreviewSurface` core: `SwapChainPanel` hosting, FP16/scRGB swap chain attachment, preview readiness state model.
 
-- `DiagnosticsDisclosure`
-- `TargetContextStrip`
-- Status severity tokens and message patterns
-- Degraded/unsupported/failure variants
+**Epic 2 (Direct Capture Session Lifecycle) — Done:**
 
-Phase 3 - Precision and validation enhancements:
+- Capture session state model (Initializing/Ready/Degraded/Unsupported/Failed).
+- Direct monitor capture path (no picker-first step).
+- Capture resource lifecycle and stale-frame guard.
 
-- Crop dimension label
-- Developer diagnostics rail variant
-- Manual validation status surfaces
-- Future settings and diagnostics visibility controls
+**Epic 3 (Release-to-Copy Overlay Workflow) — Done:**
 
-Post-MVP components:
+- Full-screen overlay layout.
+- `CropSelectionLayer`: drag-to-crop, handles, non-selected mask, adjust/recreate.
+- `OverlayActionToolbar` (MVP: Cancel only + lightweight feedback).
+- Keyboard Escape cancel behavior.
+- Release-to-capture gesture (pointer release on valid crop).
 
-- Export choice controls
-- Clipboard/output status
-- Annotation toolbar
-- Hotkey/tray configuration
-- Capture history components
+**Epic 4 (Main Panel UI Refactoring) — Backlog:**
+
+- `MainPanel`: compact 360px layout with Lumiere logo, dual capture buttons, HDR status indicator, settings entry.
+- `CaptureButton`: Full Screen and Region buttons with shortcut display.
+- `HdrStatusIndicator`: Ready (green), Available (yellow), Unavailable (red) states.
+
+**Epic 5 (Full Screen Capture Mode) — Backlog:**
+
+- `FullScreenCaptureAction`: single-click capture without crop overlay.
+- Lightweight "Copied to clipboard" feedback (reuses `OverlayActionToolbar` feedback pattern).
+
+**Epic 6 (Settings Panel) — Backlog:**
+
+- `SettingsPanel`: settings configuration UI with back navigation.
+- `ShortcutInput`: keyboard shortcut capture input.
+- `ToggleSetting`: HDR warnings toggle.
+- `SegmentedControl`: output target selection (Clipboard/Folder/Both).
+- `PathSelector`: save path configuration with browse button.
+
+**Epic 7 (Tray Context Menu) — Backlog:**
+
+- `TrayContextMenu`: system tray menu with capture actions, open, settings, quit.
+- `TrayStatusDisplay`: HDR status display in tray menu header.
+
+**Epic 8 (MVP Output, Status, and Validation) — Backlog:**
+
+- `PreviewTrustBadge`: concise user-facing status for HDR-ready, degraded, unsupported, failed.
+- `RecoveryMessage`: actionable guidance for degraded/failed states.
+- MVP clipboard output with honest semantics (no false HDR claims).
+- Manual validation scenarios and status-to-stage mapping.
+
+**Epic 9 (MVP Completion Gate) — Backlog:**
+
+- MVP completion checklist validation.
+- Deferred-work triage and go/no-go decision.
+
+**Epic 10 (Installer and 1.0 Release) — Backlog:**
+
+- No new UX components. Validates that installed app launches correctly and MVP flow works from clean install.
+
+**Post-1.0 (Deferred):**
+
+- `DiagnosticsDisclosure`: advanced capture/graphics/presentation diagnostics.
+- `TargetContextStrip`: multi-monitor target context.
+- Export choice controls, clipboard/output status beyond MVP.
+- Annotation toolbar, global hotkey beyond tray integration, capture history.
 
 ## UX Consistency Patterns
 
@@ -1135,18 +1154,17 @@ Post-MVP components:
 
 Button hierarchy should follow WinUI / Fluent conventions while staying strict about capture-state meaning.
 
-Primary actions:
+Primary actions (MVP):
 
-- Use one primary action per state.
-- In the MVP happy path, pointer release is the primary completion action once a valid crop exists; visible primary buttons should be avoided unless the fallback/foundation path is intentionally exposed.
+- In MVP, the primary completion action is **pointer release** on a valid crop region. There is no Confirm button in the default happy path.
+- `Cancel` is the primary visible button action throughout the overlay.
+- After release-to-capture completes, lightweight "Copied to clipboard" feedback appears and the overlay closes.
+
+Primary actions (post-1.0):
+
 - In degraded or failed recovery states, the primary action may become `Retry target` or another recovery action.
-- Primary actions should not appear before they are valid.
-
-Secondary actions:
-
-- `Cancel` should remain available throughout overlay states where safe.
-- `Details` should open advanced diagnostics.
-- `Continue degraded` may be available only when the app can continue without pretending HDR correctness is established.
+- `Details` may open advanced diagnostics.
+- `Continue degraded` may be available when the app can continue without pretending HDR correctness is established.
 
 Destructive or closing actions:
 
@@ -1326,7 +1344,7 @@ Target WCAG 2.2 AA principles where they apply to a native desktop application, 
 Core accessibility requirements:
 
 - Users must be able to cancel the full-screen overlay with keyboard Escape where practical.
-- Confirm, cancel, retry, and details controls should be keyboard reachable.
+- Cancel controls should be keyboard reachable (retry/details post-1.0).
 - Focus indicators must remain visible for interactive controls.
 - Status must not rely on color alone.
 - Plain-language status text must identify readiness, degraded, unsupported, or failed states.

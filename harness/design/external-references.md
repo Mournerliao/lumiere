@@ -41,6 +41,15 @@ Use these products for workflow comparison, not visual copying:
 - Shottr: lightweight capture, annotation, scrolling capture, and pixel-oriented workflows.
 - PixPin: capture, pinning, OCR, recording, and multi-purpose screenshot workflows.
 
+## Imported Design References
+
+### v0.dev MVP Prototype
+
+- Source: imported from `/Users/asherliao/Downloads/b_rQnQ7Q13jLu`.
+- Installed path: `harness/design/v0-mvp-reference/`.
+- Use for: current MVP visual direction for the main panel, settings panel, tray context menu, and HDR status simulation.
+- Boundary: keep it as a React/Next design reference only. Do not introduce web UI dependencies or treat prototype HDR/SDR wording as validated product behavior.
+
 ## External Skills Not Installed
 
 ### Anthropic Frontend Design
