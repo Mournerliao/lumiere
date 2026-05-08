@@ -1,22 +1,29 @@
 ---
 
-## stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-02b-vision', 'step-02c-executive-summary', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation', 'step-07-project-type', 'step-08-scoping', 'step-09-functional', 'step-10-nonfunctional', 'step-11-polish']
+## stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-02b-vision', 'step-02c-executive-summary', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation', 'step-07-project-type', 'step-08-scoping', 'step-09-functional', 'step-10-nonfunctional', 'step-11-polish', 'step-e-01-discovery', 'step-e-02-review', 'step-e-03-edit']
 inputDocuments:
   - '/Users/asherliao/Projects/lumiere/harness/PROJECT_PLAN.md'
   - '/Users/asherliao/Projects/lumiere/_bmad-output/project-context.md'
   - '/Users/asherliao/Projects/lumiere/_bmad-output/planning-artifacts/research/technical-lumiere-hdr-capture-research-2026-04-20.md'
+  - 'harness/design/v0-mvp-reference'
 workflowType: 'prd'
 documentCounts:
   productBriefs: 0
   research: 1
   brainstorming: 0
-  projectDocs: 2
+  projectDocs: 3
 classification:
   projectType: desktop_app
   domain: desktop graphics / HDR capture
   complexity: high
   projectContext: greenfield
 releaseMode: phased
+lastEdited: '2026-05-09'
+editHistory:
+  - date: '2026-05-09'
+    changes: '完全重写 PRD 以整合 harness/design/v0-mvp-reference 设计参考，更新 UI 表面、交互模式和状态模型。'
+  - date: '2026-05-09'
+    changes: '根据验证报告进行改进：增强用户旅程简洁性，为 NFR5 和 NFR8 添加具体指标（响应时间和启动时间）。'
 
 # Product Requirements Document - Lumiere
 
@@ -27,7 +34,9 @@ releaseMode: phased
 
 Lumiere is a native Windows desktop screenshot tool designed to capture and preview HDR display content without the washed-out, tone-mapped artifacts common in SDR-oriented screenshot workflows. Its core product promise is visual fidelity: when a user captures an HDR screen, the capture preview should preserve the brightness, color, and contrast relationships visible on the source display rather than flattening them through ordinary bitmap or GDI paths.
 
-The initial product scope focuses on proving and productizing an HDR-correct capture pipeline: Windows.Graphics.Capture produces FP16 frames, Direct3D 11/DXGI preserve those frames as GPU textures, and WinUI 3 presents the result through a scRGB-capable `SwapChainPanel` with an interactive crop overlay. The product will prioritize correctness, deterministic graphics resource management, and responsive crop interaction before expanding into export formats, annotation, history, or cloud features.
+The initial product scope focuses on proving and productizing an HDR-correct capture pipeline: Windows.Graphics.Capture produces FP16 frames, Direct3D 11/DXGI preserve those frames as GPU textures, and WinUI 3 presents the result through a scRGB-capable `SwapChainPanel` with an interactive crop overlay. The product will prioritize correctness, deterministic graphics resource management, responsive crop interaction, **and a full-color-management export pipeline (sRGB/P3/HDR10)** before expanding into annotation, history, or cloud features.
+
+The UI/UX is defined by the v0 MVP design reference (`harness/design/v0-mvp-reference`), which specifies four primary surfaces: a compact main panel (360px wide) with dual capture buttons, a settings panel (360x640px) for configuration, a system tray context menu for quick access, and a three-state HDR status indicator. The design emphasizes dark-first aesthetics, high information density, and clear visual feedback for capture operations.
 
 ### What Makes This Special
 
@@ -97,10 +106,17 @@ MVP is complete when Epic 9 is done. The 1.0 release is complete when Epic 10 is
 
 - Phase 0 technical spike proving the HDR capture/rendering chain on real HDR hardware.
 - Native Windows desktop shell using `.NET 10 LTS`, WinUI 3, and Windows App SDK 1.8 stable.
-- **Main panel UI** with compact layout (360px), dual capture buttons (Full Screen + Region), HDR status indicator, and settings entry (v0 design reference).
+- **Main panel UI** (360px wide): Lumiere logo + title, settings gear icon, two vertically stacked capture buttons (Full Screen primary, Region secondary), HDR status indicator (icon + colored dot + label), and Minimize link. Full Screen button uses sky-blue tinted background, blue icon, and blue border; Region button uses neutral gray. Both show keyboard shortcuts as `<kbd>` elements. During capture, buttons show "Capturing..." with pulsing blue border animation and are disabled.
+- **Settings panel** (360x640px): Back arrow + "Settings" title, scrollable content with five sections: Shortcuts (editable keyboard shortcuts for Full Screen and Region), HDR (HDR alerts toggle, Export format selector: HDR10/P3/sRGB segmented control), Output (Destination: Clipboard/Folder/Both segmented control, Save Path with Browse button, Open after capture toggle, Timestamp toggle), Clipboard (Copy as Image toggle, conditionally shown), About (Lumiere v0.1.0, description).
+- **Tray context menu** (224px wide): Blue "L" logo + "Lumiere" + HDR status, Full Screen and Region capture items with shortcuts, separator, Open Lumiere, Settings, Quit (red destructive). Menu items show icons on left, label center, shortcut right.
+- **HDR status model**: Three states - Ready (green, "HDR Ready", "HDR capture is available"), Available (amber/yellow, "Enable HDR", "Windows HDR is off"), Unavailable (red, "HDR unavailable", "No HDR display detected"). Displayed in main panel footer, tray context menu header, and as a demo toggle in prototype.
+- **State model**: CaptureMode (full, region), OutputTarget (clipboard, folder, both), ColorFormat (srgb, wide, hdr10). Settings include shortcuts per capture mode, output target, color format, HDR warnings toggle, auto-open, include metadata, copy image, save path.
 - Full-screen overlay window with hardware-rendered HDR preview via `SwapChainPanel`.
 - WGC-based direct monitor capture using FP16 frame pool configuration; the default MVP flow must not require a picker-first target selection step.
 - Direct3D 11/DXGI rendering path preserving scRGB/FP16 preview fidelity.
+- **Full-color-management clipboard and file output**: supporting **sRGB** (with tone mapping), **Display P3** (with gamut mapping), and **HDR10** (with PQ curve) export modes.
+- **System-level Global Hotkey** support for instant capture, with conflict detection and fallback.
+- **Native File Folder Picker** and **File I/O** for saving captures directly to disk.
 - **Full Screen capture mode**: single-click capture of entire screen without crop overlay, automatic clipboard copy.
 - **Region capture mode**: click Region, enter a full-screen overlay, drag a region, release to capture/copy, and show lightweight completion feedback.
 - Escape cancels the overlay. Explicit confirm controls are not part of the default MVP path.
@@ -121,12 +137,9 @@ MVP is complete when Epic 9 is done. The 1.0 release is complete when Epic 10 is
 
 ### Post-1.0 Roadmap
 
-- HDR-aware export formats and SDR tone-mapping presets.
-- Configurable clipboard behavior beyond the MVP default output.
 - Cursor inclusion/exclusion controls.
 - Multi-monitor target selection and diagnostics.
 - Lightweight annotations that preserve preview correctness.
-- Global hotkey beyond tray integration.
 - Capture history and project organization.
 - Update flow and broader installer polish.
 
@@ -142,46 +155,50 @@ MVP is complete when Epic 9 is done. The 1.0 release is complete when Epic 10 is
 
 ### Journey 1: HDR Creator Captures a Reference Image
 
-Maya is a video colorist reviewing HDR footage on a Mini-LED HDR monitor. She wants to capture a region of the screen to share a visual issue with a collaborator. Her current screenshot tools flatten highlights and make the image look gray, so screenshots undermine the point she is trying to communicate.
+Maya, a video colorist, needs to capture HDR screen regions for collaboration. Current tools flatten highlights, making screenshots unusable.
 
-She launches Lumiere, clicks Capture, immediately enters a full-screen overlay, and sees a preview that preserves the HDR appearance of the source display. She drags a crop rectangle over the relevant frame area and releases to capture/copy. The key moment is visual trust: the preview does not wash out the shot, so she believes the capture is worth using.
+She launches Lumiere, clicks "Region" (or presses Shift+A), enters full-screen overlay with HDR-preserving preview. She drags a crop rectangle, releases to capture/copy. The preview maintains HDR appearance, building visual trust. HDR status indicator shows "HDR Ready" (green).
 
-This journey reveals requirements for HDR-correct preview, direct full-screen overlay capture, release-to-copy crop interaction, keyboard cancel, and clear distinction between MVP clipboard output and later advanced export behavior.
+**Requirements revealed:** HDR-correct preview, direct overlay capture, release-to-copy crop, keyboard cancel, clear MVP output distinction.
 
 ### Journey 2: Gamer Captures an HDR Scene Without Washed-Out Highlights
 
-Ryan is playing a game in HDR and wants to capture a dramatic high-contrast scene. Standard screenshot tools produce a dull image where neon highlights and shadow contrast are wrong. He needs a fast capture flow that does not require color-management expertise.
+Ryan wants to capture HDR game scenes. Standard tools produce dull images with incorrect highlights and contrast.
 
-He triggers Lumiere, enters screenshot mode without first choosing a window, drags a crop region over the game scene, and sees a preview that keeps the intended HDR look. If the game or display cannot be captured correctly, Lumiere tells him the pipeline is degraded instead of pretending the screenshot is valid.
+He triggers Lumiere from system tray (right-click, "Full Screen" or Shift+S), captures entire screen without crop overlay, auto-copies to clipboard. Sees "Copied to clipboard" feedback. If capture fails, HDR status shows "Enable HDR" (amber) or "HDR unavailable" (red) with clear degradation message.
 
-This journey reveals requirements for fast capture startup, display/window target selection, responsive overlay interaction, clear degraded-state messaging, and eventual global hotkey support.
+**Requirements revealed:** Fast capture startup, direct monitor capture, responsive feedback, clear degraded-state messaging, system tray integration.
 
 ### Journey 3: Power User Diagnoses HDR Capability
 
-Alex is a Windows power user with multiple monitors: one HDR display and one SDR display. They want to know whether Lumiere is capturing the intended display with the expected FP16/scRGB path. They are comfortable reading technical diagnostics when something fails.
+Alex has multiple monitors (HDR + SDR) and wants to verify Lumiere captures with correct FP16/scRGB path.
 
-Alex starts capture on the HDR monitor. Lumiere validates the capture path and preview pipeline. If the swap chain color space cannot be set or the monitor/display path is not HDR-capable, Lumiere exposes a concise diagnostic message rather than silently falling back. Alex can change target display or disable HDR expectations and retry.
+He checks HDR status indicator in main panel (shows "Enable HDR" - amber). Right-clicks tray icon, sees same status. Opens Settings, enables "HDR alerts". Enables Windows HDR, status changes to "HDR Ready" (green). Captures using Full Screen mode, verifies preview matches source.
 
-This journey reveals requirements for capability detection, target selection, explicit error states, technical diagnostics, multi-monitor awareness, and no silent SDR fallback.
+**Requirements revealed:** Capability detection, HDR status indicators in multiple locations, HDR alerts settings, explicit state messaging.
 
 ### Journey 4: Developer Verifies Pipeline Stability During Repeated Captures
 
-Nora is implementing or testing Lumiere. Her concern is not the crop UI; it is whether repeated start/stop cycles leak frames, swap chains, textures, or COM objects. She runs capture repeatedly, changes target size, cancels, restarts, and closes the overlay.
+Nora tests Lumiere for resource leaks during repeated capture cycles. She runs capture repeatedly using both modes, changes target size, cancels (Escape), restarts, and closes overlay.
 
-The app consistently disposes frame pools, sessions, frames, render targets, swap chains, and device-bound resources. `SetSwapChain(null)` detaches the preview before graphics teardown. Wrong-thread UI calls do not occur during frame arrival.
+The app consistently disposes all resources (frame pools, sessions, textures, render targets, swap chains). `SetSwapChain(null)` detaches preview before teardown. No wrong-thread UI calls. HDR status indicator updates correctly between captures.
 
-This journey reveals requirements for lifecycle tests, diagnostic logging, deterministic disposal, thread-boundary enforcement, resize handling, and device/resource teardown paths.
+**Requirements revealed:** Lifecycle tests, diagnostic logging, deterministic disposal, thread-boundary enforcement, resize handling, resource teardown paths.
 
 ### Journey Requirements Summary
 
-- Full-screen capture overlay with HDR preview and crop interaction.
-- WGC direct monitor capture for the default MVP workflow, with picker-based selection retained only as fallback/debug or later explicit selection behavior.
-- FP16 capture and scRGB presentation with explicit validation.
-- Clear degraded/unsupported-state messages.
-- Responsive crop selection, release-to-capture/copy, and cancel flows.
-- Multi-monitor and HDR/SDR capability awareness.
-- Deterministic graphics resource ownership and teardown.
-- Diagnostics for developers and advanced users.
+- Main panel with dual capture buttons (Full Screen + Region) and HDR status indicator
+- Settings panel with shortcuts, HDR settings, output configuration
+- Tray context menu with capture actions, status display
+- HDR status model with three states (Ready, Available, Unavailable)
+- Full-screen capture overlay with HDR preview and crop interaction
+- WGC direct monitor capture for default MVP workflow
+- FP16 capture and scRGB presentation with explicit validation
+- Clear degraded/unsupported-state messages
+- Responsive crop selection, release-to-capture/copy, and cancel flows
+- Multi-monitor and HDR/SDR capability awareness
+- Deterministic graphics resource ownership and teardown
+- Diagnostics for developers and advanced users
 
 ## Domain-Specific Requirements
 
@@ -266,6 +283,11 @@ Lumiere is a Windows-native desktop application. It must integrate with Windows 
 - `SwapChainPanel` as the hardware preview surface.
 - XAML `Canvas` overlay for crop selection and controls.
 - Win32/WinUI interop for window handle access, transparent/layered styles, topmost behavior, and hit testing.
+- Main panel (360px wide) with dual capture buttons and HDR status indicator.
+- Settings panel (360x640px) with scrollable configuration sections.
+- Tray context menu (224px wide) with capture actions, status display, and utility items.
+- HDR status model with three states (Ready, Available, Unavailable) displayed in multiple locations.
+- State model for capture mode, output target, and color format.
 - Optional future global hotkey and tray integration.
 - Explicit capture consent and capture-state visibility.
 
@@ -296,6 +318,9 @@ Lumiere is a Windows-native desktop application. It must integrate with Windows 
 - Treat resource teardown as a first-class implementation path, not cleanup afterthought.
 - Keep export out of the core MVP unless the HDR preview pipeline is proven.
 - Prefer clear diagnostics and explicit unsupported states over hidden fallback behavior.
+- Translate layout, density, wording intent, and interaction hierarchy from the v0 design reference into native WinUI/Fluent patterns.
+- Do not copy React, Tailwind, Radix, shadcn, or web-specific implementation code into `src/`.
+- Do not treat prototype HDR or SDR fallback wording as verified product behavior without checking Lumiere's HDR invariants and Windows validation level.
 
 ## Project Scoping & Phased Development
 
@@ -414,29 +439,55 @@ Lumiere is a Windows-native desktop application. It must integrate with Windows 
 - FR34: Developers can repeat capture start/stop flows to check resource stability.
 - FR35: Developers can test capture behavior across HDR enabled, HDR disabled, SDR monitor, and multi-monitor scenarios.
 
+### Main Panel UI
+
+- FR58: Users see a compact main panel (360px wide) with Lumiere logo, title, and settings gear icon in the header.
+- FR59: Users see two vertically stacked capture buttons: "Full Screen" (primary, sky-blue tinted background, blue icon, blue border) and "Region" (secondary, neutral gray background, muted icon).
+- FR60: Both capture buttons display keyboard shortcuts as `<kbd>` elements (e.g., Shift+S, Shift+A).
+- FR61: During capture, buttons show "Capturing..." text with pulsing blue border animation and are disabled (mutual exclusion).
+- FR62: Users see HDR status indicator in the footer with icon, colored dot, and label (e.g., "HDR Ready" green, "Enable HDR" amber, "HDR unavailable" red).
+- FR63: Users can click "Minimize" link in the footer to minimize to system tray.
+
 ### Settings and Preferences
 
-- FR36: Users can access settings panel from main panel to configure capture behavior.
-- FR37: Users can configure capture shortcuts (Full Screen and Region).
-- FR38: Users can configure HDR settings (warnings toggle, export format: HDR10/P3/sRGB).
-- FR39: Users can configure output target (clipboard/folder/both).
-- FR40: Users can configure save path for captures.
-- FR41: Users can see About information (version, description).
-- FR42: Users can choose whether future capture sessions include cursor capture when that option is implemented.
-- FR43: Users can enable or disable advanced diagnostics when diagnostic UI is available.
+- FR36: Users can access settings panel (360x640px) from main panel via settings gear icon.
+- FR37: Users see back arrow + "Settings" title in header, scrollable content with five sections.
+- FR38: Users can configure capture shortcuts in Shortcuts section: click to edit, press key combo to set for Full Screen and Region.
+- FR39: Users can configure HDR settings in HDR section: "HDR alerts" toggle switch, "Export" segmented control with HDR10/P3/sRGB options.
+- FR40: Users can configure output target in Output section: "Destination" segmented control (Clipboard/Folder/Both), "Save Path" with Browse button (conditionally shown), "Open after capture" toggle, "Timestamp" toggle.
+- FR41: Users can configure clipboard settings in Clipboard section (conditionally shown when destination includes clipboard): "Copy as Image" toggle.
+- FR42: Users can see About information in About section: "Lumiere" + version "v0.1.0", description "Native screenshot reference for HDR-first capture."
+- FR43: Users can choose whether future capture sessions include cursor capture when that option is implemented.
+- FR44: Users can enable or disable advanced diagnostics when diagnostic UI is available.
 
 ### Full Screen Capture
 
-- FR44: Users can capture the entire current monitor with a single click (Full Screen mode).
-- FR45: Full Screen capture skips the crop overlay and directly copies to clipboard.
-- FR46: Users see lightweight "Copied to clipboard" feedback after Full Screen capture completes.
+- FR64: Users can capture the entire current monitor with a single click (Full Screen mode).
+- FR65: Full Screen capture skips the crop overlay and directly copies to clipboard.
+- FR66: Users see lightweight "Copied to clipboard" feedback after Full Screen capture completes.
 
 ### Tray Integration
 
-- FR47: Users can access Lumiere from the system tray.
-- FR48: Users can perform capture actions (Full Screen, Region) from tray context menu.
-- FR49: Users can open main window, access settings, or quit from tray context menu.
-- FR50: Users can see HDR status in the tray context menu.
+- FR47: Users can access Lumiere from the system tray via right-click context menu (224px wide).
+- FR48: Users see header with blue "L" logo, "Lumiere" name, and HDR status (icon + colored label).
+- FR49: Users can perform capture actions (Full Screen, Region) from tray context menu, each showing icon, label, and shortcut.
+- FR50: Users can open main window ("Open Lumiere"), access settings ("Settings"), or quit ("Quit", red destructive) from tray context menu.
+- FR51: Users see separator between capture items and utility items.
+- FR52: Menu items show icons on left, label center, shortcut right. Destructive items use red coloring. Disabled items (during capture) are dimmed to 50% opacity.
+
+### State Model
+
+- FR67: The system maintains CaptureMode state: "full" or "region".
+- FR68: The system maintains OutputTarget state: "clipboard", "folder", or "both".
+- FR69: The system maintains ColorFormat state: "srgb", "wide" (Display P3), or "hdr10".
+- FR70: The system maintains HdrStatus state: "ready", "available", or "unavailable".
+- FR71: Settings include shortcuts per capture mode, output target, color format, HDR warnings toggle, auto-open, include metadata, copy image, and save path.
+
+### Advanced Capture and Export
+
+- FR55: The system can convert captured FP16 data into sRGB, Display P3, and HDR10 color spaces for export.
+- FR56: The system can register and listen for global hotkeys to trigger capture, even when the app is minimized to tray.
+- FR57: The system can write captured images to a user-specified folder path in PNG format.
 
 ### Post-MVP Output and Workflow Capabilities
 
@@ -456,10 +507,10 @@ Lumiere is a Windows-native desktop application. It must integrate with Windows 
 
 ### Performance and Responsiveness
 
-- NFR5: Crop interaction must remain responsive during live preview under normal capture conditions.
+- NFR5: Crop interaction must maintain <50ms response time during live preview under normal capture conditions.
 - NFR6: The live preview path must avoid CPU readback or bitmap conversion for routine frame presentation.
 - NFR7: Frame processing must release WGC frame objects promptly enough to avoid frame pool starvation during normal use.
-- NFR8: Overlay startup should feel immediate enough for screenshot use; any noticeable delay must be attributable to explicit target selection or graphics initialization.
+- NFR8: Overlay startup must complete within 200ms for screenshot use; any delay >200ms must be attributable to explicit target selection or graphics initialization.
 
 ### Reliability and Resource Lifecycle
 
@@ -495,3 +546,13 @@ Lumiere is a Windows-native desktop application. It must integrate with Windows 
 - NFR26: Diagnostics must identify capture stage, graphics initialization stage, and presentation stage failures separately.
 - NFR27: Package versions and target framework decisions must be recorded in project files once scaffolding begins.
 - NFR28: MVP code must preserve the module boundaries between capture, graphics rendering, and overlay UI.
+
+### UI Design Reference
+
+- NFR29: Main panel dimensions must be 360px wide, with dark-first design (background: oklch(0.13 0.005 240)), rounded corners (rounded-xl, rounded-2xl), subtle borders (border-border/70), deep shadow (shadow-2xl shadow-black/50), compact typography (11-13px for body text).
+- NFR30: Settings panel dimensions must be 360px wide x 640px tall, with scrollable content.
+- NFR31: Tray context menu dimensions must be 224px wide (w-56).
+- NFR32: HDR status indicator colors must use green (oklch 155 hue) for Ready, amber/yellow (oklch 70 hue) for Available, red (oklch 27 hue) for Unavailable.
+- NFR33: Capture buttons must show visual feedback: primary button (Full Screen) uses sky-blue tinted background, blue icon, blue border; secondary button (Region) uses neutral gray. During capture, buttons show "Capturing..." with pulsing blue border animation (animate-ping) and are disabled.
+- NFR34: Settings panel must use SectionHeader (icon + uppercase label), SettingRow (label + optional description on left, control on right, separated by border), Toggle (custom switch component), SegmentedOutput (pill-bar with 3 equal columns), and ShortcutInput (click-to-edit keyboard shortcut field) components.
+- NFR35: Tray context menu items must show icons on left, label center, shortcut right. Destructive items (Quit) use red coloring. Active capture items show blue tinted background. Disabled items are dimmed to 50% opacity.

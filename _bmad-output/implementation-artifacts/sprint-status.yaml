@@ -39,7 +39,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-21T11:35:23+0800
-last_updated: 2026-05-08T10:00:00+0800
+last_updated: 2026-05-09T10:00:00+0800
 project: lumiere
 project_key: NOKEY
 tracking_system: file-system
@@ -91,10 +91,11 @@ development_status:
   7-1-implement-system-tray-integration: backlog
   7-2-implement-tray-context-menu: backlog
   7-3-implement-tray-hdr-status-display: backlog
+  7-4-implement-global-hotkey-registration-and-handling: backlog
   epic-7-retrospective: optional
   epic-8: backlog
   8-1-show-user-facing-capture-and-preview-status: backlog
-  8-2-define-and-implement-mvp-clipboard-output: backlog
+  8-2-define-and-implement-full-color-management-output-clipboard-file: backlog
   8-3-document-mvp-manual-validation-scenarios: backlog
   epic-8-retrospective: optional
   epic-9: backlog
