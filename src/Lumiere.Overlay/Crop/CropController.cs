@@ -96,14 +96,21 @@ public sealed class CropController
             return false;
         }
 
-        var hitTest = HitTest(start);
-        if (hitTest.StartsAdjustment)
-        {
-            BeginAdjustment(hitTest.Handle);
-            return true;
-        }
+        // MVP: handle/edge adjustment is disabled. Release-to-capture completes on first
+        // pointer release, so there is no opportunity to adjust. Post-MVP, restore the
+        // full HitTest path below to enable two-step crop (create → adjust → confirm).
+        //
+        // var hitTest = HitTest(start);
+        // if (hitTest.StartsAdjustment)
+        // {
+        //     BeginAdjustment(hitTest.Handle);
+        //     return true;
+        // }
 
-        if (hitTest.Kind is CropHitTestKind.Inside)
+        // Preserve: clicking inside an active crop does nothing (prevents accidental replacement).
+        if (Selection.Phase is CropSelectionPhase.Active
+            && Selection.Geometry.IsValid
+            && Contains(Selection.Geometry.Region, start))
         {
             return false;
         }

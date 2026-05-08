@@ -109,46 +109,81 @@ public sealed class CropControllerTests
     }
 
     [Fact]
-    public void AdjustingRightEdge_UpdatesActiveCropWithoutMovingOtherEdges()
+    public void BeginGesture_OnEdgeStartsReplacement_MvpAdjustmentDisabled()
     {
         var controller = CreateActiveController(new Rect(20, 10, 100, 80));
         var bounds = new Rect(0, 0, 200, 100);
 
+        // Clicking on the right edge (x=120) is outside strict Contains check,
+        // so it starts a replacement gesture instead of adjustment (MVP behavior).
         Assert.True(controller.BeginGesture(new Point(120, 50), bounds));
         controller.Update(new Point(150, 60), bounds);
         var result = controller.Commit(new Point(150, 60), bounds);
 
-        Assert.Equal(CropCommitResult.Adjusted, result);
+        Assert.Equal(CropCommitResult.Activated, result);
         Assert.Equal(CropSelectionPhase.Active, controller.Selection.Phase);
-        Assert.Equal(new Rect(20, 10, 130, 80), controller.Selection.Geometry.Region);
+        Assert.Equal(new Rect(120, 50, 30, 10), controller.Selection.Geometry.Region);
     }
 
     [Fact]
-    public void AdjustingCornerAcrossOppositeCorner_NormalizesGeometry()
+    public void BeginGesture_OnCornerStartsReplacement_MvpAdjustmentDisabled()
     {
         var controller = CreateActiveController(new Rect(20, 10, 100, 80));
         var bounds = new Rect(0, 0, 200, 100);
 
+        // Clicking on the top-left corner starts replacement (MVP: adjustment disabled).
         Assert.True(controller.BeginGesture(new Point(20, 10), bounds));
         controller.Update(new Point(140, 95), bounds);
         var result = controller.Commit(new Point(140, 95), bounds);
 
-        Assert.Equal(CropCommitResult.Adjusted, result);
-        Assert.Equal(new Rect(120, 90, 20, 5), controller.Selection.Geometry.Region);
+        Assert.Equal(CropCommitResult.Activated, result);
     }
 
     [Fact]
-    public void AdjustingBeyondBounds_ClampsGeometry()
+    public void AdjustingBeyondBounds_ClampsGeometry_MvpReplacement()
     {
         var controller = CreateActiveController(new Rect(20, 10, 100, 80));
         var bounds = new Rect(0, 0, 130, 100);
 
+        // Clicking on right edge starts replacement (MVP: adjustment disabled).
         Assert.True(controller.BeginGesture(new Point(120, 50), bounds));
-        controller.Update(new Point(200, 50), bounds);
-        var result = controller.Commit(new Point(200, 50), bounds);
+        controller.Update(new Point(200, 80), bounds);
+        var result = controller.Commit(new Point(200, 80), bounds);
 
-        Assert.Equal(CropCommitResult.Adjusted, result);
-        Assert.Equal(new Rect(20, 10, 110, 80), controller.Selection.Geometry.Region);
+        // Replacement clamps to bounds and commits as Activated.
+        Assert.Equal(CropCommitResult.Activated, result);
+        Assert.Equal(new Rect(120, 50, 10, 30), controller.Selection.Geometry.Region);
+    }
+
+    [Fact]
+    public void TooSmallReplacement_KeepsLastValidCrop()
+    {
+        var controller = CreateActiveController(new Rect(20, 10, 100, 80), minimumSize: 10);
+        var bounds = new Rect(0, 0, 200, 100);
+
+        // Clicking on right edge starts replacement (MVP: adjustment disabled).
+        Assert.True(controller.BeginGesture(new Point(120, 50), bounds));
+        controller.Update(new Point(122, 52), bounds);
+        var result = controller.Commit(new Point(122, 52), bounds);
+
+        // Too-small replacement restores previous crop.
+        Assert.Equal(CropCommitResult.InvalidGeometry, result);
+        Assert.Equal(new Rect(20, 10, 100, 80), controller.Selection.Geometry.Region);
+    }
+
+    [Fact]
+    public void CancelDuringReplacement_RestoresPreviousActiveCrop()
+    {
+        var controller = CreateActiveController(new Rect(20, 10, 100, 80));
+        var bounds = new Rect(0, 0, 200, 100);
+
+        // Clicking on right edge starts replacement (MVP: adjustment disabled).
+        Assert.True(controller.BeginGesture(new Point(120, 50), bounds));
+        controller.Update(new Point(150, 50), bounds);
+        controller.Cancel();
+
+        Assert.Equal(CropSelectionPhase.Active, controller.Selection.Phase);
+        Assert.Equal(new Rect(20, 10, 100, 80), controller.Selection.Geometry.Region);
     }
 
     [Fact]
@@ -251,27 +286,29 @@ public sealed class CropControllerTests
     }
 
     [Fact]
-    public void Commit_AfterAdjustment_ReturnsAdjustedWhenValid()
+    public void Commit_AfterEdgeReplacement_ReturnsActivatedWhenValid()
     {
         var controller = CreateActiveController(new Rect(20, 10, 100, 80));
         var bounds = new Rect(0, 0, 200, 100);
 
+        // Clicking on right edge starts replacement (MVP: adjustment disabled).
         controller.BeginGesture(new Point(120, 50), bounds);
         controller.Update(new Point(150, 60), bounds);
         var result = controller.Commit(new Point(150, 60), bounds);
 
-        Assert.Equal(CropCommitResult.Adjusted, result);
+        Assert.Equal(CropCommitResult.Activated, result);
     }
 
     [Fact]
-    public void Commit_AfterAdjustment_ReturnsInvalidGeometryWhenTooSmall()
+    public void Commit_AfterEdgeReplacement_ReturnsInvalidGeometryWhenTooSmall()
     {
         var controller = CreateActiveController(new Rect(20, 10, 100, 80), minimumSize: 10);
         var bounds = new Rect(0, 0, 200, 100);
 
+        // Clicking on right edge starts replacement (MVP: adjustment disabled).
         controller.BeginGesture(new Point(120, 50), bounds);
-        controller.Update(new Point(22, 50), bounds);
-        var result = controller.Commit(new Point(22, 50), bounds);
+        controller.Update(new Point(122, 52), bounds);
+        var result = controller.Commit(new Point(122, 52), bounds);
 
         Assert.Equal(CropCommitResult.InvalidGeometry, result);
     }
