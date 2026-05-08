@@ -15,10 +15,14 @@ public sealed class CaptureService
 {
     private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Capture);
     private readonly GraphicsDeviceResources deviceResources;
+    private readonly CaptureBorderOptions borderOptions;
 
-    public CaptureService(GraphicsDeviceResources deviceResources)
+    public CaptureService(
+        GraphicsDeviceResources deviceResources,
+        CaptureBorderOptions? borderOptions = null)
     {
         this.deviceResources = deviceResources ?? throw new ArgumentNullException(nameof(deviceResources));
+        this.borderOptions = borderOptions ?? CaptureBorderOptions.RequireSystemBorder();
     }
 
     public CaptureTarget CreateTarget(GraphicsCaptureItem item) =>
@@ -87,6 +91,8 @@ public sealed class CaptureService
             };
             framePool.FrameArrived += frameArrivedHandler;
             session = framePool.CreateCaptureSession(target.Item);
+            var borderResult = borderOptions.ApplyToSession(session);
+            LogBorderResult(borderResult);
             session.StartCapture();
 
             Logger.LogInformation("WGC session started: IsSupported=true, target={DisplayName} ({Width}x{Height}), kind={Kind}", target.DisplayName, target.Size.Width, target.Size.Height, target.Kind);
@@ -96,7 +102,7 @@ public sealed class CaptureService
                 PreviewReadinessStatus.Initializing(
                     PreviewReadinessStage.Capture,
                     "Initializing preview",
-                    $"Direct3D11CaptureFramePool started with {options.PixelFormat} and {options.BufferCount} buffers for {target.DisplayName}."));
+                    $"Direct3D11CaptureFramePool started with {options.PixelFormat} and {options.BufferCount} buffers for {target.DisplayName}. {borderResult.TechnicalDetail}"));
         }
         catch (Exception exception)
         {
@@ -113,6 +119,26 @@ public sealed class CaptureService
 
             return CaptureStartResult.NotStarted(MapFailureToReadiness(exception));
         }
+    }
+
+    private static void LogBorderResult(CaptureBorderApplicationResult borderResult)
+    {
+        if (borderResult.RequestedBorderless && !borderResult.Succeeded)
+        {
+            Logger.LogWarning(
+                "WGC borderless request did not take effect: attempted={Attempted}, effectiveIsBorderRequired={EffectiveIsBorderRequired}, detail={Detail}",
+                borderResult.Attempted,
+                borderResult.EffectiveIsBorderRequired,
+                borderResult.TechnicalDetail);
+            return;
+        }
+
+        Logger.LogDebug(
+            "WGC border policy applied: requestedBorderless={RequestedBorderless}, attempted={Attempted}, effectiveIsBorderRequired={EffectiveIsBorderRequired}, detail={Detail}",
+            borderResult.RequestedBorderless,
+            borderResult.Attempted,
+            borderResult.EffectiveIsBorderRequired,
+            borderResult.TechnicalDetail);
     }
 
     public static PreviewReadinessStatus MapFailureToReadiness(Exception exception)

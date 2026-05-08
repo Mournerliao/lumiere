@@ -61,7 +61,9 @@ public sealed partial class MainWindow : Window
             $"Started: {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
             $"OS: {Environment.OSVersion}",
             $".NET: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}",
-            $"HdrConstants: WgcPixelFormat={HdrConstants.WgcFramePoolPixelFormat}, DxgiFormat={HdrConstants.DxgiSwapChainFormat}, ColorSpace={HdrConstants.DxgiColorSpace}");
+            $"HdrConstants: WgcPixelFormat={HdrConstants.WgcFramePoolPixelFormat}, DxgiFormat={HdrConstants.DxgiSwapChainFormat}, ColorSpace={HdrConstants.DxgiColorSpace}",
+            "NOTE: If NVIDIA GeForce Experience overlay appears (Alt+Z), disable 'In-Game Overlay' in GeForce Experience settings for stable capture.",
+            "NOTE: Windows Graphics Capture may show a yellow system border. This unpackaged build cannot guarantee graphicsCaptureWithoutBorder consent.");
 
         ValidationLogger.SetBridgeLogger(Logger);
 
@@ -383,24 +385,7 @@ public sealed partial class MainWindow : Window
     private void ApplyFrameDiagnostic(long generation, string detail)
     {
         var frameNumber = Interlocked.Increment(ref frameEventCount);
-        if (!TryEnqueueUi(() =>
-            {
-                if (generation == Volatile.Read(ref previewGeneration))
-                {
-                    ApplySessionState(
-                        sessionState.Target is null
-                            ? CaptureSessionState.SelectingTarget(PreviewReadinessStatus.Initializing(
-                                PreviewReadinessStage.Capture,
-                                "Waiting for preview frame presentation.",
-                                $"{detail} Frame event #{frameNumber}."))
-                            : CaptureSessionState.Initializing(sessionState.Target, PreviewReadinessStatus.Initializing(
-                            PreviewReadinessStage.Capture,
-                            "Waiting for preview frame presentation.",
-                            $"{detail} Frame event #{frameNumber}.")));
-                }
-            }))
-        {
-        }
+        Logger.LogDebug("Frame diagnostic: generation={Generation}, event={Event}, detail={Detail}", generation, frameNumber, detail);
     }
 
     private static PreviewReadinessStatus AppendFrameDetail(
@@ -453,7 +438,7 @@ public sealed partial class MainWindow : Window
         }
 
         graphicsEngine ??= new GraphicsEngine(deviceResources);
-        captureService ??= new CaptureService(deviceResources);
+        captureService ??= new CaptureService(deviceResources, CaptureBorderOptions.TryBorderless());
         clipboardOutputService ??= new ClipboardOutputService(deviceResources);
     }
 
@@ -480,6 +465,7 @@ public sealed partial class MainWindow : Window
         overlayWindow.ApplyCaptureFrameSize(frameSize);
         overlayWindow.ApplyPresenter(CreateOverlayPlacementRequest(target));
         overlayWindow.Activate();
+        overlayWindow.ReassertTopmost();
         overlayWindow.ExcludeFromCapture();
         overlayWindow.ApplyState(CreateOverlayState(sessionState));
 

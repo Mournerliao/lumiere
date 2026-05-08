@@ -30,6 +30,7 @@ public sealed partial class OverlayWindow : Window
     private OverlayState currentState = OverlayState.Initializing("Preparing HDR preview.");
     private string presenterTechnicalDetail = string.Empty;
     private uint? activeCropPointerId;
+    private Point? lastCropPointerPosition;
 
     public OverlayWindow()
         : this(new OverlayWindowPresenter())
@@ -74,6 +75,13 @@ public sealed partial class OverlayWindow : Window
             new[] { presenterTechnicalDetail, WindowCaptureExclusionInterop.ExcludeFromCapture(this) }
                 .Where(detail => !string.IsNullOrWhiteSpace(detail)));
         UpdateTechnicalDetail();
+    }
+
+    public void ReassertTopmost()
+    {
+        var topmostDetail = WindowZOrderInterop.ApplyTopmost(this);
+        Logger.LogDebug("Overlay topmost z-order reasserted.");
+        Logger.LogDebug("{Detail}", topmostDetail);
     }
 
     public void ApplyState(OverlayState state)
@@ -161,7 +169,9 @@ public sealed partial class OverlayWindow : Window
         WriteDebugLog(
             $"Panel size: " +
             $"({PreviewSwapChainPanel.Width:0.##}x{PreviewSwapChainPanel.Height:0.##}), " +
+            $"RootGrid=({RootGrid.ActualWidth:0.##}x{RootGrid.ActualHeight:0.##}), " +
             $"PreviewBounds: ({currentPreviewLayout.PreviewBounds.Width:0.##}x{currentPreviewLayout.PreviewBounds.Height:0.##}), " +
+            $"PreviewOrigin: ({currentPreviewLayout.PreviewBounds.X:0.##},{currentPreviewLayout.PreviewBounds.Y:0.##}), " +
             $"RenderTransform: ScaleX={1.0 / dpiScale:0.###}, ScaleY={1.0 / dpiScale:0.###}");
         UpdateCropVisuals();
     }
@@ -173,14 +183,6 @@ public sealed partial class OverlayWindow : Window
             args.Handled = true;
             RequestClose();
         }
-    }
-
-    private void OnEscapeKeyboardAcceleratorInvoked(
-        KeyboardAccelerator sender,
-        KeyboardAcceleratorInvokedEventArgs args)
-    {
-        args.Handled = true;
-        RequestClose();
     }
 
     private void OnRootGridLoaded(object sender, RoutedEventArgs args) =>
@@ -266,6 +268,7 @@ public sealed partial class OverlayWindow : Window
         }
 
         activeCropPointerId = args.Pointer.PointerId;
+        lastCropPointerPosition = pointerPoint.Position;
         CropCanvas.CapturePointer(args.Pointer);
         UpdateCropVisuals();
         UpdateConfirmAvailability();
@@ -286,8 +289,10 @@ public sealed partial class OverlayWindow : Window
             return;
         }
 
+        var pointerPosition = args.GetCurrentPoint(CropCanvas).Position;
+        lastCropPointerPosition = pointerPosition;
         cropController.Update(
-            args.GetCurrentPoint(CropCanvas).Position,
+            pointerPosition,
             currentPreviewLayout.PreviewBounds);
         UpdateCropVisuals();
         UpdateConfirmAvailability();
@@ -301,11 +306,14 @@ public sealed partial class OverlayWindow : Window
             return;
         }
 
+        var pointerPosition = args.GetCurrentPoint(CropCanvas).Position;
+        lastCropPointerPosition = pointerPosition;
         var commitResult = cropController.Commit(
-            args.GetCurrentPoint(CropCanvas).Position,
+            pointerPosition,
             currentPreviewLayout.PreviewBounds);
         CropCanvas.ReleasePointerCapture(args.Pointer);
         activeCropPointerId = null;
+        lastCropPointerPosition = null;
         UpdateCropVisuals();
         UpdateConfirmAvailability();
 
@@ -334,6 +342,7 @@ public sealed partial class OverlayWindow : Window
         cropController.Cancel();
         CropCanvas.ReleasePointerCapture(args.Pointer);
         activeCropPointerId = null;
+        lastCropPointerPosition = null;
         UpdateCropVisuals();
         UpdateConfirmAvailability();
         args.Handled = true;
@@ -346,10 +355,26 @@ public sealed partial class OverlayWindow : Window
             return;
         }
 
-        cropController.Cancel();
+        var commitResult = CropCommitResult.NoGesture;
+        if (lastCropPointerPosition is { } pointerPosition && cropController.IsGestureActive)
+        {
+            commitResult = cropController.Commit(pointerPosition, currentPreviewLayout.PreviewBounds);
+            Logger.LogWarning(
+                "Crop pointer capture lost; preserved interrupted gesture with result={Result}.",
+                commitResult);
+        }
+        else
+        {
+            cropController.Cancel();
+            Logger.LogWarning("Crop pointer capture lost with no last pointer position; gesture canceled.");
+        }
+
         activeCropPointerId = null;
+        lastCropPointerPosition = null;
         UpdateCropVisuals();
         UpdateConfirmAvailability();
+        RootGrid.Focus(FocusState.Programmatic);
+        ReassertTopmost();
         args.Handled = true;
     }
 
@@ -533,6 +558,6 @@ public sealed partial class OverlayWindow : Window
 
     private static void WriteDebugLog(string message)
     {
-        Logger.LogDebug("{Message}", message);
+        Logger.LogInformation("{Message}", message);
     }
 }

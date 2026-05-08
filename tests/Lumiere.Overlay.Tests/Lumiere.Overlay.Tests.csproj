@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Lumiere.Capture\Lumiere.Capture.csproj" />
+    <ProjectReference Include="..\..\src\Lumiere.Infrastructure\Lumiere.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Lumiere.Overlay\Lumiere.Overlay.csproj" />
   </ItemGroup>
 </Project>

@@ -8,11 +8,6 @@
       Background="Black"
       IsTabStop="True"
       KeyDown="OnRootGridKeyDown">
-    <Grid.KeyboardAccelerators>
-      <KeyboardAccelerator
-          Key="Escape"
-          Invoked="OnEscapeKeyboardAcceleratorInvoked" />
-    </Grid.KeyboardAccelerators>
 
     <SwapChainPanel
         x:Name="PreviewSwapChainPanel"

@@ -19,8 +19,10 @@ public sealed class OverlayHitTestModeTests
             OverlayHitTestModeDefaults.MvpDefault);
 
         Assert.Equal(OverlayHitTestMode.Interactive, application.HitTestMode);
+        Assert.Contains("tool overlay", application.TechnicalDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("interactive hit testing", application.TechnicalDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("crop input", application.TechnicalDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("fullscreen", application.TechnicalDetail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -31,6 +33,8 @@ public sealed class OverlayHitTestModeTests
             OverlayHitTestMode.PassThrough);
 
         Assert.Equal(OverlayHitTestMode.PassThrough, application.HitTestMode);
+        Assert.Contains("tool overlay", application.TechnicalDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("pass-through", application.TechnicalDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("fullscreen", application.TechnicalDetail, StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -1,4 +1,7 @@
 using System.Runtime.InteropServices;
+using Lumiere.Infrastructure.Diagnostics;
+using Lumiere.Infrastructure.Interop;
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Windows.Graphics;
@@ -8,6 +11,8 @@ namespace Lumiere.Overlay.Windowing;
 
 public sealed class OverlayWindowPresenter
 {
+    private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Overlay);
+
     public double DpiScale { get; private set; } = 1.0;
 
     public string Apply(Window window, OverlayPlacementRequest placement)
@@ -15,7 +20,11 @@ public sealed class OverlayWindowPresenter
         ArgumentNullException.ThrowIfNull(window);
         ArgumentNullException.ThrowIfNull(placement);
 
-        var presenter = FullScreenPresenter.Create();
+        var presenter = OverlappedPresenter.Create();
+        presenter.SetBorderAndTitleBar(false, false);
+        presenter.IsResizable = false;
+        presenter.IsMaximizable = false;
+        presenter.IsMinimizable = false;
 
         window.AppWindow.SetPresenter(presenter);
         var fallbackDisplayArea = DisplayArea.GetFromWindowId(
@@ -43,10 +52,14 @@ public sealed class OverlayWindowPresenter
         var borderColor = unchecked((int)0xFFFFFFFE); // DWMWA_COLOR_NONE: suppress border drawing entirely
         DwmSetWindowAttribute(hwnd, 34, ref borderColor, sizeof(int)); // DWMWA_BORDER_COLOR = 34
 
-        return CreatePresenterApplication(
+        var zOrderDetail = WindowZOrderInterop.ApplyTopmostToolWindow(window, overlayBounds);
+        var geometry = OverlayWindowGeometryDiagnostics.Capture(window, overlayBounds, DpiScale);
+        Logger.LogInformation("{GeometryDiagnostic}", geometry.ToDiagnosticString());
+        var presenterDetail = CreatePresenterApplication(
                 placement.TargetDisplayName,
                 OverlayHitTestModeDefaults.MvpDefault)
-            .TechnicalDetail;
+                .TechnicalDetail;
+        return $"{presenterDetail} {zOrderDetail}";
     }
 
     internal static OverlayPresenterApplication CreatePresenterApplication(
@@ -58,9 +71,9 @@ public sealed class OverlayWindowPresenter
         var detail = hitTestMode switch
         {
             OverlayHitTestMode.Interactive =>
-                $"Applied borderless topmost overlay for {targetDisplayName}; interactive hit testing is active for crop input.",
+                $"Applied borderless topmost tool overlay for {targetDisplayName}; interactive hit testing is active for crop input.",
             OverlayHitTestMode.PassThrough =>
-                $"Applied borderless topmost overlay for {targetDisplayName}; pass-through hit testing is active.",
+                $"Applied borderless topmost tool overlay for {targetDisplayName}; pass-through hit testing is active.",
             _ => throw new ArgumentOutOfRangeException(nameof(hitTestMode), hitTestMode, "Unknown overlay hit-test mode."),
         };
 

@@ -17,6 +17,55 @@ public sealed class CaptureSessionConfigurationTests
         Assert.Equal(HdrConstants.WgcFramePoolPixelFormat, options.PixelFormat);
     }
 
+    [Fact]
+    public void DefaultCaptureBorderOptionsRequireSystemBorder()
+    {
+        var options = CaptureBorderOptions.RequireSystemBorder();
+
+        var result = options.ApplyToBorderAccessors(
+            _ => throw new InvalidOperationException("Default options should not set IsBorderRequired."),
+            () => throw new InvalidOperationException("Default options should not read IsBorderRequired."));
+
+        Assert.True(options.IsSystemBorderRequired);
+        Assert.False(result.RequestedBorderless);
+        Assert.False(result.Attempted);
+        Assert.True(result.Succeeded);
+        Assert.True(result.EffectiveIsBorderRequired);
+    }
+
+    [Fact]
+    public void TryBorderlessCaptureBorderOptionsRequestIsBorderRequiredFalse()
+    {
+        var isBorderRequired = true;
+        var options = CaptureBorderOptions.TryBorderless();
+
+        var result = options.ApplyToBorderAccessors(
+            value => isBorderRequired = value,
+            () => isBorderRequired);
+
+        Assert.False(options.IsSystemBorderRequired);
+        Assert.True(result.RequestedBorderless);
+        Assert.True(result.Attempted);
+        Assert.True(result.Succeeded);
+        Assert.False(result.EffectiveIsBorderRequired);
+    }
+
+    [Fact]
+    public void TryBorderlessCaptureBorderOptionsReportsIgnoredBorderlessRequest()
+    {
+        var options = CaptureBorderOptions.TryBorderless();
+
+        var result = options.ApplyToBorderAccessors(
+            _ => { },
+            () => true);
+
+        Assert.True(result.RequestedBorderless);
+        Assert.True(result.Attempted);
+        Assert.False(result.Succeeded);
+        Assert.True(result.EffectiveIsBorderRequired);
+        Assert.Contains("Unpackaged", result.TechnicalDetail, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Theory]
     [InlineData(0, 1080)]
     [InlineData(1920, 0)]
