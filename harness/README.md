@@ -7,6 +7,7 @@ Use `_bmad-output/` for generated planning artifacts, sprint output, story draft
 ## Directory Map
 
 - `planning/project-plan.md` - long-lived product intent, architecture direction, and implementation phases.
+- `planning/mvp-feature-list.md` - MVP feature checklist distilled from the imported v0 reference.
 - `design/index.md` - durable UX reference index, including the imported v0 MVP reference.
 - `skills/` - project-specific skills for AI-assisted development.
   - `winui-gallery-reference/` - WinUI 3 component reference skill for fetching official code examples.

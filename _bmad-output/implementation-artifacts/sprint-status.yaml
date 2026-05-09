@@ -1,5 +1,5 @@
-# generated: 2026-04-21T11:35:23+0800
-# last_updated: 2026-05-08T10:00:00+0800
+# generated: 2026-05-09T17:29:57+0800
+# last_updated: 2026-05-10T03:35:00+0800
 # project: lumiere
 # project_key: NOKEY
 # tracking_system: file-system
@@ -29,84 +29,81 @@
 #
 # WORKFLOW NOTES:
 # ===============
-# - Rebaselined on 2026-05-08 (v2) to track expanded MVP scope based on v0 design reference.
-# - Epic 1-7 done means MVP feature implementation is complete.
-# - Epic 8 done means MVP output and validation is complete.
-# - Epic 9 done means MVP is complete and validated.
-# - Epic 10 done means 1.0 installable release is complete.
-# - Deferred post-1.0 roadmap items live in epics.md, not active sprint tracking.
-# - Developer typically creates next story after previous one is 'done' to incorporate learnings.
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: 2026-04-21T11:35:23+0800
-last_updated: 2026-05-09T10:00:00+0800
+generated: 2026-05-09T17:29:57+0800
+last_updated: 2026-05-10T03:35:00+0800
 project: lumiere
 project_key: NOKEY
 tracking_system: file-system
 story_location: /Users/asherliao/Projects/lumiere/_bmad-output/implementation-artifacts
 
+workflow_status:
+  create-ux-design:
+    status: complete
+    output: /Users/asherliao/Projects/lumiere/_bmad-output/planning-artifacts/ux-design-specification.md
+    completed_at: 2026-05-10T03:35:00+0800
+
 development_status:
   epic-1: done
-  1-1-scaffold-the-native-windows-app-foundation: done
-  1-2-centralize-hdr-constants-and-preview-readiness-status: done
-  1-3-create-d3d11-device-and-winrt-dxgi-interop-bridge: done
-  1-4-attach-an-fp16-scrgb-swap-chain-to-swapchainpanel: done
-  1-5-prove-minimal-wgc-fp16-capture-to-live-preview: done
+  1-1-retain-native-windows-app-foundation: done
+  1-2-retain-hdr-constants-and-readiness-vocabulary: done
+  1-3-retain-d3d11-device-and-winrt-dxgi-interop-bridge: done
+  1-4-retain-fp16-scrgb-swap-chain-preview: done
+  1-5-retain-minimal-wgc-fp16-capture-to-live-preview-proof: done
   epic-1-retrospective: done
   epic-2: done
-  2-1-start-capture-and-select-a-display-or-window-target: done
-  2-2-represent-capture-session-state-explicitly: done
-  2-3-stop-restart-and-recreate-capture-resources: done
-  2-4-validate-repeated-capture-lifecycle-stability: done
-  2-5-create-monitor-capture-targets-without-picker: done
+  2-1-retain-typed-capture-target-selection: done
+  2-2-retain-explicit-capture-session-state: done
+  2-3-retain-stop-restart-and-resource-recreation-behavior: done
+  2-4-retain-lifecycle-validation-evidence: done
+  2-5-retain-direct-monitor-capture-without-picker: done
   epic-2-retrospective: done
   epic-3: done
-  3-1-show-a-fullscreen-overlay-above-the-hdr-preview: done
-  3-2-create-a-crop-selection-by-dragging: done
-  3-3-adjust-or-recreate-the-crop-selection: done
-  3-4-confirm-or-cancel-the-capture-overlay: done
-  3-5-manage-overlay-hit-testing-and-keyboard-escape: done
-  3-6-release-to-capture-and-copy: done
-  epic-3-retrospective: done
+  3-1-retain-fullscreen-overlay-above-hdr-preview: done
+  3-2-retain-crop-selection-by-dragging: done
+  3-3-retain-crop-adjustment-and-recreation: done
+  3-4-retain-confirm-and-cancel-overlay-paths: done
+  3-5-retain-hit-testing-and-keyboard-escape: done
+  3-6-retain-release-to-capture-and-basic-clipboard-output: done
+  epic-3-retrospective: optional
   epic-4: backlog
-  4-1-refactor-main-panel-layout: backlog
-  4-2-implement-dual-capture-buttons: backlog
-  4-3-implement-hdr-status-indicator: backlog
-  4-4-add-settings-button-entry: backlog
+  4-1-classify-existing-foundation-for-mvp-cutover: backlog
+  4-2-cut-over-capture-commands-to-the-mvp-session-contract: backlog
+  4-3-demote-legacy-picker-and-dashboard-behavior-from-the-default-path: backlog
+  4-4-establish-app-facing-seams-for-settings-output-tray-and-hotkeys: backlog
+  4-5-validate-foundation-cutover-on-windows-hardware: backlog
   epic-4-retrospective: optional
   epic-5: backlog
-  5-1-implement-full-screen-capture-action: backlog
-  5-2-skip-crop-overlay-for-full-screen-mode: backlog
-  5-3-show-lightweight-completion-feedback: backlog
+  5-1-build-the-native-v0-main-panel: backlog
+  5-2-implement-settings-navigation-and-shell: backlog
+  5-3-add-shortcut-and-hdr-alert-settings-ui: backlog
+  5-4-add-output-preference-settings-ui: backlog
+  5-5-persist-local-settings-across-launches: backlog
+  5-6-show-native-about-and-version-information: backlog
   epic-5-retrospective: optional
   epic-6: backlog
-  6-1-create-settings-panel-shell: backlog
-  6-2-implement-shortcut-configuration: backlog
-  6-3-implement-hdr-settings: backlog
-  6-4-implement-output-target-configuration: backlog
-  6-5-implement-save-path-configuration: backlog
-  6-6-implement-about-section: backlog
+  6-1-define-output-target-policy-and-result-model: backlog
+  6-2-implement-configured-clipboard-output: backlog
+  6-3-implement-folder-output-with-save-path-and-timestamp-naming: backlog
+  6-4-implement-both-target-output-and-completion-feedback: backlog
+  6-5-scope-export-and-color-format-options-honestly: backlog
+  6-6-implement-supported-after-capture-behavior: backlog
   epic-6-retrospective: optional
   epic-7: backlog
-  7-1-implement-system-tray-integration: backlog
-  7-2-implement-tray-context-menu: backlog
-  7-3-implement-tray-hdr-status-display: backlog
-  7-4-implement-global-hotkey-registration-and-handling: backlog
+  7-1-add-tray-menu-with-status-and-commands: backlog
+  7-2-open-main-window-and-settings-from-tray: backlog
+  7-3-register-global-capture-hotkeys: backlog
+  7-4-support-background-and-minimize-to-tray-workflow: backlog
+  7-5-quit-cleanly-from-tray: backlog
   epic-7-retrospective: optional
   epic-8: backlog
-  8-1-show-user-facing-capture-and-preview-status: backlog
-  8-2-define-and-implement-full-color-management-output-clipboard-file: backlog
-  8-3-document-mvp-manual-validation-scenarios: backlog
+  8-1-complete-evidence-based-hdr-state-mapping: backlog
+  8-2-implement-actionable-hdr-alerts: backlog
+  8-3-strengthen-structured-diagnostics-and-failure-mapping: backlog
+  8-4-record-validation-level-for-every-mvp-capability: backlog
+  8-5-run-mvp-release-validation-matrix: backlog
   epic-8-retrospective: optional
-  epic-9: backlog
-  9-1-define-mvp-completion-gate: backlog
-  9-2-run-mvp-completion-validation-and-triage: backlog
-  9-3-complete-mvp-retrospective-and-go-no-go: backlog
-  epic-9-retrospective: optional
-  epic-10: backlog
-  10-1-decide-packaging-strategy: backlog
-  10-2-build-installer-package: backlog
-  10-3-validate-install-launch-and-uninstall: backlog
-  10-4-prepare-1-0-versioning-and-release-notes: backlog
-  10-5-cut-1-0-release: backlog
-  epic-10-retrospective: optional
