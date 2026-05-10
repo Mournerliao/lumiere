@@ -32,7 +32,6 @@ public sealed partial class MainWindow : Window
     private SwapChainResources? swapChainResources;
     private CaptureTarget? activeCaptureTarget;
     private PreviewReadinessStatus? activePresentationEvidence;
-    private CaptureSessionState sessionState = CaptureSessionState.Idle();
     private OverlayWindow? overlayWindow;
     private ClipboardOutputService? clipboardOutputService;
     private long previewGeneration;
@@ -47,7 +46,7 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        Title = "Lumiere Tool - Dashboard - Capture Home";
+        Title = "Lumiere";
         SystemBackdrop = new MicaBackdrop();
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(TitleBarDragArea);
@@ -70,12 +69,56 @@ public sealed partial class MainWindow : Window
         ApplySessionState(
             CaptureSessionState.Idle(PreviewReadinessStatus.Initializing(
                 PreviewReadinessStage.Capture,
-                "Click Capture to start HDR preview of your current display.",
+                "Select a capture mode to begin.",
                 "Direct monitor capture bypasses the picker and starts preview immediately.")));
     }
 
     private async void OnSelectCaptureTargetClick(object sender, RoutedEventArgs e)
     {
+        await ExecuteCaptureFromUiAsync(CaptureCommandMode.Fullscreen);
+    }
+
+    private async void OnRegionCaptureClick(object sender, RoutedEventArgs e)
+    {
+        await ExecuteCaptureFromUiAsync(CaptureCommandMode.Region);
+    }
+
+    private async Task ExecuteCaptureFromUiAsync(CaptureCommandMode mode)
+    {
+        try
+        {
+            EnsureGraphicsServices();
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "EnsureGraphicsServices FAILED");
+            ApplySessionState(
+                CaptureSessionState.Failed(null, PreviewReadinessStatus.Failed(
+                    PreviewReadinessStage.Capture,
+                    "Capture failed",
+                    InteropFailureDiagnostics.Write(exception))));
+            return;
+        }
+
+        var probeCommand = mode == CaptureCommandMode.Region
+            ? CaptureCommand.Region()
+            : CaptureCommand.Fullscreen();
+        var guardResult = ExecuteCaptureCommand(probeCommand);
+        if (!guardResult.IsAccepted)
+        {
+            Logger.LogWarning(
+                "Capture command rejected before starting: mode={Mode}, outcome={Outcome}",
+                mode, guardResult.Outcome);
+            ApplySessionState(
+                captureService?.CurrentSessionState
+                ?? CaptureSessionState.Failed(null, guardResult.Readiness
+                    ?? PreviewReadinessStatus.Failed(
+                        PreviewReadinessStage.Capture,
+                        "Capture rejected",
+                        "Command was rejected by the capture service.")));
+            return;
+        }
+
         SetCaptureActionsEnabled(false);
 
         try
@@ -131,6 +174,25 @@ public sealed partial class MainWindow : Window
                 SetCaptureActionsEnabled(true);
             }
         }
+    }
+
+    private CaptureCommandResult ExecuteCaptureCommand(CaptureCommand command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        var activeCaptureService = captureService;
+        if (activeCaptureService is null)
+        {
+            Logger.LogWarning("ExecuteCaptureCommand FAILED: CaptureService not initialized");
+            return CaptureCommandResult.Failed(
+                command,
+                PreviewReadinessStatus.Failed(
+                    PreviewReadinessStage.Capture,
+                    "Capture failed",
+                    "Capture service was not initialized."));
+        }
+
+        return activeCaptureService.TryReserveCommand(command);
     }
 
     private void ConfigureTitleBar()
@@ -372,10 +434,11 @@ public sealed partial class MainWindow : Window
             {
                 if (generation == Volatile.Read(ref previewGeneration))
                 {
+                    var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
                     ApplySessionState(
-                        sessionState.Target is null
+                        currentState.Target is null
                             ? CaptureSessionState.Failed(null, readiness)
-                            : CreateSessionStateFromCurrentEvidence(sessionState.Target, readiness, allowCapturing: true));
+                            : CreateSessionStateFromCurrentEvidence(currentState.Target, readiness, allowCapturing: true));
                 }
             }))
         {
@@ -467,7 +530,7 @@ public sealed partial class MainWindow : Window
         overlayWindow.Activate();
         overlayWindow.ReassertTopmost();
         overlayWindow.ExcludeFromCapture();
-        overlayWindow.ApplyState(CreateOverlayState(sessionState));
+        overlayWindow.ApplyState(CreateOverlayState(captureService?.CurrentSessionState ?? CaptureSessionState.Idle()));
 
         Logger.LogInformation(
             "Overlay created: fullscreen, frameSize={Width}x{Height}, displayName={DisplayName}",
@@ -507,6 +570,9 @@ public sealed partial class MainWindow : Window
 
     private void ApplySessionState(CaptureSessionState state)
     {
+        // Must be called on the UI thread. Future entry points (hotkey, tray) must dispatch first.
+        Debug.Assert(RootGrid.DispatcherQueue.HasThreadAccess, "ApplySessionState must be called on the UI thread.");
+
         if (applyingSessionState)
         {
             return;
@@ -515,9 +581,10 @@ public sealed partial class MainWindow : Window
         applyingSessionState = true;
         try
         {
-            sessionState = state ?? throw new ArgumentNullException(nameof(state));
-            UpdateCaptureStatus(sessionState);
-            var overlayState = CreateOverlayState(sessionState);
+            var validatedState = state ?? throw new ArgumentNullException(nameof(state));
+            captureService?.UpdateSessionState(validatedState);
+            UpdateCaptureStatus(validatedState);
+            var overlayState = CreateOverlayState(validatedState);
             overlayWindow?.ApplyState(overlayState);
             if (overlayWindow is not null && overlayState.RequiresFailureTeardown)
             {
@@ -551,6 +618,9 @@ public sealed partial class MainWindow : Window
         CaptureStatusDetail.Text = string.IsNullOrWhiteSpace(state.TechnicalDetail)
             ? string.Empty
             : state.TechnicalDetail;
+        CaptureStatusDetail.Visibility = string.IsNullOrWhiteSpace(state.TechnicalDetail)
+            ? Visibility.Collapsed
+            : Visibility.Visible;
     }
 
     private void SetCaptureActionsEnabled(bool isEnabled)
@@ -594,6 +664,8 @@ public sealed partial class MainWindow : Window
         Logger.LogDebug("Overlay close requested (Escape/cancel), StopPreview called");
         StopPreview();
         CloseOverlayWindow();
+        Logger.LogDebug("Resetting session state to Idle after overlay close requested");
+        ApplySessionState(CaptureSessionState.Idle());
     }
 
     private async void OnOverlayCaptureConfirmed(object? sender, ConfirmedCaptureSelection selection)
@@ -617,12 +689,12 @@ public sealed partial class MainWindow : Window
         finally
         {
             overlayWindow?.ApplyClipboardResult(copied, selection.Status);
-            ApplySessionState(CaptureSessionState.Disposed(PreviewReadinessStatus.Ready(
-                copied
-                    ? "Crop copied. Preview resources are stopping."
-                    : "Crop confirmed, but clipboard output failed. Preview resources are stopping.",
-                CreateConfirmedSelectionDetail(selection))));
             CloseOverlayWindow();
+            if (!isClosed)
+            {
+                Logger.LogDebug("Resetting session state to Idle after overlay capture confirmed");
+                ApplySessionState(CaptureSessionState.Idle());
+            }
         }
     }
 
@@ -689,8 +761,10 @@ public sealed partial class MainWindow : Window
             overlayWindow.Closed -= OnOverlayClosed;
             overlayWindow = null;
 
-            if (!isClosed && sessionState.HasNativeSession)
+            var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
+            if (!isClosed && currentState.HasNativeSession)
             {
+                Logger.LogDebug("Stopping preview from OnOverlayClosed, current state: {Status}", currentState.Status);
                 StopPreview();
             }
         }
