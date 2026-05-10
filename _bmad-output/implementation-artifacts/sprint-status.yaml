@@ -1,5 +1,5 @@
 # generated: 2026-05-09T17:29:57+0800
-# last_updated: 2026-05-10T03:35:00+0800
+# last_updated: 2026-05-11T01:53:41+08:00
 # project: lumiere
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-09T17:29:57+0800
-last_updated: 2026-05-10T12:00:00+0800
+last_updated: 2026-05-11T01:53:41+08:00
 project: lumiere
 project_key: NOKEY
 tracking_system: file-system
@@ -70,10 +70,10 @@ development_status:
   3-5-retain-hit-testing-and-keyboard-escape: done
   3-6-retain-release-to-capture-and-basic-clipboard-output: done
   epic-3-retrospective: done
-  epic-4: backlog
-  4-1-classify-existing-foundation-for-mvp-cutover: backlog
-  4-2-cut-over-capture-commands-to-the-mvp-session-contract: backlog
-  4-3-demote-legacy-picker-and-dashboard-behavior-from-the-default-path: backlog
+  epic-4: in-progress
+  4-1-classify-existing-foundation-for-mvp-cutover: done
+  4-2-cut-over-capture-commands-to-the-mvp-session-contract: done
+  4-3-demote-legacy-picker-and-dashboard-behavior-from-the-default-path: done
   4-4-establish-app-facing-seams-for-settings-output-tray-and-hotkeys: backlog
   4-5-validate-foundation-cutover-on-windows-hardware: backlog
   4-6-fix-overlay-ux-deviations-from-epic-3-validation: backlog

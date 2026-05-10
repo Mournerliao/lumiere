@@ -8,244 +8,148 @@
     mc:Ignorable="d">
   <Grid
       x:Name="RootGrid"
-      Background="{StaticResource DashboardBackgroundBrush}"
+      Background="{StaticResource AppBackgroundBrush}"
       RequestedTheme="Dark">
-    <Grid
-        Padding="16"
-        ColumnSpacing="16">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="280" />
-        <ColumnDefinition Width="*" />
-      </Grid.ColumnDefinitions>
+    <Grid Padding="16">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
 
-      <Border
-          Grid.Column="0"
-          Padding="16,20"
-          Background="{StaticResource DashboardPanelBrush}"
-          BorderBrush="{StaticResource DashboardBorderBrush}"
-          BorderThickness="1"
-          CornerRadius="8">
-        <Grid RowSpacing="20">
-          <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-          </Grid.RowDefinitions>
+      <StackPanel
+          Grid.Row="0"
+          Margin="0,0,0,16"
+          Orientation="Horizontal"
+          Spacing="12">
+        <Border
+            Width="32"
+            Height="32"
+            Background="{StaticResource AccentBrush}"
+            CornerRadius="6">
+          <FontIcon
+              FontFamily="Segoe Fluent Icons"
+              FontSize="15"
+              Foreground="{StaticResource TextBrush}"
+              Glyph="&#xE722;" />
+        </Border>
+        <TextBlock
+            VerticalAlignment="Center"
+            FontSize="14"
+            FontWeight="SemiBold"
+            Foreground="{StaticResource TextBrush}"
+            Text="Lumiere" />
+      </StackPanel>
 
-          <StackPanel
-              Grid.Row="0"
-              Margin="2,0,0,0"
-              Orientation="Horizontal"
-              Spacing="12">
-            <Border
-                Width="32"
-                Height="32"
-                Background="{StaticResource DashboardAccentBrush}"
-                CornerRadius="6">
-              <FontIcon
-                  FontFamily="Segoe Fluent Icons"
-                  FontSize="15"
-                  Foreground="{StaticResource DashboardTextBrush}"
-                  Glyph="&#xE722;" />
-            </Border>
-            <StackPanel VerticalAlignment="Center" Spacing="1">
-              <TextBlock
-                  FontSize="14"
-                  FontWeight="SemiBold"
-                  Foreground="{StaticResource DashboardTextBrush}"
-                  Text="Lumiere" />
-              <TextBlock
-                  CharacterSpacing="140"
-                  FontSize="10"
-                  Foreground="{StaticResource DashboardMutedTextBrush}"
-                  Text="CAPTURE TOOL" />
-            </StackPanel>
-          </StackPanel>
+      <ScrollViewer
+          Grid.Row="1"
+          HorizontalScrollBarVisibility="Disabled"
+          VerticalScrollBarVisibility="Auto"
+          VerticalScrollMode="Auto">
+        <StackPanel Spacing="18">
 
-          <ScrollViewer
-              Grid.Row="1"
-              HorizontalScrollBarVisibility="Disabled"
-              VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="18">
-              <StackPanel>
-                <TextBlock Style="{StaticResource DashboardSectionTitleStyle}" Text="MAIN" />
-                <Button
-                    x:Name="CaptureHomeNavigationItem"
-                    Background="{StaticResource DashboardAccentSoftBrush}"
-                    BorderBrush="Transparent"
-                    Foreground="{StaticResource DashboardAccentBrush}"
-                    Style="{StaticResource DashboardNavButtonStyle}">
-                  <Grid>
-                    <Border
-                        Width="2"
-                        Height="16"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Center"
-                        Margin="-12,0,0,0"
-                        Background="{StaticResource DashboardAccentBrush}"
-                        CornerRadius="0,2,2,0" />
-                    <StackPanel
-                        Margin="0,0,0,0"
-                        Orientation="Horizontal"
-                        Spacing="12">
-                      <FontIcon
-                          Width="20"
-                          FontFamily="Segoe Fluent Icons"
-                          FontSize="14"
-                          Glyph="&#xE80F;" />
-                      <TextBlock
-                          VerticalAlignment="Center"
-                          FontSize="14"
-                          FontWeight="SemiBold"
-                          Text="Dashboard" />
-                    </StackPanel>
-                  </Grid>
-                </Button>
+          <StackPanel Spacing="12">
+            <Button
+                x:Name="SelectCaptureTargetButton"
+                Background="{StaticResource AccentBrush}"
+                BorderBrush="{StaticResource AccentBrush}"
+                CornerRadius="6"
+                Foreground="{StaticResource TextBrush}"
+                MinHeight="40"
+                BorderThickness="0"
+                Padding="16,8"
+                Click="OnSelectCaptureTargetClick">
+              <Button.Resources>
+                <SolidColorBrush x:Key="ButtonBackground" Color="#FF0078D4" />
+                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FF0086F0" />
+                <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#FF006CBE" />
+                <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="#330078D4" />
+                <SolidColorBrush x:Key="ButtonBorderBrush" Color="#00000000" />
+                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#00000000" />
+                <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#00000000" />
+                <SolidColorBrush x:Key="ButtonForeground" Color="#FFFFFFFF" />
+                <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFFFF" />
+                <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFFFF" />
+              </Button.Resources>
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <FontIcon
+                    FontFamily="Segoe Fluent Icons"
+                    FontSize="14"
+                    Glyph="&#xE722;" />
+                <TextBlock FontSize="14" Text="Fullscreen" />
               </StackPanel>
+            </Button>
 
-            </StackPanel>
-          </ScrollViewer>
+            <local:CaptureActionCard
+                x:Name="RegionSelectButton"
+                Background="{StaticResource AccentSoftBrush}"
+                BorderBrush="{StaticResource AccentBorderBrush}"
+                Click="OnRegionCaptureClick"
+                Description="Select a region by dragging"
+                Glyph="&#xE8B0;"
+                IconBackground="{StaticResource AccentBrush}"
+                IconBorderBrush="{StaticResource AccentBrush}"
+                IconForeground="{StaticResource TextBrush}"
+                SecondaryForeground="{StaticResource MutedTextBrush}"
+                ShortcutForeground="{StaticResource SubtleTextBrush}"
+                ShortcutText=""
+                Title="Region" />
+          </StackPanel>
 
           <Border
-              Grid.Row="2"
-              Padding="2,16,0,0"
-              BorderBrush="{StaticResource DashboardBorderBrush}"
-              BorderThickness="0,1,0,0">
-            <StackPanel Orientation="Horizontal" Spacing="12">
-              <Ellipse
-                  Width="8"
-                  Height="8"
-                  VerticalAlignment="Center"
-                  Fill="{StaticResource DashboardSuccessBrush}" />
+              Padding="14"
+              Background="{StaticResource PanelBrush}"
+              BorderBrush="{StaticResource BorderBrush}"
+              BorderThickness="1"
+              CornerRadius="8">
+            <StackPanel Spacing="6">
               <TextBlock
-                  VerticalAlignment="Center"
+                  x:Name="CaptureStatusTitle"
+                  FontSize="13"
+                  FontWeight="SemiBold"
+                  Foreground="{StaticResource TextBrush}"
+                  Text="Ready" />
+              <TextBlock
+                  x:Name="CaptureStatusMessage"
                   FontSize="12"
-                  Foreground="{StaticResource DashboardMutedTextBrush}"
-                  Text="Service Running" />
+                  Foreground="{StaticResource MutedTextBrush}"
+                  Text="Select a capture mode to begin."
+                  TextWrapping="Wrap" />
+              <TextBlock
+                  x:Name="CaptureStatusDetail"
+                  FontFamily="Consolas"
+                  FontSize="10"
+                  Foreground="{StaticResource SubtleTextBrush}"
+                  TextWrapping="WrapWholeWords"
+                  Visibility="Collapsed" />
             </StackPanel>
           </Border>
-        </Grid>
+
+        </StackPanel>
+      </ScrollViewer>
+
+      <Border
+          Grid.Row="2"
+          Padding="2,12,0,0"
+          BorderBrush="{StaticResource BorderBrush}"
+          BorderThickness="0,1,0,0">
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <Ellipse
+              Width="8"
+              Height="8"
+              VerticalAlignment="Center"
+              Fill="{StaticResource SuccessBrush}" />
+          <TextBlock
+              VerticalAlignment="Center"
+              FontSize="12"
+              Foreground="{StaticResource MutedTextBrush}"
+              Text="Ready" />
+        </StackPanel>
       </Border>
-
-      <Grid
-          Grid.Column="1">
-        <ScrollViewer
-            HorizontalScrollBarVisibility="Disabled"
-            VerticalScrollBarVisibility="Auto"
-            VerticalScrollMode="Auto">
-          <StackPanel Margin="0,24,8,8" Spacing="18">
-            <Grid>
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-              </Grid.ColumnDefinitions>
-              <StackPanel>
-                <TextBlock
-                    FontSize="28"
-                    FontWeight="SemiBold"
-                    Foreground="{StaticResource DashboardTextBrush}"
-                    Text="Capture Home" />
-                <TextBlock
-                    Margin="0,6,0,0"
-                    FontSize="14"
-                    Foreground="{StaticResource DashboardMutedTextBrush}"
-                    Text="Quick actions and current system status." />
-              </StackPanel>
-
-              <Button
-                  x:Name="SelectCaptureTargetButton"
-                  Grid.Column="1"
-                  Background="{StaticResource DashboardAccentBrush}"
-                  BorderBrush="{StaticResource DashboardAccentBrush}"
-                  CornerRadius="6"
-                  Foreground="{StaticResource DashboardTextBrush}"
-                  MinHeight="40"
-                  BorderThickness="0"
-                  Padding="16,8"
-                  Click="OnSelectCaptureTargetClick">
-                <Button.Resources>
-                  <SolidColorBrush x:Key="ButtonBackground" Color="#FF0078D4" />
-                  <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FF0086F0" />
-                  <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#FF006CBE" />
-                  <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="#330078D4" />
-                  <SolidColorBrush x:Key="ButtonBorderBrush" Color="#00000000" />
-                  <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#00000000" />
-                  <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#00000000" />
-                  <SolidColorBrush x:Key="ButtonForeground" Color="#FFFFFFFF" />
-                  <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFFFF" />
-                  <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFFFF" />
-                </Button.Resources>
-                <StackPanel Orientation="Horizontal" Spacing="9">
-                  <FontIcon
-                      FontFamily="Segoe Fluent Icons"
-                      FontSize="14"
-                      Glyph="&#xE722;" />
-                  <TextBlock FontSize="14" Text="Capture Now" />
-                </StackPanel>
-              </Button>
-            </Grid>
-
-            <Grid ColumnSpacing="16">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
-              </Grid.ColumnDefinitions>
-
-              <local:CaptureActionCard
-                  x:Name="RegionSelectButton"
-                  Grid.Column="0"
-                  Background="{StaticResource DashboardAccentSoftBrush}"
-                  BorderBrush="{StaticResource DashboardAccentBorderBrush}"
-                  Click="OnSelectCaptureTargetClick"
-                  Description="Draw a custom capture area"
-                  Glyph="&#xE8B0;"
-                  IconBackground="{StaticResource DashboardAccentBrush}"
-                  IconBorderBrush="{StaticResource DashboardAccentBrush}"
-                  IconForeground="{StaticResource DashboardTextBrush}"
-                  SecondaryForeground="{StaticResource DashboardMutedTextBrush}"
-                  ShortcutForeground="{StaticResource DashboardSubtleTextBrush}"
-                  ShortcutText="Win + Shift + S"
-                  Title="Region Select" />
-            </Grid>
-
-            <Border
-                Padding="14"
-                Background="{StaticResource DashboardPanelBrush}"
-                BorderBrush="{StaticResource DashboardBorderBrush}"
-                BorderThickness="1"
-                CornerRadius="8">
-              <StackPanel Spacing="6">
-                <TextBlock
-                    x:Name="CaptureStatusTitle"
-                    FontSize="13"
-                    FontWeight="SemiBold"
-                    Foreground="{StaticResource DashboardTextBrush}"
-                    Text="Ready" />
-                <TextBlock
-                    x:Name="CaptureStatusMessage"
-                    FontSize="12"
-                    Foreground="{StaticResource DashboardMutedTextBrush}"
-                    Text="Click Capture Now to start direct monitor capture."
-                    TextWrapping="Wrap" />
-                <TextBlock
-                    x:Name="CaptureStatusDetail"
-                    FontFamily="Consolas"
-                    FontSize="10"
-                    Foreground="{StaticResource DashboardSubtleTextBrush}"
-                    TextWrapping="WrapWholeWords" />
-              </StackPanel>
-            </Border>
-
-          </StackPanel>
-        </ScrollViewer>
-      </Grid>
     </Grid>
     <Grid
         x:Name="TitleBarDragArea"
         Height="44"
-        Margin="312,0,0,0"
         HorizontalAlignment="Stretch"
         VerticalAlignment="Top"
         Background="Transparent" />

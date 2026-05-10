@@ -16,6 +16,8 @@ public sealed class CaptureService
     private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Capture);
     private readonly GraphicsDeviceResources deviceResources;
     private readonly CaptureBorderOptions borderOptions;
+    private readonly object commandLock = new();
+    private CaptureSessionState sessionState = CaptureSessionState.Idle();
 
     public CaptureService(
         GraphicsDeviceResources deviceResources,
@@ -25,8 +27,153 @@ public sealed class CaptureService
         this.borderOptions = borderOptions ?? CaptureBorderOptions.RequireSystemBorder();
     }
 
+    /// <summary>
+    /// Gets the current capture session state. Thread-safe read.
+    /// </summary>
+    public CaptureSessionState CurrentSessionState
+    {
+        get { lock (commandLock) { return sessionState; } }
+    }
+
+    /// <summary>
+    /// Updates the session state. Thread-safe write.
+    /// </summary>
+    /// <param name="newState">The new session state.</param>
+    public void UpdateSessionState(CaptureSessionState newState)
+    {
+        ArgumentNullException.ThrowIfNull(newState);
+        lock (commandLock)
+        {
+            sessionState = newState;
+        }
+    }
+
     public CaptureTarget CreateTarget(GraphicsCaptureItem item) =>
         CaptureTarget.FromItem(item);
+
+    /// <summary>
+    /// Checks whether the current session state allows accepting a new capture command.
+    /// </summary>
+    /// <param name="currentState">The current capture session state.</param>
+    /// <param name="command">The command to validate.</param>
+    /// <param name="rejectionReason">If rejected, contains the readiness status explaining why.</param>
+    /// <returns>True if the command can be accepted; false otherwise.</returns>
+    public static bool CanAcceptCommand(
+        CaptureSessionState currentState,
+        CaptureCommand command,
+        out PreviewReadinessStatus? rejectionReason)
+    {
+        ArgumentNullException.ThrowIfNull(currentState);
+        ArgumentNullException.ThrowIfNull(command);
+
+        // Accept commands only when session is Idle or Failed (recoverable)
+        switch (currentState.Status)
+        {
+            case CaptureSessionStatus.Idle:
+                rejectionReason = null;
+                return true;
+
+            case CaptureSessionStatus.Failed:
+            case CaptureSessionStatus.Unsupported:
+                // Failed/Unsupported states are recoverable - allow retry
+                rejectionReason = null;
+                return true;
+
+            case CaptureSessionStatus.SelectingTarget:
+            case CaptureSessionStatus.Initializing:
+            case CaptureSessionStatus.Capturing:
+            case CaptureSessionStatus.Degraded:
+            case CaptureSessionStatus.Disposed:
+            default:
+                rejectionReason = PreviewReadinessStatus.Initializing(
+                    PreviewReadinessStage.Capture,
+                    "Capture already active",
+                    $"Cannot accept {command.Mode} command while session is {currentState.Status}.");
+                return false;
+        }
+    }
+
+    /// <summary>
+    /// Validates whether a capture command can be accepted by the current session state.
+    /// This is the primary entry point for capture commands from any app-facing entry point.
+    /// Thread-safe: the guard check is atomic with state read.
+    /// </summary>
+    /// <param name="command">The capture command to validate.</param>
+    /// <returns>A CaptureCommandResult indicating acceptance or rejection.</returns>
+    public CaptureCommandResult ValidateCommand(CaptureCommand command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        lock (commandLock)
+        {
+            Logger.LogInformation(
+                "ValidateCommand: mode={Mode}, currentStatus={Status}",
+                command.Mode, sessionState.Status);
+
+            if (!CanAcceptCommand(sessionState, command, out var rejectionReason))
+            {
+                Logger.LogWarning(
+                    "ValidateCommand REJECTED: mode={Mode}, currentStatus={Status}, reason={Reason}",
+                    command.Mode, sessionState.Status, rejectionReason?.TechnicalDetail);
+
+                return sessionState.Status is CaptureSessionStatus.SelectingTarget
+                    or CaptureSessionStatus.Initializing
+                    or CaptureSessionStatus.Capturing
+                    or CaptureSessionStatus.Degraded
+                    ? CaptureCommandResult.RejectedSessionActive(command, sessionState, rejectionReason)
+                    : CaptureCommandResult.RejectedNonRecoverable(command, sessionState, rejectionReason);
+            }
+
+            Logger.LogInformation(
+                "ValidateCommand ACCEPTED: mode={Mode}, target={TargetDisplayName}",
+                command.Mode, command.Target?.DisplayName ?? "(deferred)");
+            return CaptureCommandResult.Accepted(command);
+        }
+    }
+
+    /// <summary>
+    /// Atomically validates and reserves a capture command by transitioning session state
+    /// to SelectingTarget. This eliminates the TOCTOU gap between validation and state transition.
+    /// Thread-safe: guard check and state write happen under the same lock.
+    /// </summary>
+    /// <param name="command">The capture command to validate and reserve.</param>
+    /// <returns>A CaptureCommandResult indicating acceptance or rejection.</returns>
+    public CaptureCommandResult TryReserveCommand(CaptureCommand command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        lock (commandLock)
+        {
+            Logger.LogInformation(
+                "TryReserveCommand: mode={Mode}, currentStatus={Status}",
+                command.Mode, sessionState.Status);
+
+            if (!CanAcceptCommand(sessionState, command, out var rejectionReason))
+            {
+                Logger.LogWarning(
+                    "TryReserveCommand REJECTED: mode={Mode}, currentStatus={Status}, reason={Reason}",
+                    command.Mode, sessionState.Status, rejectionReason?.TechnicalDetail);
+
+                return sessionState.Status is CaptureSessionStatus.SelectingTarget
+                    or CaptureSessionStatus.Initializing
+                    or CaptureSessionStatus.Capturing
+                    or CaptureSessionStatus.Degraded
+                    ? CaptureCommandResult.RejectedSessionActive(command, sessionState, rejectionReason)
+                    : CaptureCommandResult.RejectedNonRecoverable(command, sessionState, rejectionReason);
+            }
+
+            sessionState = CaptureSessionState.SelectingTarget(
+                PreviewReadinessStatus.Initializing(
+                    PreviewReadinessStage.Capture,
+                    "Starting capture...",
+                    "Command reserved, preparing capture."));
+
+            Logger.LogInformation(
+                "TryReserveCommand ACCEPTED: mode={Mode}, newStatus=SelectingTarget",
+                command.Mode);
+            return CaptureCommandResult.Accepted(command);
+        }
+    }
 
     public CaptureStartResult StartCapture(
         CaptureTarget target,

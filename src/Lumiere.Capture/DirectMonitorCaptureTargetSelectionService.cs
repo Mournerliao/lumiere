@@ -132,6 +132,11 @@ public sealed class DirectMonitorCaptureTargetSelectionService
         }
     }
 
+    /// <summary>
+    /// Attempts direct monitor capture first, then falls back to the picker UI if configured.
+    /// This is a non-default path retained for fallback/debug scenarios. The default MVP path
+    /// uses <see cref="SelectDirectMonitorTargetAsync"/> exclusively.
+    /// </summary>
     public async Task<CaptureTargetSelectionResult> SelectWithFallbackPickerAsync()
     {
         if (fallbackPicker is null && fallbackTargetProvider is null)
