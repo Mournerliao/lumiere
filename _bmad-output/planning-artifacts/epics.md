@@ -179,11 +179,11 @@ FR16: Epic 4 - Transition cutover preserves drag-to-select overlay region select
 FR17: Epic 4 - Transition cutover preserves release-to-capture for valid regions.
 FR18: Epic 4 - Transition cutover preserves Escape and cancel paths.
 FR19: Epic 4 - Transition cutover preserves invalid or too-small crop recovery without output.
-FR20: Epic 8 - Overlay and status feedback use the approved state vocabulary for active, invalid, completed, canceled, degraded, unsupported, and failed states.
+FR20: Epic 4 - Transition cutover fixes invalid-crop-stays-active behavior; Epic 8 - Overlay and status feedback use the approved state vocabulary for active, invalid, completed, canceled, degraded, unsupported, and failed states.
 FR21: Epic 4 - Transition cutover preserves interactive overlay crop input while status and cancel affordances remain available.
 FR22: Epic 6 - Output settings support clipboard, folder, or both.
 FR23: Epic 6 - Folder output includes save folder selection and change behavior.
-FR24: Epic 6 - Completion feedback identifies which configured output targets succeeded.
+FR24: Epic 4 - Transition cutover adds "Copied to clipboard" completion feedback; Epic 6 - Completion feedback identifies which configured output targets succeeded.
 FR25: Epic 6 - Recoverable failure feedback identifies which output target failed and what correction is needed.
 FR26: Epic 6 - Timestamp naming preference is implemented in output behavior.
 FR27: Epic 6 - Clipboard image output preference controls clipboard output behavior.
@@ -223,8 +223,8 @@ These records document existing implementation and validation evidence from the 
 ## Active MVP Epic List
 
 ### Epic 4: MVP Rebaseline Transition and Foundation Cutover
-Users can rely on the existing Epic 1-3 capture foundation as the new MVP baseline rather than as a pre-rebaseline prototype path. This epic audits and cuts over the current implementation by preserving the HDR/capture/overlay assets that still match the MVP, demoting or removing stale picker/debug/dashboard/confirm-first/hardcoded-status assumptions from the default path, establishing app-facing seams for settings/output/tray/hotkeys, and validating direct monitor capture, overlay behavior, basic clipboard, and lifecycle behavior before UI and product claims build on them.
-**FRs covered:** FR6, FR7, FR8, FR15, FR16, FR17, FR18, FR19, FR21, FR46, FR47.
+Users can rely on the existing Epic 1-3 capture foundation as the new MVP baseline rather than as a pre-rebaseline prototype path. This epic audits and cuts over the current implementation by preserving the HDR/capture/overlay assets that still match the MVP, demoting or removing stale picker/debug/dashboard/confirm-first/hardcoded-status assumptions from the default path, establishing app-facing seams for settings/output/tray/hotkeys, fixing overlay UX deviations discovered during Epic 3 validation, adding diagnostic observability for lifecycle verification, and validating direct monitor capture, overlay behavior, basic clipboard, and lifecycle behavior before UI and product claims build on them.
+**FRs covered:** FR6, FR7, FR8, FR15, FR16, FR17, FR18, FR19, FR20, FR21, FR24, FR44, FR46, FR47, FR49.
 
 ### Epic 5: Native v0 Main Window and Settings Experience
 Users can operate Lumiere through a native WinUI experience that matches the v0 MVP reference intent: compact Lumiere branding, fullscreen and region capture actions, shortcut labels, HDR status summary, settings entry, minimize/background intent, and settings sections for currently supported preferences. Settings for output, shortcuts, and after-capture behavior must be read-only, disabled, validation-scoped, or explicitly marked pending until the corresponding behavior is implemented in Epic 6 or Epic 7.
@@ -609,7 +609,7 @@ So that the MVP flow remains fast and familiar.
 
 ## Epic 4: MVP Rebaseline Transition and Foundation Cutover
 
-Users can rely on the existing Epic 1-3 capture foundation as the new MVP baseline rather than as a pre-rebaseline prototype path. This epic audits and cuts over the current implementation by preserving the HDR/capture/overlay assets that still match the MVP, demoting or removing stale picker/debug/dashboard/confirm-first/hardcoded-status assumptions from the default path, establishing app-facing seams for settings/output/tray/hotkeys, and validating direct monitor capture, overlay behavior, basic clipboard, and lifecycle behavior before UI and product claims build on them.
+Users can rely on the existing Epic 1-3 capture foundation as the new MVP baseline rather than as a pre-rebaseline prototype path. This epic audits and cuts over the current implementation by preserving the HDR/capture/overlay assets that still match the MVP, demoting or removing stale picker/debug/dashboard/confirm-first/hardcoded-status assumptions from the default path, establishing app-facing seams for settings/output/tray/hotkeys, fixing overlay UX deviations discovered during Epic 3 validation, adding diagnostic observability for lifecycle verification, and validating direct monitor capture, overlay behavior, basic clipboard, and lifecycle behavior before UI and product claims build on them.
 
 ### Story 4.1: Classify Existing Foundation for MVP Cutover
 
@@ -720,6 +720,70 @@ So that UI and output work does not build on unverified direct capture, overlay,
 **Given** automated gates are run
 **When** they complete
 **Then** restore, build, relevant tests, and format verification outcomes are recorded separately from Windows manual validation.
+
+### Story 4.6: Fix Overlay UX Deviations from Epic 3 Validation
+
+As a screenshot user,
+I want the overlay to follow the UX specification for cancel affordance, completion feedback, and invalid crop behavior,
+So that the capture experience matches the intended MVP interaction model.
+
+**Requirements Covered:** FR18, FR19, FR20, FR21, FR24, NFR3, NFR20; UX-DR3.
+
+**Acceptance Criteria:**
+
+**Given** the overlay is open and capture is in progress
+**When** the user looks for a way to cancel
+**Then** a visible cancel affordance (button or equivalent control) is present in the overlay in addition to Escape, matching the UX specification's "reliable cancel affordances" requirement.
+
+**Given** a valid crop is released and clipboard output succeeds
+**When** the overlay shows completion feedback
+**Then** a lightweight "Copied to clipboard" message is displayed in the closing state before the overlay disappears, matching the UX specification's per-target feedback requirement.
+
+**Given** the user drags a crop that is too small or invalid
+**When** the gesture commits
+**Then** the overlay remains active and the user can retry the selection, rather than the overlay closing with an error message. No output is produced for invalid crops.
+
+**Given** the cancel button, completion feedback, or invalid crop behavior is updated
+**When** the changes are reviewed
+**Then** they follow existing overlay UI patterns: native WinUI controls, no preview surface displacement, no crop coordinate mapping disruption, and status messages that do not rely on color alone.
+
+**Given** the fixes are implemented
+**When** automated tests run
+**Then** existing overlay, crop, confirm/cancel, and lifecycle tests continue to pass, and new tests cover the visible cancel affordance, completion feedback message, and invalid-crop-stays-active behavior.
+
+### Story 4.7: Add Diagnostic Observability for Capture and Overlay Lifecycle
+
+As a Lumiere developer,
+I want structured logging for capture resource release, stale callback rejection, and repeated capture stability,
+So that lifecycle correctness can be verified from logs rather than relying solely on UI appearance or manual inspection.
+
+**Requirements Covered:** FR44, FR49, NFR5, NFR11, NFR30; Additional Requirements 14.
+
+**Acceptance Criteria:**
+
+**Given** the user presses Escape to close the overlay
+**When** capture teardown runs
+**Then** a structured log entry records each teardown step: frame handler unsubscribe, session stop/dispose, frame pool dispose, preview detach (`SetSwapChain(null)`), and DXGI swap-chain release. The log confirms teardown completed in the expected order.
+
+**Given** a stale callback arrives after a newer capture generation has started
+**When** the `previewGeneration` guard rejects it
+**Then** a structured log entry records the rejection with the stale generation ID and the current active generation ID.
+
+**Given** the user performs repeated capture cycles (start, stop, start, stop)
+**When** each cycle completes
+**Then** structured log entries confirm each teardown completed fully, and no resources from a previous cycle are still held when the next cycle starts.
+
+**Given** a clipboard write fails because the clipboard is locked by another application
+**When** the failure is handled
+**Then** a structured diagnostic log entry records the failure with operation, stage, and technical detail, and the overlay still closes with capture resources torn down.
+
+**Given** the logging is implemented
+**When** the code is reviewed
+**Then** log entries use `ILogger` through `LumiereLoggerFactory`, include operation/stage/detail context, and do not include screenshot pixels, frame dumps, or captured screen content.
+
+**Given** the logging is implemented
+**When** automated tests run
+**Then** existing capture, overlay, and lifecycle tests continue to pass, and logging does not introduce observable delays or resource holds in the teardown path.
 
 ## Epic 5: Native v0 Main Window and Settings Experience
 

@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-09T17:29:57+0800
-last_updated: 2026-05-10T03:35:00+0800
+last_updated: 2026-05-10T12:00:00+0800
 project: lumiere
 project_key: NOKEY
 tracking_system: file-system
@@ -69,13 +69,15 @@ development_status:
   3-4-retain-confirm-and-cancel-overlay-paths: done
   3-5-retain-hit-testing-and-keyboard-escape: done
   3-6-retain-release-to-capture-and-basic-clipboard-output: done
-  epic-3-retrospective: optional
+  epic-3-retrospective: done
   epic-4: backlog
   4-1-classify-existing-foundation-for-mvp-cutover: backlog
   4-2-cut-over-capture-commands-to-the-mvp-session-contract: backlog
   4-3-demote-legacy-picker-and-dashboard-behavior-from-the-default-path: backlog
   4-4-establish-app-facing-seams-for-settings-output-tray-and-hotkeys: backlog
   4-5-validate-foundation-cutover-on-windows-hardware: backlog
+  4-6-fix-overlay-ux-deviations-from-epic-3-validation: backlog
+  4-7-add-diagnostic-observability-for-capture-and-overlay-lifecycle: backlog
   epic-4-retrospective: optional
   epic-5: backlog
   5-1-build-the-native-v0-main-panel: backlog
