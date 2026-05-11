@@ -46,3 +46,15 @@ None currently known.
 - 时区格式不一致：+0800 vs +08:00 [sprint-status.yaml]：ISO 8601 允许两种格式，但同一文件中混用表明生成或手动编辑不一致。
 - 故事状态从 backlog 直接跳到 review [sprint-status.yaml]：跳过了 in_progress 状态，可能工作流被绕过。
 - 依赖注入不一致：`captureService` 仍为本地字段 [MainWindow.xaml.cs:32]：设计决策：保持 `CaptureService` 作为本地字段，`ICaptureCommandCoordinator` 包装 `TryReserveCommand()`，其他调用为内部实现细节。
+
+## Deferred from: code review of story-4-6 (2026-05-12)
+
+- 缺少 InvalidCrop 状态轮转的集成测试：单元测试覆盖状态对象本身，但未验证 OverlayWindow 的状态机行为（保存→应用→计时器→恢复）。
+- 缺少 Escape/关闭期间 InvalidCrop 反馈的测试：ClearInvalidCropFeedback 在 RequestClose 和 OnClosed 中被调用，但无测试验证关闭期间状态恢复的正确序列。
+- 缺少快速连续无效裁剪手势的测试：ShowInvalidCropFeedback 在开头调用 ClearInvalidCropFeedback（恢复旧状态、杀死旧计时器），但无测试验证两次快速无效手势不会丢失原始状态或泄漏计时器订阅。
+- 缺少 InvalidCrop 状态下确认按钮点击的测试：CanConfirm 谓词测试存在，但未测试完整的 TryCreate 流程在 InvalidCrop 状态下的行为。
+
+## Deferred from: code review of story-4-5 (2026-05-12)
+
+- `EnsureGraphicsServices()` 惰性初始化移除 — GPU 重置或驱动崩溃后无恢复路径 [`MainWindow.xaml.cs:99`]：设计决策，构造时注入设备，失败由调用方处理。
+- `graphicsEngine` 构造无错误检查 [`MainWindow.xaml.cs:57`]：非本次变更引入，构造函数异常将传播至调用方。

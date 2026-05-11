@@ -25,14 +25,13 @@ public sealed partial class MainWindow : Window
     private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.App);
 
     private readonly object previewSync = new();
-    private readonly GraphicsDeviceProvider deviceProvider = new();
     private readonly ICaptureCommandCoordinator captureCommandCoordinator;
     private readonly IOutputService outputService;
     private readonly ISettingsProvider settingsProvider;
+    private readonly GraphicsDeviceResources deviceResources;
+    private readonly GraphicsEngine graphicsEngine;
     private CaptureService? captureService;
     private CaptureSessionResources? captureSession;
-    private GraphicsDeviceResources? deviceResources;
-    private GraphicsEngine? graphicsEngine;
     private PreviewFramePresenter? previewFramePresenter;
     private SwapChainResources? swapChainResources;
     private CaptureTarget? activeCaptureTarget;
@@ -43,6 +42,7 @@ public sealed partial class MainWindow : Window
     private int previewSourceWidth;
     private int previewSourceHeight;
     private bool isClosed;
+    private bool isDeviceDisposed;
     private bool applyingSessionState;
     private int overlayDispatcherFallbackReported;
     private int uiDispatchFailureReported;
@@ -51,13 +51,15 @@ public sealed partial class MainWindow : Window
         ICaptureCommandCoordinator captureCommandCoordinator,
         IOutputService outputService,
         ISettingsProvider settingsProvider,
-        CaptureService captureService)
+        CaptureService captureService,
+        GraphicsDeviceResources deviceResources)
     {
         this.captureCommandCoordinator = captureCommandCoordinator ?? throw new ArgumentNullException(nameof(captureCommandCoordinator));
         this.outputService = outputService ?? throw new ArgumentNullException(nameof(outputService));
         this.settingsProvider = settingsProvider ?? throw new ArgumentNullException(nameof(settingsProvider));
         this.captureService = captureService ?? throw new ArgumentNullException(nameof(captureService));
-    }
+        this.deviceResources = deviceResources ?? throw new ArgumentNullException(nameof(deviceResources));
+        this.graphicsEngine = new GraphicsEngine(deviceResources);
         InitializeComponent();
         Title = "Lumiere";
         SystemBackdrop = new MicaBackdrop();
@@ -98,25 +100,10 @@ public sealed partial class MainWindow : Window
 
     private async Task ExecuteCaptureFromUiAsync(CaptureCommandMode mode)
     {
-        try
-        {
-            EnsureGraphicsServices();
-        }
-        catch (Exception exception)
-        {
-            Logger.LogError(exception, "EnsureGraphicsServices FAILED");
-            ApplySessionState(
-                CaptureSessionState.Failed(null, PreviewReadinessStatus.Failed(
-                    PreviewReadinessStage.Capture,
-                    "Capture failed",
-                    InteropFailureDiagnostics.Write(exception))));
-            return;
-        }
-
         var probeCommand = mode == CaptureCommandMode.Region
             ? CaptureCommand.Region()
             : CaptureCommand.Fullscreen();
-        
+
         CaptureCommandResult guardResult;
         try
         {
@@ -132,7 +119,7 @@ public sealed partial class MainWindow : Window
                     "Command execution failed.")));
             return;
         }
-        
+
         if (!guardResult.IsAccepted)
         {
             Logger.LogWarning(
@@ -229,7 +216,6 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        EnsureGraphicsServices();
         StopPreview(reportStopped: false);
         EnsureOverlayWindow(target);
 
@@ -501,16 +487,6 @@ public sealed partial class MainWindow : Window
         return allowCapturing
             ? CaptureSessionState.FromReadiness(target, readiness)
             : CaptureSessionState.FromStartResult(target, CaptureStartResult.NotStarted(readiness));
-    }
-
-    private void EnsureGraphicsServices()
-    {
-        if (deviceResources is null)
-        {
-            deviceResources = deviceProvider.CreateDevice();
-        }
-
-        graphicsEngine ??= new GraphicsEngine(deviceResources);
     }
 
     private void EnsureOverlayWindow(CaptureTarget target)
@@ -835,12 +811,20 @@ public sealed partial class MainWindow : Window
     private void OnWindowClosed(object sender, WindowEventArgs args)
     {
         isClosed = true;
-        StopPreview(reportStopped: false);
-        CloseOverlayWindow();
-        captureService = null;
-        graphicsEngine = null;
-        deviceResources?.Dispose();
-        deviceResources = null;
+        try
+        {
+            StopPreview(reportStopped: false);
+            CloseOverlayWindow();
+        }
+        finally
+        {
+            captureService = null;
+            if (!isDeviceDisposed)
+            {
+                isDeviceDisposed = true;
+                deviceResources.Dispose();
+            }
+        }
     }
 
 }

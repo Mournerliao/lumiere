@@ -1,3 +1,4 @@
+using Lumiere.Graphics.Output;
 using Windows.Foundation;
 
 namespace Lumiere.Overlay.Crop;

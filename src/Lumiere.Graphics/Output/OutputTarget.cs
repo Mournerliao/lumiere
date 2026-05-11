@@ -1,4 +1,4 @@
-namespace Lumiere.Settings;
+namespace Lumiere.Graphics.Output;
 
 /// <summary>
 /// Represents the output target selection for screenshot output.

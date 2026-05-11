@@ -3,5 +3,9 @@
     <RootNamespace>Lumiere.Settings</RootNamespace>
     <AssemblyName>Lumiere.Settings</AssemblyName>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lumiere.Graphics\Lumiere.Graphics.csproj" />
+  </ItemGroup>
 </Project>
 

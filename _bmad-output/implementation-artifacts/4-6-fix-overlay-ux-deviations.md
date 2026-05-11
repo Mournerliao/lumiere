@@ -1,6 +1,6 @@
 # Story 4.6: Fix Overlay UX Deviations from Epic 3 Validation
 
-Status: review
+Status: done
 
 ## Story
 
@@ -229,3 +229,15 @@ mimo-v2.5-pro
 - [x] [Review][Patch] Consecutive invalid crops restore stale state [`OverlayWindow.xaml.cs:562-595`] — `ClearInvalidCropFeedback` now guards state restore: only restores `preInvalidCropState` when `currentState.Status is OverlayDisplayStatus.InvalidCrop`.
 - [x] [Review][Patch] preInvalidCropState can store terminal state [`OverlayWindow.xaml.cs:565`] — `ShowInvalidCropFeedback` now skips saving `preInvalidCropState` when `currentState.IsTerminal` is true.
 - [x] [Review][Defer] ApplyCropSelectionAvailability uses fragile opt-out pattern [`OverlayWindow.xaml.cs:403-409`] — disabled-status list must be manually updated for each new enum value. An opt-in list would be safer. Deferred, pre-existing pattern.
+
+#### Code Review (2026-05-12)
+
+- [x] [Review][Decision] CanConfirm allows capture during InvalidCrop status — DECISION: accepted as-is. InvalidCrop is transient UI feedback for the invalid gesture; prior valid crop remains confirmable. "No output" applies to the invalid gesture itself, not to blocking confirmation of a prior valid selection.
+- [x] [Review][Patch] ClearInvalidCropFeedback may restore pre-close state [`OverlayWindow.xaml.cs:590-598`] — Added `isClosingRequested` guard before restoring `preInvalidCropState`.
+- [x] [Review][Patch] ShowInvalidCropFeedback transitions from terminal to non-terminal state [`OverlayWindow.xaml.cs:567-571`] — Returns early when `currentState.IsTerminal`, skipping ApplyState.
+- [x] [Review][Patch] OnCropCanvasPointerCaptureLost does not handle InvalidGeometry [`OverlayWindow.xaml.cs:359-387`] — Added `InvalidGeometry` branch to call `ShowInvalidCropFeedback()`.
+- [x] [Review][Patch] DispatcherTimer tick may fire after window closes [`OverlayWindow.xaml.cs:580-584`] — Added `isClosed` guard at start of tick handler.
+- [x] [Review][Defer] Missing integration test for InvalidCrop state round-trip — deferred
+- [x] [Review][Defer] Missing test for Escape/close during active InvalidCrop feedback — deferred
+- [x] [Review][Defer] Missing test for rapid successive invalid crop gestures — deferred
+- [x] [Review][Defer] Missing test for Confirm button click during InvalidCrop status — deferred

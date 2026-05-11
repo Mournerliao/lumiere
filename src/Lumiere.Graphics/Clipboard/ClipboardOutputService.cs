@@ -90,13 +90,13 @@ public sealed class ClipboardOutputService : IOutputService, IDisposable
 
             using var croppedTexture = CropTexture(texture.Texture, pixelX, pixelY, pixelWidth, pixelHeight);
             using var bgra8Texture = ConvertToBgra8(croppedTexture, pixelWidth, pixelHeight);
-            
+
             cancellationToken.ThrowIfCancellationRequested();
-            
+
             var pngBytes = await EncodeAsPngAsync(bgra8Texture, pixelWidth, pixelHeight);
-            
+
             cancellationToken.ThrowIfCancellationRequested();
-            
+
             await WriteToClipboardAsync(pngBytes);
 
             Logger.LogInformation("ExecuteOutputAsync success: PNG encoded, {Bytes} bytes, crop=({X},{Y},{Width}x{Height})", pngBytes.Length, pixelX, pixelY, pixelWidth, pixelHeight);

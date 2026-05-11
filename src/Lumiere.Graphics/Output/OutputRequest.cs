@@ -1,6 +1,4 @@
 using Lumiere.Graphics.Presentation;
-using Lumiere.Overlay.Crop;
-using Lumiere.Settings;
 
 namespace Lumiere.Graphics.Output;
 

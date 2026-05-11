@@ -1,3 +1,4 @@
+using Lumiere.Graphics.Output;
 using Lumiere.Infrastructure.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Windows.Foundation;

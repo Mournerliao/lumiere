@@ -1,3 +1,5 @@
+using Lumiere.Graphics.Output;
+
 namespace Lumiere.Settings;
 
 /// <summary>

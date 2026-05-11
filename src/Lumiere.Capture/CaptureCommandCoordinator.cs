@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Logging;
 using Lumiere.Infrastructure.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace Lumiere.Capture;
 

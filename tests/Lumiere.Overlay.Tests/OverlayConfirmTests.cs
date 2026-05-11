@@ -1,3 +1,4 @@
+using Lumiere.Graphics.Output;
 using Lumiere.Overlay.Crop;
 using Windows.Foundation;
 using Xunit;

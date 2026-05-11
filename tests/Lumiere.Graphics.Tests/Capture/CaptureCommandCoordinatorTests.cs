@@ -13,7 +13,7 @@ public sealed class CaptureCommandCoordinatorTests
     {
         var deviceProvider = new GraphicsDeviceProvider();
         using var deviceResources = deviceProvider.CreateDevice();
-        using var captureService = new CaptureService(deviceResources, CaptureBorderOptions.RequireSystemBorder());
+        var captureService = new CaptureService(deviceResources, CaptureBorderOptions.RequireSystemBorder());
         var coordinator = new CaptureCommandCoordinator(captureService);
         var command = CaptureCommand.Fullscreen();
 
@@ -29,7 +29,7 @@ public sealed class CaptureCommandCoordinatorTests
     {
         var deviceProvider = new GraphicsDeviceProvider();
         using var deviceResources = deviceProvider.CreateDevice();
-        using var captureService = new CaptureService(deviceResources, CaptureBorderOptions.RequireSystemBorder());
+        var captureService = new CaptureService(deviceResources, CaptureBorderOptions.RequireSystemBorder());
         var coordinator = new CaptureCommandCoordinator(captureService);
 
         // First command to reserve the session
@@ -51,7 +51,7 @@ public sealed class CaptureCommandCoordinatorTests
     {
         var deviceProvider = new GraphicsDeviceProvider();
         using var deviceResources = deviceProvider.CreateDevice();
-        using var captureService = new CaptureService(deviceResources, CaptureBorderOptions.RequireSystemBorder());
+        var captureService = new CaptureService(deviceResources, CaptureBorderOptions.RequireSystemBorder());
         var coordinator = new CaptureCommandCoordinator(captureService);
         var command = CaptureCommand.Fullscreen();
 
@@ -66,7 +66,7 @@ public sealed class CaptureCommandCoordinatorTests
     {
         var deviceProvider = new GraphicsDeviceProvider();
         using var deviceResources = deviceProvider.CreateDevice();
-        using var captureService = new CaptureService(deviceResources, CaptureBorderOptions.RequireSystemBorder());
+        var captureService = new CaptureService(deviceResources, CaptureBorderOptions.RequireSystemBorder());
         var coordinator = new CaptureCommandCoordinator(captureService);
         var command = CaptureCommand.Region();
 
@@ -87,7 +87,7 @@ public sealed class CaptureCommandCoordinatorTests
     {
         var deviceProvider = new GraphicsDeviceProvider();
         using var deviceResources = deviceProvider.CreateDevice();
-        using var captureService = new CaptureService(deviceResources, CaptureBorderOptions.RequireSystemBorder());
+        var captureService = new CaptureService(deviceResources, CaptureBorderOptions.RequireSystemBorder());
         var coordinator = new CaptureCommandCoordinator(captureService);
 
         await Assert.ThrowsAsync<ArgumentNullException>(() => coordinator.ExecuteAsync(null!));
@@ -98,7 +98,7 @@ public sealed class CaptureCommandCoordinatorTests
     {
         var deviceProvider = new GraphicsDeviceProvider();
         using var deviceResources = deviceProvider.CreateDevice();
-        using var captureService = new CaptureService(deviceResources, CaptureBorderOptions.RequireSystemBorder());
+        var captureService = new CaptureService(deviceResources, CaptureBorderOptions.RequireSystemBorder());
         var coordinator = new CaptureCommandCoordinator(captureService);
         var command = CaptureCommand.Fullscreen();
 
@@ -115,7 +115,7 @@ public sealed class CaptureCommandCoordinatorTests
     {
         var deviceProvider = new GraphicsDeviceProvider();
         using var deviceResources = deviceProvider.CreateDevice();
-        using var captureService = new CaptureService(deviceResources, CaptureBorderOptions.RequireSystemBorder());
+        var captureService = new CaptureService(deviceResources, CaptureBorderOptions.RequireSystemBorder());
         var coordinator = new CaptureCommandCoordinator(captureService);
         var command = CaptureCommand.Fullscreen();
 

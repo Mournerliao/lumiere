@@ -1,3 +1,3 @@
-namespace Lumiere.Overlay.Crop;
+namespace Lumiere.Graphics.Output;
 
 public readonly record struct CropPixelRect(int X, int Y, int Width, int Height);

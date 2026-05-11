@@ -370,6 +370,11 @@ public sealed partial class OverlayWindow : Window
             Logger.LogWarning(
                 "Crop pointer capture lost; preserved interrupted gesture with result={Result}.",
                 commitResult);
+
+            if (commitResult is CropCommitResult.InvalidGeometry)
+            {
+                ShowInvalidCropFeedback();
+            }
         }
         else
         {
@@ -564,11 +569,12 @@ public sealed partial class OverlayWindow : Window
     {
         ClearInvalidCropFeedback();
 
-        if (!currentState.IsTerminal)
+        if (currentState.IsTerminal)
         {
-            preInvalidCropState = currentState;
+            return;
         }
 
+        preInvalidCropState = currentState;
         ApplyState(OverlayState.InvalidCrop());
 
         invalidCropFeedbackTimer = new DispatcherTimer
@@ -581,6 +587,11 @@ public sealed partial class OverlayWindow : Window
 
     private void OnInvalidCropFeedbackTimerTick(object? sender, object e)
     {
+        if (isClosed)
+        {
+            return;
+        }
+
         ClearInvalidCropFeedback();
     }
 
@@ -595,7 +606,7 @@ public sealed partial class OverlayWindow : Window
 
         if (preInvalidCropState is not null)
         {
-            if (currentState.Status is OverlayDisplayStatus.InvalidCrop)
+            if (currentState.Status is OverlayDisplayStatus.InvalidCrop && !isClosingRequested)
             {
                 ApplyState(preInvalidCropState);
             }

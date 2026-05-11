@@ -1,3 +1,4 @@
+using Lumiere.Graphics.Output;
 using Lumiere.Settings;
 using Xunit;
 
