@@ -9,4 +9,5 @@ public enum OverlayDisplayStatus
     PreviewFailed,
     Closing,
     Disposed,
+    InvalidCrop,
 }

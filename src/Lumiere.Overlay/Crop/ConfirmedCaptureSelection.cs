@@ -18,7 +18,8 @@ public sealed record ConfirmedCaptureSelection(
         && selection.Geometry.IsValid
         && status is OverlayDisplayStatus.HdrReady
             or OverlayDisplayStatus.DegradedPreview
-            or OverlayDisplayStatus.Initializing;
+            or OverlayDisplayStatus.Initializing
+            or OverlayDisplayStatus.InvalidCrop;
 
     public static bool TryCreate(
         CropSelection selection,

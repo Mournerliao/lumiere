@@ -203,6 +203,67 @@ public sealed class ReleaseToCaptureTests
         Assert.Contains("Clipboard copy failed", message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void InvalidCrop_DoesNotProduceOutput()
+    {
+        var controller = new CropController(minimumSize: 4);
+        var bounds = new Rect(0, 0, 200, 100);
+
+        controller.BeginGesture(new Point(20, 10), bounds);
+        var result = controller.Commit(new Point(21, 11), bounds);
+
+        Assert.Equal(CropCommitResult.InvalidGeometry, result);
+        Assert.Equal(CropSelectionPhase.Empty, controller.Selection.Phase);
+        Assert.False(controller.Selection.Geometry.IsValid);
+    }
+
+    [Fact]
+    public void InvalidCrop_OverlayRemainsActiveForRetry()
+    {
+        var controller = new CropController(minimumSize: 4);
+        var bounds = new Rect(0, 0, 200, 100);
+
+        controller.BeginGesture(new Point(20, 10), bounds);
+        var result = controller.Commit(new Point(21, 11), bounds);
+
+        Assert.Equal(CropCommitResult.InvalidGeometry, result);
+
+        var started = controller.BeginGesture(new Point(30, 20), bounds);
+        Assert.True(started);
+        controller.Update(new Point(100, 80), bounds);
+        var retryResult = controller.Commit(new Point(100, 80), bounds);
+
+        Assert.Equal(CropCommitResult.Activated, retryResult);
+        Assert.Equal(CropSelectionPhase.Active, controller.Selection.Phase);
+    }
+
+    [Fact]
+    public void InvalidCrop_StateDoesNotBlockConfirmation()
+    {
+        var selection = new CropSelection(
+            CropSelectionPhase.Active,
+            CropGeometry.FromEdges(10, 20, 50, 60, new Rect(0, 0, 100, 100)),
+            null);
+
+        var result = ConfirmedCaptureSelection.CanConfirm(selection, OverlayDisplayStatus.InvalidCrop);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void InvalidCrop_ReplacementGestureKeepsPreviousCrop()
+    {
+        var controller = CreateActiveController(new Rect(20, 10, 100, 80));
+        var bounds = new Rect(0, 0, 200, 100);
+
+        controller.BeginGesture(new Point(140, 20), bounds);
+        var result = controller.Commit(new Point(141, 21), bounds);
+
+        Assert.Equal(CropCommitResult.InvalidGeometry, result);
+        Assert.Equal(CropSelectionPhase.Active, controller.Selection.Phase);
+        Assert.Equal(new Rect(20, 10, 100, 80), controller.Selection.Geometry.Region);
+    }
+
     private static CropController CreateActiveController(Rect region, double minimumSize = 4)
     {
         var controller = new CropController(minimumSize);

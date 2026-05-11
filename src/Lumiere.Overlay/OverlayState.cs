@@ -63,6 +63,14 @@ public sealed record OverlayState(
             technicalDetail,
             OverlayFailureAction.CloseAfterTeardown);
 
+    public static OverlayState InvalidCrop(string message = "Crop region too small. Try again.", string technicalDetail = "") =>
+        new(
+            OverlayDisplayStatus.InvalidCrop,
+            "Selection too small",
+            message,
+            technicalDetail,
+            OverlayFailureAction.KeepOpenWithFailure);
+
     public static OverlayState Disposed(string message = "Preview stopped", string technicalDetail = "") =>
         new(
             OverlayDisplayStatus.Disposed,

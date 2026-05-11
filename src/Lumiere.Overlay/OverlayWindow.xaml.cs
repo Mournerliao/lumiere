@@ -31,6 +31,8 @@ public sealed partial class OverlayWindow : Window
     private string presenterTechnicalDetail = string.Empty;
     private uint? activeCropPointerId;
     private Point? lastCropPointerPosition;
+    private OverlayState? preInvalidCropState;
+    private DispatcherTimer? invalidCropFeedbackTimer;
 
     public OverlayWindow()
         : this(new OverlayWindowPresenter())
@@ -262,6 +264,8 @@ public sealed partial class OverlayWindow : Window
             return;
         }
 
+        ClearInvalidCropFeedback();
+
         if (!cropController.BeginGesture(pointerPoint.Position, currentPreviewLayout.PreviewBounds))
         {
             return;
@@ -327,6 +331,10 @@ public sealed partial class OverlayWindow : Window
         {
             Logger.LogDebug("Release-to-capture: auto-confirming (commitResult={CommitResult})", commitResult);
             RequestCaptureConfirm();
+        }
+        else if (commitResult is CropCommitResult.InvalidGeometry)
+        {
+            ShowInvalidCropFeedback();
         }
 
         args.Handled = true;
@@ -530,6 +538,7 @@ public sealed partial class OverlayWindow : Window
             return;
         }
 
+        ClearInvalidCropFeedback();
         isClosingRequested = true;
         Logger.LogDebug("Escape cancel: closing overlay");
         ApplyState(OverlayState.Closing("Closing overlay."));
@@ -551,8 +560,53 @@ public sealed partial class OverlayWindow : Window
             ? "Clipboard copy failed (degraded preview). Closing..."
             : "Clipboard copy failed. Closing...";
 
+    private void ShowInvalidCropFeedback()
+    {
+        ClearInvalidCropFeedback();
+
+        if (!currentState.IsTerminal)
+        {
+            preInvalidCropState = currentState;
+        }
+
+        ApplyState(OverlayState.InvalidCrop());
+
+        invalidCropFeedbackTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(2),
+        };
+        invalidCropFeedbackTimer.Tick += OnInvalidCropFeedbackTimerTick;
+        invalidCropFeedbackTimer.Start();
+    }
+
+    private void OnInvalidCropFeedbackTimerTick(object? sender, object e)
+    {
+        ClearInvalidCropFeedback();
+    }
+
+    private void ClearInvalidCropFeedback()
+    {
+        if (invalidCropFeedbackTimer is not null)
+        {
+            invalidCropFeedbackTimer.Stop();
+            invalidCropFeedbackTimer.Tick -= OnInvalidCropFeedbackTimerTick;
+            invalidCropFeedbackTimer = null;
+        }
+
+        if (preInvalidCropState is not null)
+        {
+            if (currentState.Status is OverlayDisplayStatus.InvalidCrop)
+            {
+                ApplyState(preInvalidCropState);
+            }
+
+            preInvalidCropState = null;
+        }
+    }
+
     private void OnClosed(object sender, WindowEventArgs args)
     {
+        ClearInvalidCropFeedback();
         isClosed = true;
     }
 

@@ -56,4 +56,48 @@ public sealed class OverlayStateTests
         Assert.NotEqual(ready, unsupported);
         Assert.NotEqual(ready, failed);
     }
+
+    [Fact]
+    public void InvalidCrop_HasExpectedStatusAndLabel()
+    {
+        var state = OverlayState.InvalidCrop();
+
+        Assert.Equal(OverlayDisplayStatus.InvalidCrop, state.Status);
+        Assert.Equal("Selection too small", state.Label);
+        Assert.Equal("Crop region too small. Try again.", state.Message);
+    }
+
+    [Fact]
+    public void InvalidCrop_IsNotTerminal()
+    {
+        var state = OverlayState.InvalidCrop();
+
+        Assert.False(state.IsTerminal);
+    }
+
+    [Fact]
+    public void InvalidCrop_DoesNotRequireFailureTeardown()
+    {
+        var state = OverlayState.InvalidCrop();
+
+        Assert.False(state.RequiresFailureTeardown);
+    }
+
+    [Fact]
+    public void InvalidCrop_UsesDistinctStyleFromDegradedPreview()
+    {
+        var invalidCrop = OverlayStatusStyle.FromStatus(OverlayDisplayStatus.InvalidCrop);
+        var degraded = OverlayStatusStyle.FromStatus(OverlayDisplayStatus.DegradedPreview);
+
+        Assert.NotEqual(invalidCrop, degraded);
+    }
+
+    [Fact]
+    public void InvalidCrop_UsesDistinctStyleFromReady()
+    {
+        var invalidCrop = OverlayStatusStyle.FromStatus(OverlayDisplayStatus.InvalidCrop);
+        var ready = OverlayStatusStyle.FromStatus(OverlayDisplayStatus.HdrReady);
+
+        Assert.NotEqual(invalidCrop, ready);
+    }
 }

@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-09T17:29:57+0800
-last_updated: 2026-05-11T18:30:00+08:00
+last_updated: 2026-05-11T22:30:00+08:00
 project: lumiere
 project_key: NOKEY
 tracking_system: file-system
@@ -76,7 +76,7 @@ development_status:
   4-3-demote-legacy-picker-and-dashboard-behavior-from-the-default-path: done
   4-4-establish-app-facing-seams-for-settings-output-tray-and-hotkeys: done
   4-5-validate-foundation-cutover-on-windows-hardware: ready-for-dev
-  4-6-fix-overlay-ux-deviations-from-epic-3-validation: backlog
+  4-6-fix-overlay-ux-deviations-from-epic-3-validation: review
   4-7-add-diagnostic-observability-for-capture-and-overlay-lifecycle: backlog
   epic-4-retrospective: optional
   epic-5: backlog
