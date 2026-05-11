@@ -4,12 +4,14 @@ using Lumiere.Capture;
 using Lumiere.Graphics.Clipboard;
 using Lumiere.Graphics.Devices;
 using Lumiere.Graphics.Hdr;
+using Lumiere.Graphics.Output;
 using Lumiere.Graphics.Presentation;
 using Lumiere.Infrastructure.Diagnostics;
 using Lumiere.Infrastructure.Interop;
 using Lumiere.Overlay;
 using Lumiere.Overlay.Crop;
 using Lumiere.Overlay.Windowing;
+using Lumiere.Settings;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
@@ -24,6 +26,9 @@ public sealed partial class MainWindow : Window
 
     private readonly object previewSync = new();
     private readonly GraphicsDeviceProvider deviceProvider = new();
+    private readonly ICaptureCommandCoordinator captureCommandCoordinator;
+    private readonly IOutputService outputService;
+    private readonly ISettingsProvider settingsProvider;
     private CaptureService? captureService;
     private CaptureSessionResources? captureSession;
     private GraphicsDeviceResources? deviceResources;
@@ -33,7 +38,6 @@ public sealed partial class MainWindow : Window
     private CaptureTarget? activeCaptureTarget;
     private PreviewReadinessStatus? activePresentationEvidence;
     private OverlayWindow? overlayWindow;
-    private ClipboardOutputService? clipboardOutputService;
     private long previewGeneration;
     private long frameEventCount;
     private int previewSourceWidth;
@@ -43,8 +47,17 @@ public sealed partial class MainWindow : Window
     private int overlayDispatcherFallbackReported;
     private int uiDispatchFailureReported;
 
-    public MainWindow()
+    public MainWindow(
+        ICaptureCommandCoordinator captureCommandCoordinator,
+        IOutputService outputService,
+        ISettingsProvider settingsProvider,
+        CaptureService captureService)
     {
+        this.captureCommandCoordinator = captureCommandCoordinator ?? throw new ArgumentNullException(nameof(captureCommandCoordinator));
+        this.outputService = outputService ?? throw new ArgumentNullException(nameof(outputService));
+        this.settingsProvider = settingsProvider ?? throw new ArgumentNullException(nameof(settingsProvider));
+        this.captureService = captureService ?? throw new ArgumentNullException(nameof(captureService));
+    }
         InitializeComponent();
         Title = "Lumiere";
         SystemBackdrop = new MicaBackdrop();
@@ -103,7 +116,23 @@ public sealed partial class MainWindow : Window
         var probeCommand = mode == CaptureCommandMode.Region
             ? CaptureCommand.Region()
             : CaptureCommand.Fullscreen();
-        var guardResult = ExecuteCaptureCommand(probeCommand);
+        
+        CaptureCommandResult guardResult;
+        try
+        {
+            guardResult = await captureCommandCoordinator.ExecuteAsync(probeCommand);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "ExecuteAsync FAILED for probe command");
+            ApplySessionState(
+                CaptureSessionState.Failed(null, PreviewReadinessStatus.Failed(
+                    PreviewReadinessStage.Capture,
+                    "Capture failed",
+                    "Command execution failed.")));
+            return;
+        }
+        
         if (!guardResult.IsAccepted)
         {
             Logger.LogWarning(
@@ -174,25 +203,6 @@ public sealed partial class MainWindow : Window
                 SetCaptureActionsEnabled(true);
             }
         }
-    }
-
-    private CaptureCommandResult ExecuteCaptureCommand(CaptureCommand command)
-    {
-        ArgumentNullException.ThrowIfNull(command);
-
-        var activeCaptureService = captureService;
-        if (activeCaptureService is null)
-        {
-            Logger.LogWarning("ExecuteCaptureCommand FAILED: CaptureService not initialized");
-            return CaptureCommandResult.Failed(
-                command,
-                PreviewReadinessStatus.Failed(
-                    PreviewReadinessStage.Capture,
-                    "Capture failed",
-                    "Capture service was not initialized."));
-        }
-
-        return activeCaptureService.TryReserveCommand(command);
     }
 
     private void ConfigureTitleBar()
@@ -501,8 +511,6 @@ public sealed partial class MainWindow : Window
         }
 
         graphicsEngine ??= new GraphicsEngine(deviceResources);
-        captureService ??= new CaptureService(deviceResources, CaptureBorderOptions.TryBorderless());
-        clipboardOutputService ??= new ClipboardOutputService(deviceResources);
     }
 
     private void EnsureOverlayWindow(CaptureTarget target)
@@ -700,9 +708,9 @@ public sealed partial class MainWindow : Window
 
     private async Task<bool> TryCopyCropToClipboardAsync(ConfirmedCaptureSelection selection)
     {
-        if (clipboardOutputService is null || swapChainResources is null)
+        if (swapChainResources is null)
         {
-            Logger.LogWarning("Clipboard output SKIPPED: clipboardOutputService or swapChainResources is null");
+            Logger.LogWarning("Clipboard output SKIPPED: swapChainResources is null");
             return false;
         }
 
@@ -717,16 +725,23 @@ public sealed partial class MainWindow : Window
             var backBuffer = swapChainResources.SwapChain.GetBuffer<Vortice.Direct3D11.ID3D11Texture2D>(0);
             try
             {
-                var result = await clipboardOutputService.TryCopyToClipboardAsync(
-                    backBuffer,
-                    selection.PixelRegion.X,
-                    selection.PixelRegion.Y,
-                    selection.PixelRegion.Width,
-                    selection.PixelRegion.Height,
-                    selection.FrameSize.Width,
-                    selection.FrameSize.Height);
+                var request = new OutputRequest
+                {
+                    Texture = new CapturedFrameTexture(
+                        backBuffer,
+                        selection.FrameSize.Width,
+                        selection.FrameSize.Height,
+                        "SwapChain back buffer"),
+                    CropRegion = new CropPixelRect(
+                        selection.PixelRegion.X,
+                        selection.PixelRegion.Y,
+                        selection.PixelRegion.Width,
+                        selection.PixelRegion.Height)
+                };
 
-                if (result)
+                var result = await outputService.ExecuteOutputAsync(request);
+
+                if (result.IsSuccess)
                 {
                     Logger.LogInformation(
                         "Clipboard output SUCCESS: crop=({X},{Y},{Width}x{Height})",
@@ -735,10 +750,11 @@ public sealed partial class MainWindow : Window
                 else
                 {
                     Logger.LogWarning(
-                        "Clipboard output FAILED: crop=({X},{Y},{Width}x{Height})",
-                        selection.PixelRegion.X, selection.PixelRegion.Y, selection.PixelRegion.Width, selection.PixelRegion.Height);
+                        "Clipboard output FAILED: crop=({X},{Y},{Width}x{Height}), detail={Detail}",
+                        selection.PixelRegion.X, selection.PixelRegion.Y, selection.PixelRegion.Width, selection.PixelRegion.Height,
+                        result.TechnicalDetail);
                 }
-                return result;
+                return result.IsSuccess;
             }
             finally
             {

@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Lumiere.Graphics.Devices;
 using Lumiere.Graphics.Hdr;
+using Lumiere.Graphics.Output;
 using Lumiere.Infrastructure.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Vortice.Direct3D;
@@ -15,7 +16,7 @@ using Half = System.Half;
 
 namespace Lumiere.Graphics.Clipboard;
 
-public sealed class ClipboardOutputService : IDisposable
+public sealed class ClipboardOutputService : IOutputService, IDisposable
 {
     private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Graphics);
     private readonly GraphicsDeviceResources deviceResources;
@@ -55,6 +56,56 @@ public sealed class ClipboardOutputService : IDisposable
         {
             Logger.LogError(ex, "Clipboard output FAILED");
             return false;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<OutputResult> ExecuteOutputAsync(OutputRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var texture = request.Texture;
+        if (texture?.Texture is null)
+        {
+            Logger.LogWarning("ExecuteOutputAsync FAILED: texture is null");
+            return OutputResult.Skipped("No captured frame texture available");
+        }
+
+        // Determine crop region: use provided crop region or full frame
+        var cropRegion = request.CropRegion;
+        int pixelX = cropRegion?.X ?? 0;
+        int pixelY = cropRegion?.Y ?? 0;
+        int pixelWidth = cropRegion?.Width ?? texture.Width;
+        int pixelHeight = cropRegion?.Height ?? texture.Height;
+
+        try
+        {
+            if (!ValidateRegion(pixelX, pixelY, pixelWidth, pixelHeight, texture.Width, texture.Height))
+            {
+                Logger.LogWarning("ExecuteOutputAsync region INVALID: ({X},{Y},{Width}x{Height}) in {SourceWidth}x{SourceHeight}", pixelX, pixelY, pixelWidth, pixelHeight, texture.Width, texture.Height);
+                return OutputResult.Skipped("Invalid crop region");
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            using var croppedTexture = CropTexture(texture.Texture, pixelX, pixelY, pixelWidth, pixelHeight);
+            using var bgra8Texture = ConvertToBgra8(croppedTexture, pixelWidth, pixelHeight);
+            
+            cancellationToken.ThrowIfCancellationRequested();
+            
+            var pngBytes = await EncodeAsPngAsync(bgra8Texture, pixelWidth, pixelHeight);
+            
+            cancellationToken.ThrowIfCancellationRequested();
+            
+            await WriteToClipboardAsync(pngBytes);
+
+            Logger.LogInformation("ExecuteOutputAsync success: PNG encoded, {Bytes} bytes, crop=({X},{Y},{Width}x{Height})", pngBytes.Length, pixelX, pixelY, pixelWidth, pixelHeight);
+            return OutputResult.ClipboardSuccess(pngBytes.Length);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "ExecuteOutputAsync FAILED");
+            return OutputResult.ClipboardFailed(ex.Message);
         }
     }
 
