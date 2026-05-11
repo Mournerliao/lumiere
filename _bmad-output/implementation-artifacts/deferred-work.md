@@ -39,3 +39,10 @@ None currently known.
 - ApplySessionState 中的重入守卫静默丢弃状态更新：如果 applyingSessionState 为 true，调用是静默的 no-op。修复添加了依赖于不被丢弃的第二个 ApplySessionState(Idle) 调用，但守卫使其无法推理。
 - CaptureSessionState.FromStartResult 包含死代码：两个分支都调用 FromReadiness(target, result.Readiness, treatReadyAsCapturing: false)。条件语句无意义，表明方法是投机性编写的，从未正确实现。
 - 修复未解决底层状态机设计缺陷：真正问题是 Disposed 和 Idle 被视为单独状态，但代码需要在单个原子操作中通过两者转换。修复是 band-aid：同一线程上的两个顺序 ApplySessionState 调用。原子 DisposeAndReset 或单个 Idle 调用（当意图返回就绪时跳过 Disposed）将是正确的修复。
+
+## Deferred from: code review of story-4-4 (2026-05-11)
+
+- settingsProvider 注入但从未使用 [MainWindow.xaml.cs:57]：为未来故事准备的接口，但当前未使用。
+- 时区格式不一致：+0800 vs +08:00 [sprint-status.yaml]：ISO 8601 允许两种格式，但同一文件中混用表明生成或手动编辑不一致。
+- 故事状态从 backlog 直接跳到 review [sprint-status.yaml]：跳过了 in_progress 状态，可能工作流被绕过。
+- 依赖注入不一致：`captureService` 仍为本地字段 [MainWindow.xaml.cs:32]：设计决策：保持 `CaptureService` 作为本地字段，`ICaptureCommandCoordinator` 包装 `TryReserveCommand()`，其他调用为内部实现细节。
