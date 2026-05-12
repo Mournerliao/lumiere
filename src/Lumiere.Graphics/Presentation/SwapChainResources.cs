@@ -52,7 +52,7 @@ public sealed class SwapChainResources : IDisposable
         DisposalEvidence = SwapChainDisposalCoordinator.DisposeOnce(
             detachPreview,
             releaseResources);
-        Logger.LogDebug("SwapChain disposed: {Evidence}", FormatDisposalEvidence(DisposalEvidence));
+        Logger.LogDebug("operation=SwapChainDispose, stage=Complete, detail=SwapChain disposed: {Evidence}", FormatDisposalEvidence(DisposalEvidence));
 
         disposed = true;
     }
@@ -74,7 +74,7 @@ public sealed class SwapChainResources : IDisposable
                 PreviewDetached: false,
                 ResourcesReleased: true,
                 DetachedBeforeRelease: false);
-            Logger.LogDebug("Swap chain released after failed UI detach. {Evidence}", FormatDisposalEvidence(DisposalEvidence));
+            Logger.LogDebug("operation=SwapChainDispose, stage=FailedDetach, detail=Swap chain released after failed UI detach. {Evidence}", FormatDisposalEvidence(DisposalEvidence));
             disposed = true;
         }
     }

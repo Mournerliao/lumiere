@@ -217,6 +217,14 @@ public sealed partial class MainWindow : Window
         }
 
         StopPreview(reportStopped: false);
+
+        lock (previewSync)
+        {
+            Logger.LogInformation(
+                "operation=StartPreview, stage=PreCheck, detail=Previous cycle cleanup confirmed: captureSession={CaptureSession}, swapChainResources={SwapChainResources}",
+                captureSession is null, swapChainResources is null);
+        }
+
         EnsureOverlayWindow(target);
 
         long currentGeneration;
@@ -291,8 +299,12 @@ public sealed partial class MainWindow : Window
         {
             lock (previewSync)
             {
-                if (generation != Volatile.Read(ref previewGeneration) || previewFramePresenter is null)
+                var currentGeneration = Volatile.Read(ref previewGeneration);
+                if (generation != currentGeneration || previewFramePresenter is null)
                 {
+                    Logger.LogDebug(
+                        "operation=FrameCallback, stage=Reject, detail=Stale callback rejected: frameGeneration={FrameGeneration}, currentGeneration={CurrentGeneration}, hasPresenter={HasPresenter}",
+                        generation, currentGeneration, previewFramePresenter is not null);
                     return;
                 }
 
@@ -539,12 +551,13 @@ public sealed partial class MainWindow : Window
             swapChainResources = null;
         }
 
+        Logger.LogDebug("operation=StopPreview, stage=Start, detail=Disposing capture and swap chain resources, generation={Generation}", stoppedGeneration);
         captureSessionToDispose?.Dispose();
         swapChainToDispose?.Dispose();
 
-        Logger.LogDebug(
-            "StopPreview: generation={Generation}, captureDisposed={CaptureDisposed}, swapChainDisposed={SwapChainDisposed}",
-            stoppedGeneration, captureSessionToDispose is not null, swapChainToDispose is not null);
+        Logger.LogInformation(
+            "operation=StopPreview, stage=Complete, detail=StopPreview completed: generation={Generation}, captureDisposed={CaptureDisposed}, swapChainDisposed={SwapChainDisposed}, previousCycleCleaned={PreviousCycleCleaned}",
+            stoppedGeneration, captureSessionToDispose is not null, swapChainToDispose is not null, captureSessionToDispose is null);
 
         if (reportStopped && !isClosed)
         {
@@ -726,7 +739,7 @@ public sealed partial class MainWindow : Window
                 else
                 {
                     Logger.LogWarning(
-                        "Clipboard output FAILED: crop=({X},{Y},{Width}x{Height}), detail={Detail}",
+                        "Clipboard output FAILED: operation=ClipboardOutput, stage=WriteToClipboard, crop=({X},{Y},{Width}x{Height}), detail={Detail}",
                         selection.PixelRegion.X, selection.PixelRegion.Y, selection.PixelRegion.Width, selection.PixelRegion.Height,
                         result.TechnicalDetail);
                 }
@@ -739,7 +752,10 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Clipboard output EXCEPTION");
+            var cropInfo = selection?.PixelRegion is { } r
+                ? $"crop=({r.X},{r.Y},{r.Width}x{r.Height})"
+                : "crop=unknown";
+            Logger.LogError(ex, "operation=ClipboardOutput, stage=ExecuteOutput, detail=Clipboard output EXCEPTION: {CropInfo}", cropInfo);
             return false;
         }
     }

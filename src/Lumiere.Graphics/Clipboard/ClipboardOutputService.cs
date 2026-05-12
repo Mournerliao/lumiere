@@ -67,7 +67,7 @@ public sealed class ClipboardOutputService : IOutputService, IDisposable
         var texture = request.Texture;
         if (texture?.Texture is null)
         {
-            Logger.LogWarning("ExecuteOutputAsync FAILED: texture is null");
+            Logger.LogWarning("ExecuteOutputAsync FAILED: operation=ClipboardOutput, stage=ValidateInput, detail=texture is null");
             return OutputResult.Skipped("No captured frame texture available");
         }
 
@@ -82,7 +82,7 @@ public sealed class ClipboardOutputService : IOutputService, IDisposable
         {
             if (!ValidateRegion(pixelX, pixelY, pixelWidth, pixelHeight, texture.Width, texture.Height))
             {
-                Logger.LogWarning("ExecuteOutputAsync region INVALID: ({X},{Y},{Width}x{Height}) in {SourceWidth}x{SourceHeight}", pixelX, pixelY, pixelWidth, pixelHeight, texture.Width, texture.Height);
+                Logger.LogWarning("ExecuteOutputAsync region INVALID: operation=ClipboardOutput, stage=ValidateRegion, crop=({X},{Y},{Width}x{Height}) in {SourceWidth}x{SourceHeight}", pixelX, pixelY, pixelWidth, pixelHeight, texture.Width, texture.Height);
                 return OutputResult.Skipped("Invalid crop region");
             }
 
@@ -99,12 +99,17 @@ public sealed class ClipboardOutputService : IOutputService, IDisposable
 
             await WriteToClipboardAsync(pngBytes);
 
-            Logger.LogInformation("ExecuteOutputAsync success: PNG encoded, {Bytes} bytes, crop=({X},{Y},{Width}x{Height})", pngBytes.Length, pixelX, pixelY, pixelWidth, pixelHeight);
+            Logger.LogInformation("ExecuteOutputAsync success: operation=ClipboardOutput, stage=Complete, bytes={Bytes}, crop=({X},{Y},{Width}x{Height})", pngBytes.Length, pixelX, pixelY, pixelWidth, pixelHeight);
             return OutputResult.ClipboardSuccess(pngBytes.Length);
+        }
+        catch (OperationCanceledException)
+        {
+            Logger.LogInformation("operation=ClipboardOutput, stage=Cancelled, detail=Output cancelled by caller, crop=({X},{Y},{Width}x{Height})", pixelX, pixelY, pixelWidth, pixelHeight);
+            throw;
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "ExecuteOutputAsync FAILED");
+            Logger.LogError(ex, "operation=ClipboardOutput, stage=ExecuteOutput, detail=ExecuteOutputAsync FAILED, crop=({X},{Y},{Width}x{Height})", pixelX, pixelY, pixelWidth, pixelHeight);
             return OutputResult.ClipboardFailed(ex.Message);
         }
     }

@@ -50,10 +50,18 @@ public sealed class CaptureSessionResources : IDisposable
     {
         if (Interlocked.Exchange(ref disposed, 1) == 1)
         {
+            Logger.LogDebug("operation=CaptureSessionDispose, stage=Skip, detail=CaptureSession.Dispose() called again after already disposed; ignoring");
             return;
         }
 
+        Logger.LogDebug("operation=CaptureSessionDispose, stage=Start, detail=CaptureSession.Dispose() starting");
         DisposalEvidence = disposeAction();
-        Logger.LogDebug("CaptureSession disposed: {DisposalEvidence}", DisposalEvidence);
+        Logger.LogInformation(
+            "operation=CaptureSessionDispose, stage=Complete, detail=CaptureSession disposed: FrameHandlerUnsubscribed={FrameHandler}, SessionStopped={Session}, FramePoolDisposed={FramePool}, DeviceDisposed={Device}, Completed={Completed}",
+            DisposalEvidence.FrameHandlerUnsubscribed,
+            DisposalEvidence.SessionStopped,
+            DisposalEvidence.FramePoolDisposed,
+            DisposalEvidence.DeviceDisposed,
+            DisposalEvidence.Completed);
     }
 }
