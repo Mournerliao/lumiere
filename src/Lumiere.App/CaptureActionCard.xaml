@@ -10,14 +10,18 @@
     Foreground="{ThemeResource TextFillColorPrimaryBrush}"
     mc:Ignorable="d">
   <Button
+      x:Name="ActionButton"
       HorizontalAlignment="Stretch"
       HorizontalContentAlignment="Stretch"
       VerticalContentAlignment="Stretch"
+      AutomationProperties.HelpText="{Binding Description, ElementName=Root}"
+      AutomationProperties.Name="{Binding Title, ElementName=Root}"
       Background="Transparent"
       BorderThickness="0"
       Click="OnActionButtonClick"
       CornerRadius="8"
-      Padding="0">
+      Padding="0"
+      ToolTipService.ToolTip="{Binding Description, ElementName=Root}">
     <Border
         MinHeight="154"
         Padding="18"

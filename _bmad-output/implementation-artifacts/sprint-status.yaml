@@ -1,5 +1,5 @@
 # generated: 2026-05-09T17:29:57+0800
-# last_updated: 2026-05-11T01:53:41+08:00
+# last_updated: 2026-05-15T15:12:25+08:00
 # project: lumiere
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-09T17:29:57+0800
-last_updated: 2026-05-13T01:20:27+08:00
+last_updated: 2026-05-15T15:12:25+08:00
 project: lumiere
 project_key: NOKEY
 tracking_system: file-system
@@ -79,8 +79,8 @@ development_status:
   4-6-fix-overlay-ux-deviations-from-epic-3-validation: done
   4-7-add-diagnostic-observability-for-capture-and-overlay-lifecycle: done
   epic-4-retrospective: done
-  epic-5: backlog
-  5-1-build-the-native-v0-main-panel: backlog
+  epic-5: in-progress
+  5-1-build-the-native-v0-main-panel: in-progress
   5-2-implement-settings-navigation-and-shell: backlog
   5-3-add-shortcut-and-hdr-alert-settings-ui: backlog
   5-4-add-output-preference-settings-ui: backlog

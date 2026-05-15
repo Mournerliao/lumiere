@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Lumiere.App\Lumiere.App.csproj" />
     <ProjectReference Include="..\..\src\Lumiere.Capture\Lumiere.Capture.csproj" />
     <ProjectReference Include="..\..\src\Lumiere.Graphics\Lumiere.Graphics.csproj" />
     <ProjectReference Include="..\..\src\Lumiere.Settings\Lumiere.Settings.csproj" />

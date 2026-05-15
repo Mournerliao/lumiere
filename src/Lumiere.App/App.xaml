@@ -17,6 +17,8 @@
       <SolidColorBrush x:Key="AccentSoftBrush" Color="#1A0078D4" />
       <SolidColorBrush x:Key="AccentBorderBrush" Color="#800078D4" />
       <SolidColorBrush x:Key="SuccessBrush" Color="#FF10B981" />
+      <SolidColorBrush x:Key="WarningBrush" Color="#FFF59E0B" />
+      <SolidColorBrush x:Key="ErrorBrush" Color="#FFEF4444" />
 
       <Style x:Key="NavButtonStyle" TargetType="Button">
         <Setter Property="Background" Value="Transparent" />
@@ -41,4 +43,3 @@
     </ResourceDictionary>
   </Application.Resources>
 </Application>
-

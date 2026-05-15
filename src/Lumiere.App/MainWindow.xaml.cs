@@ -66,6 +66,7 @@ public sealed partial class MainWindow : Window
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(TitleBarDragArea);
         ConfigureTitleBar();
+        ApplyShortcutLabels();
         AppWindow.Resize(new SizeInt32(2560, 1440));
         Closed += OnWindowClosed;
 
@@ -135,8 +136,6 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        SetCaptureActionsEnabled(false);
-
         try
         {
             StopPreview(reportStopped: false);
@@ -187,7 +186,7 @@ public sealed partial class MainWindow : Window
         {
             if (!isClosed)
             {
-                SetCaptureActionsEnabled(true);
+                UpdateMainPanelProjection(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
             }
         }
     }
@@ -581,6 +580,7 @@ public sealed partial class MainWindow : Window
             var validatedState = state ?? throw new ArgumentNullException(nameof(state));
             captureService?.UpdateSessionState(validatedState);
             UpdateCaptureStatus(validatedState);
+            UpdateMainPanelProjection(validatedState);
             var overlayState = CreateOverlayState(validatedState);
             overlayWindow?.ApplyState(overlayState);
             if (overlayWindow is not null && overlayState.RequiresFailureTeardown)
@@ -620,10 +620,42 @@ public sealed partial class MainWindow : Window
             : Visibility.Visible;
     }
 
-    private void SetCaptureActionsEnabled(bool isEnabled)
+    private void ApplyShortcutLabels()
     {
-        SelectCaptureTargetButton.IsEnabled = isEnabled;
-        RegionSelectButton.IsEnabled = isEnabled;
+        SelectCaptureTargetButton.ShortcutText = MainPanelProjection.FormatShortcut(settingsProvider.FullscreenShortcut);
+        RegionSelectButton.ShortcutText = MainPanelProjection.FormatShortcut(settingsProvider.RegionShortcut);
+    }
+
+    private void UpdateMainPanelProjection(CaptureSessionState state)
+    {
+        var projection = MainPanelProjection.Project(state);
+        var isIdle = state.Status is CaptureSessionStatus.Idle;
+        var statusBrush = GetTrustStatusBrush(projection.TrustSeverity);
+
+        SelectCaptureTargetButton.IsEnabled = projection.CanStartCapture;
+        RegionSelectButton.IsEnabled = projection.CanStartCapture;
+        SelectCaptureTargetButton.Title = isIdle ? "Full Screen" : projection.ActionTitle;
+        RegionSelectButton.Title = isIdle ? "Region" : projection.ActionTitle;
+
+        TrustStatusGlyph.Glyph = projection.TrustGlyph;
+        TrustStatusGlyph.Foreground = statusBrush;
+        TrustStatusDot.Fill = statusBrush;
+        TrustStatusLabel.Text = projection.TrustLabel;
+        TrustStatusLabel.Foreground = statusBrush;
+        TrustStatusMessage.Text = projection.TrustMessage;
+    }
+
+    private Brush GetTrustStatusBrush(MainPanelTrustSeverity severity)
+    {
+        var key = severity switch
+        {
+            MainPanelTrustSeverity.Success => "SuccessBrush",
+            MainPanelTrustSeverity.Warning => "WarningBrush",
+            MainPanelTrustSeverity.Error => "ErrorBrush",
+            _ => "MutedTextBrush",
+        };
+
+        return (Brush)Application.Current.Resources[key];
     }
 
     private bool TryEnqueueUi(Action action)
