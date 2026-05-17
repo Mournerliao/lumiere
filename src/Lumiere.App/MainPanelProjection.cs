@@ -1,3 +1,4 @@
+using FluentIcons.Common;
 using Lumiere.Capture;
 using Lumiere.Graphics.Hdr;
 
@@ -8,14 +9,16 @@ public sealed record MainPanelProjection(
     string ActionTitle,
     string TrustLabel,
     string TrustMessage,
-    string TrustGlyph,
+    Icon TrustIcon,
     MainPanelTrustSeverity TrustSeverity)
 {
     public static MainPanelProjection Project(CaptureSessionState state)
     {
         ArgumentNullException.ThrowIfNull(state);
 
-        var canStartCapture = state.Status is CaptureSessionStatus.Idle;
+        var canStartCapture = state.Status is CaptureSessionStatus.Idle
+            or CaptureSessionStatus.Unsupported
+            or CaptureSessionStatus.Failed;
         var actionTitle = state.Status switch
         {
             CaptureSessionStatus.SelectingTarget => "Preparing capture...",
@@ -30,11 +33,11 @@ public sealed record MainPanelProjection(
 
         var trust = state.Readiness.State switch
         {
-            PreviewReadinessState.Ready => ("HDR Ready", "\uE930", MainPanelTrustSeverity.Success),
-            PreviewReadinessState.Degraded => ("Enable HDR", "\uE7BA", MainPanelTrustSeverity.Warning),
-            PreviewReadinessState.Unsupported => ("HDR unsupported", "\uE783", MainPanelTrustSeverity.Error),
-            PreviewReadinessState.Failed => ("HDR status failed", "\uE783", MainPanelTrustSeverity.Error),
-            _ => ("Checking HDR", "\uE9D5", MainPanelTrustSeverity.Neutral),
+            PreviewReadinessState.Ready => ("HDR Ready", Icon.CheckmarkCircle, MainPanelTrustSeverity.Success),
+            PreviewReadinessState.Degraded => ("Enable HDR", Icon.Desktop, MainPanelTrustSeverity.Warning),
+            PreviewReadinessState.Unsupported => ("HDR unsupported", Icon.ErrorCircle, MainPanelTrustSeverity.Error),
+            PreviewReadinessState.Failed => ("HDR status failed", Icon.ErrorCircle, MainPanelTrustSeverity.Error),
+            _ => ("Checking HDR", Icon.Clock, MainPanelTrustSeverity.Neutral),
         };
 
         return new MainPanelProjection(

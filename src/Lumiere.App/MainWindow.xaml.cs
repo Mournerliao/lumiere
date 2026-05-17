@@ -13,16 +13,22 @@ using Lumiere.Overlay.Crop;
 using Lumiere.Overlay.Windowing;
 using Lumiere.Settings;
 using Microsoft.Extensions.Logging;
+using Microsoft.UI.Input;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Windows.Graphics;
-using Windows.UI;
 
 namespace Lumiere.App;
 
 public sealed partial class MainWindow : Window
 {
     private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.App);
+    private const int MainPanelWidthDips = 360;
+    private const int MainPanelHeightDips = 300;
+    private const int SettingsPanelHeightDips = 560;
 
     private readonly object previewSync = new();
     private readonly ICaptureCommandCoordinator captureCommandCoordinator;
@@ -44,8 +50,11 @@ public sealed partial class MainWindow : Window
     private bool isClosed;
     private bool isDeviceDisposed;
     private bool applyingSessionState;
+    private bool sizingMainPanel;
+    private AppShellView activeShellView = AppShellView.Main;
     private int overlayDispatcherFallbackReported;
     private int uiDispatchFailureReported;
+    private InputNonClientPointerSource? nonClientPointerSource;
 
     public MainWindow(
         ICaptureCommandCoordinator captureCommandCoordinator,
@@ -63,11 +72,15 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         Title = "Lumiere";
         SystemBackdrop = new MicaBackdrop();
-        ExtendsContentIntoTitleBar = true;
-        SetTitleBar(TitleBarDragArea);
-        ConfigureTitleBar();
+        ConfigureWindowPresenter();
+        SuppressWindowFrameBorder();
         ApplyShortcutLabels();
-        AppWindow.Resize(new SizeInt32(2560, 1440));
+        SizeToActiveShellView();
+        RootGrid.Loaded += OnRootGridLoaded;
+        HeaderDragArea.SizeChanged += OnHeaderDragAreaSizeChanged;
+        SettingsButton.SizeChanged += OnHeaderDragAreaSizeChanged;
+        SettingsHeaderDragArea.SizeChanged += OnHeaderDragAreaSizeChanged;
+        SettingsBackButton.SizeChanged += OnHeaderDragAreaSizeChanged;
         Closed += OnWindowClosed;
 
         LumiereLoggerFactory.InitializeWithHeader(
@@ -97,6 +110,18 @@ public sealed partial class MainWindow : Window
     private async void OnRegionCaptureClick(object sender, RoutedEventArgs e)
     {
         await ExecuteCaptureFromUiAsync(CaptureCommandMode.Region);
+    }
+
+    private void OnSettingsButtonClick(object sender, RoutedEventArgs e)
+    {
+        ApplyShellView(AppShellView.Settings);
+        Logger.LogDebug("Settings shell opened; capture session state was preserved.");
+    }
+
+    private void OnSettingsBackButtonClick(object sender, RoutedEventArgs e)
+    {
+        ApplyShellView(AppShellView.Main);
+        Logger.LogDebug("Settings shell closed; returning to main panel.");
     }
 
     private async Task ExecuteCaptureFromUiAsync(CaptureCommandMode mode)
@@ -191,22 +216,198 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void ConfigureTitleBar()
+    private void ConfigureWindowPresenter()
     {
-        var titleBar = AppWindow.TitleBar;
-        titleBar.BackgroundColor = Color.FromArgb(0, 0, 0, 0);
-        titleBar.ForegroundColor = Color.FromArgb(255, 160, 160, 160);
-        titleBar.InactiveBackgroundColor = Color.FromArgb(0, 0, 0, 0);
-        titleBar.InactiveForegroundColor = Color.FromArgb(255, 112, 112, 112);
-        titleBar.ButtonBackgroundColor = Color.FromArgb(0, 0, 0, 0);
-        titleBar.ButtonForegroundColor = Color.FromArgb(255, 160, 160, 160);
-        titleBar.ButtonHoverBackgroundColor = Color.FromArgb(31, 255, 255, 255);
-        titleBar.ButtonHoverForegroundColor = Color.FromArgb(255, 255, 255, 255);
-        titleBar.ButtonPressedBackgroundColor = Color.FromArgb(46, 255, 255, 255);
-        titleBar.ButtonPressedForegroundColor = Color.FromArgb(255, 255, 255, 255);
-        titleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0, 0, 0, 0);
-        titleBar.ButtonInactiveForegroundColor = Color.FromArgb(255, 112, 112, 112);
+        if (AppWindow.Presenter is not OverlappedPresenter presenter)
+        {
+            return;
+        }
+
+        presenter.SetBorderAndTitleBar(false, false);
+        presenter.IsResizable = false;
+        presenter.IsMaximizable = false;
     }
+
+    private void SuppressWindowFrameBorder()
+    {
+        try
+        {
+            Logger.LogDebug("{Detail}", WindowFrameInterop.SuppressNonClientBorder(this));
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(exception, "Main window DWM border suppression was skipped.");
+        }
+    }
+
+    private void OnRootGridLoaded(object sender, RoutedEventArgs e)
+    {
+        RootGrid.Loaded -= OnRootGridLoaded;
+        if (RootGrid.XamlRoot is not null)
+        {
+            RootGrid.XamlRoot.Changed += OnXamlRootChanged;
+        }
+
+        SizeToActiveShellView();
+        SuppressWindowFrameBorder();
+        UpdateHeaderDragRegion();
+    }
+
+    private void OnXamlRootChanged(XamlRoot sender, XamlRootChangedEventArgs args)
+    {
+        SizeToActiveShellView();
+        UpdateHeaderDragRegion();
+    }
+
+    private void OnHeaderDragAreaSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        UpdateHeaderDragRegion();
+    }
+
+    private void UpdateHeaderDragRegion()
+    {
+        if (RootGrid.XamlRoot is null)
+        {
+            return;
+        }
+
+        try
+        {
+            nonClientPointerSource ??= InputNonClientPointerSource.GetForWindowId(AppWindow.Id);
+            if (activeShellView is AppShellView.Settings)
+            {
+                UpdateSettingsHeaderDragRegion();
+            }
+            else
+            {
+                UpdateMainHeaderDragRegion();
+            }
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(exception, "Main window header drag region could not be registered.");
+        }
+    }
+
+    private void UpdateMainHeaderDragRegion()
+    {
+        if (HeaderDragArea.ActualWidth <= 0
+            || HeaderDragArea.ActualHeight <= 0
+            || SettingsButton.ActualWidth <= 0)
+        {
+            return;
+        }
+
+        var headerOrigin = HeaderDragArea
+            .TransformToVisual(RootGrid)
+            .TransformPoint(new Windows.Foundation.Point(0, 0));
+        var settingsOrigin = SettingsButton
+            .TransformToVisual(RootGrid)
+            .TransformPoint(new Windows.Foundation.Point(0, 0));
+        var scale = RootGrid.XamlRoot!.RasterizationScale;
+        var dragWidthDips = Math.Max(0, settingsOrigin.X - headerOrigin.X);
+
+        if (dragWidthDips <= 0)
+        {
+            nonClientPointerSource?.ClearRegionRects(NonClientRegionKind.Caption);
+            return;
+        }
+
+        var dragRegion = new RectInt32(
+            ScaleToPhysicalPixels(headerOrigin.X, scale),
+            ScaleToPhysicalPixels(headerOrigin.Y, scale),
+            ScaleToPhysicalPixels(dragWidthDips, scale),
+            ScaleToPhysicalPixels(HeaderDragArea.ActualHeight, scale));
+
+        nonClientPointerSource?.SetRegionRects(NonClientRegionKind.Caption, [dragRegion]);
+    }
+
+    private void UpdateSettingsHeaderDragRegion()
+    {
+        if (SettingsHeaderDragArea.ActualWidth <= 0
+            || SettingsHeaderDragArea.ActualHeight <= 0
+            || SettingsBackButton.ActualWidth <= 0)
+        {
+            return;
+        }
+
+        var headerOrigin = SettingsHeaderDragArea
+            .TransformToVisual(RootGrid)
+            .TransformPoint(new Windows.Foundation.Point(0, 0));
+        var backOrigin = SettingsBackButton
+            .TransformToVisual(RootGrid)
+            .TransformPoint(new Windows.Foundation.Point(0, 0));
+        var scale = RootGrid.XamlRoot!.RasterizationScale;
+        var dragStartDips = Math.Max(0, backOrigin.X - headerOrigin.X + SettingsBackButton.ActualWidth + 8);
+        var dragWidthDips = Math.Max(0, SettingsHeaderDragArea.ActualWidth - dragStartDips);
+
+        if (dragWidthDips <= 0)
+        {
+            nonClientPointerSource?.ClearRegionRects(NonClientRegionKind.Caption);
+            return;
+        }
+
+        var dragRegion = new RectInt32(
+            ScaleToPhysicalPixels(headerOrigin.X + dragStartDips, scale),
+            ScaleToPhysicalPixels(headerOrigin.Y, scale),
+            ScaleToPhysicalPixels(dragWidthDips, scale),
+            ScaleToPhysicalPixels(SettingsHeaderDragArea.ActualHeight, scale));
+
+        nonClientPointerSource?.SetRegionRects(NonClientRegionKind.Caption, [dragRegion]);
+    }
+
+    private void ApplyShellView(AppShellView view)
+    {
+        var state = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
+        var projection = AppShellProjection.Project(state, view);
+        activeShellView = projection.ActiveView;
+
+        MainPanelRoot.Visibility = projection.IsMainPanelVisible
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        SettingsPanelRoot.Visibility = projection.IsSettingsVisible
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        UpdateMainPanelProjection(state);
+        SizeToActiveShellView();
+        UpdateHeaderDragRegion();
+    }
+
+    private void SizeToActiveShellView()
+    {
+        var height = activeShellView is AppShellView.Settings
+            ? SettingsPanelHeightDips
+            : MainPanelHeightDips;
+        SizeToShell(MainPanelWidthDips, height);
+    }
+
+    private void SizeToShell(int widthDips, int heightDips)
+    {
+        if (sizingMainPanel)
+        {
+            return;
+        }
+
+        var scale = RootGrid.XamlRoot?.RasterizationScale ?? 1.0;
+        try
+        {
+            sizingMainPanel = true;
+            AppWindow.ResizeClient(new SizeInt32(
+                ScaleToPhysicalPixels(widthDips, scale),
+                ScaleToPhysicalPixels(heightDips, scale)));
+        }
+        finally
+        {
+            sizingMainPanel = false;
+        }
+    }
+
+    private static int ScaleToPhysicalPixels(int dips, double rasterizationScale) =>
+        Math.Max(1, (int)Math.Ceiling(dips * rasterizationScale));
+
+    private static int ScaleToPhysicalPixels(double dips, double rasterizationScale) =>
+        Math.Max(0, (int)Math.Round(dips * rasterizationScale));
 
     private void StartPreview(CaptureTarget target)
     {
@@ -579,7 +780,6 @@ public sealed partial class MainWindow : Window
         {
             var validatedState = state ?? throw new ArgumentNullException(nameof(state));
             captureService?.UpdateSessionState(validatedState);
-            UpdateCaptureStatus(validatedState);
             UpdateMainPanelProjection(validatedState);
             var overlayState = CreateOverlayState(validatedState);
             overlayWindow?.ApplyState(overlayState);
@@ -595,36 +795,32 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void UpdateCaptureStatus(CaptureSessionState state)
-    {
-        CaptureStatusTitle.Text = state.Status switch
-        {
-            CaptureSessionStatus.Idle => "Ready",
-            CaptureSessionStatus.SelectingTarget => "Selecting capture target",
-            CaptureSessionStatus.Initializing => "Starting preview",
-            CaptureSessionStatus.Capturing => "HDR preview running",
-            CaptureSessionStatus.Degraded => "Preview degraded",
-            CaptureSessionStatus.Unsupported => "Capture unsupported",
-            CaptureSessionStatus.Failed => "Preview failed",
-            CaptureSessionStatus.Disposed => "Preview stopped",
-            _ => "Capture status",
-        };
-        CaptureStatusMessage.Text = string.IsNullOrWhiteSpace(state.UserFacingReason)
-            ? "Capture status changed."
-            : state.UserFacingReason;
-        CaptureStatusDetail.Text = string.IsNullOrWhiteSpace(state.TechnicalDetail)
-            ? string.Empty
-            : state.TechnicalDetail;
-        CaptureStatusDetail.Visibility = string.IsNullOrWhiteSpace(state.TechnicalDetail)
-            ? Visibility.Collapsed
-            : Visibility.Visible;
-    }
-
     private void ApplyShortcutLabels()
     {
         SelectCaptureTargetButton.ShortcutText = MainPanelProjection.FormatShortcut(settingsProvider.FullscreenShortcut);
         RegionSelectButton.ShortcutText = MainPanelProjection.FormatShortcut(settingsProvider.RegionShortcut);
+        SettingsFullscreenShortcutText.Text = $"Shortcut: {MainPanelProjection.FormatShortcut(settingsProvider.FullscreenShortcut)}";
+        SettingsRegionShortcutText.Text = $"Shortcut: {MainPanelProjection.FormatShortcut(settingsProvider.RegionShortcut)}";
+        SettingsHdrAlertsText.Text = settingsProvider.HdrAlertsEnabled
+            ? "Alerts enabled by default"
+            : "Alerts disabled by default";
+        SettingsOutputTargetText.Text = FormatOutputTarget(settingsProvider.OutputTarget);
+        SettingsSavePathText.Text = string.IsNullOrWhiteSpace(settingsProvider.SavePath)
+            ? "Default location pending"
+            : settingsProvider.SavePath;
+        SettingsCopyAsImageText.Text = settingsProvider.CopyAsImage
+            ? "Copy image enabled by default"
+            : "Copy image disabled by default";
     }
+
+    private static string FormatOutputTarget(OutputTarget outputTarget) =>
+        outputTarget switch
+        {
+            OutputTarget.Clipboard => "Clipboard",
+            OutputTarget.Folder => "Folder",
+            OutputTarget.Both => "Clipboard and folder",
+            _ => outputTarget.ToString(),
+        };
 
     private void UpdateMainPanelProjection(CaptureSessionState state)
     {
@@ -637,12 +833,13 @@ public sealed partial class MainWindow : Window
         SelectCaptureTargetButton.Title = isIdle ? "Full Screen" : projection.ActionTitle;
         RegionSelectButton.Title = isIdle ? "Region" : projection.ActionTitle;
 
-        TrustStatusGlyph.Glyph = projection.TrustGlyph;
+        TrustStatusGlyph.Icon = projection.TrustIcon;
         TrustStatusGlyph.Foreground = statusBrush;
         TrustStatusDot.Fill = statusBrush;
         TrustStatusLabel.Text = projection.TrustLabel;
         TrustStatusLabel.Foreground = statusBrush;
-        TrustStatusMessage.Text = projection.TrustMessage;
+        ToolTipService.SetToolTip(TrustStatusLabel, projection.TrustMessage);
+        AutomationProperties.SetHelpText(TrustStatusLabel, projection.TrustMessage);
     }
 
     private Brush GetTrustStatusBrush(MainPanelTrustSeverity severity)
@@ -859,6 +1056,11 @@ public sealed partial class MainWindow : Window
     private void OnWindowClosed(object sender, WindowEventArgs args)
     {
         isClosed = true;
+        if (RootGrid.XamlRoot is not null)
+        {
+            RootGrid.XamlRoot.Changed -= OnXamlRootChanged;
+        }
+
         try
         {
             StopPreview(reportStopped: false);

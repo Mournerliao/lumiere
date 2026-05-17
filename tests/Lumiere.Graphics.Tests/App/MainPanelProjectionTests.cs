@@ -1,3 +1,4 @@
+using FluentIcons.Common;
 using Lumiere.App;
 using Lumiere.Capture;
 using Lumiere.Graphics.Hdr;
@@ -26,10 +27,10 @@ public sealed class MainPanelProjectionTests
     [InlineData(CaptureSessionStatus.Initializing, false)]
     [InlineData(CaptureSessionStatus.Capturing, false)]
     [InlineData(CaptureSessionStatus.Degraded, false)]
-    [InlineData(CaptureSessionStatus.Unsupported, false)]
-    [InlineData(CaptureSessionStatus.Failed, false)]
+    [InlineData(CaptureSessionStatus.Unsupported, true)]
+    [InlineData(CaptureSessionStatus.Failed, true)]
     [InlineData(CaptureSessionStatus.Disposed, false)]
-    public void ProjectActions_DisablesDuplicateTriggersForNonIdleStates(CaptureSessionStatus status, bool expectedCanStart)
+    public void ProjectActions_AllowsRecoverableStatesOnly(CaptureSessionStatus status, bool expectedCanStart)
     {
         var state = CreateState(status);
 
@@ -39,22 +40,22 @@ public sealed class MainPanelProjectionTests
     }
 
     [Theory]
-    [InlineData(PreviewReadinessState.Ready, "HDR Ready", "\uE930")]
-    [InlineData(PreviewReadinessState.Degraded, "Enable HDR", "\uE7BA")]
-    [InlineData(PreviewReadinessState.Unsupported, "HDR unsupported", "\uE783")]
-    [InlineData(PreviewReadinessState.Failed, "HDR status failed", "\uE783")]
-    [InlineData(PreviewReadinessState.Initializing, "Checking HDR", "\uE9D5")]
+    [InlineData(PreviewReadinessState.Ready, "HDR Ready", Icon.CheckmarkCircle)]
+    [InlineData(PreviewReadinessState.Degraded, "Enable HDR", Icon.Desktop)]
+    [InlineData(PreviewReadinessState.Unsupported, "HDR unsupported", Icon.ErrorCircle)]
+    [InlineData(PreviewReadinessState.Failed, "HDR status failed", Icon.ErrorCircle)]
+    [InlineData(PreviewReadinessState.Initializing, "Checking HDR", Icon.Clock)]
     public void ProjectStatus_MapsReadinessToConciseTrustSummary(
         PreviewReadinessState readinessState,
         string expectedLabel,
-        string expectedGlyph)
+        Icon expectedIcon)
     {
         var state = CreateState(readinessState);
 
         var projection = MainPanelProjection.Project(state);
 
         Assert.Equal(expectedLabel, projection.TrustLabel);
-        Assert.Equal(expectedGlyph, projection.TrustGlyph);
+        Assert.Equal(expectedIcon, projection.TrustIcon);
         Assert.False(string.IsNullOrWhiteSpace(projection.TrustMessage));
     }
 

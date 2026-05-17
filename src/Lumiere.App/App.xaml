@@ -8,14 +8,15 @@
         <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
       </ResourceDictionary.MergedDictionaries>
       <SolidColorBrush x:Key="AppBackgroundBrush" Color="#FF111111" />
-      <SolidColorBrush x:Key="PanelBrush" Color="#C0202020" />
-      <SolidColorBrush x:Key="BorderBrush" Color="#14FFFFFF" />
+      <SolidColorBrush x:Key="PanelBrush" Color="#FF111414" />
+      <SolidColorBrush x:Key="SecondaryPanelBrush" Color="#FF151819" />
+      <SolidColorBrush x:Key="BorderBrush" Color="#24FFFFFF" />
       <SolidColorBrush x:Key="TextBrush" Color="#FFFFFFFF" />
       <SolidColorBrush x:Key="MutedTextBrush" Color="#FFA0A0A0" />
       <SolidColorBrush x:Key="SubtleTextBrush" Color="#99FFFFFF" />
-      <SolidColorBrush x:Key="AccentBrush" Color="#FF0078D4" />
-      <SolidColorBrush x:Key="AccentSoftBrush" Color="#1A0078D4" />
-      <SolidColorBrush x:Key="AccentBorderBrush" Color="#800078D4" />
+      <SolidColorBrush x:Key="AccentBrush" Color="#FF7067FF" />
+      <SolidColorBrush x:Key="AccentSoftBrush" Color="#FF19192B" />
+      <SolidColorBrush x:Key="AccentBorderBrush" Color="#805B55D6" />
       <SolidColorBrush x:Key="SuccessBrush" Color="#FF10B981" />
       <SolidColorBrush x:Key="WarningBrush" Color="#FFF59E0B" />
       <SolidColorBrush x:Key="ErrorBrush" Color="#FFEF4444" />

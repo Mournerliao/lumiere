@@ -1,3 +1,4 @@
+using FluentIcons.Common;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -6,12 +7,12 @@ namespace Lumiere.App;
 
 public sealed partial class CaptureActionCard : UserControl
 {
-    public static readonly DependencyProperty GlyphProperty =
+    public static readonly DependencyProperty IconProperty =
         DependencyProperty.Register(
-            nameof(Glyph),
-            typeof(string),
+            nameof(Icon),
+            typeof(Icon),
             typeof(CaptureActionCard),
-            new PropertyMetadata(string.Empty));
+            new PropertyMetadata(Icon.Camera));
 
     public static readonly DependencyProperty TitleProperty =
         DependencyProperty.Register(
@@ -76,10 +77,10 @@ public sealed partial class CaptureActionCard : UserControl
 
     public event RoutedEventHandler? Click;
 
-    public string Glyph
+    public Icon Icon
     {
-        get => (string)GetValue(GlyphProperty);
-        set => SetValue(GlyphProperty, value);
+        get => (Icon)GetValue(IconProperty);
+        set => SetValue(IconProperty, value);
     }
 
     public string Title

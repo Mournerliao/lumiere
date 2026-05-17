@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentIcons.WinUI" />
     <PackageReference Include="Microsoft.WindowsAppSDK" />
   </ItemGroup>
 

@@ -175,3 +175,9 @@ None currently known.
 
 - Epic 4 retrospective created `_bmad-output/implementation-artifacts/epic-4-retro-2026-05-13.md`.
 - Epic 5 guardrail follow-through created `_bmad-output/implementation-artifacts/epic-5-implementation-guardrails.md`.
+
+## Deferred from: code review of 5-1-build-the-native-v0-main-panel.md (2026-05-17)
+
+- Native close/minimize command affordance is still pending a later shell/tray story. Story 5.1 intentionally represents minimize/background intent without implementing tray/background behavior; revisit when Story 5.2 or Epic 7 owns shell commands.
+- Full text scaling, high contrast, mixed-DPI, SDR, and multi-monitor manual validation remains future release-matrix coverage. Story 5.1 validated a single HDR 4K display at 150% DPI only.
+- Add deeper automated coverage for HWND/DWM frame suppression helpers. Current Story 5.1 relies on build/manual validation for the native interop path; future coverage can extract pure style-bit planning logic or add boundary tests.
