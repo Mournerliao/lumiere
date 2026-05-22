@@ -1,11 +1,11 @@
 ---
 baseline_commit: c9dbaa52330fb0303f05f543302fd153ea0cb187
-status: review
+status: done
 ---
 
 # Story 5.3: Add Shortcut and HDR Alert Settings UI
 
-Status: review
+Status: done
 
 ## Story
 

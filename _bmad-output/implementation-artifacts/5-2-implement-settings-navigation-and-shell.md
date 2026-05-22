@@ -65,6 +65,15 @@ so that I can configure capture behavior without leaving the native app experien
   - [x] If overlay/session interaction is touched, also run `dotnet test tests/Lumiere.Overlay.Tests/Lumiere.Overlay.Tests.csproj -p:Platform=x64 --no-restore --verbosity minimal /nr:false`.
   - [x] Record Windows manual validation limits for WinUI rendering, keyboard navigation, screen reader exposure, high contrast, text scaling, DPI, and active capture/session behavior.
 
+### Review Findings
+
+- [ ] [Review][Patch] Keep retryable capture actions labeled as commands, not failure statuses [src/Lumiere.App/MainWindow.xaml.cs:833]
+- [ ] [Review][Patch] Remove the new FluentIcons.WinUI dependency or justify it in a separate dependency story [Directory.Packages.props:7]
+- [ ] [Review][Patch] Avoid adding HWND/DWM frame interop in the settings-navigation story scope [src/Lumiere.Infrastructure/Interop/WindowFrameInterop.cs:24]
+- [ ] [Review][Patch] Preserve an accessible click path for close/minimize after suppressing the native title bar [src/Lumiere.App/MainWindow.xaml:153]
+- [ ] [Review][Patch] Clamp fixed settings-shell sizing to the active display work area and DPI [src/Lumiere.App/MainWindow.xaml.cs:385]
+- [ ] [Review][Patch] Clear caption drag regions when switching shell views before the new header is measured [src/Lumiere.App/MainWindow.xaml.cs:325]
+
 ## Dev Notes
 
 ### Story Scope
