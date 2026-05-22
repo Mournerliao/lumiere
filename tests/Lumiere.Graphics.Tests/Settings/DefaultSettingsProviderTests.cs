@@ -47,6 +47,16 @@ public sealed class DefaultSettingsProviderTests
     }
 
     [Fact]
+    public void SetHdrAlertsEnabled_UpdatesInSessionPreference()
+    {
+        var provider = new DefaultSettingsProvider();
+
+        provider.SetHdrAlertsEnabled(false);
+
+        Assert.False(provider.HdrAlertsEnabled);
+    }
+
+    [Fact]
     public void FullscreenShortcut_ReturnsEmptyString()
     {
         var provider = new DefaultSettingsProvider();
@@ -68,6 +78,7 @@ public sealed class DefaultSettingsProviderTests
         var provider = new DefaultSettingsProvider();
 
         Assert.IsAssignableFrom<ISettingsProvider>(provider);
+        Assert.IsAssignableFrom<IHdrAlertSettingsWriter>(provider);
     }
 
     [Fact]

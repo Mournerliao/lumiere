@@ -35,8 +35,8 @@ public sealed record MainPanelProjection(
         {
             PreviewReadinessState.Ready => ("HDR Ready", Icon.CheckmarkCircle, MainPanelTrustSeverity.Success),
             PreviewReadinessState.Degraded => ("Enable HDR", Icon.Desktop, MainPanelTrustSeverity.Warning),
-            PreviewReadinessState.Unsupported => ("HDR unsupported", Icon.ErrorCircle, MainPanelTrustSeverity.Error),
-            PreviewReadinessState.Failed => ("HDR status failed", Icon.ErrorCircle, MainPanelTrustSeverity.Error),
+            PreviewReadinessState.Unsupported => ("HDR unavailable", Icon.ErrorCircle, MainPanelTrustSeverity.Error),
+            PreviewReadinessState.Failed => ("HDR unavailable", Icon.ErrorCircle, MainPanelTrustSeverity.Error),
             _ => ("Checking HDR", Icon.Clock, MainPanelTrustSeverity.Neutral),
         };
 

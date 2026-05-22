@@ -42,8 +42,8 @@ public sealed class MainPanelProjectionTests
     [Theory]
     [InlineData(PreviewReadinessState.Ready, "HDR Ready", Icon.CheckmarkCircle)]
     [InlineData(PreviewReadinessState.Degraded, "Enable HDR", Icon.Desktop)]
-    [InlineData(PreviewReadinessState.Unsupported, "HDR unsupported", Icon.ErrorCircle)]
-    [InlineData(PreviewReadinessState.Failed, "HDR status failed", Icon.ErrorCircle)]
+    [InlineData(PreviewReadinessState.Unsupported, "HDR unavailable", Icon.ErrorCircle)]
+    [InlineData(PreviewReadinessState.Failed, "HDR unavailable", Icon.ErrorCircle)]
     [InlineData(PreviewReadinessState.Initializing, "Checking HDR", Icon.Clock)]
     public void ProjectStatus_MapsReadinessToConciseTrustSummary(
         PreviewReadinessState readinessState,

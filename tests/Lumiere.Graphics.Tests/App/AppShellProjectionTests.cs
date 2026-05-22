@@ -49,7 +49,7 @@ public sealed class AppShellProjectionTests
         Assert.True(mainProjection.IsMainPanelVisible);
         Assert.False(mainProjection.IsSettingsVisible);
         Assert.Equal("Capture failed", mainProjection.MainPanel.ActionTitle);
-        Assert.Equal("HDR status failed", mainProjection.MainPanel.TrustLabel);
+        Assert.Equal("HDR unavailable", mainProjection.MainPanel.TrustLabel);
     }
 
     private static CaptureSessionState CreateState() =>

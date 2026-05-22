@@ -26,14 +26,19 @@ namespace Lumiere.App;
 public sealed partial class MainWindow : Window
 {
     private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.App);
+    private const string StatusCheckmarkCircleGlyph = "\uE930";
+    private const string StatusMonitorGlyph = "\uE7F4";
+    private const string StatusErrorCircleGlyph = "\uEA39";
+    private const string StatusClockGlyph = "\uE121";
     private const int MainPanelWidthDips = 360;
-    private const int MainPanelHeightDips = 300;
-    private const int SettingsPanelHeightDips = 560;
+    private const int MainPanelHeightDips = 310;
+    private const int SettingsPanelHeightDips = 640;
 
     private readonly object previewSync = new();
     private readonly ICaptureCommandCoordinator captureCommandCoordinator;
     private readonly IOutputService outputService;
     private readonly ISettingsProvider settingsProvider;
+    private readonly IHdrAlertSettingsWriter hdrAlertSettingsWriter;
     private readonly GraphicsDeviceResources deviceResources;
     private readonly GraphicsEngine graphicsEngine;
     private CaptureService? captureService;
@@ -50,6 +55,7 @@ public sealed partial class MainWindow : Window
     private bool isClosed;
     private bool isDeviceDisposed;
     private bool applyingSessionState;
+    private bool applyingSettingsProjection;
     private bool sizingMainPanel;
     private AppShellView activeShellView = AppShellView.Main;
     private int overlayDispatcherFallbackReported;
@@ -60,12 +66,14 @@ public sealed partial class MainWindow : Window
         ICaptureCommandCoordinator captureCommandCoordinator,
         IOutputService outputService,
         ISettingsProvider settingsProvider,
+        IHdrAlertSettingsWriter hdrAlertSettingsWriter,
         CaptureService captureService,
         GraphicsDeviceResources deviceResources)
     {
         this.captureCommandCoordinator = captureCommandCoordinator ?? throw new ArgumentNullException(nameof(captureCommandCoordinator));
         this.outputService = outputService ?? throw new ArgumentNullException(nameof(outputService));
         this.settingsProvider = settingsProvider ?? throw new ArgumentNullException(nameof(settingsProvider));
+        this.hdrAlertSettingsWriter = hdrAlertSettingsWriter ?? throw new ArgumentNullException(nameof(hdrAlertSettingsWriter));
         this.captureService = captureService ?? throw new ArgumentNullException(nameof(captureService));
         this.deviceResources = deviceResources ?? throw new ArgumentNullException(nameof(deviceResources));
         this.graphicsEngine = new GraphicsEngine(deviceResources);
@@ -122,6 +130,20 @@ public sealed partial class MainWindow : Window
     {
         ApplyShellView(AppShellView.Main);
         Logger.LogDebug("Settings shell closed; returning to main panel.");
+    }
+
+    private void OnSettingsHdrAlertsToggleToggled(object sender, RoutedEventArgs e)
+    {
+        if (applyingSettingsProjection)
+        {
+            return;
+        }
+
+        hdrAlertSettingsWriter.SetHdrAlertsEnabled(SettingsHdrAlertsToggle.IsOn);
+        ApplySettingsProjection(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
+        Logger.LogDebug(
+            "HDR alert preference updated in settings: enabled={HdrAlertsEnabled}",
+            settingsProvider.HdrAlertsEnabled);
     }
 
     private async Task ExecuteCaptureFromUiAsync(CaptureCommandMode mode)
@@ -370,6 +392,7 @@ public sealed partial class MainWindow : Window
             : Visibility.Collapsed;
 
         UpdateMainPanelProjection(state);
+        ApplySettingsProjection(state);
         SizeToActiveShellView();
         UpdateHeaderDragRegion();
     }
@@ -799,28 +822,67 @@ public sealed partial class MainWindow : Window
     {
         SelectCaptureTargetButton.ShortcutText = MainPanelProjection.FormatShortcut(settingsProvider.FullscreenShortcut);
         RegionSelectButton.ShortcutText = MainPanelProjection.FormatShortcut(settingsProvider.RegionShortcut);
-        SettingsFullscreenShortcutText.Text = $"Shortcut: {MainPanelProjection.FormatShortcut(settingsProvider.FullscreenShortcut)}";
-        SettingsRegionShortcutText.Text = $"Shortcut: {MainPanelProjection.FormatShortcut(settingsProvider.RegionShortcut)}";
-        SettingsHdrAlertsText.Text = settingsProvider.HdrAlertsEnabled
-            ? "Alerts enabled by default"
-            : "Alerts disabled by default";
-        SettingsOutputTargetText.Text = FormatOutputTarget(settingsProvider.OutputTarget);
-        SettingsSavePathText.Text = string.IsNullOrWhiteSpace(settingsProvider.SavePath)
-            ? "Default location pending"
-            : settingsProvider.SavePath;
-        SettingsCopyAsImageText.Text = settingsProvider.CopyAsImage
-            ? "Copy image enabled by default"
-            : "Copy image disabled by default";
+        ApplySettingsProjection(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
     }
 
-    private static string FormatOutputTarget(OutputTarget outputTarget) =>
-        outputTarget switch
+    private void ApplySettingsProjection(CaptureSessionState state)
+    {
+        var projection = SettingsPanelProjection.Project(settingsProvider, state);
+
+        applyingSettingsProjection = true;
+        try
         {
-            OutputTarget.Clipboard => "Clipboard",
-            OutputTarget.Folder => "Folder",
-            OutputTarget.Both => "Clipboard and folder",
-            _ => outputTarget.ToString(),
-        };
+            SettingsFullscreenShortcutValueText.Text = projection.FullscreenShortcut.DisplayValue;
+            AutomationProperties.SetName(SettingsFullscreenShortcutValuePill, projection.FullscreenShortcut.Label);
+            AutomationProperties.SetHelpText(SettingsFullscreenShortcutValuePill, projection.FullscreenShortcut.HelpText);
+            ToolTipService.SetToolTip(SettingsFullscreenShortcutValuePill, projection.FullscreenShortcut.PendingReason);
+
+            SettingsRegionShortcutValueText.Text = projection.RegionShortcut.DisplayValue;
+            AutomationProperties.SetName(SettingsRegionShortcutValuePill, projection.RegionShortcut.Label);
+            AutomationProperties.SetHelpText(SettingsRegionShortcutValuePill, projection.RegionShortcut.HelpText);
+            ToolTipService.SetToolTip(SettingsRegionShortcutValuePill, projection.RegionShortcut.PendingReason);
+
+            SettingsHdrAlertsToggle.IsOn = projection.HdrAlertsEnabled;
+            SettingsHdrAlertsHelperText.Text = "When HDR is unavailable";
+            AutomationProperties.SetHelpText(SettingsHdrAlertsToggle, projection.HdrAlertsHelpText);
+            SettingsTimestampToggle.IsOn = projection.TimestampNaming;
+            SettingsCopyAsImageToggle.IsOn = projection.CopyAsImage;
+            ApplyDestinationSegmentProjection(projection.Output);
+        }
+        finally
+        {
+            applyingSettingsProjection = false;
+        }
+    }
+
+    private void ApplyDestinationSegmentProjection(OutputSettingsProjection output)
+    {
+        ApplySegmentState(
+            SettingsDestinationClipboardSegment,
+            SettingsDestinationClipboardText,
+            output.IsClipboardSelected);
+        ApplySegmentState(
+            SettingsDestinationFolderSegment,
+            SettingsDestinationFolderText,
+            output.IsFolderSelected);
+        ApplySegmentState(
+            SettingsDestinationBothSegment,
+            SettingsDestinationBothText,
+            output.IsBothSelected);
+        AutomationProperties.SetHelpText(
+            SettingsDestinationClipboardSegment,
+            $"Current output destination is {output.DisplayValue}. Editing arrives with output settings behavior.");
+    }
+
+    private void ApplySegmentState(Border segment, TextBlock label, bool isSelected)
+    {
+        segment.Background = isSelected
+            ? (Brush)Application.Current.Resources["AccentSoftBrush"]
+            : null;
+        label.Foreground = isSelected
+            ? (Brush)Application.Current.Resources["TextBrush"]
+            : (Brush)Application.Current.Resources["MutedTextBrush"];
+    }
 
     private void UpdateMainPanelProjection(CaptureSessionState state)
     {
@@ -833,7 +895,7 @@ public sealed partial class MainWindow : Window
         SelectCaptureTargetButton.Title = isIdle ? "Full Screen" : projection.ActionTitle;
         RegionSelectButton.Title = isIdle ? "Region" : projection.ActionTitle;
 
-        TrustStatusGlyph.Icon = projection.TrustIcon;
+        TrustStatusGlyph.Glyph = GetTrustStatusGlyph(projection.TrustIcon);
         TrustStatusGlyph.Foreground = statusBrush;
         TrustStatusDot.Fill = statusBrush;
         TrustStatusLabel.Text = projection.TrustLabel;
@@ -854,6 +916,15 @@ public sealed partial class MainWindow : Window
 
         return (Brush)Application.Current.Resources[key];
     }
+
+    private static string GetTrustStatusGlyph(FluentIcons.Common.Icon icon) =>
+        icon switch
+        {
+            FluentIcons.Common.Icon.CheckmarkCircle => StatusCheckmarkCircleGlyph,
+            FluentIcons.Common.Icon.Desktop => StatusMonitorGlyph,
+            FluentIcons.Common.Icon.ErrorCircle => StatusErrorCircleGlyph,
+            _ => StatusClockGlyph,
+        };
 
     private bool TryEnqueueUi(Action action)
     {

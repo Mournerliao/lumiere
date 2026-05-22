@@ -13,9 +13,9 @@
       RequestedTheme="Dark">
     <Grid x:Name="MainPanelRoot">
       <Grid.RowDefinitions>
-        <RowDefinition Height="58" />
+        <RowDefinition Height="64" />
         <RowDefinition Height="*" />
-        <RowDefinition Height="40" />
+        <RowDefinition Height="42" />
       </Grid.RowDefinitions>
 
       <Border
@@ -32,12 +32,12 @@
           <StackPanel
               VerticalAlignment="Center"
               Orientation="Horizontal"
-              Spacing="10">
+              Spacing="12">
             <Border
-                Width="24"
-                Height="24"
+                Width="32"
+                Height="32"
                 Background="{StaticResource AccentSoftBrush}"
-                CornerRadius="6">
+                CornerRadius="8">
               <ic:FluentIcon
                   Foreground="{StaticResource AccentBrush}"
                   Icon="Layer"
@@ -130,13 +130,15 @@
               VerticalAlignment="Center"
               Orientation="Horizontal"
               Spacing="8">
-            <ic:FluentIcon
+            <FontIcon
                 x:Name="TrustStatusGlyph"
+                Width="16"
+                Height="16"
                 VerticalAlignment="Center"
+                FontFamily="Segoe Fluent Icons"
+                FontSize="14"
                 Foreground="{StaticResource MutedTextBrush}"
-                Icon="Clock"
-                IconSize="Size16"
-                IconVariant="Regular" />
+                Glyph="&#xE121;" />
             <Ellipse
                 x:Name="TrustStatusDot"
                 Width="6"
@@ -166,17 +168,17 @@
         x:Name="SettingsPanelRoot"
         Visibility="Collapsed">
       <Grid.RowDefinitions>
-        <RowDefinition Height="58" />
+        <RowDefinition Height="64" />
         <RowDefinition Height="*" />
       </Grid.RowDefinitions>
 
       <Border
           x:Name="SettingsHeaderDragArea"
           Grid.Row="0"
-          Padding="14,0,20,0"
+          Padding="20,0"
           BorderBrush="{StaticResource BorderBrush}"
           BorderThickness="0,0,0,1">
-        <Grid ColumnSpacing="10">
+        <Grid ColumnSpacing="12">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
@@ -211,96 +213,210 @@
                 FontWeight="SemiBold"
                 Foreground="{StaticResource TextBrush}"
                 Text="Settings" />
-            <TextBlock
-                FontSize="11"
-                Foreground="{StaticResource MutedTextBrush}"
-                Text="Native shell, pending behavior clearly marked" />
           </StackPanel>
         </Grid>
       </Border>
 
       <ScrollViewer
           Grid.Row="1"
-          Padding="20,16,20,20"
+          Padding="20,20,20,20"
           HorizontalScrollBarVisibility="Disabled"
           VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="16">
+        <StackPanel Spacing="20">
           <StackPanel
               AutomationProperties.Name="Shortcuts settings section"
-              AutomationProperties.HelpText="Shortcut editing arrives in a later story."
-              Spacing="8">
-            <TextBlock
-                FontSize="11"
-                FontWeight="SemiBold"
-                Foreground="{StaticResource MutedTextBrush}"
-                Text="SHORTCUTS" />
+              AutomationProperties.HelpText="Shortcut values are visible, but global registration and editing arrive in Epic 7."
+              Spacing="9">
+            <local:SettingsSectionHeader
+                IconGlyph="&#xE765;"
+                Title="SHORTCUTS" />
             <Border
-                Padding="14,12"
+                Padding="16,0"
                 Background="{StaticResource SecondaryPanelBrush}"
                 BorderBrush="{StaticResource BorderBrush}"
                 BorderThickness="1"
-                CornerRadius="8">
-              <StackPanel Spacing="10">
-                <Grid ColumnSpacing="12">
+                CornerRadius="12">
+              <StackPanel>
+                <Grid
+                    MinHeight="56"
+                    ColumnSpacing="14">
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
-                  <StackPanel Spacing="2">
-                    <TextBlock
-                        FontSize="13"
-                        FontWeight="SemiBold"
-                        Foreground="{StaticResource TextBrush}"
-                        Text="Full Screen" />
-                    <TextBlock
-                        x:Name="SettingsFullscreenShortcutText"
-                        FontSize="11"
-                        Foreground="{StaticResource MutedTextBrush}"
-                        Text="Shortcut not assigned" />
-                  </StackPanel>
-                  <Border
-                      Grid.Column="1"
-                      Padding="7,3"
+                  <TextBlock
                       VerticalAlignment="Center"
-                      Background="#2217191C"
+                      FontSize="13"
+                      FontWeight="SemiBold"
+                      Foreground="{StaticResource TextBrush}"
+                      Text="Full Screen" />
+                  <Border
+                      x:Name="SettingsFullscreenShortcutValuePill"
+                      Grid.Column="1"
+                      MinWidth="96"
+                      Padding="12,6"
+                      VerticalAlignment="Center"
+                      Background="#241D2024"
                       BorderBrush="{StaticResource BorderBrush}"
                       BorderThickness="1"
-                      CornerRadius="4">
+                      CornerRadius="8">
                     <TextBlock
-                        FontSize="11"
+                        x:Name="SettingsFullscreenShortcutValueText"
+                        HorizontalAlignment="Center"
+                        FontSize="12"
+                        FontWeight="SemiBold"
                         Foreground="{StaticResource MutedTextBrush}"
-                        Text="Pending" />
+                        Text="Not assigned" />
                   </Border>
                 </Grid>
-                <Grid ColumnSpacing="12">
+                <Border
+                    Height="1"
+                    Background="{StaticResource BorderBrush}" />
+                <Grid
+                    MinHeight="56"
+                    ColumnSpacing="14">
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
-                  <StackPanel Spacing="2">
+                  <TextBlock
+                      VerticalAlignment="Center"
+                      FontSize="13"
+                      FontWeight="SemiBold"
+                      Foreground="{StaticResource TextBrush}"
+                      Text="Region" />
+                  <Border
+                      x:Name="SettingsRegionShortcutValuePill"
+                      Grid.Column="1"
+                      MinWidth="96"
+                      Padding="12,6"
+                      VerticalAlignment="Center"
+                      Background="#241D2024"
+                      BorderBrush="{StaticResource BorderBrush}"
+                      BorderThickness="1"
+                      CornerRadius="8">
+                    <TextBlock
+                        x:Name="SettingsRegionShortcutValueText"
+                        HorizontalAlignment="Center"
+                        FontSize="12"
+                        FontWeight="SemiBold"
+                        Foreground="{StaticResource MutedTextBrush}"
+                        Text="Not assigned" />
+                  </Border>
+                </Grid>
+              </StackPanel>
+            </Border>
+            <TextBlock
+                Margin="16,-3,0,0"
+                FontSize="10"
+                Foreground="{StaticResource MutedTextBrush}"
+                Text="Global registration arrives in Epic 7" />
+          </StackPanel>
+
+          <StackPanel
+              AutomationProperties.Name="HDR alerts settings section"
+              AutomationProperties.HelpText="HDR alert preference can be changed for the current session."
+              Spacing="9">
+            <local:SettingsSectionHeader
+                IconGlyph="&#xE7F4;"
+                Title="HDR" />
+            <Border
+                Padding="16,0"
+                HorizontalAlignment="Stretch"
+                Background="{StaticResource SecondaryPanelBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="12">
+              <StackPanel>
+                <Grid MinHeight="64" ColumnSpacing="14">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel VerticalAlignment="Center" Spacing="3">
                     <TextBlock
                         FontSize="13"
                         FontWeight="SemiBold"
                         Foreground="{StaticResource TextBrush}"
-                        Text="Region" />
+                        Text="HDR alerts" />
                     <TextBlock
-                        x:Name="SettingsRegionShortcutText"
+                        x:Name="SettingsHdrAlertsHelperText"
                         FontSize="11"
                         Foreground="{StaticResource MutedTextBrush}"
-                        Text="Shortcut not assigned" />
+                        Text="When HDR is unavailable"
+                        TextWrapping="WrapWholeWords" />
                   </StackPanel>
+                  <ToggleSwitch
+                      x:Name="SettingsHdrAlertsToggle"
+                      Grid.Column="1"
+                      HorizontalAlignment="Right"
+                      VerticalAlignment="Center"
+                      AutomationProperties.HelpText="Show warnings when HDR is unavailable, degraded, unsupported, or failed."
+                      AutomationProperties.Name="HDR alerts"
+                      OffContent=""
+                      OnContent=""
+                      Style="{StaticResource CompactSwitchToggleSwitchStyle}"
+                      Toggled="OnSettingsHdrAlertsToggleToggled" />
+                </Grid>
+                <Border
+                    Height="1"
+                    Background="{StaticResource BorderBrush}" />
+                <Grid MinHeight="64" ColumnSpacing="14">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock
+                      VerticalAlignment="Center"
+                      FontSize="13"
+                      FontWeight="SemiBold"
+                      Foreground="{StaticResource TextBrush}"
+                      Text="Export" />
                   <Border
                       Grid.Column="1"
-                      Padding="7,3"
-                      VerticalAlignment="Center"
+                      Width="176"
+                      Height="40"
+                      Padding="4"
+                      AutomationProperties.HelpText="Export format selection is display-only until output settings behavior is implemented."
+                      AutomationProperties.Name="Export format display"
                       Background="#2217191C"
                       BorderBrush="{StaticResource BorderBrush}"
                       BorderThickness="1"
-                      CornerRadius="4">
-                    <TextBlock
-                        FontSize="11"
-                        Foreground="{StaticResource MutedTextBrush}"
-                        Text="Pending" />
+                      CornerRadius="8">
+                    <Grid ColumnSpacing="4">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                      </Grid.ColumnDefinitions>
+                      <Border
+                          Background="{StaticResource AccentSoftBrush}"
+                          CornerRadius="6">
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontSize="11"
+                            FontWeight="SemiBold"
+                            Foreground="{StaticResource TextBrush}"
+                            Text="HDR10" />
+                      </Border>
+                      <TextBlock
+                          Grid.Column="1"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          FontSize="11"
+                          FontWeight="SemiBold"
+                          Foreground="{StaticResource MutedTextBrush}"
+                          Text="P3" />
+                      <TextBlock
+                          Grid.Column="2"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          FontSize="11"
+                          FontWeight="SemiBold"
+                          Foreground="{StaticResource MutedTextBrush}"
+                          Text="sRGB" />
+                    </Grid>
                   </Border>
                 </Grid>
               </StackPanel>
@@ -308,110 +424,131 @@
           </StackPanel>
 
           <StackPanel
-              AutomationProperties.Name="HDR alerts settings section"
-              AutomationProperties.HelpText="HDR alert behavior is displayed read-only until the dedicated settings story."
-              Spacing="8">
-            <TextBlock
-                FontSize="11"
-                FontWeight="SemiBold"
-                Foreground="{StaticResource MutedTextBrush}"
-                Text="HDR ALERTS" />
+              AutomationProperties.Name="Output settings section"
+              AutomationProperties.HelpText="Output preferences are placeholders until output settings behavior is implemented."
+              Spacing="9">
+            <local:SettingsSectionHeader
+                IconGlyph="&#xE8B7;"
+                Title="OUTPUT" />
             <Border
-                Padding="14,12"
+                Padding="16,0"
                 Background="{StaticResource SecondaryPanelBrush}"
                 BorderBrush="{StaticResource BorderBrush}"
                 BorderThickness="1"
-                CornerRadius="8">
-              <Grid ColumnSpacing="12">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel Spacing="2">
+                CornerRadius="12">
+              <StackPanel>
+                <StackPanel
+                    Padding="0,16,0,18"
+                    Spacing="10">
                   <TextBlock
+                      CharacterSpacing="80"
+                      FontSize="11"
+                      FontWeight="SemiBold"
+                      Foreground="{StaticResource MutedTextBrush}"
+                      Text="DESTINATION" />
+                  <Border
+                      Height="40"
+                      Padding="4"
+                      AutomationProperties.HelpText="Destination selection is display-only until output settings behavior is implemented."
+                      AutomationProperties.Name="Destination display"
+                      Background="#2217191C"
+                      BorderBrush="{StaticResource BorderBrush}"
+                      BorderThickness="1"
+                      CornerRadius="8">
+                    <Grid ColumnSpacing="4">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                      </Grid.ColumnDefinitions>
+                      <Border
+                          x:Name="SettingsDestinationClipboardSegment"
+                          CornerRadius="6">
+                        <TextBlock
+                            x:Name="SettingsDestinationClipboardText"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontSize="11"
+                            FontWeight="SemiBold"
+                            Text="Clipboard" />
+                      </Border>
+                      <Border
+                          x:Name="SettingsDestinationFolderSegment"
+                          Grid.Column="1"
+                          CornerRadius="6">
+                        <TextBlock
+                            x:Name="SettingsDestinationFolderText"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontSize="11"
+                            FontWeight="SemiBold"
+                            Text="Folder" />
+                      </Border>
+                      <Border
+                          x:Name="SettingsDestinationBothSegment"
+                          Grid.Column="2"
+                          CornerRadius="6">
+                        <TextBlock
+                            x:Name="SettingsDestinationBothText"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontSize="11"
+                            FontWeight="SemiBold"
+                            Text="Both" />
+                      </Border>
+                    </Grid>
+                  </Border>
+                </StackPanel>
+                <Border
+                    Height="1"
+                    Background="{StaticResource BorderBrush}" />
+                <Grid MinHeight="64" ColumnSpacing="14">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock
+                      VerticalAlignment="Center"
                       FontSize="13"
                       FontWeight="SemiBold"
                       Foreground="{StaticResource TextBrush}"
-                      Text="Warnings" />
-                  <TextBlock
-                      x:Name="SettingsHdrAlertsText"
-                      FontSize="11"
-                      Foreground="{StaticResource MutedTextBrush}"
-                      Text="Alerts enabled by default" />
-                </StackPanel>
-                <TextBlock
-                    Grid.Column="1"
-                    VerticalAlignment="Center"
-                    FontSize="12"
-                    Foreground="{StaticResource SubtleTextBrush}"
-                    Text="Read-only" />
-              </Grid>
-            </Border>
-          </StackPanel>
-
-          <StackPanel
-              AutomationProperties.Name="Output settings section"
-              AutomationProperties.HelpText="Output preferences are placeholders until output settings behavior is implemented."
-              Spacing="8">
-            <TextBlock
-                FontSize="11"
-                FontWeight="SemiBold"
-                Foreground="{StaticResource MutedTextBrush}"
-                Text="OUTPUT" />
-            <Border
-                Padding="14,12"
-                Background="{StaticResource SecondaryPanelBrush}"
-                BorderBrush="{StaticResource BorderBrush}"
-                BorderThickness="1"
-                CornerRadius="8">
-              <StackPanel Spacing="10">
-                <Grid ColumnSpacing="12">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                  </Grid.ColumnDefinitions>
-                  <StackPanel Spacing="2">
-                    <TextBlock
-                        FontSize="13"
-                        FontWeight="SemiBold"
-                        Foreground="{StaticResource TextBrush}"
-                        Text="Destination" />
-                    <TextBlock
-                        x:Name="SettingsOutputTargetText"
-                        FontSize="11"
-                        Foreground="{StaticResource MutedTextBrush}"
-                        Text="Clipboard" />
-                  </StackPanel>
-                  <TextBlock
+                      Text="Open after capture" />
+                  <ToggleSwitch
+                      x:Name="SettingsOpenAfterCaptureToggle"
                       Grid.Column="1"
                       VerticalAlignment="Center"
-                      FontSize="12"
-                      Foreground="{StaticResource SubtleTextBrush}"
-                      Text="Pending" />
+                      AutomationProperties.HelpText="Open-after-capture behavior arrives with output settings."
+                      AutomationProperties.Name="Open after capture"
+                      IsEnabled="False"
+                      IsOn="False"
+                      OffContent=""
+                      OnContent=""
+                      Style="{StaticResource CompactSwitchToggleSwitchStyle}" />
                 </Grid>
-                <Grid ColumnSpacing="12">
+                <Border
+                    Height="1"
+                    Background="{StaticResource BorderBrush}" />
+                <Grid MinHeight="64" ColumnSpacing="14">
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
-                  <StackPanel Spacing="2">
-                    <TextBlock
-                        FontSize="13"
-                        FontWeight="SemiBold"
-                        Foreground="{StaticResource TextBrush}"
-                        Text="Save path" />
-                    <TextBlock
-                        x:Name="SettingsSavePathText"
-                        FontSize="11"
-                        Foreground="{StaticResource MutedTextBrush}"
-                        Text="Default location pending" />
-                  </StackPanel>
                   <TextBlock
+                      VerticalAlignment="Center"
+                      FontSize="13"
+                      FontWeight="SemiBold"
+                      Foreground="{StaticResource TextBrush}"
+                      Text="Timestamp" />
+                  <ToggleSwitch
+                      x:Name="SettingsTimestampToggle"
                       Grid.Column="1"
                       VerticalAlignment="Center"
-                      FontSize="12"
-                      Foreground="{StaticResource SubtleTextBrush}"
-                      Text="Disabled" />
+                      AutomationProperties.HelpText="Timestamp naming is display-only until settings persistence is implemented."
+                      AutomationProperties.Name="Timestamp naming"
+                      IsEnabled="False"
+                      OffContent=""
+                      OnContent=""
+                      Style="{StaticResource CompactSwitchToggleSwitchStyle}" />
                 </Grid>
               </StackPanel>
             </Border>
@@ -420,82 +557,37 @@
           <StackPanel
               AutomationProperties.Name="Clipboard settings section"
               AutomationProperties.HelpText="Clipboard options are shown read-only until output behavior is expanded."
-              Spacing="8">
-            <TextBlock
-                FontSize="11"
-                FontWeight="SemiBold"
-                Foreground="{StaticResource MutedTextBrush}"
-                Text="CLIPBOARD" />
+              Spacing="9">
+            <local:SettingsSectionHeader
+                IconGlyph="&#xE8C8;"
+                Title="CLIPBOARD" />
             <Border
-                Padding="14,12"
+                Padding="16,0"
                 Background="{StaticResource SecondaryPanelBrush}"
                 BorderBrush="{StaticResource BorderBrush}"
                 BorderThickness="1"
-                CornerRadius="8">
-              <Grid ColumnSpacing="12">
+                CornerRadius="12">
+              <Grid MinHeight="64" ColumnSpacing="14">
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="*" />
                   <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <StackPanel Spacing="2">
-                  <TextBlock
-                      FontSize="13"
-                      FontWeight="SemiBold"
-                      Foreground="{StaticResource TextBrush}"
-                      Text="Copy as image" />
-                  <TextBlock
-                      x:Name="SettingsCopyAsImageText"
-                      FontSize="11"
-                      Foreground="{StaticResource MutedTextBrush}"
-                      Text="Enabled by default" />
-                </StackPanel>
                 <TextBlock
+                    VerticalAlignment="Center"
+                    FontSize="13"
+                    FontWeight="SemiBold"
+                    Foreground="{StaticResource TextBrush}"
+                    Text="Copy as Image" />
+                <ToggleSwitch
+                    x:Name="SettingsCopyAsImageToggle"
                     Grid.Column="1"
                     VerticalAlignment="Center"
-                    FontSize="12"
-                    Foreground="{StaticResource SubtleTextBrush}"
-                    Text="Read-only" />
-              </Grid>
-            </Border>
-          </StackPanel>
-
-          <StackPanel
-              AutomationProperties.Name="Background behavior settings section"
-              AutomationProperties.HelpText="Tray and background workflow arrive in Epic 7."
-              Spacing="8">
-            <TextBlock
-                FontSize="11"
-                FontWeight="SemiBold"
-                Foreground="{StaticResource MutedTextBrush}"
-                Text="BACKGROUND" />
-            <Border
-                Padding="14,12"
-                Background="{StaticResource SecondaryPanelBrush}"
-                BorderBrush="{StaticResource BorderBrush}"
-                BorderThickness="1"
-                CornerRadius="8">
-              <Grid ColumnSpacing="12">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel Spacing="2">
-                  <TextBlock
-                      FontSize="13"
-                      FontWeight="SemiBold"
-                      Foreground="{StaticResource TextBrush}"
-                      Text="Tray workflow" />
-                  <TextBlock
-                      FontSize="11"
-                      Foreground="{StaticResource MutedTextBrush}"
-                      Text="Minimize and background behavior arrive later" />
-                </StackPanel>
-                <TextBlock
-                    Grid.Column="1"
-                    VerticalAlignment="Center"
-                    FontSize="12"
-                    Foreground="{StaticResource SubtleTextBrush}"
-                    Text="Pending" />
+                    AutomationProperties.HelpText="Copy-as-image is display-only until output settings behavior is implemented."
+                    AutomationProperties.Name="Copy as image"
+                    IsEnabled="False"
+                    OffContent=""
+                    OnContent=""
+                    Style="{StaticResource CompactSwitchToggleSwitchStyle}" />
               </Grid>
             </Border>
           </StackPanel>
@@ -503,41 +595,42 @@
           <StackPanel
               AutomationProperties.Name="About settings section"
               AutomationProperties.HelpText="Version details arrive in the native about story."
-              Spacing="8">
-            <TextBlock
-                FontSize="11"
-                FontWeight="SemiBold"
-                Foreground="{StaticResource MutedTextBrush}"
-                Text="ABOUT" />
+              Spacing="9">
+            <local:SettingsSectionHeader
+                IconGlyph="&#xE946;"
+                Title="ABOUT" />
             <Border
-                Padding="14,12"
+                Padding="16,12"
                 Background="{StaticResource SecondaryPanelBrush}"
                 BorderBrush="{StaticResource BorderBrush}"
                 BorderThickness="1"
-                CornerRadius="8">
-              <Grid ColumnSpacing="12">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel Spacing="2">
+                CornerRadius="12">
+              <StackPanel Spacing="4">
+                <Grid ColumnSpacing="12">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
                   <TextBlock
                       FontSize="13"
                       FontWeight="SemiBold"
                       Foreground="{StaticResource TextBrush}"
                       Text="Lumiere" />
                   <TextBlock
-                      FontSize="11"
-                      Foreground="{StaticResource MutedTextBrush}"
-                      Text="Native HDR screenshot tool" />
-                </StackPanel>
+                      Grid.Column="1"
+                      VerticalAlignment="Center"
+                      FontSize="12"
+                      FontFamily="Cascadia Mono, Consolas"
+                      Foreground="{StaticResource SubtleTextBrush}"
+                      Text="v0.1.0" />
+                </Grid>
                 <TextBlock
-                    Grid.Column="1"
-                    VerticalAlignment="Center"
-                    FontSize="12"
-                    Foreground="{StaticResource SubtleTextBrush}"
-                    Text="Pending" />
-              </Grid>
+                    FontSize="11"
+                    Foreground="{StaticResource MutedTextBrush}"
+                    Text="Native screenshot reference for HDR-first capture."
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="NoWrap" />
+              </StackPanel>
             </Border>
           </StackPanel>
         </StackPanel>

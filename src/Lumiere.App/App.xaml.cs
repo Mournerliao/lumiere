@@ -34,14 +34,32 @@ public partial class App : Application
             var outputService = new ClipboardOutputService(deviceResources);
             var settingsProvider = new DefaultSettingsProvider();
 
-            _window = new MainWindow(captureCommandCoordinator, outputService, settingsProvider, captureService, deviceResources);
+            _window = new MainWindow(captureCommandCoordinator, outputService, settingsProvider, settingsProvider, captureService, deviceResources);
             _window.Activate();
         }
         catch (Exception ex)
         {
             deviceResources?.Dispose();
+            WriteStartupFailure(ex);
             System.Diagnostics.Debug.WriteLine($"Failed to initialize application: {ex.Message}");
             Current.Exit();
+        }
+    }
+
+    private static void WriteStartupFailure(Exception exception)
+    {
+        try
+        {
+            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var logDirectory = Path.Combine(localAppData, "Lumiere", "logs");
+            Directory.CreateDirectory(logDirectory);
+            var detail = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] Lumiere startup failed{Environment.NewLine}{exception}";
+            File.WriteAllText(Path.Combine(Path.GetTempPath(), "lumiere-last-error.txt"), detail);
+            File.AppendAllText(Path.Combine(logDirectory, "startup-failure.log"), detail + Environment.NewLine);
+        }
+        catch
+        {
+            // Last-chance diagnostics must never mask the original startup failure.
         }
     }
 }
