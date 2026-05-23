@@ -75,6 +75,15 @@ public sealed record OutputResult(
             throw new ArgumentException("At least one target result is required.", nameof(targets));
         }
 
+        if (targetResults.Length == 1)
+        {
+            var target = targetResults[0];
+            return new OutputResult(
+                targetResults,
+                target.UserMessage,
+                target.TechnicalDetail ?? target.UserMessage);
+        }
+
         var successCount = targetResults.Count(target => target.Outcome == OutputOutcome.Success);
         var failedCount = targetResults.Count(target => target.Outcome == OutputOutcome.Failed);
         var skippedCount = targetResults.Count(target => target.Outcome == OutputOutcome.Skipped);

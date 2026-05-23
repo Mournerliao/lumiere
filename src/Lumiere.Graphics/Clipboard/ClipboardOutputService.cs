@@ -3,6 +3,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using Lumiere.Graphics.Devices;
 using Lumiere.Graphics.Hdr;
 using Lumiere.Graphics.Output;
+using Lumiere.Graphics.Presentation;
 using Lumiere.Infrastructure.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Vortice.Direct3D;
@@ -16,7 +17,7 @@ using Half = System.Half;
 
 namespace Lumiere.Graphics.Clipboard;
 
-public sealed class ClipboardOutputService : IOutputService, IDisposable
+public sealed class ClipboardOutputService : IOutputService, IOutputPngEncoder, IDisposable
 {
     private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Graphics);
     private readonly GraphicsDeviceResources? deviceResources;
@@ -51,9 +52,8 @@ public sealed class ClipboardOutputService : IOutputService, IDisposable
                 return false;
             }
 
-            using var croppedTexture = CropTexture(sourceTexture, pixelX, pixelY, pixelWidth, pixelHeight);
-            using var bgra8Texture = ConvertToBgra8(croppedTexture, pixelWidth, pixelHeight);
-            var pngBytes = await EncodeAsPngAsync(bgra8Texture, pixelWidth, pixelHeight);
+            var frame = new CapturedFrameTexture(sourceTexture, sourceWidth, sourceHeight, "Clipboard source texture");
+            var pngBytes = await EncodePngAsync(frame, new CropPixelRect(pixelX, pixelY, pixelWidth, pixelHeight));
             await WriteToClipboardAsync(pngBytes);
 
             Logger.LogInformation("Clipboard output success: PNG encoded, {Bytes} bytes, crop=({X},{Y},{Width}x{Height})", pngBytes.Length, pixelX, pixelY, pixelWidth, pixelHeight);
@@ -124,12 +124,7 @@ public sealed class ClipboardOutputService : IOutputService, IDisposable
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            using var croppedTexture = CropTexture(texture.Texture, pixelX, pixelY, pixelWidth, pixelHeight);
-            using var bgra8Texture = ConvertToBgra8(croppedTexture, pixelWidth, pixelHeight);
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var pngBytes = await EncodeAsPngAsync(bgra8Texture, pixelWidth, pixelHeight);
+            var pngBytes = await EncodePngAsync(texture, cropRegion, cancellationToken);
 
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -148,6 +143,37 @@ public sealed class ClipboardOutputService : IOutputService, IDisposable
             Logger.LogError(ex, "operation=ClipboardOutput, stage=ExecuteOutput, detail=ExecuteOutputAsync FAILED, crop=({X},{Y},{Width}x{Height})", pixelX, pixelY, pixelWidth, pixelHeight);
             return OutputResult.ClipboardFailed(ex.Message);
         }
+    }
+
+    public async Task<byte[]> EncodePngAsync(
+        CapturedFrameTexture texture,
+        CropPixelRect? cropRegion,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(texture);
+        if (texture.Texture is null)
+        {
+            throw new InvalidOperationException("Captured frame texture is unavailable.");
+        }
+
+        int pixelX = cropRegion?.X ?? 0;
+        int pixelY = cropRegion?.Y ?? 0;
+        int pixelWidth = cropRegion?.Width ?? texture.Width;
+        int pixelHeight = cropRegion?.Height ?? texture.Height;
+
+        if (!ValidateRegion(pixelX, pixelY, pixelWidth, pixelHeight, texture.Width, texture.Height))
+        {
+            throw new InvalidOperationException("Invalid crop region.");
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        using var croppedTexture = CropTexture(texture.Texture, pixelX, pixelY, pixelWidth, pixelHeight);
+        using var bgra8Texture = ConvertToBgra8(croppedTexture, pixelWidth, pixelHeight);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return await EncodeAsPngAsync(bgra8Texture, pixelWidth, pixelHeight);
     }
 
     private static bool ValidateRegion(
