@@ -1142,19 +1142,13 @@ public sealed partial class MainWindow : Window
 
                 var result = await outputService.ExecuteOutputAsync(request);
 
-                if (result.IsSuccess)
-                {
-                    Logger.LogInformation(
-                        "Clipboard output SUCCESS: crop=({X},{Y},{Width}x{Height})",
-                        selection.PixelRegion.X, selection.PixelRegion.Y, selection.PixelRegion.Width, selection.PixelRegion.Height);
-                }
-                else
-                {
-                    Logger.LogWarning(
-                        "Clipboard output FAILED: operation=ClipboardOutput, stage=WriteToClipboard, crop=({X},{Y},{Width}x{Height}), detail={Detail}",
-                        selection.PixelRegion.X, selection.PixelRegion.Y, selection.PixelRegion.Width, selection.PixelRegion.Height,
-                        result.TechnicalDetail);
-                }
+                Logger.Log(
+                    result.IsSuccess ? LogLevel.Information : LogLevel.Warning,
+                    "Configured output {Outcome}: crop=({X},{Y},{Width}x{Height}), message={Message}, detail={Detail}",
+                    result.IsSuccess ? "completed" : "failed",
+                    selection.PixelRegion.X, selection.PixelRegion.Y, selection.PixelRegion.Width, selection.PixelRegion.Height,
+                    result.UserMessage,
+                    result.TechnicalDetail);
                 return result.IsSuccess;
             }
             finally
