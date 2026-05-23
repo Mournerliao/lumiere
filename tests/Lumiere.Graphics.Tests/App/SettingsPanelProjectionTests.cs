@@ -102,6 +102,101 @@ public sealed class SettingsPanelProjectionTests
     }
 
     [Fact]
+    public void Project_UsesNotConfiguredFallbackForNullSavePath()
+    {
+        var settings = new TestSettingsProvider
+        {
+            SavePath = null,
+        };
+
+        var projection = SettingsPanelProjection.Project(settings, CreateState());
+
+        Assert.True(projection.Output.IsSavePathReadOnly);
+        Assert.Equal("Not configured", projection.Output.SavePathDisplayValue);
+        Assert.Contains("Epic 6", projection.Output.SavePathHelpText);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Project_UsesNotConfiguredFallbackForBlankSavePath(string savePath)
+    {
+        var settings = new TestSettingsProvider
+        {
+            SavePath = savePath,
+        };
+
+        var projection = SettingsPanelProjection.Project(settings, CreateState());
+
+        Assert.True(projection.Output.IsSavePathReadOnly);
+        Assert.Equal("Not configured", projection.Output.SavePathDisplayValue);
+        Assert.Contains("Epic 6", projection.Output.SavePathHelpText);
+    }
+
+    [Fact]
+    public void Project_UsesTrimmedConfiguredSavePathDisplay()
+    {
+        var settings = new TestSettingsProvider
+        {
+            SavePath = "  D:\\Screenshots\\HDR Captures  ",
+        };
+
+        var projection = SettingsPanelProjection.Project(settings, CreateState());
+
+        Assert.Equal("D:\\Screenshots\\HDR Captures", projection.Output.SavePathDisplayValue);
+    }
+
+    [Fact]
+    public void Project_MarksOutputPreferencesPendingAndReadOnly()
+    {
+        var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
+
+        Assert.True(projection.Output.IsReadOnly);
+        Assert.True(projection.Output.IsTimestampReadOnly);
+        Assert.True(projection.Output.IsCopyAsImageReadOnly);
+        Assert.True(projection.Output.IsAfterCaptureReadOnly);
+        Assert.True(projection.Output.IsExportColorReadOnly);
+        Assert.Equal("Output behavior arrives in Epic 6", projection.Output.PendingReason);
+    }
+
+    [Fact]
+    public void Project_ReflectsTimestampAndCopyAsImageDefaultsInOutputProjection()
+    {
+        var settings = new TestSettingsProvider
+        {
+            TimestampNaming = false,
+            CopyAsImage = false,
+        };
+
+        var projection = SettingsPanelProjection.Project(settings, CreateState());
+
+        Assert.False(projection.Output.TimestampNaming);
+        Assert.False(projection.Output.CopyAsImage);
+        Assert.Contains("pending", projection.Output.TimestampHelpText, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Project_CopyAsImageHelpTextDoesNotClaimHdrPreservation()
+    {
+        var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
+
+        Assert.Contains("basic usability", projection.Output.CopyAsImageHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR-preserving", projection.Output.CopyAsImageHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR preserving", projection.Output.CopyAsImageHelpText, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Project_MarksAfterCaptureAndExportColorAsPending()
+    {
+        var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
+
+        Assert.Equal("Pending", projection.Output.AfterCaptureDisplayValue);
+        Assert.Equal("Not available", projection.Output.ExportColorDisplayValue);
+        Assert.Contains("Epic 6", projection.Output.AfterCaptureHelpText);
+        Assert.Contains("validation", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Project_DisabledHdrAlertsPreserveTypedTrustProjection()
     {
         var settings = new TestSettingsProvider

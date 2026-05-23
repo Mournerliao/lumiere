@@ -1,4 +1,3 @@
-using FluentIcons.Common;
 using Lumiere.App;
 using Lumiere.Capture;
 using Lumiere.Graphics.Hdr;
@@ -40,15 +39,15 @@ public sealed class MainPanelProjectionTests
     }
 
     [Theory]
-    [InlineData(PreviewReadinessState.Ready, "HDR Ready", Icon.CheckmarkCircle)]
-    [InlineData(PreviewReadinessState.Degraded, "Enable HDR", Icon.Desktop)]
-    [InlineData(PreviewReadinessState.Unsupported, "HDR unavailable", Icon.ErrorCircle)]
-    [InlineData(PreviewReadinessState.Failed, "HDR unavailable", Icon.ErrorCircle)]
-    [InlineData(PreviewReadinessState.Initializing, "Checking HDR", Icon.Clock)]
+    [InlineData(PreviewReadinessState.Ready, "HDR Ready", MainPanelTrustIcon.CheckmarkCircle)]
+    [InlineData(PreviewReadinessState.Degraded, "Enable HDR", MainPanelTrustIcon.Desktop)]
+    [InlineData(PreviewReadinessState.Unsupported, "HDR unavailable", MainPanelTrustIcon.ErrorCircle)]
+    [InlineData(PreviewReadinessState.Failed, "HDR unavailable", MainPanelTrustIcon.ErrorCircle)]
+    [InlineData(PreviewReadinessState.Initializing, "Checking HDR", MainPanelTrustIcon.Clock)]
     public void ProjectStatus_MapsReadinessToConciseTrustSummary(
         PreviewReadinessState readinessState,
         string expectedLabel,
-        Icon expectedIcon)
+        MainPanelTrustIcon expectedIcon)
     {
         var state = CreateState(readinessState);
 

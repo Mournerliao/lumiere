@@ -1,0 +1,126 @@
+using Lumiere.Capture;
+using Lumiere.Settings;
+
+namespace Lumiere.App;
+
+public sealed record SettingsPanelProjection(
+    ShortcutSettingProjection FullscreenShortcut,
+    ShortcutSettingProjection RegionShortcut,
+    bool HdrAlertsEnabled,
+    string HdrAlertsHelpText,
+    bool OptionalHdrAlertChromeEnabled,
+    OutputSettingsProjection Output,
+    bool TimestampNaming,
+    bool CopyAsImage,
+    MainPanelProjection MainPanel)
+{
+    public static SettingsPanelProjection Project(ISettingsProvider settingsProvider, CaptureSessionState sessionState)
+    {
+        ArgumentNullException.ThrowIfNull(settingsProvider);
+        ArgumentNullException.ThrowIfNull(sessionState);
+
+        return new SettingsPanelProjection(
+            ShortcutSettingProjection.PendingRegistration("Fullscreen shortcut", settingsProvider.FullscreenShortcut),
+            ShortcutSettingProjection.PendingRegistration("Region shortcut", settingsProvider.RegionShortcut),
+            settingsProvider.HdrAlertsEnabled,
+            "Show warnings when HDR is unavailable, degraded, unsupported, or failed.",
+            settingsProvider.HdrAlertsEnabled,
+            OutputSettingsProjection.ReadOnly(
+                settingsProvider.OutputTarget,
+                settingsProvider.SavePath,
+                settingsProvider.TimestampNaming,
+                settingsProvider.CopyAsImage),
+            settingsProvider.TimestampNaming,
+            settingsProvider.CopyAsImage,
+            MainPanelProjection.Project(sessionState));
+    }
+}
+
+public sealed record OutputSettingsProjection(
+    string DisplayValue,
+    bool IsClipboardSelected,
+    bool IsFolderSelected,
+    bool IsBothSelected,
+    bool IsReadOnly,
+    string PendingReason,
+    string SavePathDisplayValue,
+    string SavePathHelpText,
+    bool IsSavePathReadOnly,
+    bool TimestampNaming,
+    string TimestampHelpText,
+    bool IsTimestampReadOnly,
+    bool CopyAsImage,
+    string CopyAsImageHelpText,
+    bool IsCopyAsImageReadOnly,
+    string AfterCaptureDisplayValue,
+    string AfterCaptureHelpText,
+    bool IsAfterCaptureReadOnly,
+    string ExportColorDisplayValue,
+    string ExportColorHelpText,
+    bool IsExportColorReadOnly)
+{
+    private const string OutputPendingReason = "Output behavior arrives in Epic 6";
+
+    public static OutputSettingsProjection ReadOnly(
+        Lumiere.Graphics.Output.OutputTarget outputTarget,
+        string? savePath,
+        bool timestampNaming,
+        bool copyAsImage)
+    {
+        var (displayValue, isClipboardSelected, isFolderSelected, isBothSelected) = outputTarget switch
+        {
+            Lumiere.Graphics.Output.OutputTarget.Folder => ("Folder", false, true, false),
+            Lumiere.Graphics.Output.OutputTarget.Both => ("Both", false, false, true),
+            _ => ("Clipboard", true, false, false),
+        };
+
+        var savePathDisplayValue = string.IsNullOrWhiteSpace(savePath)
+            ? "Not configured"
+            : savePath.Trim();
+
+        return new OutputSettingsProjection(
+            displayValue,
+            isClipboardSelected,
+            isFolderSelected,
+            isBothSelected,
+            IsReadOnly: true,
+            OutputPendingReason,
+            savePathDisplayValue,
+            "Save path selection and folder validation arrive in Epic 6.",
+            IsSavePathReadOnly: true,
+            timestampNaming,
+            "Timestamp naming is pending output behavior and persistence.",
+            IsTimestampReadOnly: true,
+            copyAsImage,
+            "Clipboard image output is basic usability, not validated HDR preservation.",
+            IsCopyAsImageReadOnly: true,
+            "Pending",
+            "After-capture behavior arrives in Epic 6 after output artifact semantics are defined.",
+            IsAfterCaptureReadOnly: true,
+            "Not available",
+            "Color/export options need encoder policy and Windows validation before they are available.",
+            IsExportColorReadOnly: true);
+    }
+}
+
+public sealed record ShortcutSettingProjection(
+    string Label,
+    string DisplayValue,
+    bool IsReadOnly,
+    bool IsPendingRegistration,
+    string PendingReason,
+    string HelpText)
+{
+    public static ShortcutSettingProjection PendingRegistration(string label, string? shortcut)
+    {
+        var displayValue = MainPanelProjection.FormatShortcut(shortcut);
+        const string pendingReason = "Global registration arrives in Epic 7";
+        return new ShortcutSettingProjection(
+            label,
+            displayValue,
+            IsReadOnly: true,
+            IsPendingRegistration: true,
+            pendingReason,
+            $"{label} is currently {displayValue}. Editing is pending until Epic 7 global hotkey registration.");
+    }
+}

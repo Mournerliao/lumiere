@@ -33,6 +33,7 @@ public sealed partial class MainWindow : Window
     private const int MainPanelWidthDips = 360;
     private const int MainPanelHeightDips = 310;
     private const int SettingsPanelHeightDips = 640;
+    private const int WorkAreaMarginPixels = 16;
 
     private readonly object previewSync = new();
     private readonly ICaptureCommandCoordinator captureCommandCoordinator;
@@ -317,6 +318,7 @@ public sealed partial class MainWindow : Window
             || HeaderDragArea.ActualHeight <= 0
             || SettingsButton.ActualWidth <= 0)
         {
+            ClearHeaderDragRegion();
             return;
         }
 
@@ -350,6 +352,7 @@ public sealed partial class MainWindow : Window
             || SettingsHeaderDragArea.ActualHeight <= 0
             || SettingsBackButton.ActualWidth <= 0)
         {
+            ClearHeaderDragRegion();
             return;
         }
 
@@ -382,6 +385,7 @@ public sealed partial class MainWindow : Window
     {
         var state = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
         var projection = AppShellProjection.Project(state, view);
+        ClearHeaderDragRegion();
         activeShellView = projection.ActiveView;
 
         MainPanelRoot.Visibility = projection.IsMainPanelVisible
@@ -416,14 +420,52 @@ public sealed partial class MainWindow : Window
         try
         {
             sizingMainPanel = true;
-            AppWindow.ResizeClient(new SizeInt32(
+            var clientSize = ConstrainClientSizeToWorkArea(new SizeInt32(
                 ScaleToPhysicalPixels(widthDips, scale),
                 ScaleToPhysicalPixels(heightDips, scale)));
+            AppWindow.ResizeClient(clientSize);
+            KeepWindowInsideWorkArea();
         }
         finally
         {
             sizingMainPanel = false;
         }
+    }
+
+    private SizeInt32 ConstrainClientSizeToWorkArea(SizeInt32 requestedSize)
+    {
+        var workArea = DisplayArea.GetFromWindowId(
+            AppWindow.Id,
+            DisplayAreaFallback.Nearest).WorkArea;
+        var maxWidth = Math.Max(1, workArea.Width - (WorkAreaMarginPixels * 2));
+        var maxHeight = Math.Max(1, workArea.Height - (WorkAreaMarginPixels * 2));
+        return new SizeInt32(
+            Math.Min(requestedSize.Width, maxWidth),
+            Math.Min(requestedSize.Height, maxHeight));
+    }
+
+    private void KeepWindowInsideWorkArea()
+    {
+        var workArea = DisplayArea.GetFromWindowId(
+            AppWindow.Id,
+            DisplayAreaFallback.Nearest).WorkArea;
+        var size = AppWindow.Size;
+        var width = Math.Min(size.Width, workArea.Width);
+        var height = Math.Min(size.Height, workArea.Height);
+        var maxX = Math.Max(workArea.X, workArea.X + workArea.Width - width);
+        var maxY = Math.Max(workArea.Y, workArea.Y + workArea.Height - height);
+        var x = Math.Clamp(AppWindow.Position.X, workArea.X, maxX);
+        var y = Math.Clamp(AppWindow.Position.Y, workArea.Y, maxY);
+
+        if (x != AppWindow.Position.X || y != AppWindow.Position.Y || width != size.Width || height != size.Height)
+        {
+            AppWindow.MoveAndResize(new RectInt32(x, y, width, height));
+        }
+    }
+
+    private void ClearHeaderDragRegion()
+    {
+        nonClientPointerSource?.ClearRegionRects(NonClientRegionKind.Caption);
     }
 
     private static int ScaleToPhysicalPixels(int dips, double rasterizationScale) =>
@@ -845,9 +887,34 @@ public sealed partial class MainWindow : Window
             SettingsHdrAlertsToggle.IsOn = projection.HdrAlertsEnabled;
             SettingsHdrAlertsHelperText.Text = "When HDR is unavailable";
             AutomationProperties.SetHelpText(SettingsHdrAlertsToggle, projection.HdrAlertsHelpText);
-            SettingsTimestampToggle.IsOn = projection.TimestampNaming;
-            SettingsCopyAsImageToggle.IsOn = projection.CopyAsImage;
             ApplyDestinationSegmentProjection(projection.Output);
+            SettingsSavePathValueText.Text = projection.Output.SavePathDisplayValue;
+            SettingsSavePathHelperText.Text = projection.Output.SavePathHelpText;
+            AutomationProperties.SetName(SettingsSavePathValuePill, $"Save path: {projection.Output.SavePathDisplayValue}");
+            AutomationProperties.SetHelpText(SettingsSavePathValuePill, projection.Output.SavePathHelpText);
+            ToolTipService.SetToolTip(SettingsSavePathValuePill, projection.Output.SavePathHelpText);
+
+            SettingsOpenAfterCaptureToggle.IsEnabled = !projection.Output.IsAfterCaptureReadOnly;
+            SettingsOpenAfterCaptureToggle.IsOn = false;
+            SettingsAfterCaptureHelperText.Text = projection.Output.AfterCaptureHelpText;
+            AutomationProperties.SetName(SettingsOpenAfterCaptureToggle, $"After capture: {projection.Output.AfterCaptureDisplayValue}");
+            AutomationProperties.SetHelpText(SettingsOpenAfterCaptureToggle, projection.Output.AfterCaptureHelpText);
+
+            SettingsTimestampToggle.IsEnabled = !projection.Output.IsTimestampReadOnly;
+            SettingsTimestampToggle.IsOn = projection.Output.TimestampNaming;
+            SettingsTimestampHelperText.Text = projection.Output.TimestampHelpText;
+            AutomationProperties.SetHelpText(SettingsTimestampToggle, projection.Output.TimestampHelpText);
+
+            SettingsCopyAsImageToggle.IsEnabled = !projection.Output.IsCopyAsImageReadOnly;
+            SettingsCopyAsImageToggle.IsOn = projection.Output.CopyAsImage;
+            SettingsCopyAsImageHelperText.Text = projection.Output.CopyAsImageHelpText;
+            AutomationProperties.SetHelpText(SettingsCopyAsImageToggle, projection.Output.CopyAsImageHelpText);
+
+            SettingsColorOutputValueText.Text = projection.Output.ExportColorDisplayValue;
+            SettingsColorOutputHelperText.Text = projection.Output.ExportColorHelpText;
+            AutomationProperties.SetName(SettingsColorOutputValuePill, $"Color output: {projection.Output.ExportColorDisplayValue}");
+            AutomationProperties.SetHelpText(SettingsColorOutputValuePill, projection.Output.ExportColorHelpText);
+            ToolTipService.SetToolTip(SettingsColorOutputValuePill, projection.Output.ExportColorHelpText);
         }
         finally
         {
@@ -871,7 +938,17 @@ public sealed partial class MainWindow : Window
             output.IsBothSelected);
         AutomationProperties.SetHelpText(
             SettingsDestinationClipboardSegment,
-            $"Current output destination is {output.DisplayValue}. Editing arrives with output settings behavior.");
+            $"Current output destination is {output.DisplayValue}. {output.PendingReason}.");
+        AutomationProperties.SetHelpText(
+            SettingsDestinationFolderSegment,
+            $"Current output destination is {output.DisplayValue}. {output.PendingReason}.");
+        AutomationProperties.SetHelpText(
+            SettingsDestinationBothSegment,
+            $"Current output destination is {output.DisplayValue}. {output.PendingReason}.");
+        AutomationProperties.SetName(SettingsDestinationClipboardSegment, "Destination option: Clipboard");
+        AutomationProperties.SetName(SettingsDestinationFolderSegment, "Destination option: Folder");
+        AutomationProperties.SetName(SettingsDestinationBothSegment, "Destination option: Both");
+        SettingsDestinationHelperText.Text = output.PendingReason;
     }
 
     private void ApplySegmentState(Border segment, TextBlock label, bool isSelected)
@@ -917,12 +994,12 @@ public sealed partial class MainWindow : Window
         return (Brush)Application.Current.Resources[key];
     }
 
-    private static string GetTrustStatusGlyph(FluentIcons.Common.Icon icon) =>
+    private static string GetTrustStatusGlyph(MainPanelTrustIcon icon) =>
         icon switch
         {
-            FluentIcons.Common.Icon.CheckmarkCircle => StatusCheckmarkCircleGlyph,
-            FluentIcons.Common.Icon.Desktop => StatusMonitorGlyph,
-            FluentIcons.Common.Icon.ErrorCircle => StatusErrorCircleGlyph,
+            MainPanelTrustIcon.CheckmarkCircle => StatusCheckmarkCircleGlyph,
+            MainPanelTrustIcon.Desktop => StatusMonitorGlyph,
+            MainPanelTrustIcon.ErrorCircle => StatusErrorCircleGlyph,
             _ => StatusClockGlyph,
         };
 

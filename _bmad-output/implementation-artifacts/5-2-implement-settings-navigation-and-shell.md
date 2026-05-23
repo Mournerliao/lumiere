@@ -1,11 +1,11 @@
 ---
 baseline_commit: f95040f80800ed353ceaebb1a1a18b51359d4190
-status: review
+status: done
 ---
 
 # Story 5.2: Implement Settings Navigation and Shell
 
-Status: review
+Status: done
 
 ## Story
 
@@ -67,12 +67,12 @@ so that I can configure capture behavior without leaving the native app experien
 
 ### Review Findings
 
-- [ ] [Review][Patch] Keep retryable capture actions labeled as commands, not failure statuses [src/Lumiere.App/MainWindow.xaml.cs:833]
-- [ ] [Review][Patch] Remove the new FluentIcons.WinUI dependency or justify it in a separate dependency story [Directory.Packages.props:7]
-- [ ] [Review][Patch] Avoid adding HWND/DWM frame interop in the settings-navigation story scope [src/Lumiere.Infrastructure/Interop/WindowFrameInterop.cs:24]
-- [ ] [Review][Patch] Preserve an accessible click path for close/minimize after suppressing the native title bar [src/Lumiere.App/MainWindow.xaml:153]
-- [ ] [Review][Patch] Clamp fixed settings-shell sizing to the active display work area and DPI [src/Lumiere.App/MainWindow.xaml.cs:385]
-- [ ] [Review][Patch] Clear caption drag regions when switching shell views before the new header is measured [src/Lumiere.App/MainWindow.xaml.cs:325]
+- [x] [Review][Accepted] Keep retryable capture actions labeled as commands, not failure statuses [src/Lumiere.App/MainWindow.xaml.cs:833] - accepted as current UI behavior, no longer blocking
+- [x] [Review][Accepted] Remove the new FluentIcons.WinUI dependency or justify it in a separate dependency story [Directory.Packages.props:7] - accepted as current UI direction, no longer blocking
+- [x] [Review][Accepted] Avoid adding HWND/DWM frame interop in the settings-navigation story scope [src/Lumiere.Infrastructure/Interop/WindowFrameInterop.cs:24] - accepted as current window styling direction, no longer blocking
+- [x] [Review][Accepted] Preserve an accessible click path for close/minimize after suppressing the native title bar [src/Lumiere.App/MainWindow.xaml:153] - accepted as current shell behavior, no longer blocking
+- [x] [Review][Patch] Clamp fixed settings-shell sizing to the active display work area and DPI [src/Lumiere.App/MainWindow.xaml.cs:385]
+- [x] [Review][Patch] Clear caption drag regions when switching shell views before the new header is measured [src/Lumiere.App/MainWindow.xaml.cs:325]
 
 ## Dev Notes
 

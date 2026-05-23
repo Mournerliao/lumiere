@@ -4,6 +4,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lumiere.App", "src\Lumiere.App\Lumiere.App.csproj", "{6242DCCE-E3AC-4B31-BDDE-602025C36F8C}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lumiere.App.Core", "src\Lumiere.App.Core\Lumiere.App.Core.csproj", "{E2749319-8974-4CC5-A7D9-7507770E0C61}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lumiere.Overlay", "src\Lumiere.Overlay\Lumiere.Overlay.csproj", "{E60109E2-1636-4231-B80D-FF9DB1DCD658}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lumiere.Capture", "src\Lumiere.Capture\Lumiere.Capture.csproj", "{75B918BC-C060-45E0-8643-8607122D713A}"
@@ -28,6 +30,10 @@ Global
     {6242DCCE-E3AC-4B31-BDDE-602025C36F8C}.Debug|x64.Build.0 = Debug|x64
     {6242DCCE-E3AC-4B31-BDDE-602025C36F8C}.Release|x64.ActiveCfg = Release|x64
     {6242DCCE-E3AC-4B31-BDDE-602025C36F8C}.Release|x64.Build.0 = Release|x64
+    {E2749319-8974-4CC5-A7D9-7507770E0C61}.Debug|x64.ActiveCfg = Debug|x64
+    {E2749319-8974-4CC5-A7D9-7507770E0C61}.Debug|x64.Build.0 = Debug|x64
+    {E2749319-8974-4CC5-A7D9-7507770E0C61}.Release|x64.ActiveCfg = Release|x64
+    {E2749319-8974-4CC5-A7D9-7507770E0C61}.Release|x64.Build.0 = Release|x64
     {E60109E2-1636-4231-B80D-FF9DB1DCD658}.Debug|x64.ActiveCfg = Debug|x64
     {E60109E2-1636-4231-B80D-FF9DB1DCD658}.Debug|x64.Build.0 = Debug|x64
     {E60109E2-1636-4231-B80D-FF9DB1DCD658}.Release|x64.ActiveCfg = Release|x64

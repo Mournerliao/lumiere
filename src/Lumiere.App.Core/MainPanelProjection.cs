@@ -1,4 +1,3 @@
-using FluentIcons.Common;
 using Lumiere.Capture;
 using Lumiere.Graphics.Hdr;
 
@@ -9,7 +8,7 @@ public sealed record MainPanelProjection(
     string ActionTitle,
     string TrustLabel,
     string TrustMessage,
-    Icon TrustIcon,
+    MainPanelTrustIcon TrustIcon,
     MainPanelTrustSeverity TrustSeverity)
 {
     public static MainPanelProjection Project(CaptureSessionState state)
@@ -33,11 +32,11 @@ public sealed record MainPanelProjection(
 
         var trust = state.Readiness.State switch
         {
-            PreviewReadinessState.Ready => ("HDR Ready", Icon.CheckmarkCircle, MainPanelTrustSeverity.Success),
-            PreviewReadinessState.Degraded => ("Enable HDR", Icon.Desktop, MainPanelTrustSeverity.Warning),
-            PreviewReadinessState.Unsupported => ("HDR unavailable", Icon.ErrorCircle, MainPanelTrustSeverity.Error),
-            PreviewReadinessState.Failed => ("HDR unavailable", Icon.ErrorCircle, MainPanelTrustSeverity.Error),
-            _ => ("Checking HDR", Icon.Clock, MainPanelTrustSeverity.Neutral),
+            PreviewReadinessState.Ready => ("HDR Ready", MainPanelTrustIcon.CheckmarkCircle, MainPanelTrustSeverity.Success),
+            PreviewReadinessState.Degraded => ("Enable HDR", MainPanelTrustIcon.Desktop, MainPanelTrustSeverity.Warning),
+            PreviewReadinessState.Unsupported => ("HDR unavailable", MainPanelTrustIcon.ErrorCircle, MainPanelTrustSeverity.Error),
+            PreviewReadinessState.Failed => ("HDR unavailable", MainPanelTrustIcon.ErrorCircle, MainPanelTrustSeverity.Error),
+            _ => ("Checking HDR", MainPanelTrustIcon.Clock, MainPanelTrustSeverity.Neutral),
         };
 
         return new MainPanelProjection(
@@ -55,6 +54,14 @@ public sealed record MainPanelProjection(
         string.IsNullOrWhiteSpace(shortcut)
             ? "Not assigned"
             : shortcut.Trim();
+}
+
+public enum MainPanelTrustIcon
+{
+    Clock = 0,
+    CheckmarkCircle,
+    Desktop,
+    ErrorCircle,
 }
 
 public enum MainPanelTrustSeverity
