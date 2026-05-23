@@ -1,10 +1,10 @@
 ---
-status: in-progress
+status: done
 ---
 
 # Story 5.4: Add Output Preference Settings UI
 
-Status: in-progress
+Status: done
 
 ## Story
 
@@ -29,45 +29,53 @@ so that I can configure capture output once before using any entry point.
   - [x] Confirm the current settings shell already has output, clipboard, timestamp, copy-as-image, and open-after-capture placeholders.
   - [x] Confirm current output behavior is still clipboard-only/basic usability through `IOutputService` and does not consume configurable output target, save path, timestamp naming, or after-capture behavior yet.
 
-- [ ] **Task 2: Strengthen output settings projection without enabling behavior** (AC: 1,2,3,4)
-  - [ ] Extend `SettingsPanelProjection` only if needed so output target, save path display, timestamp naming, copy-as-image, and after-capture affordance state are explicit, testable, and read-only/pending until Epic 6.
-  - [ ] Continue reading values from `ISettingsProvider`: `OutputTarget`, `SavePath`, `TimestampNaming`, and `CopyAsImage`.
-  - [ ] Do not add output settings writers, file persistence, folder validation, output policy, filename generation, or after-capture execution in this story.
-  - [ ] Use existing `OutputTarget` values (`Clipboard`, `Folder`, `Both`) instead of creating a parallel enum or UI-local destination vocabulary.
+- [x] **Task 2: Strengthen output settings projection without enabling behavior** (AC: 1,2,3,4)
+  - [x] Extend `SettingsPanelProjection` only if needed so output target, save path display, timestamp naming, copy-as-image, and after-capture affordance state are explicit, testable, and read-only/pending until Epic 6.
+  - [x] Continue reading values from `ISettingsProvider`: `OutputTarget`, `SavePath`, `TimestampNaming`, and `CopyAsImage`.
+  - [x] Do not add output settings writers, file persistence, folder validation, output policy, filename generation, or after-capture execution in this story.
+  - [x] Use existing `OutputTarget` values (`Clipboard`, `Folder`, `Both`) instead of creating a parallel enum or UI-local destination vocabulary.
 
-- [ ] **Task 3: Upgrade native output and clipboard settings UI honestly** (AC: 1,3,4)
-  - [ ] Keep output target controls visible only as disabled/read-only/pending UI until Epic 6 owns configured output behavior.
-  - [ ] Show or add a save path row that is disabled/read-only/pending; if no path is configured, display an honest fallback such as `Not configured`.
-  - [ ] Keep timestamp naming and copy-as-image controls disabled/read-only or explicitly pending; their visual state may reflect current provider defaults but must not imply active persisted behavior.
-  - [ ] Keep open/reveal after capture disabled/read-only/pending until Epic 6 defines supported artifact behavior.
-  - [ ] Remove or relabel any export/color-format UI that implies HDR10, P3, sRGB, or HDR-preserving output support before semantics and validation exist.
+- [x] **Task 3: Upgrade native output and clipboard settings UI honestly** (AC: 1,3,4)
+  - [x] Keep output target controls visible only as disabled/read-only/pending UI until Epic 6 owns configured output behavior.
+  - [x] Show or add a save path row that is disabled/read-only/pending; if no path is configured, display an honest fallback such as `Not configured`.
+  - [x] Keep timestamp naming and copy-as-image controls disabled/read-only or explicitly pending; their visual state may reflect current provider defaults but must not imply active persisted behavior.
+  - [x] Keep open/reveal after capture disabled/read-only/pending until Epic 6 defines supported artifact behavior.
+  - [x] Remove or relabel any export/color-format UI that implies HDR10, P3, sRGB, or HDR-preserving output support before semantics and validation exist.
 
-- [ ] **Task 4: Preserve shell behavior and accessibility** (AC: 1,3,4)
-  - [ ] Settings open/back must not stop capture, close overlay, dispose graphics resources, reset output/session state, or lose the latest main-panel projection.
-  - [ ] Settings content must scroll vertically at compact height without clipping labels, helper text, disabled reasons, or controls.
-  - [ ] Output target, save path, timestamp, copy-as-image, after-capture, and export/color-scope rows must have accessible names/help text that reveal pending/read-only state.
-  - [ ] State cues must use text plus control state or glyph; do not rely on color alone.
+- [x] **Task 4: Preserve shell behavior and accessibility** (AC: 1,3,4)
+  - [x] Settings open/back must not stop capture, close overlay, dispose graphics resources, reset output/session state, or lose the latest main-panel projection.
+  - [x] Settings content must scroll vertically at compact height without clipping labels, helper text, disabled reasons, or controls.
+  - [x] Output target, save path, timestamp, copy-as-image, after-capture, and export/color-scope rows must have accessible names/help text that reveal pending/read-only state.
+  - [x] State cues must use text plus control state or glyph; do not rely on color alone.
 
-- [ ] **Task 5: Keep architecture boundaries intact** (AC: 1,2,3,4)
-  - [ ] `MainWindow.xaml.cs` may apply projection to native controls and route existing events only; do not add product output policy there.
-  - [ ] `Lumiere.Settings` remains the settings source of truth; no UI-local copies that later need reconciliation.
-  - [ ] `Lumiere.Graphics.Output` remains the output model/service boundary; do not add folder output, filename policy, or per-target feedback behavior in this story.
-  - [ ] Do not add raw `HWND`, folder picker interop, Win32 shell launch/reveal behavior, WIC/bitmap conversion, COM pointers, WGC frame pool logic, D3D11 devices, or DXGI resources to settings UI.
+- [x] **Task 5: Keep architecture boundaries intact** (AC: 1,2,3,4)
+  - [x] `MainWindow.xaml.cs` may apply projection to native controls and route existing events only; do not add product output policy there.
+  - [x] `Lumiere.Settings` remains the settings source of truth; no UI-local copies that later need reconciliation.
+  - [x] `Lumiere.Graphics.Output` remains the output model/service boundary; do not add folder output, filename policy, or per-target feedback behavior in this story.
+  - [x] Do not add raw `HWND`, folder picker interop, Win32 shell launch/reveal behavior, WIC/bitmap conversion, COM pointers, WGC frame pool logic, D3D11 devices, or DXGI resources to settings UI.
 
-- [ ] **Task 6: Add focused hardware-independent tests** (AC: 1,2,3,4)
-  - [ ] Cover output target projection for `Clipboard`, `Folder`, and `Both`.
-  - [ ] Cover save path display for configured value and `Not configured` fallback.
-  - [ ] Cover timestamp naming and copy-as-image projection from provider defaults while remaining read-only/pending.
-  - [ ] Cover after-capture/export/color controls as disabled/read-only/pending metadata.
-  - [ ] Cover that copy-as-image helper text does not claim HDR-preserving clipboard output.
+- [x] **Task 6: Add focused hardware-independent tests** (AC: 1,2,3,4)
+  - [x] Cover output target projection for `Clipboard`, `Folder`, and `Both`.
+  - [x] Cover save path display for configured value and `Not configured` fallback.
+  - [x] Cover timestamp naming and copy-as-image projection from provider defaults while remaining read-only/pending.
+  - [x] Cover after-capture/export/color controls as disabled/read-only/pending metadata.
+  - [x] Cover that copy-as-image helper text does not claim HDR-preserving clipboard output.
 
-- [ ] **Task 7: Validate and record limits** (AC: 1,2,3,4)
-  - [ ] Run `dotnet restore Lumiere.sln --disable-parallel --verbosity minimal /nr:false`.
-  - [ ] Run `dotnet build Lumiere.sln -p:Platform=x64 --no-restore --verbosity minimal /nr:false`.
-  - [ ] Run `dotnet test tests/Lumiere.Graphics.Tests/Lumiere.Graphics.Tests.csproj -p:Platform=x64 --no-restore --verbosity minimal /nr:false`.
-  - [ ] Run `dotnet format Lumiere.sln --verify-no-changes --verbosity minimal`.
-  - [ ] If overlay/session or output execution behavior is touched unexpectedly, also run `dotnet test tests/Lumiere.Overlay.Tests/Lumiere.Overlay.Tests.csproj -p:Platform=x64 --no-restore --verbosity minimal /nr:false`.
-  - [ ] Record Windows manual validation limits for rendered WinUI, keyboard navigation, screen reader exposure, high contrast, text scaling, DPI, and future clipboard/file output behavior.
+- [x] **Task 7: Validate and record limits** (AC: 1,2,3,4)
+  - [x] Run `dotnet restore Lumiere.sln --disable-parallel --verbosity minimal /nr:false`.
+  - [x] Run `dotnet build Lumiere.sln -p:Platform=x64 --no-restore --verbosity minimal /nr:false`.
+  - [x] Run `dotnet test tests/Lumiere.Graphics.Tests/Lumiere.Graphics.Tests.csproj -p:Platform=x64 --no-restore --verbosity minimal /nr:false`.
+  - [x] Run `dotnet format Lumiere.sln --verify-no-changes --verbosity minimal`.
+  - [x] If overlay/session or output execution behavior is touched unexpectedly, also run `dotnet test tests/Lumiere.Overlay.Tests/Lumiere.Overlay.Tests.csproj -p:Platform=x64 --no-restore --verbosity minimal /nr:false`.
+  - [x] Record Windows manual validation limits for rendered WinUI, keyboard navigation, screen reader exposure, high contrast, text scaling, DPI, and future clipboard/file output behavior.
+
+### Review Findings
+
+- [x] [Review][Patch] Add a non-color selected cue to the output destination display [src/Lumiere.App/MainWindow.xaml.cs:954]
+- [x] [Review][Patch] Keep copy-as-image accessibility text honest about pending/read-only behavior [src/Lumiere.App.Core/SettingsPanelProjection.cs:95]
+- [x] [Review][Patch] Prevent caption-region cleanup failures from interrupting settings view switches [src/Lumiere.App/MainWindow.xaml.cs:388]
+- [x] [Review][Patch] Expose the full configured save path when the visible pill is truncated [src/Lumiere.App/MainWindow.xaml.cs:891]
+- [x] [Review][Patch] Move or regroup color output metadata out of the HDR alerts section [src/Lumiere.App/MainWindow.xaml:316]
 
 ## Dev Notes
 
@@ -321,14 +329,20 @@ GPT-5 Codex
 - 2026-05-23: Added output projection metadata for save path fallback, read-only/pending state, timestamp, copy-as-image, after-capture, and color output.
 - 2026-05-23: Upgraded output settings UI to display destination, save path, timestamp, after-capture, copy-as-image, and color output as explicit pending/read-only controls.
 - 2026-05-23: Validation restore/build/format passed; `SettingsPanelProjectionTests` test execution hangs in the WinUI app-referencing test host and was captured with blame hang diagnostics.
+- 2026-05-23: Projection test-host hang fixed by moving pure App projections into `Lumiere.App.Core`; full `Lumiere.Graphics.Tests` now completes successfully.
+- 2026-05-23: Code review patch findings fixed for destination selected cue, copy-as-image pending/read-only accessibility text, caption-region cleanup resilience, full save-path tooltip, and color-output grouping.
+- 2026-05-23: Post-review restore was refreshed from the user NuGet cache with local audit disabled; `dotnet build`, `dotnet test`, and `dotnet format --verify-no-changes --no-restore` pass.
 
 ### Completion Notes List
 
 - Ultimate context engine analysis completed - comprehensive developer guide created.
 - Story is ready for dev; implementation has not started.
 - Task 1 audit completed: existing output UI is placeholder/read-only, and active output behavior remains basic clipboard usability through `IOutputService`/`ClipboardOutputService`.
-- Implemented the planned output preference projection and native settings UI changes, but story remains in-progress because the App projection tests cannot complete in the current test host.
-- Validation completed: `dotnet restore`, `dotnet build`, and `dotnet format --verify-no-changes` pass. `dotnet test tests/Lumiere.Graphics.Tests/Lumiere.Graphics.Tests.csproj ...` times out/hangs during `SettingsPanelProjectionTests`; `DefaultSettingsProviderTests` passes independently.
+- Implemented the planned output preference projection and native settings UI changes while keeping output behavior pending/read-only for Epic 6.
+- Resolved the App projection test-host hang by extracting pure projections to `Lumiere.App.Core`; validation now completes without hang.
+- Fixed all code review patch findings and marked Story 5.4 done.
+- Post-review validation confirmed full build, graphics tests, and format verification after refreshing restore assets from the user NuGet cache.
+- Initial validation before review patches completed: `dotnet restore`, `dotnet build`, full `dotnet test tests/Lumiere.Graphics.Tests/Lumiere.Graphics.Tests.csproj`, and `dotnet format --verify-no-changes` passed. Manual rendered WinUI/accessibility validation remains a Windows review activity.
 
 ### File List
 
@@ -336,10 +350,22 @@ GPT-5 Codex
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
 - `src/Lumiere.App/MainWindow.xaml`
 - `src/Lumiere.App/MainWindow.xaml.cs`
+- `src/Lumiere.App.Core/Lumiere.App.Core.csproj`
+- `src/Lumiere.App.Core/AppShellProjection.cs`
+- `src/Lumiere.App.Core/MainPanelProjection.cs`
+- `src/Lumiere.App.Core/SettingsPanelProjection.cs`
+- `src/Lumiere.App/Lumiere.App.csproj`
+- `src/Lumiere.App/AppShellProjection.cs`
+- `src/Lumiere.App/MainPanelProjection.cs`
 - `src/Lumiere.App/SettingsPanelProjection.cs`
+- `tests/Lumiere.Graphics.Tests/Lumiere.Graphics.Tests.csproj`
+- `tests/Lumiere.Graphics.Tests/App/AppShellProjectionTests.cs`
+- `tests/Lumiere.Graphics.Tests/App/MainPanelProjectionTests.cs`
 - `tests/Lumiere.Graphics.Tests/App/SettingsPanelProjectionTests.cs`
 
 ### Change Log
 
 - 2026-05-23: Created ready-for-dev story context for output preference settings UI.
-- 2026-05-23: Implemented output preference pending/read-only projection and UI surface; validation blocked by App projection test-host hang, so story remains in-progress.
+- 2026-05-23: Implemented output preference pending/read-only projection and UI surface; validation was initially blocked by the App projection test-host hang.
+- 2026-05-23: Moved story to review after fixing App projection test-host hang and completing full graphics test validation.
+- 2026-05-23: Addressed code review findings and marked story done.

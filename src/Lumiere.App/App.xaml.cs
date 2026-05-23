@@ -1,6 +1,7 @@
 using Lumiere.Capture;
 using Lumiere.Graphics.Clipboard;
 using Lumiere.Graphics.Devices;
+using Lumiere.Infrastructure.Diagnostics;
 using Lumiere.Settings;
 using Microsoft.UI.Xaml;
 
@@ -32,9 +33,11 @@ public partial class App : Application
             var captureService = new CaptureService(deviceResources, borderOptions);
             var captureCommandCoordinator = new CaptureCommandCoordinator(captureService);
             var outputService = new ClipboardOutputService(deviceResources);
-            var settingsProvider = new DefaultSettingsProvider();
+            var settingsProvider = new DefaultSettingsProvider(
+                LocalSettingsStore.CreateDefault(LumiereLoggerFactory.CreateLogger(LogCategories.Settings)));
+            var aboutInfoProvider = new AssemblyAboutInfoProvider(typeof(App).Assembly);
 
-            _window = new MainWindow(captureCommandCoordinator, outputService, settingsProvider, settingsProvider, captureService, deviceResources);
+            _window = new MainWindow(captureCommandCoordinator, outputService, settingsProvider, settingsProvider, aboutInfoProvider, captureService, deviceResources);
             _window.Activate();
         }
         catch (Exception ex)

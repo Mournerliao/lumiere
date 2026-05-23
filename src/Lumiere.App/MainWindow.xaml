@@ -358,48 +358,6 @@
                       Style="{StaticResource CompactSwitchToggleSwitchStyle}"
                       Toggled="OnSettingsHdrAlertsToggleToggled" />
                 </Grid>
-                <Border
-                    Height="1"
-                    Background="{StaticResource BorderBrush}" />
-                <Grid MinHeight="64" ColumnSpacing="14">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                  </Grid.ColumnDefinitions>
-                  <StackPanel VerticalAlignment="Center" Spacing="3">
-                    <TextBlock
-                        FontSize="13"
-                        FontWeight="SemiBold"
-                        Foreground="{StaticResource TextBrush}"
-                        Text="Color output" />
-                    <TextBlock
-                        x:Name="SettingsColorOutputHelperText"
-                        FontSize="11"
-                        Foreground="{StaticResource MutedTextBrush}"
-                        Text="Pending encoder policy and Windows validation"
-                        TextWrapping="WrapWholeWords" />
-                  </StackPanel>
-                  <Border
-                      x:Name="SettingsColorOutputValuePill"
-                      Grid.Column="1"
-                      MinWidth="112"
-                      Padding="12,6"
-                      VerticalAlignment="Center"
-                      AutomationProperties.HelpText="Color output options need encoder policy and Windows validation before they are available."
-                      AutomationProperties.Name="Color output unavailable"
-                      Background="#2217191C"
-                      BorderBrush="{StaticResource BorderBrush}"
-                      BorderThickness="1"
-                      CornerRadius="8">
-                    <TextBlock
-                        x:Name="SettingsColorOutputValueText"
-                        HorizontalAlignment="Center"
-                        FontSize="12"
-                        FontWeight="SemiBold"
-                        Foreground="{StaticResource MutedTextBrush}"
-                        Text="Not available" />
-                  </Border>
-                </Grid>
               </StackPanel>
             </Border>
           </StackPanel>
@@ -451,41 +409,116 @@
                       <Border
                           x:Name="SettingsDestinationClipboardSegment"
                           CornerRadius="6">
-                        <TextBlock
-                            x:Name="SettingsDestinationClipboardText"
+                        <StackPanel
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
-                            FontSize="11"
-                            FontWeight="SemiBold"
-                            Text="Clipboard" />
+                            Spacing="0">
+                          <TextBlock
+                              x:Name="SettingsDestinationClipboardText"
+                              HorizontalAlignment="Center"
+                              FontSize="11"
+                              FontWeight="SemiBold"
+                              Text="Clipboard" />
+                          <TextBlock
+                              x:Name="SettingsDestinationClipboardStatusText"
+                              HorizontalAlignment="Center"
+                              FontSize="8"
+                              FontWeight="SemiBold"
+                              Text="Selected"
+                              Visibility="Collapsed" />
+                        </StackPanel>
                       </Border>
                       <Border
                           x:Name="SettingsDestinationFolderSegment"
                           Grid.Column="1"
                           CornerRadius="6">
-                        <TextBlock
-                            x:Name="SettingsDestinationFolderText"
+                        <StackPanel
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
-                            FontSize="11"
-                            FontWeight="SemiBold"
-                            Text="Folder" />
+                            Spacing="0">
+                          <TextBlock
+                              x:Name="SettingsDestinationFolderText"
+                              HorizontalAlignment="Center"
+                              FontSize="11"
+                              FontWeight="SemiBold"
+                              Text="Folder" />
+                          <TextBlock
+                              x:Name="SettingsDestinationFolderStatusText"
+                              HorizontalAlignment="Center"
+                              FontSize="8"
+                              FontWeight="SemiBold"
+                              Text="Selected"
+                              Visibility="Collapsed" />
+                        </StackPanel>
                       </Border>
                       <Border
                           x:Name="SettingsDestinationBothSegment"
                           Grid.Column="2"
                           CornerRadius="6">
-                        <TextBlock
-                            x:Name="SettingsDestinationBothText"
+                        <StackPanel
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
-                            FontSize="11"
-                            FontWeight="SemiBold"
-                            Text="Both" />
+                            Spacing="0">
+                          <TextBlock
+                              x:Name="SettingsDestinationBothText"
+                              HorizontalAlignment="Center"
+                              FontSize="11"
+                              FontWeight="SemiBold"
+                              Text="Both" />
+                          <TextBlock
+                              x:Name="SettingsDestinationBothStatusText"
+                              HorizontalAlignment="Center"
+                              FontSize="8"
+                              FontWeight="SemiBold"
+                              Text="Selected"
+                              Visibility="Collapsed" />
+                        </StackPanel>
                       </Border>
                     </Grid>
                   </Border>
                 </StackPanel>
+                <Border
+                    Height="1"
+                    Background="{StaticResource BorderBrush}" />
+                <Grid MinHeight="64" ColumnSpacing="14">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel VerticalAlignment="Center" Spacing="3">
+                    <TextBlock
+                        FontSize="13"
+                        FontWeight="SemiBold"
+                        Foreground="{StaticResource TextBrush}"
+                        Text="Color output" />
+                    <TextBlock
+                        x:Name="SettingsColorOutputHelperText"
+                        FontSize="11"
+                        Foreground="{StaticResource MutedTextBrush}"
+                        Text="Pending encoder policy and Windows validation"
+                        TextWrapping="WrapWholeWords" />
+                  </StackPanel>
+                  <Border
+                      x:Name="SettingsColorOutputValuePill"
+                      Grid.Column="1"
+                      MinWidth="112"
+                      Padding="12,6"
+                      VerticalAlignment="Center"
+                      AutomationProperties.HelpText="Color output options need encoder policy and Windows validation before they are available."
+                      AutomationProperties.Name="Color output unavailable"
+                      Background="#2217191C"
+                      BorderBrush="{StaticResource BorderBrush}"
+                      BorderThickness="1"
+                      CornerRadius="8">
+                    <TextBlock
+                        x:Name="SettingsColorOutputValueText"
+                        HorizontalAlignment="Center"
+                        FontSize="12"
+                        FontWeight="SemiBold"
+                        Foreground="{StaticResource MutedTextBrush}"
+                        Text="Not available" />
+                  </Border>
+                </Grid>
                 <Border
                     Height="1"
                     Background="{StaticResource BorderBrush}" />
@@ -651,6 +684,7 @@
                 IconGlyph="&#xE946;"
                 Title="ABOUT" />
             <Border
+                x:Name="SettingsAboutInfoPanel"
                 Padding="16,12"
                 Background="{StaticResource SecondaryPanelBrush}"
                 BorderBrush="{StaticResource BorderBrush}"
@@ -663,19 +697,22 @@
                     <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
                   <TextBlock
+                      x:Name="SettingsAboutAppNameText"
                       FontSize="13"
                       FontWeight="SemiBold"
                       Foreground="{StaticResource TextBrush}"
                       Text="Lumiere" />
                   <TextBlock
+                      x:Name="SettingsAboutVersionText"
                       Grid.Column="1"
                       VerticalAlignment="Center"
                       FontSize="12"
                       FontFamily="Cascadia Mono, Consolas"
                       Foreground="{StaticResource SubtleTextBrush}"
-                      Text="v0.1.0" />
+                      Text="Version" />
                 </Grid>
                 <TextBlock
+                    x:Name="SettingsAboutDescriptionText"
                     FontSize="11"
                     Foreground="{StaticResource MutedTextBrush}"
                     Text="Native screenshot reference for HDR-first capture."

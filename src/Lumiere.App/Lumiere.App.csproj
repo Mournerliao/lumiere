@@ -7,6 +7,10 @@
     <WindowsPackageType>None</WindowsPackageType>
     <RootNamespace>Lumiere.App</RootNamespace>
     <AssemblyName>Lumiere.App</AssemblyName>
+    <AssemblyTitle>Lumiere</AssemblyTitle>
+    <Product>Lumiere</Product>
+    <Description>Native Windows HDR-first capture and preview.</Description>
+    <Version>0.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

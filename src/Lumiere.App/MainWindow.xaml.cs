@@ -40,6 +40,7 @@ public sealed partial class MainWindow : Window
     private readonly IOutputService outputService;
     private readonly ISettingsProvider settingsProvider;
     private readonly IHdrAlertSettingsWriter hdrAlertSettingsWriter;
+    private readonly IAboutInfoProvider aboutInfoProvider;
     private readonly GraphicsDeviceResources deviceResources;
     private readonly GraphicsEngine graphicsEngine;
     private CaptureService? captureService;
@@ -68,6 +69,7 @@ public sealed partial class MainWindow : Window
         IOutputService outputService,
         ISettingsProvider settingsProvider,
         IHdrAlertSettingsWriter hdrAlertSettingsWriter,
+        IAboutInfoProvider aboutInfoProvider,
         CaptureService captureService,
         GraphicsDeviceResources deviceResources)
     {
@@ -75,6 +77,7 @@ public sealed partial class MainWindow : Window
         this.outputService = outputService ?? throw new ArgumentNullException(nameof(outputService));
         this.settingsProvider = settingsProvider ?? throw new ArgumentNullException(nameof(settingsProvider));
         this.hdrAlertSettingsWriter = hdrAlertSettingsWriter ?? throw new ArgumentNullException(nameof(hdrAlertSettingsWriter));
+        this.aboutInfoProvider = aboutInfoProvider ?? throw new ArgumentNullException(nameof(aboutInfoProvider));
         this.captureService = captureService ?? throw new ArgumentNullException(nameof(captureService));
         this.deviceResources = deviceResources ?? throw new ArgumentNullException(nameof(deviceResources));
         this.graphicsEngine = new GraphicsEngine(deviceResources);
@@ -465,7 +468,14 @@ public sealed partial class MainWindow : Window
 
     private void ClearHeaderDragRegion()
     {
-        nonClientPointerSource?.ClearRegionRects(NonClientRegionKind.Caption);
+        try
+        {
+            nonClientPointerSource?.ClearRegionRects(NonClientRegionKind.Caption);
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(exception, "Main window header drag region could not be cleared.");
+        }
     }
 
     private static int ScaleToPhysicalPixels(int dips, double rasterizationScale) =>
@@ -869,7 +879,7 @@ public sealed partial class MainWindow : Window
 
     private void ApplySettingsProjection(CaptureSessionState state)
     {
-        var projection = SettingsPanelProjection.Project(settingsProvider, state);
+        var projection = SettingsPanelProjection.Project(settingsProvider, state, aboutInfoProvider);
 
         applyingSettingsProjection = true;
         try
@@ -892,7 +902,9 @@ public sealed partial class MainWindow : Window
             SettingsSavePathHelperText.Text = projection.Output.SavePathHelpText;
             AutomationProperties.SetName(SettingsSavePathValuePill, $"Save path: {projection.Output.SavePathDisplayValue}");
             AutomationProperties.SetHelpText(SettingsSavePathValuePill, projection.Output.SavePathHelpText);
-            ToolTipService.SetToolTip(SettingsSavePathValuePill, projection.Output.SavePathHelpText);
+            ToolTipService.SetToolTip(
+                SettingsSavePathValuePill,
+                $"{projection.Output.SavePathDisplayValue}. {projection.Output.SavePathHelpText}");
 
             SettingsOpenAfterCaptureToggle.IsEnabled = !projection.Output.IsAfterCaptureReadOnly;
             SettingsOpenAfterCaptureToggle.IsOn = false;
@@ -915,6 +927,12 @@ public sealed partial class MainWindow : Window
             AutomationProperties.SetName(SettingsColorOutputValuePill, $"Color output: {projection.Output.ExportColorDisplayValue}");
             AutomationProperties.SetHelpText(SettingsColorOutputValuePill, projection.Output.ExportColorHelpText);
             ToolTipService.SetToolTip(SettingsColorOutputValuePill, projection.Output.ExportColorHelpText);
+
+            SettingsAboutAppNameText.Text = projection.About.AppName;
+            SettingsAboutVersionText.Text = projection.About.Version;
+            SettingsAboutDescriptionText.Text = projection.About.Description;
+            AutomationProperties.SetName(SettingsAboutInfoPanel, $"{projection.About.AppName} {projection.About.Version}");
+            AutomationProperties.SetHelpText(SettingsAboutInfoPanel, projection.About.Description);
         }
         finally
         {
@@ -927,31 +945,40 @@ public sealed partial class MainWindow : Window
         ApplySegmentState(
             SettingsDestinationClipboardSegment,
             SettingsDestinationClipboardText,
+            SettingsDestinationClipboardStatusText,
             output.IsClipboardSelected);
         ApplySegmentState(
             SettingsDestinationFolderSegment,
             SettingsDestinationFolderText,
+            SettingsDestinationFolderStatusText,
             output.IsFolderSelected);
         ApplySegmentState(
             SettingsDestinationBothSegment,
             SettingsDestinationBothText,
+            SettingsDestinationBothStatusText,
             output.IsBothSelected);
         AutomationProperties.SetHelpText(
             SettingsDestinationClipboardSegment,
-            $"Current output destination is {output.DisplayValue}. {output.PendingReason}.");
+            GetDestinationOptionHelpText("Clipboard", output.IsClipboardSelected, output.PendingReason));
         AutomationProperties.SetHelpText(
             SettingsDestinationFolderSegment,
-            $"Current output destination is {output.DisplayValue}. {output.PendingReason}.");
+            GetDestinationOptionHelpText("Folder", output.IsFolderSelected, output.PendingReason));
         AutomationProperties.SetHelpText(
             SettingsDestinationBothSegment,
-            $"Current output destination is {output.DisplayValue}. {output.PendingReason}.");
+            GetDestinationOptionHelpText("Both", output.IsBothSelected, output.PendingReason));
         AutomationProperties.SetName(SettingsDestinationClipboardSegment, "Destination option: Clipboard");
         AutomationProperties.SetName(SettingsDestinationFolderSegment, "Destination option: Folder");
         AutomationProperties.SetName(SettingsDestinationBothSegment, "Destination option: Both");
         SettingsDestinationHelperText.Text = output.PendingReason;
     }
 
-    private void ApplySegmentState(Border segment, TextBlock label, bool isSelected)
+    private static string GetDestinationOptionHelpText(string option, bool isSelected, string pendingReason)
+    {
+        var state = isSelected ? "selected" : "not selected";
+        return $"{option} is {state}. {pendingReason}.";
+    }
+
+    private void ApplySegmentState(Border segment, TextBlock label, TextBlock status, bool isSelected)
     {
         segment.Background = isSelected
             ? (Brush)Application.Current.Resources["AccentSoftBrush"]
@@ -959,6 +986,8 @@ public sealed partial class MainWindow : Window
         label.Foreground = isSelected
             ? (Brush)Application.Current.Resources["TextBrush"]
             : (Brush)Application.Current.Resources["MutedTextBrush"];
+        status.Foreground = label.Foreground;
+        status.Visibility = isSelected ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void UpdateMainPanelProjection(CaptureSessionState state)
@@ -1102,7 +1131,13 @@ public sealed partial class MainWindow : Window
                         selection.PixelRegion.X,
                         selection.PixelRegion.Y,
                         selection.PixelRegion.Width,
-                        selection.PixelRegion.Height)
+                        selection.PixelRegion.Height),
+                    Policy = OutputPolicy.FromSettings(
+                        settingsProvider.OutputTarget,
+                        settingsProvider.CopyAsImage,
+                        settingsProvider.SavePath,
+                        settingsProvider.TimestampNaming,
+                        settingsProvider.AfterCaptureBehavior.ToString())
                 };
 
                 var result = await outputService.ExecuteOutputAsync(request);

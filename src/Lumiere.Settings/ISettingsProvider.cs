@@ -4,7 +4,6 @@ namespace Lumiere.Settings;
 
 /// <summary>
 /// Read-only settings provider for MVP settings.
-/// This is a read-only interface — settings persistence (Story 5.5) will add write support later.
 /// </summary>
 public interface ISettingsProvider
 {
@@ -34,14 +33,17 @@ public interface ISettingsProvider
     bool HdrAlertsEnabled { get; }
 
     /// <summary>
-    /// Gets the fullscreen capture shortcut key combination (e.g., "Ctrl+Shift+F").
-    /// Empty string means no shortcut configured.
+    /// Gets the fullscreen capture shortcut key combination. Empty string means no shortcut configured.
     /// </summary>
     string FullscreenShortcut { get; }
 
     /// <summary>
-    /// Gets the region capture shortcut key combination (e.g., "Ctrl+Shift+R").
-    /// Empty string means no shortcut configured.
+    /// Gets the region capture shortcut key combination. Empty string means no shortcut configured.
     /// </summary>
     string RegionShortcut { get; }
+
+    /// <summary>
+    /// Gets the supported post-capture behavior preference.
+    /// </summary>
+    AfterCaptureBehavior AfterCaptureBehavior { get; }
 }

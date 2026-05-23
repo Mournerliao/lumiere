@@ -10,14 +10,19 @@ public sealed record SettingsPanelProjection(
     string HdrAlertsHelpText,
     bool OptionalHdrAlertChromeEnabled,
     OutputSettingsProjection Output,
+    AboutInfoProjection About,
     bool TimestampNaming,
     bool CopyAsImage,
     MainPanelProjection MainPanel)
 {
-    public static SettingsPanelProjection Project(ISettingsProvider settingsProvider, CaptureSessionState sessionState)
+    public static SettingsPanelProjection Project(
+        ISettingsProvider settingsProvider,
+        CaptureSessionState sessionState,
+        IAboutInfoProvider? aboutInfoProvider = null)
     {
         ArgumentNullException.ThrowIfNull(settingsProvider);
         ArgumentNullException.ThrowIfNull(sessionState);
+        aboutInfoProvider ??= AssemblyAboutInfoProvider.CreateFallback();
 
         return new SettingsPanelProjection(
             ShortcutSettingProjection.PendingRegistration("Fullscreen shortcut", settingsProvider.FullscreenShortcut),
@@ -30,9 +35,32 @@ public sealed record SettingsPanelProjection(
                 settingsProvider.SavePath,
                 settingsProvider.TimestampNaming,
                 settingsProvider.CopyAsImage),
+            AboutInfoProjection.FromProvider(aboutInfoProvider),
             settingsProvider.TimestampNaming,
             settingsProvider.CopyAsImage,
             MainPanelProjection.Project(sessionState));
+    }
+}
+
+public sealed record AboutInfoProjection(
+    string AppName,
+    string Version,
+    string Description)
+{
+    public static AboutInfoProjection FromProvider(IAboutInfoProvider provider)
+    {
+        ArgumentNullException.ThrowIfNull(provider);
+
+        return new AboutInfoProjection(
+            Normalize(provider.AppName, "Lumiere"),
+            Normalize(provider.Version, "1.0.0"),
+            Normalize(provider.Description, "Native Windows HDR-first capture and preview."));
+    }
+
+    private static string Normalize(string? value, string fallback)
+    {
+        var trimmed = value?.Trim();
+        return string.IsNullOrEmpty(trimmed) ? fallback : trimmed;
     }
 }
 
@@ -59,7 +87,7 @@ public sealed record OutputSettingsProjection(
     string ExportColorHelpText,
     bool IsExportColorReadOnly)
 {
-    private const string OutputPendingReason = "Output behavior arrives in Epic 6";
+    private const string OutputPolicyActiveReason = "Output target policy is active; folder artifacts arrive in later Epic 6 stories";
 
     public static OutputSettingsProjection ReadOnly(
         Lumiere.Graphics.Output.OutputTarget outputTarget,
@@ -84,7 +112,7 @@ public sealed record OutputSettingsProjection(
             isFolderSelected,
             isBothSelected,
             IsReadOnly: true,
-            OutputPendingReason,
+            OutputPolicyActiveReason,
             savePathDisplayValue,
             "Save path selection and folder validation arrive in Epic 6.",
             IsSavePathReadOnly: true,
@@ -92,7 +120,7 @@ public sealed record OutputSettingsProjection(
             "Timestamp naming is pending output behavior and persistence.",
             IsTimestampReadOnly: true,
             copyAsImage,
-            "Clipboard image output is basic usability, not validated HDR preservation.",
+            "Copy-as-image controls basic usability; basic clipboard usability does not mean validated HDR preservation.",
             IsCopyAsImageReadOnly: true,
             "Pending",
             "After-capture behavior arrives in Epic 6 after output artifact semantics are defined.",
