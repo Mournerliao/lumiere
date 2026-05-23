@@ -34,7 +34,8 @@ public sealed record SettingsPanelProjection(
                 settingsProvider.OutputTarget,
                 settingsProvider.SavePath,
                 settingsProvider.TimestampNaming,
-                settingsProvider.CopyAsImage),
+                settingsProvider.CopyAsImage,
+                settingsProvider.AfterCaptureBehavior),
             AboutInfoProjection.FromProvider(aboutInfoProvider),
             settingsProvider.TimestampNaming,
             settingsProvider.CopyAsImage,
@@ -82,6 +83,7 @@ public sealed record OutputSettingsProjection(
     bool IsCopyAsImageReadOnly,
     string AfterCaptureDisplayValue,
     string AfterCaptureHelpText,
+    bool IsAfterCaptureSelected,
     bool IsAfterCaptureReadOnly,
     string ExportColorDisplayValue,
     string ExportColorHelpText,
@@ -93,7 +95,8 @@ public sealed record OutputSettingsProjection(
         Lumiere.Graphics.Output.OutputTarget outputTarget,
         string? savePath,
         bool timestampNaming,
-        bool copyAsImage)
+        bool copyAsImage,
+        AfterCaptureBehavior afterCaptureBehavior)
     {
         var (displayValue, isClipboardSelected, isFolderSelected, isBothSelected) = outputTarget switch
         {
@@ -105,6 +108,10 @@ public sealed record OutputSettingsProjection(
         var savePathDisplayValue = string.IsNullOrWhiteSpace(savePath)
             ? "Not configured"
             : savePath.Trim();
+
+        var (afterCaptureDisplayValue, afterCaptureHelpText, isAfterCaptureSelected) = ProjectAfterCapture(
+            outputTarget,
+            afterCaptureBehavior);
 
         return new OutputSettingsProjection(
             displayValue,
@@ -122,12 +129,42 @@ public sealed record OutputSettingsProjection(
             copyAsImage,
             "Copy-as-image controls basic usability; basic clipboard usability does not mean validated HDR preservation.",
             IsCopyAsImageReadOnly: true,
-            "Pending",
-            "After-capture behavior arrives in Epic 6 after output artifact semantics are defined.",
+            afterCaptureDisplayValue,
+            afterCaptureHelpText,
+            isAfterCaptureSelected,
             IsAfterCaptureReadOnly: true,
             "Not available",
             "Advanced color/export options are unavailable until encoder metadata, conversion policy, target-app assumptions, and Windows validation exist.",
             IsExportColorReadOnly: true);
+    }
+
+    private static (string DisplayValue, string HelpText, bool IsSelected) ProjectAfterCapture(
+        Lumiere.Graphics.Output.OutputTarget outputTarget,
+        AfterCaptureBehavior afterCaptureBehavior)
+    {
+        if (outputTarget == Lumiere.Graphics.Output.OutputTarget.Clipboard)
+        {
+            return (
+                "None",
+                "Clipboard-only output has no file artifact, so open or reveal after capture is skipped.",
+                IsSelected: false);
+        }
+
+        return afterCaptureBehavior switch
+        {
+            AfterCaptureBehavior.Open => (
+                "Open saved file",
+                "After folder output creates a file artifact, Lumiere opens the saved PNG through Windows.",
+                IsSelected: true),
+            AfterCaptureBehavior.Reveal => (
+                "Reveal saved file",
+                "After folder output creates a file artifact, Lumiere reveals the saved PNG in Explorer.",
+                IsSelected: true),
+            _ => (
+                "None",
+                "After-capture behavior is off; folder output completes through normal feedback.",
+                IsSelected: false),
+        };
     }
 }
 

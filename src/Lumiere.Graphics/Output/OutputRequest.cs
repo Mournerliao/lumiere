@@ -55,6 +55,11 @@ public sealed record OutputPolicy(
     public bool ShouldAttemptFolder => Target is OutputTarget.Folder or OutputTarget.Both;
 
     /// <summary>
+    /// Gets the supported after-capture action represented by the raw settings value.
+    /// </summary>
+    public OutputAfterCaptureAction AfterCaptureAction => OutputAfterCaptureActionParser.Parse(AfterCaptureBehavior);
+
+    /// <summary>
     /// Creates a policy from raw settings values without taking a dependency on the settings module.
     /// </summary>
     public static OutputPolicy FromSettings(
@@ -69,4 +74,33 @@ public sealed record OutputPolicy(
             string.IsNullOrWhiteSpace(savePath) ? null : savePath.Trim(),
             timestampNaming,
             string.IsNullOrWhiteSpace(afterCaptureBehavior) ? null : afterCaptureBehavior.Trim());
+}
+
+/// <summary>
+/// Output-owned representation of supported post-capture artifact actions.
+/// </summary>
+public enum OutputAfterCaptureAction
+{
+    None = 0,
+    Open = 1,
+    Reveal = 2,
+}
+
+internal static class OutputAfterCaptureActionParser
+{
+    public static OutputAfterCaptureAction Parse(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return OutputAfterCaptureAction.None;
+        }
+
+        return value.Trim() switch
+        {
+            nameof(OutputAfterCaptureAction.Open) => OutputAfterCaptureAction.Open,
+            nameof(OutputAfterCaptureAction.Reveal) => OutputAfterCaptureAction.Reveal,
+            "RevealInFolder" => OutputAfterCaptureAction.Reveal,
+            _ => OutputAfterCaptureAction.None,
+        };
+    }
 }

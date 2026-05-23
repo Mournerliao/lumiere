@@ -907,7 +907,7 @@ public sealed partial class MainWindow : Window
                 $"{projection.Output.SavePathDisplayValue}. {projection.Output.SavePathHelpText}");
 
             SettingsOpenAfterCaptureToggle.IsEnabled = !projection.Output.IsAfterCaptureReadOnly;
-            SettingsOpenAfterCaptureToggle.IsOn = false;
+            SettingsOpenAfterCaptureToggle.IsOn = projection.Output.IsAfterCaptureSelected;
             SettingsAfterCaptureHelperText.Text = projection.Output.AfterCaptureHelpText;
             AutomationProperties.SetName(SettingsOpenAfterCaptureToggle, $"After capture: {projection.Output.AfterCaptureDisplayValue}");
             AutomationProperties.SetHelpText(SettingsOpenAfterCaptureToggle, projection.Output.AfterCaptureHelpText);
@@ -1144,11 +1144,13 @@ public sealed partial class MainWindow : Window
 
                 Logger.Log(
                     result.IsSuccess ? LogLevel.Information : LogLevel.Warning,
-                    "Configured output {Outcome}: crop=({X},{Y},{Width}x{Height}), message={Message}, detail={Detail}",
+                    "Configured output {Outcome}: crop=({X},{Y},{Width}x{Height}), message={Message}, detail={Detail}, afterCapture={AfterCaptureOutcome}, afterCaptureDetail={AfterCaptureDetail}",
                     result.IsSuccess ? "completed" : "failed",
                     selection.PixelRegion.X, selection.PixelRegion.Y, selection.PixelRegion.Width, selection.PixelRegion.Height,
                     result.UserMessage,
-                    result.TechnicalDetail);
+                    result.TechnicalDetail,
+                    result.AfterCapture?.Outcome,
+                    result.AfterCapture?.TechnicalDetail);
                 return result.IsSuccess;
             }
             finally

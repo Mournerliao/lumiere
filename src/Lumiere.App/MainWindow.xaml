@@ -580,15 +580,15 @@
                         x:Name="SettingsAfterCaptureHelperText"
                         FontSize="11"
                         Foreground="{StaticResource MutedTextBrush}"
-                        Text="Pending output artifact behavior"
+                        Text="Runs only when folder output produces a file artifact"
                         TextWrapping="WrapWholeWords" />
                   </StackPanel>
                   <ToggleSwitch
                       x:Name="SettingsOpenAfterCaptureToggle"
                       Grid.Column="1"
                       VerticalAlignment="Center"
-                      AutomationProperties.HelpText="After-capture behavior arrives with output settings."
-                      AutomationProperties.Name="Open after capture"
+                      AutomationProperties.HelpText="Runs only when folder output produces a file artifact."
+                      AutomationProperties.Name="After capture action"
                       IsEnabled="False"
                       IsOn="False"
                       OffContent=""

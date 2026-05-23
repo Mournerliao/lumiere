@@ -6,7 +6,8 @@ namespace Lumiere.Graphics.Output;
 public sealed record OutputResult(
     IReadOnlyList<OutputTargetResult> Targets,
     string? UserMessage,
-    string? TechnicalDetail)
+    string? TechnicalDetail,
+    AfterCaptureResult? AfterCapture = null)
 {
     /// <summary>
     /// Gets whether the overall output operation succeeded (at least one target succeeded).
@@ -108,6 +109,72 @@ public sealed record OutputResult(
 
     private OutputOutcome OutcomeFor(OutputTarget target) =>
         Targets.FirstOrDefault(result => result.Target == target)?.Outcome ?? OutputOutcome.Skipped;
+
+    /// <summary>
+    /// Creates a copy with post-output artifact action details attached.
+    /// </summary>
+    public OutputResult WithAfterCapture(AfterCaptureResult afterCapture)
+    {
+        ArgumentNullException.ThrowIfNull(afterCapture);
+        return this with { AfterCapture = afterCapture };
+    }
+}
+
+/// <summary>
+/// Represents post-output artifact action state, separate from target output success.
+/// </summary>
+public sealed record AfterCaptureResult(
+    OutputAfterCaptureAction Action,
+    AfterCaptureOutcome Outcome,
+    string UserMessage,
+    string? TechnicalDetail,
+    string? ArtifactPath)
+{
+    public static AfterCaptureResult NotRequested() =>
+        new(
+            OutputAfterCaptureAction.None,
+            AfterCaptureOutcome.NotRequested,
+            "No after-capture action requested",
+            "After-capture behavior is None.",
+            ArtifactPath: null);
+
+    public static AfterCaptureResult Skipped(OutputAfterCaptureAction action, string reason) =>
+        new(action, AfterCaptureOutcome.Skipped, reason, reason, ArtifactPath: null);
+
+    public static AfterCaptureResult Success(OutputAfterCaptureAction action, string artifactPath) =>
+        new(
+            action,
+            AfterCaptureOutcome.Success,
+            FormatSuccess(action),
+            $"{action} after-capture action succeeded.",
+            artifactPath);
+
+    public static AfterCaptureResult Failed(OutputAfterCaptureAction action, string artifactPath, string? detail = null) =>
+        new(
+            action,
+            AfterCaptureOutcome.Failed,
+            "After-capture action failed",
+            detail ?? $"{action} after-capture action failed.",
+            artifactPath);
+
+    private static string FormatSuccess(OutputAfterCaptureAction action) =>
+        action switch
+        {
+            OutputAfterCaptureAction.Reveal => "Revealed saved file",
+            OutputAfterCaptureAction.Open => "Opened saved file",
+            _ => "After-capture action complete",
+        };
+}
+
+/// <summary>
+/// Represents post-output artifact action outcome.
+/// </summary>
+public enum AfterCaptureOutcome
+{
+    NotRequested = 0,
+    Skipped = 1,
+    Success = 2,
+    Failed = 3,
 }
 
 /// <summary>

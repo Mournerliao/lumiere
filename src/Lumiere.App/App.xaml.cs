@@ -3,6 +3,7 @@ using Lumiere.Graphics.Clipboard;
 using Lumiere.Graphics.Devices;
 using Lumiere.Graphics.Output;
 using Lumiere.Infrastructure.Diagnostics;
+using Lumiere.Infrastructure.Interop;
 using Lumiere.Settings;
 using Microsoft.UI.Xaml;
 
@@ -34,9 +35,12 @@ public partial class App : Application
             var captureService = new CaptureService(deviceResources, borderOptions);
             var captureCommandCoordinator = new CaptureCommandCoordinator(captureService);
             var clipboardOutputService = new ClipboardOutputService(deviceResources);
-            var outputService = new ConfiguredOutputService(
+            var configuredOutputService = new ConfiguredOutputService(
                 clipboardOutputService,
                 new FolderOutputService(clipboardOutputService));
+            var outputService = new AfterCaptureOutputService(
+                configuredOutputService,
+                new WindowsArtifactShellAction());
             var settingsProvider = new DefaultSettingsProvider(
                 LocalSettingsStore.CreateDefault(LumiereLoggerFactory.CreateLogger(LogCategories.Settings)));
             var aboutInfoProvider = new AssemblyAboutInfoProvider(typeof(App).Assembly);

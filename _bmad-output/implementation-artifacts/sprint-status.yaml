@@ -1,5 +1,5 @@
 # generated: 2026-05-09T17:29:57+0800
-# last_updated: 2026-05-23T23:15:00+08:00
+# last_updated: 2026-05-23T23:59:00+08:00
 # project: lumiere
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-09T17:29:57+0800
-last_updated: 2026-05-23T23:15:00+08:00
+last_updated: 2026-05-23T23:59:00+08:00
 project: lumiere
 project_key: NOKEY
 tracking_system: file-system
@@ -87,14 +87,14 @@ development_status:
   5-5-persist-local-settings-across-launches: done
   5-6-show-native-about-and-version-information: done
   epic-5-retrospective: done
-  epic-6: in-progress
+  epic-6: done
   6-1-define-output-target-policy-and-result-model: done
   6-2-implement-configured-clipboard-output: done
   6-3-implement-folder-output-with-save-path-and-timestamp-naming: done
   6-4-implement-both-target-output-and-completion-feedback: done
   6-5-scope-export-and-color-format-options-honestly: done
-  6-6-implement-supported-after-capture-behavior: backlog
-  epic-6-retrospective: optional
+  6-6-implement-supported-after-capture-behavior: done
+  epic-6-retrospective: done
   epic-7: backlog
   7-1-add-tray-menu-with-status-and-commands: backlog
   7-2-open-main-window-and-settings-from-tray: backlog

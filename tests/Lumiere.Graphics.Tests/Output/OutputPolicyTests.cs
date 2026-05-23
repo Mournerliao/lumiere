@@ -38,6 +38,7 @@ public sealed class OutputPolicyTests
         Assert.Equal(shouldAttemptFolder, policy.ShouldAttemptFolder);
         Assert.Equal("C:\\Captures", policy.SavePath);
         Assert.Equal("RevealInFolder", policy.AfterCaptureBehavior);
+        Assert.Equal(OutputAfterCaptureAction.Reveal, policy.AfterCaptureAction);
     }
 
     [Theory]
@@ -55,5 +56,25 @@ public sealed class OutputPolicyTests
 
         Assert.Null(policy.SavePath);
         Assert.Null(policy.AfterCaptureBehavior);
+        Assert.Equal(OutputAfterCaptureAction.None, policy.AfterCaptureAction);
+    }
+
+    [Theory]
+    [InlineData("Open", OutputAfterCaptureAction.Open)]
+    [InlineData("Reveal", OutputAfterCaptureAction.Reveal)]
+    [InlineData("RevealInFolder", OutputAfterCaptureAction.Reveal)]
+    [InlineData("Unsupported", OutputAfterCaptureAction.None)]
+    public void FromSettings_MapsSupportedAfterCaptureActions(
+        string value,
+        OutputAfterCaptureAction expectedAction)
+    {
+        var policy = OutputPolicy.FromSettings(
+            OutputTarget.Folder,
+            copyAsImage: true,
+            savePath: "C:\\Captures",
+            timestampNaming: true,
+            afterCaptureBehavior: value);
+
+        Assert.Equal(expectedAction, policy.AfterCaptureAction);
     }
 }

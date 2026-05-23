@@ -192,17 +192,51 @@ public sealed class SettingsPanelProjectionTests
     }
 
     [Fact]
-    public void Project_MarksAfterCaptureAndExportColorAsPending()
+    public void Project_MarksExportColorUnavailableAndAfterCaptureScoped()
     {
         var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
 
-        Assert.Equal("Pending", projection.Output.AfterCaptureDisplayValue);
+        Assert.Equal("None", projection.Output.AfterCaptureDisplayValue);
         Assert.Equal("Not available", projection.Output.ExportColorDisplayValue);
-        Assert.Contains("Epic 6", projection.Output.AfterCaptureHelpText);
+        Assert.Contains("no file artifact", projection.Output.AfterCaptureHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("skipped", projection.Output.AfterCaptureHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("validation", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("metadata", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("target-app", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.True(projection.Output.IsExportColorReadOnly);
+    }
+
+    [Fact]
+    public void Project_ReflectsAfterCaptureRevealForFolderArtifacts()
+    {
+        var settings = new TestSettingsProvider
+        {
+            OutputTarget = OutputTarget.Folder,
+            AfterCaptureBehavior = AfterCaptureBehavior.Reveal,
+        };
+
+        var projection = SettingsPanelProjection.Project(settings, CreateState());
+
+        Assert.Equal("Reveal saved file", projection.Output.AfterCaptureDisplayValue);
+        Assert.True(projection.Output.IsAfterCaptureSelected);
+        Assert.Contains("Explorer", projection.Output.AfterCaptureHelpText);
+    }
+
+    [Fact]
+    public void Project_ClipboardOnlyExplainsAfterCaptureSkip()
+    {
+        var settings = new TestSettingsProvider
+        {
+            OutputTarget = OutputTarget.Clipboard,
+            AfterCaptureBehavior = AfterCaptureBehavior.Open,
+        };
+
+        var projection = SettingsPanelProjection.Project(settings, CreateState());
+
+        Assert.Equal("None", projection.Output.AfterCaptureDisplayValue);
+        Assert.False(projection.Output.IsAfterCaptureSelected);
+        Assert.Contains("Clipboard-only", projection.Output.AfterCaptureHelpText);
+        Assert.Contains("skipped", projection.Output.AfterCaptureHelpText);
     }
 
     [Fact]
