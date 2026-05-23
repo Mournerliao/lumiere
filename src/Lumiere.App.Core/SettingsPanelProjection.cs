@@ -87,7 +87,7 @@ public sealed record OutputSettingsProjection(
     string ExportColorHelpText,
     bool IsExportColorReadOnly)
 {
-    private const string OutputPolicyActiveReason = "Output target policy is active; folder artifacts arrive in later Epic 6 stories";
+    private const string OutputPolicyActiveReason = "Output target policy is active for clipboard, folder, and both targets";
 
     public static OutputSettingsProjection ReadOnly(
         Lumiere.Graphics.Output.OutputTarget outputTarget,
@@ -114,10 +114,10 @@ public sealed record OutputSettingsProjection(
             IsReadOnly: true,
             OutputPolicyActiveReason,
             savePathDisplayValue,
-            "Save path selection and folder validation arrive in Epic 6.",
+            "Folder output uses the configured save path. Editing the path remains read-only until picker behavior is implemented.",
             IsSavePathReadOnly: true,
             timestampNaming,
-            "Timestamp naming is pending output behavior and persistence.",
+            "Timestamp naming is active for folder output and uses invariant safe filenames.",
             IsTimestampReadOnly: true,
             copyAsImage,
             "Copy-as-image controls basic usability; basic clipboard usability does not mean validated HDR preservation.",
@@ -126,7 +126,7 @@ public sealed record OutputSettingsProjection(
             "After-capture behavior arrives in Epic 6 after output artifact semantics are defined.",
             IsAfterCaptureReadOnly: true,
             "Not available",
-            "Color/export options need encoder policy and Windows validation before they are available.",
+            "Advanced color/export options are unavailable until encoder metadata, conversion policy, target-app assumptions, and Windows validation exist.",
             IsExportColorReadOnly: true);
     }
 }

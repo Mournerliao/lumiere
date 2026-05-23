@@ -113,7 +113,8 @@ public sealed class SettingsPanelProjectionTests
 
         Assert.True(projection.Output.IsSavePathReadOnly);
         Assert.Equal("Not configured", projection.Output.SavePathDisplayValue);
-        Assert.Contains("Epic 6", projection.Output.SavePathHelpText);
+        Assert.Contains("Folder output uses", projection.Output.SavePathHelpText);
+        Assert.Contains("read-only", projection.Output.SavePathHelpText);
     }
 
     [Theory]
@@ -130,7 +131,8 @@ public sealed class SettingsPanelProjectionTests
 
         Assert.True(projection.Output.IsSavePathReadOnly);
         Assert.Equal("Not configured", projection.Output.SavePathDisplayValue);
-        Assert.Contains("Epic 6", projection.Output.SavePathHelpText);
+        Assert.Contains("Folder output uses", projection.Output.SavePathHelpText);
+        Assert.Contains("read-only", projection.Output.SavePathHelpText);
     }
 
     [Fact]
@@ -157,7 +159,8 @@ public sealed class SettingsPanelProjectionTests
         Assert.True(projection.Output.IsAfterCaptureReadOnly);
         Assert.True(projection.Output.IsExportColorReadOnly);
         Assert.Contains("Output target policy is active", projection.Output.PendingReason);
-        Assert.Contains("folder artifacts", projection.Output.PendingReason);
+        Assert.Contains("clipboard", projection.Output.PendingReason);
+        Assert.Contains("folder", projection.Output.PendingReason);
     }
 
     [Fact]
@@ -173,7 +176,8 @@ public sealed class SettingsPanelProjectionTests
 
         Assert.False(projection.Output.TimestampNaming);
         Assert.False(projection.Output.CopyAsImage);
-        Assert.Contains("pending", projection.Output.TimestampHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("active", projection.Output.TimestampHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("invariant", projection.Output.TimestampHelpText, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -196,6 +200,9 @@ public sealed class SettingsPanelProjectionTests
         Assert.Equal("Not available", projection.Output.ExportColorDisplayValue);
         Assert.Contains("Epic 6", projection.Output.AfterCaptureHelpText);
         Assert.Contains("validation", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("metadata", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("target-app", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.True(projection.Output.IsExportColorReadOnly);
     }
 
     [Fact]

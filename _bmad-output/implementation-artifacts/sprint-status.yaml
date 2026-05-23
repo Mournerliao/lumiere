@@ -1,5 +1,5 @@
 # generated: 2026-05-09T17:29:57+0800
-# last_updated: 2026-05-23T22:45:00+08:00
+# last_updated: 2026-05-23T23:15:00+08:00
 # project: lumiere
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-09T17:29:57+0800
-last_updated: 2026-05-23T22:45:00+08:00
+last_updated: 2026-05-23T23:15:00+08:00
 project: lumiere
 project_key: NOKEY
 tracking_system: file-system
@@ -92,7 +92,7 @@ development_status:
   6-2-implement-configured-clipboard-output: done
   6-3-implement-folder-output-with-save-path-and-timestamp-naming: done
   6-4-implement-both-target-output-and-completion-feedback: done
-  6-5-scope-export-and-color-format-options-honestly: backlog
+  6-5-scope-export-and-color-format-options-honestly: done
   6-6-implement-supported-after-capture-behavior: backlog
   epic-6-retrospective: optional
   epic-7: backlog

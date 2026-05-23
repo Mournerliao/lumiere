@@ -495,7 +495,7 @@
                         x:Name="SettingsColorOutputHelperText"
                         FontSize="11"
                         Foreground="{StaticResource MutedTextBrush}"
-                        Text="Pending encoder policy and Windows validation"
+                        Text="Unavailable until encoder policy and Windows validation exist"
                         TextWrapping="WrapWholeWords" />
                   </StackPanel>
                   <Border
@@ -504,7 +504,7 @@
                       MinWidth="112"
                       Padding="12,6"
                       VerticalAlignment="Center"
-                      AutomationProperties.HelpText="Color output options need encoder policy and Windows validation before they are available."
+                      AutomationProperties.HelpText="Advanced color output options need encoder metadata, conversion policy, target-app assumptions, and Windows validation before they are available."
                       AutomationProperties.Name="Color output unavailable"
                       Background="#2217191C"
                       BorderBrush="{StaticResource BorderBrush}"
@@ -537,7 +537,7 @@
                         x:Name="SettingsSavePathHelperText"
                         FontSize="11"
                         Foreground="{StaticResource MutedTextBrush}"
-                        Text="Save path selection arrives in Epic 6"
+                        Text="Folder output uses the configured path; editing remains read-only"
                         TextWrapping="WrapWholeWords" />
                   </StackPanel>
                   <Border
@@ -546,8 +546,8 @@
                       MaxWidth="150"
                       Padding="12,6"
                       VerticalAlignment="Center"
-                      AutomationProperties.HelpText="Save path is read-only until folder output behavior is implemented."
-                      AutomationProperties.Name="Save path pending"
+                      AutomationProperties.HelpText="Folder output uses this configured path. Editing remains read-only until picker behavior is implemented."
+                      AutomationProperties.Name="Save path"
                       Background="#241D2024"
                       BorderBrush="{StaticResource BorderBrush}"
                       BorderThickness="1"
@@ -633,7 +633,7 @@
 
           <StackPanel
               AutomationProperties.Name="Clipboard settings section"
-              AutomationProperties.HelpText="Clipboard options are shown read-only until output behavior is expanded."
+              AutomationProperties.HelpText="Clipboard options are shown read-only; configured output behavior consumes the saved preference."
               Spacing="9">
             <local:SettingsSectionHeader
                 IconGlyph="&#xE8C8;"
@@ -666,7 +666,7 @@
                     x:Name="SettingsCopyAsImageToggle"
                     Grid.Column="1"
                     VerticalAlignment="Center"
-                    AutomationProperties.HelpText="Copy-as-image is display-only until output settings behavior is implemented."
+                    AutomationProperties.HelpText="Copy-as-image controls basic clipboard usability and does not mean validated HDR preservation."
                     AutomationProperties.Name="Copy as image"
                     IsEnabled="False"
                     OffContent=""
