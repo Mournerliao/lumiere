@@ -7,4 +7,5 @@ public static class LogCategories
     public const string Graphics = "Lumiere.Graphics";
     public const string Overlay = "Lumiere.Overlay";
     public const string Infrastructure = "Lumiere.Infrastructure";
+    public const string Settings = "Lumiere.Settings";
 }

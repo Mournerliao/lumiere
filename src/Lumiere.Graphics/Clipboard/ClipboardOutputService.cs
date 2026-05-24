@@ -3,6 +3,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using Lumiere.Graphics.Devices;
 using Lumiere.Graphics.Hdr;
 using Lumiere.Graphics.Output;
+using Lumiere.Graphics.Presentation;
 using Lumiere.Infrastructure.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Vortice.Direct3D;
@@ -16,15 +17,22 @@ using Half = System.Half;
 
 namespace Lumiere.Graphics.Clipboard;
 
-public sealed class ClipboardOutputService : IOutputService, IDisposable
+public sealed class ClipboardOutputService : IOutputService, IOutputPngEncoder, IDisposable
 {
     private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Graphics);
-    private readonly GraphicsDeviceResources deviceResources;
+    private readonly GraphicsDeviceResources? deviceResources;
+    private readonly Func<OutputRequest, CancellationToken, Task<OutputResult>> executeCoreAsync;
     private bool disposed;
 
     public ClipboardOutputService(GraphicsDeviceResources deviceResources)
     {
         this.deviceResources = deviceResources ?? throw new ArgumentNullException(nameof(deviceResources));
+        executeCoreAsync = ExecuteNativeOutputAsync;
+    }
+
+    internal ClipboardOutputService(Func<OutputRequest, CancellationToken, Task<OutputResult>> executeCoreAsync)
+    {
+        this.executeCoreAsync = executeCoreAsync ?? throw new ArgumentNullException(nameof(executeCoreAsync));
     }
 
     public async Task<bool> TryCopyToClipboardAsync(
@@ -44,9 +52,8 @@ public sealed class ClipboardOutputService : IOutputService, IDisposable
                 return false;
             }
 
-            using var croppedTexture = CropTexture(sourceTexture, pixelX, pixelY, pixelWidth, pixelHeight);
-            using var bgra8Texture = ConvertToBgra8(croppedTexture, pixelWidth, pixelHeight);
-            var pngBytes = await EncodeAsPngAsync(bgra8Texture, pixelWidth, pixelHeight);
+            var frame = new CapturedFrameTexture(sourceTexture, sourceWidth, sourceHeight, "Clipboard source texture");
+            var pngBytes = await EncodePngAsync(frame, new CropPixelRect(pixelX, pixelY, pixelWidth, pixelHeight));
             await WriteToClipboardAsync(pngBytes);
 
             Logger.LogInformation("Clipboard output success: PNG encoded, {Bytes} bytes, crop=({X},{Y},{Width}x{Height})", pngBytes.Length, pixelX, pixelY, pixelWidth, pixelHeight);
@@ -64,6 +71,35 @@ public sealed class ClipboardOutputService : IOutputService, IDisposable
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        if (!request.Policy.ShouldAttemptClipboard)
+        {
+            Logger.LogInformation(
+                "operation=ClipboardOutput, stage=Policy, detail=Clipboard output skipped by configured output policy, target={Target}, copyAsImage={CopyAsImage}",
+                request.Policy.Target,
+                request.Policy.CopyAsImage);
+            return OutputResult.ClipboardSkipped("Clipboard output skipped by settings");
+        }
+
+        try
+        {
+            return await executeCoreAsync(request, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            Logger.LogInformation(
+                "operation=ClipboardOutput, stage=Cancelled, detail=Output cancelled by caller, target={Target}",
+                request.Policy.Target);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "operation=ClipboardOutput, stage=ExecuteOutput, detail=Clipboard output FAILED");
+            return OutputResult.ClipboardFailed(ex.Message);
+        }
+    }
+
+    private async Task<OutputResult> ExecuteNativeOutputAsync(OutputRequest request, CancellationToken cancellationToken)
+    {
         var texture = request.Texture;
         if (texture?.Texture is null)
         {
@@ -88,12 +124,7 @@ public sealed class ClipboardOutputService : IOutputService, IDisposable
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            using var croppedTexture = CropTexture(texture.Texture, pixelX, pixelY, pixelWidth, pixelHeight);
-            using var bgra8Texture = ConvertToBgra8(croppedTexture, pixelWidth, pixelHeight);
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var pngBytes = await EncodeAsPngAsync(bgra8Texture, pixelWidth, pixelHeight);
+            var pngBytes = await EncodePngAsync(texture, cropRegion, cancellationToken);
 
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -112,6 +143,37 @@ public sealed class ClipboardOutputService : IOutputService, IDisposable
             Logger.LogError(ex, "operation=ClipboardOutput, stage=ExecuteOutput, detail=ExecuteOutputAsync FAILED, crop=({X},{Y},{Width}x{Height})", pixelX, pixelY, pixelWidth, pixelHeight);
             return OutputResult.ClipboardFailed(ex.Message);
         }
+    }
+
+    public async Task<byte[]> EncodePngAsync(
+        CapturedFrameTexture texture,
+        CropPixelRect? cropRegion,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(texture);
+        if (texture.Texture is null)
+        {
+            throw new InvalidOperationException("Captured frame texture is unavailable.");
+        }
+
+        int pixelX = cropRegion?.X ?? 0;
+        int pixelY = cropRegion?.Y ?? 0;
+        int pixelWidth = cropRegion?.Width ?? texture.Width;
+        int pixelHeight = cropRegion?.Height ?? texture.Height;
+
+        if (!ValidateRegion(pixelX, pixelY, pixelWidth, pixelHeight, texture.Width, texture.Height))
+        {
+            throw new InvalidOperationException("Invalid crop region.");
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        using var croppedTexture = CropTexture(texture.Texture, pixelX, pixelY, pixelWidth, pixelHeight);
+        using var bgra8Texture = ConvertToBgra8(croppedTexture, pixelWidth, pixelHeight);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return await EncodeAsPngAsync(bgra8Texture, pixelWidth, pixelHeight);
     }
 
     private static bool ValidateRegion(
@@ -137,8 +199,9 @@ public sealed class ClipboardOutputService : IOutputService, IDisposable
         int width,
         int height)
     {
-        var device = deviceResources.Device;
-        var context = deviceResources.ImmediateContext;
+        var resources = deviceResources ?? throw new InvalidOperationException("Clipboard output device resources are unavailable.");
+        var device = resources.Device;
+        var context = resources.ImmediateContext;
 
         var cropDesc = new Texture2DDescription
         {
@@ -164,8 +227,9 @@ public sealed class ClipboardOutputService : IOutputService, IDisposable
 
     private ID3D11Texture2D ConvertToBgra8(ID3D11Texture2D fp16Texture, int width, int height)
     {
-        var device = deviceResources.Device;
-        var context = deviceResources.ImmediateContext;
+        var resources = deviceResources ?? throw new InvalidOperationException("Clipboard output device resources are unavailable.");
+        var device = resources.Device;
+        var context = resources.ImmediateContext;
 
         // Create staging texture to read FP16 data
         var stagingDesc = new Texture2DDescription
@@ -296,8 +360,9 @@ public sealed class ClipboardOutputService : IOutputService, IDisposable
 
     private async Task<byte[]> EncodeAsPngAsync(ID3D11Texture2D bgra8Texture, int width, int height)
     {
-        var device = deviceResources.Device;
-        var context = deviceResources.ImmediateContext;
+        var resources = deviceResources ?? throw new InvalidOperationException("Clipboard output device resources are unavailable.");
+        var device = resources.Device;
+        var context = resources.ImmediateContext;
 
         var stagingDesc = new Texture2DDescription
         {

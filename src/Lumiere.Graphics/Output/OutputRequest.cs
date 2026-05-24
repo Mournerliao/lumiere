@@ -19,24 +19,88 @@ public sealed record OutputRequest
     public CropPixelRect? CropRegion { get; init; }
 
     /// <summary>
-    /// Gets the output target settings placeholder.
-    /// Real settings will be defined in Story 5.5; this is a forward-compatible stub.
+    /// Gets the configured output policy for this request.
     /// </summary>
-    public OutputTargetSettings Settings { get; init; } = OutputTargetSettings.Default;
+    public OutputPolicy Policy { get; init; } = OutputPolicy.Default;
 }
 
 /// <summary>
-/// Placeholder for output target settings. Will be replaced by ISettingsProvider integration in Story 5.5.
+/// Immutable output policy derived from the shared persisted settings source.
 /// </summary>
-public sealed record OutputTargetSettings
+public sealed record OutputPolicy(
+    OutputTarget Target,
+    bool CopyAsImage,
+    string? SavePath,
+    bool TimestampNaming,
+    string? AfterCaptureBehavior)
 {
     /// <summary>
-    /// Gets the default output target settings (clipboard only).
+    /// Gets the default output policy.
     /// </summary>
-    public static readonly OutputTargetSettings Default = new();
+    public static readonly OutputPolicy Default = new(
+        OutputTarget.Clipboard,
+        CopyAsImage: true,
+        SavePath: null,
+        TimestampNaming: true,
+        AfterCaptureBehavior: null);
 
     /// <summary>
-    /// Gets the output target selection.
+    /// Gets whether clipboard image output should be attempted.
     /// </summary>
-    public OutputTarget Target { get; init; } = OutputTarget.Clipboard;
+    public bool ShouldAttemptClipboard => (Target is OutputTarget.Clipboard or OutputTarget.Both) && CopyAsImage;
+
+    /// <summary>
+    /// Gets whether folder output should be attempted by a service that supports file artifacts.
+    /// </summary>
+    public bool ShouldAttemptFolder => Target is OutputTarget.Folder or OutputTarget.Both;
+
+    /// <summary>
+    /// Gets the supported after-capture action represented by the raw settings value.
+    /// </summary>
+    public OutputAfterCaptureAction AfterCaptureAction => OutputAfterCaptureActionParser.Parse(AfterCaptureBehavior);
+
+    /// <summary>
+    /// Creates a policy from raw settings values without taking a dependency on the settings module.
+    /// </summary>
+    public static OutputPolicy FromSettings(
+        OutputTarget target,
+        bool copyAsImage,
+        string? savePath,
+        bool timestampNaming,
+        string? afterCaptureBehavior) =>
+        new(
+            target,
+            copyAsImage,
+            string.IsNullOrWhiteSpace(savePath) ? null : savePath.Trim(),
+            timestampNaming,
+            string.IsNullOrWhiteSpace(afterCaptureBehavior) ? null : afterCaptureBehavior.Trim());
+}
+
+/// <summary>
+/// Output-owned representation of supported post-capture artifact actions.
+/// </summary>
+public enum OutputAfterCaptureAction
+{
+    None = 0,
+    Open = 1,
+    Reveal = 2,
+}
+
+internal static class OutputAfterCaptureActionParser
+{
+    public static OutputAfterCaptureAction Parse(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return OutputAfterCaptureAction.None;
+        }
+
+        return value.Trim() switch
+        {
+            nameof(OutputAfterCaptureAction.Open) => OutputAfterCaptureAction.Open,
+            nameof(OutputAfterCaptureAction.Reveal) => OutputAfterCaptureAction.Reveal,
+            "RevealInFolder" => OutputAfterCaptureAction.Reveal,
+            _ => OutputAfterCaptureAction.None,
+        };
+    }
 }

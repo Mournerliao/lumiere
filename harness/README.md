@@ -12,6 +12,7 @@ Use `_bmad-output/` for generated planning artifacts, sprint output, story draft
 - `skills/` - project-specific skills for AI-assisted development.
   - `winui-gallery-reference/` - WinUI 3 component reference skill for fetching official code examples.
 - `workflows/cross-platform-development.md` - supported macOS editing, Windows CI, and Windows hardware validation workflow.
+- `workflows/nuget-restore-recovery.md` - local `dotnet run` restore guidance and `NETSDK1064` cache recovery.
 
 ## Conventions
 

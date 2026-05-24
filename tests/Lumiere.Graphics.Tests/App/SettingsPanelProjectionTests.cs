@@ -79,7 +79,7 @@ public sealed class SettingsPanelProjectionTests
 
         var projection = SettingsPanelProjection.Project(settings, CreateState());
 
-        Assert.True(projection.Output.IsReadOnly);
+        Assert.False(projection.Output.IsReadOnly);
         Assert.Equal(displayValue, projection.Output.DisplayValue);
         Assert.Equal(clipboardSelected, projection.Output.IsClipboardSelected);
         Assert.Equal(folderSelected, projection.Output.IsFolderSelected);
@@ -113,7 +113,8 @@ public sealed class SettingsPanelProjectionTests
 
         Assert.True(projection.Output.IsSavePathReadOnly);
         Assert.Equal("Not configured", projection.Output.SavePathDisplayValue);
-        Assert.Contains("Epic 6", projection.Output.SavePathHelpText);
+        Assert.Contains("Folder output uses", projection.Output.SavePathHelpText);
+        Assert.Contains("read-only", projection.Output.SavePathHelpText);
     }
 
     [Theory]
@@ -130,7 +131,8 @@ public sealed class SettingsPanelProjectionTests
 
         Assert.True(projection.Output.IsSavePathReadOnly);
         Assert.Equal("Not configured", projection.Output.SavePathDisplayValue);
-        Assert.Contains("Epic 6", projection.Output.SavePathHelpText);
+        Assert.Contains("Folder output uses", projection.Output.SavePathHelpText);
+        Assert.Contains("read-only", projection.Output.SavePathHelpText);
     }
 
     [Fact]
@@ -147,16 +149,19 @@ public sealed class SettingsPanelProjectionTests
     }
 
     [Fact]
-    public void Project_MarksOutputPreferencesPendingAndReadOnly()
+    public void Project_EnablesSupportedOutputPreferencesAndKeepsUnsupportedPreferencesReadOnly()
     {
         var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
 
-        Assert.True(projection.Output.IsReadOnly);
+        Assert.False(projection.Output.IsReadOnly);
+        Assert.False(projection.Output.IsCopyAsImageReadOnly);
+        Assert.True(projection.Output.IsSavePathReadOnly);
         Assert.True(projection.Output.IsTimestampReadOnly);
-        Assert.True(projection.Output.IsCopyAsImageReadOnly);
         Assert.True(projection.Output.IsAfterCaptureReadOnly);
         Assert.True(projection.Output.IsExportColorReadOnly);
-        Assert.Equal("Output behavior arrives in Epic 6", projection.Output.PendingReason);
+        Assert.Contains("Output target policy is active", projection.Output.PendingReason);
+        Assert.Contains("clipboard", projection.Output.PendingReason);
+        Assert.Contains("folder", projection.Output.PendingReason);
     }
 
     [Fact]
@@ -172,7 +177,8 @@ public sealed class SettingsPanelProjectionTests
 
         Assert.False(projection.Output.TimestampNaming);
         Assert.False(projection.Output.CopyAsImage);
-        Assert.Contains("pending", projection.Output.TimestampHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("active", projection.Output.TimestampHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("invariant", projection.Output.TimestampHelpText, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -181,19 +187,98 @@ public sealed class SettingsPanelProjectionTests
         var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
 
         Assert.Contains("basic usability", projection.Output.CopyAsImageHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("basic clipboard usability", projection.Output.CopyAsImageHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserving", projection.Output.CopyAsImageHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR preserving", projection.Output.CopyAsImageHelpText, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void Project_MarksAfterCaptureAndExportColorAsPending()
+    public void Project_RestoresExportProfileSegmentsAndScopesAdvancedProfiles()
     {
         var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
 
-        Assert.Equal("Pending", projection.Output.AfterCaptureDisplayValue);
-        Assert.Equal("Not available", projection.Output.ExportColorDisplayValue);
-        Assert.Contains("Epic 6", projection.Output.AfterCaptureHelpText);
+        Assert.Equal("None", projection.Output.AfterCaptureDisplayValue);
+        Assert.Equal("sRGB", projection.Output.ExportColorDisplayValue);
+        Assert.Contains("no file artifact", projection.Output.AfterCaptureHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("skipped", projection.Output.AfterCaptureHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("design reference", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("validation", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("metadata", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("target-app", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.True(projection.Output.IsExportColorReadOnly);
+
+        Assert.Equal(["HDR10", "P3", "sRGB"], projection.Output.ExportColorOptions.Select(option => option.Label).ToArray());
+        Assert.All(projection.Output.ExportColorOptions, option => Assert.True(option.IsReadOnly));
+        Assert.False(projection.Output.ExportColorOptions[0].IsSelected);
+        Assert.False(projection.Output.ExportColorOptions[1].IsSelected);
+        Assert.True(projection.Output.ExportColorOptions[2].IsSelected);
+        Assert.Contains("pending", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("pending", projection.Output.ExportColorOptions[1].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("basic PNG", projection.Output.ExportColorOptions[2].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR-preserving", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR preserving", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR-preserving", projection.Output.ExportColorOptions[2].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR preserving", projection.Output.ExportColorOptions[2].HelpText, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Project_ReflectsAfterCaptureRevealForFolderArtifacts()
+    {
+        var settings = new TestSettingsProvider
+        {
+            OutputTarget = OutputTarget.Folder,
+            AfterCaptureBehavior = AfterCaptureBehavior.Reveal,
+        };
+
+        var projection = SettingsPanelProjection.Project(settings, CreateState());
+
+        Assert.Equal("Reveal saved file", projection.Output.AfterCaptureDisplayValue);
+        Assert.True(projection.Output.IsAfterCaptureSelected);
+        Assert.Contains("Explorer", projection.Output.AfterCaptureHelpText);
+    }
+
+    [Fact]
+    public void Project_ClipboardOnlyExplainsAfterCaptureSkip()
+    {
+        var settings = new TestSettingsProvider
+        {
+            OutputTarget = OutputTarget.Clipboard,
+            AfterCaptureBehavior = AfterCaptureBehavior.Open,
+        };
+
+        var projection = SettingsPanelProjection.Project(settings, CreateState());
+
+        Assert.Equal("None", projection.Output.AfterCaptureDisplayValue);
+        Assert.False(projection.Output.IsAfterCaptureSelected);
+        Assert.Contains("Clipboard-only", projection.Output.AfterCaptureHelpText);
+        Assert.Contains("skipped", projection.Output.AfterCaptureHelpText);
+    }
+
+    [Fact]
+    public void Project_UsesAboutInfoProviderValues()
+    {
+        var aboutInfo = new TestAboutInfoProvider
+        {
+            AppName = "Lumiere Preview",
+            Version = "2.3.4",
+            Description = "Native Windows HDR-first capture and preview.",
+        };
+
+        var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState(), aboutInfo);
+
+        Assert.Equal("Lumiere Preview", projection.About.AppName);
+        Assert.Equal("2.3.4", projection.About.Version);
+        Assert.Equal("Native Windows HDR-first capture and preview.", projection.About.Description);
+    }
+
+    [Fact]
+    public void Project_AboutDescriptionAvoidsHdrPreservingOutputClaim()
+    {
+        var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
+
+        Assert.Contains("HDR-first", projection.About.Description, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR-preserving", projection.About.Description, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR preserving", projection.About.Description, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -247,5 +332,16 @@ public sealed class SettingsPanelProjectionTests
         public string FullscreenShortcut { get; init; } = string.Empty;
 
         public string RegionShortcut { get; init; } = string.Empty;
+
+        public AfterCaptureBehavior AfterCaptureBehavior { get; init; } = AfterCaptureBehavior.None;
+    }
+
+    private sealed class TestAboutInfoProvider : IAboutInfoProvider
+    {
+        public string AppName { get; init; } = "Lumiere";
+
+        public string Version { get; init; } = "1.0.0";
+
+        public string Description { get; init; } = "Native Windows HDR-first capture and preview.";
     }
 }
