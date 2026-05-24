@@ -69,6 +69,40 @@ public sealed class DefaultSettingsProviderTests
     }
 
     [Fact]
+    public void SetOutputTarget_PersistsPreferenceAcrossProviderInstances()
+    {
+        using var fixture = new SettingsFileFixture();
+        var provider = new DefaultSettingsProvider(new LocalSettingsStore(fixture.SettingsPath));
+
+        provider.SetOutputTarget(OutputTarget.Both);
+        var reloadedProvider = new DefaultSettingsProvider(new LocalSettingsStore(fixture.SettingsPath));
+
+        Assert.Equal(OutputTarget.Both, provider.OutputTarget);
+        Assert.Equal(OutputTarget.Both, reloadedProvider.OutputTarget);
+    }
+
+    [Fact]
+    public void SetOutputTarget_RejectsUndefinedTarget()
+    {
+        var provider = new DefaultSettingsProvider();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => provider.SetOutputTarget((OutputTarget)99));
+    }
+
+    [Fact]
+    public void SetCopyAsImage_PersistsPreferenceAcrossProviderInstances()
+    {
+        using var fixture = new SettingsFileFixture();
+        var provider = new DefaultSettingsProvider(new LocalSettingsStore(fixture.SettingsPath));
+
+        provider.SetCopyAsImage(false);
+        var reloadedProvider = new DefaultSettingsProvider(new LocalSettingsStore(fixture.SettingsPath));
+
+        Assert.False(provider.CopyAsImage);
+        Assert.False(reloadedProvider.CopyAsImage);
+    }
+
+    [Fact]
     public void Constructor_LoadsPersistedSettingsFromStore()
     {
         using var fixture = new SettingsFileFixture();
@@ -119,6 +153,7 @@ public sealed class DefaultSettingsProviderTests
 
         Assert.IsAssignableFrom<ISettingsProvider>(provider);
         Assert.IsAssignableFrom<IHdrAlertSettingsWriter>(provider);
+        Assert.IsAssignableFrom<IOutputSettingsWriter>(provider);
     }
 
     [Fact]

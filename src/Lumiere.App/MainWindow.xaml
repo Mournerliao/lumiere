@@ -346,17 +346,37 @@
                         Text="When HDR is unavailable"
                         TextWrapping="WrapWholeWords" />
                   </StackPanel>
-                  <ToggleSwitch
-                      x:Name="SettingsHdrAlertsToggle"
+                  <Button
+                      x:Name="SettingsHdrAlertsButton"
                       Grid.Column="1"
+                      Width="44"
+                      Height="24"
+                      MinWidth="0"
                       HorizontalAlignment="Right"
                       VerticalAlignment="Center"
                       AutomationProperties.HelpText="Show warnings when HDR is unavailable, degraded, unsupported, or failed."
                       AutomationProperties.Name="HDR alerts"
-                      OffContent=""
-                      OnContent=""
-                      Style="{StaticResource CompactSwitchToggleSwitchStyle}"
-                      Toggled="OnSettingsHdrAlertsToggleToggled" />
+                      Background="Transparent"
+                      BorderBrush="Transparent"
+                      Click="OnSettingsHdrAlertsButtonClick"
+                      Padding="0"
+                      UseSystemFocusVisuals="True">
+                    <Border
+                        x:Name="SettingsHdrAlertsSwitchTrack"
+                        Width="44"
+                        Height="24"
+                        Background="#FF3A3D40"
+                        CornerRadius="12">
+                      <Ellipse
+                          x:Name="SettingsHdrAlertsSwitchKnob"
+                          Width="16"
+                          Height="16"
+                          Margin="4"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Center"
+                          Fill="#FFA7A9AA" />
+                    </Border>
+                  </Button>
                 </Grid>
               </StackPanel>
             </Border>
@@ -364,7 +384,7 @@
 
           <StackPanel
               AutomationProperties.Name="Output settings section"
-              AutomationProperties.HelpText="Output preferences are placeholders until output settings behavior is implemented."
+              AutomationProperties.HelpText="Supported output destination and clipboard image preferences can be changed here."
               Spacing="9">
             <local:SettingsSectionHeader
                 IconGlyph="&#xE8B7;"
@@ -389,13 +409,13 @@
                       x:Name="SettingsDestinationHelperText"
                       FontSize="11"
                       Foreground="{StaticResource MutedTextBrush}"
-                      Text="Output behavior arrives in Epic 6"
+                      Text="Output target policy is active"
                       TextWrapping="WrapWholeWords" />
                   <Border
                       Height="40"
                       Padding="4"
-                      AutomationProperties.HelpText="Destination selection is display-only until output settings behavior is implemented."
-                      AutomationProperties.Name="Destination display"
+                      AutomationProperties.HelpText="Choose where completed captures are written."
+                      AutomationProperties.Name="Destination"
                       Background="#2217191C"
                       BorderBrush="{StaticResource BorderBrush}"
                       BorderThickness="1"
@@ -406,9 +426,10 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
                       </Grid.ColumnDefinitions>
-                      <Border
+                      <Button
                           x:Name="SettingsDestinationClipboardSegment"
-                          CornerRadius="6">
+                          Click="OnSettingsDestinationClipboardClick"
+                          Style="{StaticResource SegmentButtonStyle}">
                         <StackPanel
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
@@ -427,11 +448,12 @@
                               Text="Selected"
                               Visibility="Collapsed" />
                         </StackPanel>
-                      </Border>
-                      <Border
+                      </Button>
+                      <Button
                           x:Name="SettingsDestinationFolderSegment"
                           Grid.Column="1"
-                          CornerRadius="6">
+                          Click="OnSettingsDestinationFolderClick"
+                          Style="{StaticResource SegmentButtonStyle}">
                         <StackPanel
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
@@ -450,11 +472,12 @@
                               Text="Selected"
                               Visibility="Collapsed" />
                         </StackPanel>
-                      </Border>
-                      <Border
+                      </Button>
+                      <Button
                           x:Name="SettingsDestinationBothSegment"
                           Grid.Column="2"
-                          CornerRadius="6">
+                          Click="OnSettingsDestinationBothClick"
+                          Style="{StaticResource SegmentButtonStyle}">
                         <StackPanel
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
@@ -473,7 +496,7 @@
                               Text="Selected"
                               Visibility="Collapsed" />
                         </StackPanel>
-                      </Border>
+                      </Button>
                     </Grid>
                   </Border>
                 </StackPanel>
@@ -583,17 +606,36 @@
                         Text="Runs only when folder output produces a file artifact"
                         TextWrapping="WrapWholeWords" />
                   </StackPanel>
-                  <ToggleSwitch
-                      x:Name="SettingsOpenAfterCaptureToggle"
+                  <Button
+                      x:Name="SettingsOpenAfterCaptureButton"
                       Grid.Column="1"
+                      Width="44"
+                      Height="24"
+                      MinWidth="0"
                       VerticalAlignment="Center"
                       AutomationProperties.HelpText="Runs only when folder output produces a file artifact."
                       AutomationProperties.Name="After capture action"
+                      Background="Transparent"
+                      BorderBrush="Transparent"
                       IsEnabled="False"
-                      IsOn="False"
-                      OffContent=""
-                      OnContent=""
-                      Style="{StaticResource CompactSwitchToggleSwitchStyle}" />
+                      Padding="0"
+                      UseSystemFocusVisuals="True">
+                    <Border
+                        x:Name="SettingsOpenAfterCaptureSwitchTrack"
+                        Width="44"
+                        Height="24"
+                        Background="#FF3A3D40"
+                        CornerRadius="12">
+                      <Ellipse
+                          x:Name="SettingsOpenAfterCaptureSwitchKnob"
+                          Width="16"
+                          Height="16"
+                          Margin="4"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Center"
+                          Fill="#FFA7A9AA" />
+                    </Border>
+                  </Button>
                 </Grid>
                 <Border
                     Height="1"
@@ -616,16 +658,36 @@
                         Text="Pending output behavior"
                         TextWrapping="WrapWholeWords" />
                   </StackPanel>
-                  <ToggleSwitch
-                      x:Name="SettingsTimestampToggle"
+                  <Button
+                      x:Name="SettingsTimestampButton"
                       Grid.Column="1"
+                      Width="44"
+                      Height="24"
+                      MinWidth="0"
                       VerticalAlignment="Center"
                       AutomationProperties.HelpText="Timestamp naming is display-only until settings persistence is implemented."
                       AutomationProperties.Name="Timestamp naming"
+                      Background="Transparent"
+                      BorderBrush="Transparent"
                       IsEnabled="False"
-                      OffContent=""
-                      OnContent=""
-                      Style="{StaticResource CompactSwitchToggleSwitchStyle}" />
+                      Padding="0"
+                      UseSystemFocusVisuals="True">
+                    <Border
+                        x:Name="SettingsTimestampSwitchTrack"
+                        Width="44"
+                        Height="24"
+                        Background="#FF3A3D40"
+                        CornerRadius="12">
+                      <Ellipse
+                          x:Name="SettingsTimestampSwitchKnob"
+                          Width="16"
+                          Height="16"
+                          Margin="4"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Center"
+                          Fill="#FFA7A9AA" />
+                    </Border>
+                  </Button>
                 </Grid>
               </StackPanel>
             </Border>
@@ -662,16 +724,36 @@
                       Text="Basic clipboard usability, not validated HDR preservation"
                       TextWrapping="WrapWholeWords" />
                 </StackPanel>
-                <ToggleSwitch
-                    x:Name="SettingsCopyAsImageToggle"
+                <Button
+                    x:Name="SettingsCopyAsImageButton"
                     Grid.Column="1"
+                    Width="44"
+                    Height="24"
+                    MinWidth="0"
                     VerticalAlignment="Center"
                     AutomationProperties.HelpText="Copy-as-image controls basic clipboard usability and does not mean validated HDR preservation."
                     AutomationProperties.Name="Copy as image"
-                    IsEnabled="False"
-                    OffContent=""
-                    OnContent=""
-                    Style="{StaticResource CompactSwitchToggleSwitchStyle}" />
+                    Background="Transparent"
+                    BorderBrush="Transparent"
+                    Click="OnSettingsCopyAsImageButtonClick"
+                    Padding="0"
+                    UseSystemFocusVisuals="True">
+                  <Border
+                      x:Name="SettingsCopyAsImageSwitchTrack"
+                      Width="44"
+                      Height="24"
+                      Background="#FF3A3D40"
+                      CornerRadius="12">
+                    <Ellipse
+                        x:Name="SettingsCopyAsImageSwitchKnob"
+                        Width="16"
+                        Height="16"
+                        Margin="4"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Fill="#FFA7A9AA" />
+                  </Border>
+                </Button>
               </Grid>
             </Border>
           </StackPanel>

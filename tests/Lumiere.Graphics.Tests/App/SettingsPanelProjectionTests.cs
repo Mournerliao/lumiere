@@ -79,7 +79,7 @@ public sealed class SettingsPanelProjectionTests
 
         var projection = SettingsPanelProjection.Project(settings, CreateState());
 
-        Assert.True(projection.Output.IsReadOnly);
+        Assert.False(projection.Output.IsReadOnly);
         Assert.Equal(displayValue, projection.Output.DisplayValue);
         Assert.Equal(clipboardSelected, projection.Output.IsClipboardSelected);
         Assert.Equal(folderSelected, projection.Output.IsFolderSelected);
@@ -149,13 +149,14 @@ public sealed class SettingsPanelProjectionTests
     }
 
     [Fact]
-    public void Project_MarksOnlyUnsupportedOutputPreferencesPendingAndReadOnly()
+    public void Project_EnablesSupportedOutputPreferencesAndKeepsUnsupportedPreferencesReadOnly()
     {
         var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
 
-        Assert.True(projection.Output.IsReadOnly);
+        Assert.False(projection.Output.IsReadOnly);
+        Assert.False(projection.Output.IsCopyAsImageReadOnly);
+        Assert.True(projection.Output.IsSavePathReadOnly);
         Assert.True(projection.Output.IsTimestampReadOnly);
-        Assert.True(projection.Output.IsCopyAsImageReadOnly);
         Assert.True(projection.Output.IsAfterCaptureReadOnly);
         Assert.True(projection.Output.IsExportColorReadOnly);
         Assert.Contains("Output target policy is active", projection.Output.PendingReason);

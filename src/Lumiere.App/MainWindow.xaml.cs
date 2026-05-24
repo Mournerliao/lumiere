@@ -19,6 +19,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Shapes;
 using Windows.Graphics;
 
 namespace Lumiere.App;
@@ -40,6 +41,7 @@ public sealed partial class MainWindow : Window
     private readonly IOutputService outputService;
     private readonly ISettingsProvider settingsProvider;
     private readonly IHdrAlertSettingsWriter hdrAlertSettingsWriter;
+    private readonly IOutputSettingsWriter outputSettingsWriter;
     private readonly IAboutInfoProvider aboutInfoProvider;
     private readonly GraphicsDeviceResources deviceResources;
     private readonly GraphicsEngine graphicsEngine;
@@ -69,6 +71,7 @@ public sealed partial class MainWindow : Window
         IOutputService outputService,
         ISettingsProvider settingsProvider,
         IHdrAlertSettingsWriter hdrAlertSettingsWriter,
+        IOutputSettingsWriter outputSettingsWriter,
         IAboutInfoProvider aboutInfoProvider,
         CaptureService captureService,
         GraphicsDeviceResources deviceResources)
@@ -77,6 +80,7 @@ public sealed partial class MainWindow : Window
         this.outputService = outputService ?? throw new ArgumentNullException(nameof(outputService));
         this.settingsProvider = settingsProvider ?? throw new ArgumentNullException(nameof(settingsProvider));
         this.hdrAlertSettingsWriter = hdrAlertSettingsWriter ?? throw new ArgumentNullException(nameof(hdrAlertSettingsWriter));
+        this.outputSettingsWriter = outputSettingsWriter ?? throw new ArgumentNullException(nameof(outputSettingsWriter));
         this.aboutInfoProvider = aboutInfoProvider ?? throw new ArgumentNullException(nameof(aboutInfoProvider));
         this.captureService = captureService ?? throw new ArgumentNullException(nameof(captureService));
         this.deviceResources = deviceResources ?? throw new ArgumentNullException(nameof(deviceResources));
@@ -136,18 +140,55 @@ public sealed partial class MainWindow : Window
         Logger.LogDebug("Settings shell closed; returning to main panel.");
     }
 
-    private void OnSettingsHdrAlertsToggleToggled(object sender, RoutedEventArgs e)
+    private void OnSettingsHdrAlertsButtonClick(object sender, RoutedEventArgs e)
     {
         if (applyingSettingsProjection)
         {
             return;
         }
 
-        hdrAlertSettingsWriter.SetHdrAlertsEnabled(SettingsHdrAlertsToggle.IsOn);
+        hdrAlertSettingsWriter.SetHdrAlertsEnabled(!settingsProvider.HdrAlertsEnabled);
         ApplySettingsProjection(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
         Logger.LogDebug(
             "HDR alert preference updated in settings: enabled={HdrAlertsEnabled}",
             settingsProvider.HdrAlertsEnabled);
+    }
+
+    private void OnSettingsDestinationClipboardClick(object sender, RoutedEventArgs e) =>
+        SetOutputTargetFromSettings(OutputTarget.Clipboard);
+
+    private void OnSettingsDestinationFolderClick(object sender, RoutedEventArgs e) =>
+        SetOutputTargetFromSettings(OutputTarget.Folder);
+
+    private void OnSettingsDestinationBothClick(object sender, RoutedEventArgs e) =>
+        SetOutputTargetFromSettings(OutputTarget.Both);
+
+    private void SetOutputTargetFromSettings(OutputTarget target)
+    {
+        if (applyingSettingsProjection || settingsProvider.OutputTarget == target)
+        {
+            return;
+        }
+
+        outputSettingsWriter.SetOutputTarget(target);
+        ApplySettingsProjection(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
+        Logger.LogDebug(
+            "Output target preference updated in settings: target={OutputTarget}",
+            settingsProvider.OutputTarget);
+    }
+
+    private void OnSettingsCopyAsImageButtonClick(object sender, RoutedEventArgs e)
+    {
+        if (applyingSettingsProjection)
+        {
+            return;
+        }
+
+        outputSettingsWriter.SetCopyAsImage(!settingsProvider.CopyAsImage);
+        ApplySettingsProjection(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
+        Logger.LogDebug(
+            "Copy-as-image preference updated in settings: enabled={CopyAsImage}",
+            settingsProvider.CopyAsImage);
     }
 
     private async Task ExecuteCaptureFromUiAsync(CaptureCommandMode mode)
@@ -894,9 +935,16 @@ public sealed partial class MainWindow : Window
             AutomationProperties.SetHelpText(SettingsRegionShortcutValuePill, projection.RegionShortcut.HelpText);
             ToolTipService.SetToolTip(SettingsRegionShortcutValuePill, projection.RegionShortcut.PendingReason);
 
-            SettingsHdrAlertsToggle.IsOn = projection.HdrAlertsEnabled;
             SettingsHdrAlertsHelperText.Text = "When HDR is unavailable";
-            AutomationProperties.SetHelpText(SettingsHdrAlertsToggle, projection.HdrAlertsHelpText);
+            ApplySwitchState(
+                SettingsHdrAlertsSwitchTrack,
+                SettingsHdrAlertsSwitchKnob,
+                projection.HdrAlertsEnabled,
+                isReadOnly: false);
+            AutomationProperties.SetName(
+                SettingsHdrAlertsButton,
+                projection.HdrAlertsEnabled ? "HDR alerts: on" : "HDR alerts: off");
+            AutomationProperties.SetHelpText(SettingsHdrAlertsButton, projection.HdrAlertsHelpText);
             ApplyDestinationSegmentProjection(projection.Output);
             SettingsSavePathValueText.Text = projection.Output.SavePathDisplayValue;
             SettingsSavePathHelperText.Text = projection.Output.SavePathHelpText;
@@ -906,21 +954,39 @@ public sealed partial class MainWindow : Window
                 SettingsSavePathValuePill,
                 $"{projection.Output.SavePathDisplayValue}. {projection.Output.SavePathHelpText}");
 
-            SettingsOpenAfterCaptureToggle.IsEnabled = !projection.Output.IsAfterCaptureReadOnly;
-            SettingsOpenAfterCaptureToggle.IsOn = projection.Output.IsAfterCaptureSelected;
+            SettingsOpenAfterCaptureButton.IsEnabled = !projection.Output.IsAfterCaptureReadOnly;
+            ApplySwitchState(
+                SettingsOpenAfterCaptureSwitchTrack,
+                SettingsOpenAfterCaptureSwitchKnob,
+                projection.Output.IsAfterCaptureSelected,
+                projection.Output.IsAfterCaptureReadOnly);
             SettingsAfterCaptureHelperText.Text = projection.Output.AfterCaptureHelpText;
-            AutomationProperties.SetName(SettingsOpenAfterCaptureToggle, $"After capture: {projection.Output.AfterCaptureDisplayValue}");
-            AutomationProperties.SetHelpText(SettingsOpenAfterCaptureToggle, projection.Output.AfterCaptureHelpText);
+            AutomationProperties.SetName(SettingsOpenAfterCaptureButton, $"After capture: {projection.Output.AfterCaptureDisplayValue}");
+            AutomationProperties.SetHelpText(SettingsOpenAfterCaptureButton, projection.Output.AfterCaptureHelpText);
 
-            SettingsTimestampToggle.IsEnabled = !projection.Output.IsTimestampReadOnly;
-            SettingsTimestampToggle.IsOn = projection.Output.TimestampNaming;
+            SettingsTimestampButton.IsEnabled = !projection.Output.IsTimestampReadOnly;
+            ApplySwitchState(
+                SettingsTimestampSwitchTrack,
+                SettingsTimestampSwitchKnob,
+                projection.Output.TimestampNaming,
+                projection.Output.IsTimestampReadOnly);
             SettingsTimestampHelperText.Text = projection.Output.TimestampHelpText;
-            AutomationProperties.SetHelpText(SettingsTimestampToggle, projection.Output.TimestampHelpText);
+            AutomationProperties.SetName(
+                SettingsTimestampButton,
+                projection.Output.TimestampNaming ? "Timestamp naming: on" : "Timestamp naming: off");
+            AutomationProperties.SetHelpText(SettingsTimestampButton, projection.Output.TimestampHelpText);
 
-            SettingsCopyAsImageToggle.IsEnabled = !projection.Output.IsCopyAsImageReadOnly;
-            SettingsCopyAsImageToggle.IsOn = projection.Output.CopyAsImage;
+            SettingsCopyAsImageButton.IsEnabled = !projection.Output.IsCopyAsImageReadOnly;
+            ApplySwitchState(
+                SettingsCopyAsImageSwitchTrack,
+                SettingsCopyAsImageSwitchKnob,
+                projection.Output.CopyAsImage,
+                projection.Output.IsCopyAsImageReadOnly);
             SettingsCopyAsImageHelperText.Text = projection.Output.CopyAsImageHelpText;
-            AutomationProperties.SetHelpText(SettingsCopyAsImageToggle, projection.Output.CopyAsImageHelpText);
+            AutomationProperties.SetName(
+                SettingsCopyAsImageButton,
+                projection.Output.CopyAsImage ? "Copy as image: on" : "Copy as image: off");
+            AutomationProperties.SetHelpText(SettingsCopyAsImageButton, projection.Output.CopyAsImageHelpText);
 
             SettingsColorOutputValueText.Text = projection.Output.ExportColorDisplayValue;
             SettingsColorOutputHelperText.Text = projection.Output.ExportColorHelpText;
@@ -978,7 +1044,7 @@ public sealed partial class MainWindow : Window
         return $"{option} is {state}. {pendingReason}.";
     }
 
-    private void ApplySegmentState(Border segment, TextBlock label, TextBlock status, bool isSelected)
+    private void ApplySegmentState(Control segment, TextBlock label, TextBlock status, bool isSelected)
     {
         segment.Background = isSelected
             ? (Brush)Application.Current.Resources["AccentSoftBrush"]
@@ -988,6 +1054,14 @@ public sealed partial class MainWindow : Window
             : (Brush)Application.Current.Resources["MutedTextBrush"];
         status.Foreground = label.Foreground;
         status.Visibility = isSelected ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private static void ApplySwitchState(Border track, Ellipse knob, bool isOn, bool isReadOnly)
+    {
+        track.Background = new SolidColorBrush(isOn ? Windows.UI.Color.FromArgb(0xFF, 0xC9, 0xC0, 0xF7) : Windows.UI.Color.FromArgb(0xFF, 0x3A, 0x3D, 0x40));
+        knob.Fill = new SolidColorBrush(isOn ? Windows.UI.Color.FromArgb(0xFF, 0x0F, 0x11, 0x13) : Windows.UI.Color.FromArgb(0xFF, 0xA7, 0xA9, 0xAA));
+        knob.HorizontalAlignment = isOn ? HorizontalAlignment.Right : HorizontalAlignment.Left;
+        track.Opacity = isReadOnly ? 0.7 : 1.0;
     }
 
     private void UpdateMainPanelProjection(CaptureSessionState state)
