@@ -181,3 +181,10 @@ None currently known.
 - Native close/minimize command affordance is still pending a later shell/tray story. Story 5.1 intentionally represents minimize/background intent without implementing tray/background behavior; revisit when Story 5.2 or Epic 7 owns shell commands.
 - Full text scaling, high contrast, mixed-DPI, SDR, and multi-monitor manual validation remains future release-matrix coverage. Story 5.1 validated a single HDR 4K display at 150% DPI only.
 - Add deeper automated coverage for HWND/DWM frame suppression helpers. Current Story 5.1 relies on build/manual validation for the native interop path; future coverage can extract pure style-bit planning logic or add boundary tests.
+
+## Deferred from: code review of spec-restore-export-format-segmented-control.md (2026-05-25)
+
+- CreateExportColorOptions allocates new list on every call — Could be static readonly field since data is static.
+- "validation-scoped" jargon in accessibility text — Screen reader users won't understand this means "not functional".
+- ExportColorDisplayValue hardcoded to "sRGB" — Panel-level automation name always says "Export profile: sRGB" regardless of actual selection.
+- No test validates sRGB is default/active segment — Design Notes say "prefer sRGB" but no test explicitly asserts the policy.

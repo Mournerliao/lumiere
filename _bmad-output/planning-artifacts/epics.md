@@ -91,7 +91,7 @@ NFR5: Repeated capture cycles across start, cancel, restart, release-to-output, 
 NFR6: The primary capture and preview path SHALL preserve HDR-first invariants: FP16 WGC frames, FP16 DXGI swap-chain presentation, scRGB readiness evidence, and GPU-resident preview.
 NFR7: The authoritative live HDR preview SHALL NOT be replaced by BitmapImage, SoftwareBitmap, GDI, WIC, CPU bitmap readback, SDR texture fallback, or ordinary XAML bitmap Image presentation.
 NFR8: Clipboard or file output SHALL NOT be described as HDR-preserving unless a written record exists covering format choice, conversion or metadata policy, target-app assumptions, and Windows manual validation results.
-NFR9: Export or color-format options SHALL be hidden, disabled, or explicitly scoped when fidelity semantics are undefined.
+NFR9: Export or color-format options SHALL be disabled or explicitly scoped when fidelity semantics are undefined. Design-reference options may remain visible when the UI clearly communicates pending validation and avoids unsupported fidelity claims.
 NFR10: HDR readiness and trust states SHALL be backed by capability, preview, and output evidence; degraded, unvalidated, unsupported, or failed states SHALL NOT use success or completed language.
 NFR11: Capture cancellation, failure, restart, main-window close, and app quit SHALL deterministically dispose or hand off WGC session, frame pool, frames, swap chain, overlay, tray, hotkeys, and related native resources.
 NFR12: Preview teardown SHALL detach presentation from the UI surface before releasing DXGI swap-chain resources.
@@ -147,7 +147,7 @@ UX-DR7: Tray capture commands must mirror main-window availability and disabled/
 UX-DR8: Settings must include separate configurable shortcuts for fullscreen capture and region capture.
 UX-DR9: Shortcut editing must handle invalid combinations, conflicts, registration failure, and recovery/default behavior in the native implementation.
 UX-DR10: Settings must include an HDR alerts preference that governs user-facing prompts when HDR is unavailable, degraded, unsupported, or failed.
-UX-DR11: Export/color format choices shown in the v0 reference, such as HDR10, P3, and sRGB, must be hidden, disabled, or validation-scoped until real encoding, metadata, conversion policy, and Windows validation exist.
+UX-DR11: Export/color format choices shown in the v0 reference, such as HDR10, P3, and sRGB, should remain visible in the settings surface when they are part of the intended design, but must be disabled or validation-scoped until real encoding, metadata, conversion policy, and Windows validation exist.
 UX-DR12: Settings must provide output destination selection for clipboard, folder, or both, and every capture entry point must obey the same persisted output preference.
 UX-DR13: When folder output is enabled, settings must expose save path selection through native Windows UI and surface missing path, permission, or write failures clearly.
 UX-DR14: Settings must include supported after-capture behavior only for output targets that produce an artifact that can be opened or revealed.
@@ -1037,7 +1037,7 @@ So that I am not misled about HDR preservation.
 
 **Given** HDR10, P3, sRGB, or similar color/export options are considered
 **When** implementation semantics are incomplete
-**Then** those controls are hidden, disabled, or explicitly labeled as unavailable until real encoder, metadata, conversion policy, and validation evidence exist.
+**Then** the design-reference controls may remain visible, but they are disabled or explicitly labeled as validation-scoped until real encoder, metadata, conversion policy, and validation evidence exist.
 
 **Given** an output path is described in UI or docs
 **When** HDR preservation has not been validated

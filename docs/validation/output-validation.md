@@ -9,7 +9,7 @@ Lumiere Epic 6 output currently provides basic PNG/clipboard/file usability. It 
 | Clipboard image output | Windows CI-pass for policy and failure mapping; Windows manual validation required for OS clipboard behavior | Basic usability only. No HDR-preserving claim. |
 | Folder PNG output | Windows CI-pass for path policy, skip/failure semantics, and write abstraction; Windows manual validation required for filesystem edge cases | Uses configured save path and invariant timestamp naming. |
 | Both-target output | Windows CI-pass for aggregate result semantics and per-target timeout/failure handling; Windows manual validation required for slow OS behavior and resource teardown | Partial success must identify the succeeded and failed targets. |
-| Advanced color/export options | Not available | Requires future encoder metadata, conversion policy, target-app assumptions, and Windows manual validation. |
+| Export profile settings surface | Visible design-reference controls; current output remains basic PNG usability | `HDR10`, `P3`, and `sRGB` may be shown in settings, but advanced profile semantics require future encoder metadata, conversion policy, target-app assumptions, and Windows manual validation before they can be treated as real output behavior. |
 
 ## Future Format Acceptance Record
 

@@ -14,7 +14,7 @@ so that I am not misled about HDR preservation.
 
 ## Acceptance Criteria
 
-1. **Given** HDR10, P3, sRGB, or similar color/export options are considered, **when** implementation semantics are incomplete, **then** those controls are hidden, disabled, or explicitly labeled as unavailable until real encoder, metadata, conversion policy, and validation evidence exist.
+1. **Given** HDR10, P3, sRGB, or similar color/export options are considered, **when** implementation semantics are incomplete, **then** those controls may remain visible to match the design reference, but must be disabled or explicitly labeled as validation-scoped until real encoder, metadata, conversion policy, and validation evidence exist.
 
 2. **Given** an output path is described in UI or docs, **when** HDR preservation has not been validated, **then** copy avoids language that implies validated HDR-preserving output.
 
@@ -56,7 +56,7 @@ so that I am not misled about HDR preservation.
 
 ### Story Scope
 
-Story 6.5 intentionally does not implement HDR10, P3, sRGB format selection, ICC metadata, encoder metadata policy, or target-app compatibility behavior. It prevents misleading UI/docs until that future work exists.
+Story 6.5 intentionally does not implement HDR10, P3, ICC metadata, encoder metadata policy, or target-app compatibility behavior. Visible HDR10/P3/sRGB controls are allowed as design-reference surface only when clearly validation-scoped and not described as validated output behavior.
 
 ### Previous Story Intelligence
 
@@ -103,3 +103,4 @@ GPT-5 Codex
 
 - 2026-05-23: Created story context and started implementation.
 - 2026-05-23: Scoped export/color options honestly and marked story done.
+- 2026-05-25: Added scope-correction follow-up: restore the design-reference `Export` segmented surface while keeping HDR10/P3 semantics validation-scoped.

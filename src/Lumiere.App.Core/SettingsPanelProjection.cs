@@ -87,9 +87,12 @@ public sealed record OutputSettingsProjection(
     bool IsAfterCaptureReadOnly,
     string ExportColorDisplayValue,
     string ExportColorHelpText,
-    bool IsExportColorReadOnly)
+    bool IsExportColorReadOnly,
+    IReadOnlyList<ExportColorOptionProjection> ExportColorOptions)
 {
     private const string OutputPolicyActiveReason = "Output target policy is active for clipboard, folder, and both targets";
+    private const string ExportColorHelp =
+        "Export profiles are shown to match the design reference. HDR10 and P3 require encoder metadata, conversion policy, target-app assumptions, and Windows validation before they become real output behavior.";
 
     public static OutputSettingsProjection ReadOnly(
         Lumiere.Graphics.Output.OutputTarget outputTarget,
@@ -133,10 +136,30 @@ public sealed record OutputSettingsProjection(
             afterCaptureHelpText,
             isAfterCaptureSelected,
             IsAfterCaptureReadOnly: true,
-            "Not available",
-            "Advanced color/export options are unavailable until encoder metadata, conversion policy, target-app assumptions, and Windows validation exist.",
-            IsExportColorReadOnly: true);
+            "sRGB",
+            ExportColorHelp,
+            IsExportColorReadOnly: true,
+            CreateExportColorOptions());
     }
+
+    private static IReadOnlyList<ExportColorOptionProjection> CreateExportColorOptions() =>
+    [
+        new(
+            "HDR10",
+            IsSelected: false,
+            IsReadOnly: true,
+            "HDR10 export is pending encoder metadata, HDR metadata policy, target-app compatibility, and Windows validation."),
+        new(
+            "P3",
+            IsSelected: false,
+            IsReadOnly: true,
+            "P3 export is pending color metadata, conversion policy, target-app compatibility, and Windows validation."),
+        new(
+            "sRGB",
+            IsSelected: true,
+            IsReadOnly: true,
+            "sRGB reflects the current basic PNG output surface; advanced fidelity validation is pending."),
+    ];
 
     private static (string DisplayValue, string HelpText, bool IsSelected) ProjectAfterCapture(
         Lumiere.Graphics.Output.OutputTarget outputTarget,
@@ -167,6 +190,12 @@ public sealed record OutputSettingsProjection(
         };
     }
 }
+
+public sealed record ExportColorOptionProjection(
+    string Label,
+    bool IsSelected,
+    bool IsReadOnly,
+    string HelpText);
 
 public sealed record ShortcutSettingProjection(
     string Label,

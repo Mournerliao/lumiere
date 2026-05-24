@@ -370,6 +370,84 @@
                     </Border>
                   </Button>
                 </Grid>
+                <Border
+                    Height="1"
+                    Background="{StaticResource BorderBrush}" />
+                <Grid MinHeight="64" ColumnSpacing="14">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel VerticalAlignment="Center" Spacing="3">
+                    <TextBlock
+                        FontSize="13"
+                        FontWeight="SemiBold"
+                        Foreground="{StaticResource TextBrush}"
+                        Text="Export" />
+                    <TextBlock
+                        x:Name="SettingsExportHelperText"
+                        FontSize="11"
+                        Foreground="{StaticResource MutedTextBrush}"
+                        Text=""
+                        TextWrapping="WrapWholeWords" />
+                  </StackPanel>
+                  <Border
+                      x:Name="SettingsExportSegmentsPanel"
+                      Grid.Column="1"
+                      Width="176"
+                      Height="48"
+                      Padding="4"
+                      VerticalAlignment="Center"
+                      AutomationProperties.HelpText="Export profile controls are validation-scoped until encoder metadata and Windows validation exist."
+                      AutomationProperties.Name="Export"
+                      Background="#2217191C"
+                      BorderBrush="{StaticResource BorderBrush}"
+                      BorderThickness="1"
+                      CornerRadius="10">
+                    <Grid ColumnSpacing="4">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                      </Grid.ColumnDefinitions>
+                      <Button
+                          x:Name="SettingsExportHdr10Segment"
+                          Style="{StaticResource SegmentButtonStyle}">
+                        <TextBlock
+                            x:Name="SettingsExportHdr10Text"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Text="HDR10" />
+                      </Button>
+                      <Button
+                          x:Name="SettingsExportP3Segment"
+                          Grid.Column="1"
+                          Style="{StaticResource SegmentButtonStyle}">
+                        <TextBlock
+                            x:Name="SettingsExportP3Text"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Text="P3" />
+                      </Button>
+                      <Button
+                          x:Name="SettingsExportSrgbSegment"
+                          Grid.Column="2"
+                          Style="{StaticResource SegmentButtonStyle}">
+                        <TextBlock
+                            x:Name="SettingsExportSrgbText"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Text="sRGB" />
+                      </Button>
+                    </Grid>
+                  </Border>
+                </Grid>
               </StackPanel>
             </Border>
           </StackPanel>
@@ -471,48 +549,6 @@
                     </Grid>
                   </Border>
                 </StackPanel>
-                <Border
-                    Height="1"
-                    Background="{StaticResource BorderBrush}" />
-                <Grid MinHeight="64" ColumnSpacing="14">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                  </Grid.ColumnDefinitions>
-                  <StackPanel VerticalAlignment="Center" Spacing="3">
-                    <TextBlock
-                        FontSize="13"
-                        FontWeight="SemiBold"
-                        Foreground="{StaticResource TextBrush}"
-                        Text="Color output" />
-                    <TextBlock
-                        x:Name="SettingsColorOutputHelperText"
-                        FontSize="11"
-                        Foreground="{StaticResource MutedTextBrush}"
-                        Text="Unavailable until encoder policy and Windows validation exist"
-                        TextWrapping="WrapWholeWords" />
-                  </StackPanel>
-                  <Border
-                      x:Name="SettingsColorOutputValuePill"
-                      Grid.Column="1"
-                      MinWidth="112"
-                      Padding="12,6"
-                      VerticalAlignment="Center"
-                      AutomationProperties.HelpText="Advanced color output options need encoder metadata, conversion policy, target-app assumptions, and Windows validation before they are available."
-                      AutomationProperties.Name="Color output unavailable"
-                      Background="#2217191C"
-                      BorderBrush="{StaticResource BorderBrush}"
-                      BorderThickness="1"
-                      CornerRadius="8">
-                    <TextBlock
-                        x:Name="SettingsColorOutputValueText"
-                        HorizontalAlignment="Center"
-                        FontSize="12"
-                        FontWeight="SemiBold"
-                        Foreground="{StaticResource MutedTextBrush}"
-                        Text="Not available" />
-                  </Border>
-                </Grid>
                 <Border
                     Height="1"
                     Background="{StaticResource BorderBrush}" />

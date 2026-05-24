@@ -16,6 +16,10 @@ public sealed class OutputValidationDocumentationTests
         Assert.Contains("Metadata policy", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Target-app assumptions", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Windows manual validation", document, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("HDR10", document, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("P3", document, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("sRGB", document, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Visible design-reference controls", document, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string LocateRepositoryRoot()

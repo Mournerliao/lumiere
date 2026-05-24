@@ -193,18 +193,32 @@ public sealed class SettingsPanelProjectionTests
     }
 
     [Fact]
-    public void Project_MarksExportColorUnavailableAndAfterCaptureScoped()
+    public void Project_RestoresExportProfileSegmentsAndScopesAdvancedProfiles()
     {
         var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
 
         Assert.Equal("None", projection.Output.AfterCaptureDisplayValue);
-        Assert.Equal("Not available", projection.Output.ExportColorDisplayValue);
+        Assert.Equal("sRGB", projection.Output.ExportColorDisplayValue);
         Assert.Contains("no file artifact", projection.Output.AfterCaptureHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("skipped", projection.Output.AfterCaptureHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("design reference", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("validation", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("metadata", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("target-app", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.True(projection.Output.IsExportColorReadOnly);
+
+        Assert.Equal(["HDR10", "P3", "sRGB"], projection.Output.ExportColorOptions.Select(option => option.Label).ToArray());
+        Assert.All(projection.Output.ExportColorOptions, option => Assert.True(option.IsReadOnly));
+        Assert.False(projection.Output.ExportColorOptions[0].IsSelected);
+        Assert.False(projection.Output.ExportColorOptions[1].IsSelected);
+        Assert.True(projection.Output.ExportColorOptions[2].IsSelected);
+        Assert.Contains("pending", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("pending", projection.Output.ExportColorOptions[1].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("basic PNG", projection.Output.ExportColorOptions[2].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR-preserving", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR preserving", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR-preserving", projection.Output.ExportColorOptions[2].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR preserving", projection.Output.ExportColorOptions[2].HelpText, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

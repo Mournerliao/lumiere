@@ -1040,11 +1040,7 @@ public sealed partial class MainWindow : Window
                 projection.Output.CopyAsImage ? "Copy as image: on" : "Copy as image: off");
             AutomationProperties.SetHelpText(SettingsCopyAsImageButton, projection.Output.CopyAsImageHelpText);
 
-            SettingsColorOutputValueText.Text = projection.Output.ExportColorDisplayValue;
-            SettingsColorOutputHelperText.Text = projection.Output.ExportColorHelpText;
-            AutomationProperties.SetName(SettingsColorOutputValuePill, $"Color output: {projection.Output.ExportColorDisplayValue}");
-            AutomationProperties.SetHelpText(SettingsColorOutputValuePill, projection.Output.ExportColorHelpText);
-            ToolTipService.SetToolTip(SettingsColorOutputValuePill, projection.Output.ExportColorHelpText);
+            ApplyExportColorProjection(projection.Output);
 
             SettingsAboutAppNameText.Text = projection.About.AppName;
             SettingsAboutVersionText.Text = projection.About.Version;
@@ -1085,6 +1081,53 @@ public sealed partial class MainWindow : Window
         AutomationProperties.SetName(SettingsDestinationFolderSegment, "Destination option: Folder");
         AutomationProperties.SetName(SettingsDestinationBothSegment, "Destination option: Both");
         SettingsDestinationHelperText.Text = output.PendingReason;
+    }
+
+    private void ApplyExportColorProjection(OutputSettingsProjection output)
+    {
+        SettingsExportHelperText.Text = output.ExportColorHelpText;
+        AutomationProperties.SetName(SettingsExportSegmentsPanel, $"Export profile: {output.ExportColorDisplayValue}");
+        AutomationProperties.SetHelpText(SettingsExportSegmentsPanel, output.ExportColorHelpText);
+        ToolTipService.SetToolTip(SettingsExportSegmentsPanel, output.ExportColorHelpText);
+
+        if (output.ExportColorOptions?.Count >= 3)
+        {
+            ApplyExportColorOption(
+                output.ExportColorOptions[0],
+                SettingsExportHdr10Segment,
+                SettingsExportHdr10Text);
+            ApplyExportColorOption(
+                output.ExportColorOptions[1],
+                SettingsExportP3Segment,
+                SettingsExportP3Text);
+            ApplyExportColorOption(
+                output.ExportColorOptions[2],
+                SettingsExportSrgbSegment,
+                SettingsExportSrgbText);
+        }
+        else
+        {
+            SettingsExportHdr10Segment.IsEnabled = false;
+            SettingsExportP3Segment.IsEnabled = false;
+            SettingsExportSrgbSegment.IsEnabled = false;
+        }
+    }
+
+    private void ApplyExportColorOption(ExportColorOptionProjection option, Control segment, TextBlock label)
+    {
+        label.Text = option.Label;
+        segment.IsEnabled = !option.IsReadOnly;
+        ApplySegmentState(segment, label, option.IsSelected);
+        AutomationProperties.SetName(segment, $"Export option: {option.Label}");
+        AutomationProperties.SetHelpText(segment, GetExportColorOptionHelpText(option));
+        ToolTipService.SetToolTip(segment, GetExportColorOptionHelpText(option));
+    }
+
+    private static string GetExportColorOptionHelpText(ExportColorOptionProjection option)
+    {
+        var state = option.IsSelected ? "selected" : "not selected";
+        var availability = option.IsReadOnly ? "read-only" : "available";
+        return $"{option.Label} is {state} and {availability}. {option.HelpText}";
     }
 
     private static string GetDestinationOptionHelpText(string option, bool isSelected, string pendingReason)
