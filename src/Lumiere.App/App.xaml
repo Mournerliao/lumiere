@@ -17,6 +17,11 @@
       <SolidColorBrush x:Key="AccentBrush" Color="#FF7067FF" />
       <SolidColorBrush x:Key="AccentSoftBrush" Color="#FF19192B" />
       <SolidColorBrush x:Key="AccentBorderBrush" Color="#805B55D6" />
+      <SolidColorBrush x:Key="SegmentSelectedBrush" Color="#FF7067FF" />
+      <SolidColorBrush x:Key="SwitchTrackOnBrush" Color="#FF7067FF" />
+      <SolidColorBrush x:Key="SwitchTrackOffBrush" Color="#FF3A3D40" />
+      <SolidColorBrush x:Key="SwitchKnobOnBrush" Color="#FFFFFFFF" />
+      <SolidColorBrush x:Key="SwitchKnobOffBrush" Color="#FFA7A9AA" />
       <SolidColorBrush x:Key="SuccessBrush" Color="#FF10B981" />
       <SolidColorBrush x:Key="WarningBrush" Color="#FFF59E0B" />
       <SolidColorBrush x:Key="ErrorBrush" Color="#FFEF4444" />
@@ -37,15 +42,49 @@
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="CornerRadius" Value="7" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="VerticalAlignment" Value="Stretch" />
         <Setter Property="VerticalContentAlignment" Value="Stretch" />
-        <Setter Property="Height" Value="32" />
         <Setter Property="MinHeight" Value="0" />
         <Setter Property="MinWidth" Value="0" />
         <Setter Property="Padding" Value="0" />
+        <Setter Property="UseSystemFocusVisuals" Value="False" />
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="Button">
+              <Border
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}"
+                  Padding="{TemplateBinding Padding}">
+                <ContentPresenter
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                    VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+              </Border>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
+
+      <Style x:Key="SettingsSwitchButtonStyle" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="HorizontalAlignment" Value="Right" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Width" Value="52" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Padding" Value="2" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
         <Setter Property="Template">
           <Setter.Value>
@@ -57,6 +96,8 @@
                   CornerRadius="{TemplateBinding CornerRadius}"
                   Padding="{TemplateBinding Padding}">
                 <ContentPresenter
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
                     HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
                     VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
               </Border>

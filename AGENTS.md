@@ -38,6 +38,18 @@ dotnet test tests/Lumiere.Graphics.Tests/Lumiere.Graphics.Tests.csproj -p:Platfo
 dotnet format Lumiere.sln --verify-no-changes --verbosity minimal
 ```
 
+## NuGet Restore/Run Guidance
+
+For ad-hoc local app launch, prefer `dotnet run --project src/Lumiere.App/Lumiere.App.csproj -p:Platform=x64` without `--no-restore`. Use `--no-restore` only after a successful restore in the same workspace state.
+
+If `dotnet build`, `dotnet test`, or `dotnet run` fails with `NETSDK1064` and says a package was not found after restore, treat it as a stale/partial NuGet restore or cache issue before debugging source code. Stop using `--no-restore`, run:
+
+```bash
+dotnet restore Lumiere.sln --disable-parallel --verbosity minimal /nr:false --force
+```
+
+Then retry the original command. If it still fails, follow `harness/workflows/nuget-restore-recovery.md`.
+
 ## Commit Convention
 
 ```

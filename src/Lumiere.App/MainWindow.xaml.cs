@@ -20,6 +20,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
+using Vortice.Direct3D11;
 using Windows.Graphics;
 
 namespace Lumiere.App;
@@ -50,10 +51,13 @@ public sealed partial class MainWindow : Window
     private PreviewFramePresenter? previewFramePresenter;
     private SwapChainResources? swapChainResources;
     private CaptureTarget? activeCaptureTarget;
+    private CaptureCommandMode? activeCaptureMode;
+    private CapturedFrameTexture? latestOutputFrameSnapshot;
     private PreviewReadinessStatus? activePresentationEvidence;
     private OverlayWindow? overlayWindow;
     private long previewGeneration;
     private long frameEventCount;
+    private int fullscreenOutputStarted;
     private int previewSourceWidth;
     private int previewSourceHeight;
     private bool isClosed;
@@ -204,6 +208,7 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception ex)
         {
+            activeCaptureMode = null;
             Logger.LogError(ex, "ExecuteAsync FAILED for probe command");
             ApplySessionState(
                 CaptureSessionState.Failed(null, PreviewReadinessStatus.Failed(
@@ -215,6 +220,7 @@ public sealed partial class MainWindow : Window
 
         if (!guardResult.IsAccepted)
         {
+            activeCaptureMode = null;
             Logger.LogWarning(
                 "Capture command rejected before starting: mode={Mode}, outcome={Outcome}",
                 mode, guardResult.Outcome);
@@ -232,6 +238,8 @@ public sealed partial class MainWindow : Window
         {
             StopPreview(reportStopped: false);
             CloseOverlayWindow();
+            activeCaptureMode = mode;
+            UpdateMainPanelProjection(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
             ApplySessionState(
                 CaptureSessionState.SelectingTarget(PreviewReadinessStatus.Initializing(
                     PreviewReadinessStage.Capture,
@@ -258,12 +266,14 @@ public sealed partial class MainWindow : Window
                 return;
             }
 
+            activeCaptureMode = null;
             ApplySessionState(CaptureSessionState.FromSelectionResult(result));
         }
         catch (Exception exception)
         {
             if (!isClosed)
             {
+                activeCaptureMode = null;
                 Logger.LogError(exception, "Direct capture failed");
                 StopPreview(reportStopped: false);
                 ApplySessionState(
@@ -532,7 +542,9 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        var requestedMode = activeCaptureMode;
         StopPreview(reportStopped: false);
+        activeCaptureMode = requestedMode ?? CaptureCommandMode.Region;
 
         lock (previewSync)
         {
@@ -556,6 +568,7 @@ public sealed partial class MainWindow : Window
             activePresentationEvidence = presentationEvidence;
             previewSourceWidth = target.Size.Width;
             previewSourceHeight = target.Size.Height;
+            fullscreenOutputStarted = 0;
 
             Interlocked.Increment(ref previewGeneration);
             frameEventCount = 0;
@@ -611,6 +624,8 @@ public sealed partial class MainWindow : Window
         CaptureTarget? target;
         PreviewRenderResult result;
         CaptureFrameSizeChange? sizeChange = null;
+        var shouldCompleteFullscreenCapture = false;
+        CapturedFrameTexture? snapshotToDispose = null;
         using (frame)
         {
             lock (previewSync)
@@ -636,11 +651,18 @@ public sealed partial class MainWindow : Window
                 }
                 else
                 {
+                    var outputSnapshot = CreateOutputFrameSnapshot(frame);
+                    snapshotToDispose = latestOutputFrameSnapshot;
+                    latestOutputFrameSnapshot = outputSnapshot;
                     result = previewFramePresenter.PresentFrame(frame);
                     target = activeCaptureTarget;
+                    shouldCompleteFullscreenCapture = activeCaptureMode is CaptureCommandMode.Fullscreen
+                        && target is not null
+                        && Interlocked.CompareExchange(ref fullscreenOutputStarted, 1, 0) == 0;
                 }
             }
         }
+        snapshotToDispose?.Dispose();
 
         if (frameNumber == 1 && !sizeChange?.RequiresRecreation == true)
         {
@@ -665,9 +687,22 @@ public sealed partial class MainWindow : Window
                         target is null
                             ? CaptureSessionState.Failed(null, readiness)
                             : CreateSessionStateFromCurrentEvidence(target, readiness, allowCapturing: true));
+                    if (shouldCompleteFullscreenCapture && target is not null)
+                    {
+                        _ = CompleteFullscreenCaptureAsync(
+                            generation,
+                            target.Size.Width,
+                            target.Size.Height,
+                            ToOverlayDisplayStatus(readiness.State));
+                    }
                 }
             }))
         {
+            if (shouldCompleteFullscreenCapture)
+            {
+                Interlocked.Exchange(ref fullscreenOutputStarted, 0);
+            }
+
             // The frame has already been presented and disposed; no UI status update is possible.
         }
     }
@@ -677,8 +712,10 @@ public sealed partial class MainWindow : Window
         CaptureFrameSizeChange sizeChange)
     {
         CaptureTarget? target;
+        CaptureCommandMode? mode;
         CaptureSessionResources? captureSessionToDispose;
         SwapChainResources? swapChainToDispose;
+        CapturedFrameTexture? outputFrameSnapshotToDispose;
         long recreationGeneration;
 
         lock (previewSync)
@@ -691,11 +728,16 @@ public sealed partial class MainWindow : Window
             Interlocked.Increment(ref previewGeneration);
             recreationGeneration = Volatile.Read(ref previewGeneration);
             target = activeCaptureTarget;
+            mode = activeCaptureMode;
             captureSessionToDispose = captureSession;
             captureSession = null;
             previewFramePresenter = null;
             activeCaptureTarget = null;
+            activeCaptureMode = null;
+            outputFrameSnapshotToDispose = latestOutputFrameSnapshot;
+            latestOutputFrameSnapshot = null;
             activePresentationEvidence = null;
+            fullscreenOutputStarted = 0;
             previewSourceWidth = 0;
             previewSourceHeight = 0;
             swapChainToDispose = swapChainResources;
@@ -724,6 +766,7 @@ public sealed partial class MainWindow : Window
             recreationGeneration);
 
         captureSessionToDispose?.Dispose();
+        outputFrameSnapshotToDispose?.Dispose();
 
         if (!TryEnqueueUi(() =>
             {
@@ -745,6 +788,7 @@ public sealed partial class MainWindow : Window
                         PreviewReadinessStage.Capture,
                         "Rebuilding preview",
                         $"Captured frame size changed to {sizeChange.ReplacementWidth}x{sizeChange.ReplacementHeight}; recreating WGC frame pool and FP16 scRGB swap chain resources.")));
+                activeCaptureMode = mode;
                 StartPreview(recreationRequest.Target);
             }))
         {
@@ -828,6 +872,7 @@ public sealed partial class MainWindow : Window
         if (overlayWindow is not null)
         {
             overlayWindow.ApplyCaptureFrameSize(frameSize);
+            overlayWindow.SetCropInteractionEnabled(activeCaptureMode is CaptureCommandMode.Region);
             return;
         }
 
@@ -838,6 +883,7 @@ public sealed partial class MainWindow : Window
         overlayWindow.CaptureConfirmed += OnOverlayCaptureConfirmed;
         overlayWindow.Closed += OnOverlayClosed;
         overlayWindow.ApplyCaptureFrameSize(frameSize);
+        overlayWindow.SetCropInteractionEnabled(activeCaptureMode is CaptureCommandMode.Region);
         overlayWindow.ApplyPresenter(CreateOverlayPlacementRequest(target));
         overlayWindow.Activate();
         overlayWindow.ReassertTopmost();
@@ -853,6 +899,7 @@ public sealed partial class MainWindow : Window
     {
         CaptureSessionResources? captureSessionToDispose;
         SwapChainResources? swapChainToDispose;
+        CapturedFrameTexture? outputFrameSnapshotToDispose;
         long stoppedGeneration;
         lock (previewSync)
         {
@@ -862,7 +909,11 @@ public sealed partial class MainWindow : Window
             captureSession = null;
             previewFramePresenter = null;
             activeCaptureTarget = null;
+            activeCaptureMode = null;
+            outputFrameSnapshotToDispose = latestOutputFrameSnapshot;
+            latestOutputFrameSnapshot = null;
             activePresentationEvidence = null;
+            fullscreenOutputStarted = 0;
             swapChainToDispose = swapChainResources;
             swapChainResources = null;
         }
@@ -870,6 +921,7 @@ public sealed partial class MainWindow : Window
         Logger.LogDebug("operation=StopPreview, stage=Start, detail=Disposing capture and swap chain resources, generation={Generation}", stoppedGeneration);
         captureSessionToDispose?.Dispose();
         swapChainToDispose?.Dispose();
+        outputFrameSnapshotToDispose?.Dispose();
 
         Logger.LogInformation(
             "operation=StopPreview, stage=Complete, detail=StopPreview completed: generation={Generation}, captureDisposed={CaptureDisposed}, swapChainDisposed={SwapChainDisposed}, previousCycleCleaned={PreviousCycleCleaned}",
@@ -1011,17 +1063,14 @@ public sealed partial class MainWindow : Window
         ApplySegmentState(
             SettingsDestinationClipboardSegment,
             SettingsDestinationClipboardText,
-            SettingsDestinationClipboardStatusText,
             output.IsClipboardSelected);
         ApplySegmentState(
             SettingsDestinationFolderSegment,
             SettingsDestinationFolderText,
-            SettingsDestinationFolderStatusText,
             output.IsFolderSelected);
         ApplySegmentState(
             SettingsDestinationBothSegment,
             SettingsDestinationBothText,
-            SettingsDestinationBothStatusText,
             output.IsBothSelected);
         AutomationProperties.SetHelpText(
             SettingsDestinationClipboardSegment,
@@ -1044,22 +1093,26 @@ public sealed partial class MainWindow : Window
         return $"{option} is {state}. {pendingReason}.";
     }
 
-    private void ApplySegmentState(Control segment, TextBlock label, TextBlock status, bool isSelected)
+    private void ApplySegmentState(Control segment, TextBlock label, bool isSelected)
     {
         segment.Background = isSelected
-            ? (Brush)Application.Current.Resources["AccentSoftBrush"]
-            : null;
+            ? (Brush)Application.Current.Resources["SegmentSelectedBrush"]
+            : new SolidColorBrush(Windows.UI.Color.FromArgb(0x00, 0x00, 0x00, 0x00));
+        segment.BorderBrush = null;
+        segment.BorderThickness = new Thickness(0);
         label.Foreground = isSelected
             ? (Brush)Application.Current.Resources["TextBrush"]
             : (Brush)Application.Current.Resources["MutedTextBrush"];
-        status.Foreground = label.Foreground;
-        status.Visibility = isSelected ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private static void ApplySwitchState(Border track, Ellipse knob, bool isOn, bool isReadOnly)
     {
-        track.Background = new SolidColorBrush(isOn ? Windows.UI.Color.FromArgb(0xFF, 0xC9, 0xC0, 0xF7) : Windows.UI.Color.FromArgb(0xFF, 0x3A, 0x3D, 0x40));
-        knob.Fill = new SolidColorBrush(isOn ? Windows.UI.Color.FromArgb(0xFF, 0x0F, 0x11, 0x13) : Windows.UI.Color.FromArgb(0xFF, 0xA7, 0xA9, 0xAA));
+        track.Background = isOn
+            ? (Brush)Application.Current.Resources["SwitchTrackOnBrush"]
+            : (Brush)Application.Current.Resources["SwitchTrackOffBrush"];
+        knob.Fill = isOn
+            ? (Brush)Application.Current.Resources["SwitchKnobOnBrush"]
+            : (Brush)Application.Current.Resources["SwitchKnobOffBrush"];
         knob.HorizontalAlignment = isOn ? HorizontalAlignment.Right : HorizontalAlignment.Left;
         track.Opacity = isReadOnly ? 0.7 : 1.0;
     }
@@ -1074,6 +1127,7 @@ public sealed partial class MainWindow : Window
         RegionSelectButton.IsEnabled = projection.CanStartCapture;
         SelectCaptureTargetButton.Title = isIdle ? "Full Screen" : projection.ActionTitle;
         RegionSelectButton.Title = isIdle ? "Region" : projection.ActionTitle;
+        ApplyMainCaptureCardStyles();
 
         TrustStatusGlyph.Glyph = GetTrustStatusGlyph(projection.TrustIcon);
         TrustStatusGlyph.Foreground = statusBrush;
@@ -1082,6 +1136,30 @@ public sealed partial class MainWindow : Window
         TrustStatusLabel.Foreground = statusBrush;
         ToolTipService.SetToolTip(TrustStatusLabel, projection.TrustMessage);
         AutomationProperties.SetHelpText(TrustStatusLabel, projection.TrustMessage);
+    }
+
+    private void ApplyMainCaptureCardStyles()
+    {
+        ApplyMainCaptureCardStyle(SelectCaptureTargetButton, activeCaptureMode is CaptureCommandMode.Fullscreen);
+        ApplyMainCaptureCardStyle(RegionSelectButton, activeCaptureMode is CaptureCommandMode.Region);
+    }
+
+    private void ApplyMainCaptureCardStyle(CaptureActionCard card, bool isActive)
+    {
+        card.Background = isActive
+            ? (Brush)Application.Current.Resources["AccentSoftBrush"]
+            : (Brush)Application.Current.Resources["SecondaryPanelBrush"];
+        card.BorderBrush = isActive
+            ? (Brush)Application.Current.Resources["AccentBorderBrush"]
+            : (Brush)Application.Current.Resources["BorderBrush"];
+        card.IconBackground = card.Background;
+        card.IconBorderBrush = card.BorderBrush;
+        card.IconForeground = isActive
+            ? (Brush)Application.Current.Resources["AccentBrush"]
+            : (Brush)Application.Current.Resources["MutedTextBrush"];
+        card.ShortcutForeground = isActive
+            ? (Brush)Application.Current.Resources["TextBrush"]
+            : (Brush)Application.Current.Resources["SubtleTextBrush"];
     }
 
     private Brush GetTrustStatusBrush(MainPanelTrustSeverity severity)
@@ -1161,7 +1239,6 @@ public sealed partial class MainWindow : Window
         try
         {
             copied = await TryCopyCropToClipboardAsync(selection);
-            StopPreview(reportStopped: false);
         }
         finally
         {
@@ -1175,72 +1252,157 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private async Task CompleteFullscreenCaptureAsync(
+        long generation,
+        int frameWidth,
+        int frameHeight,
+        OverlayDisplayStatus status)
+    {
+        if (isClosed || generation != Volatile.Read(ref previewGeneration))
+        {
+            return;
+        }
+
+        Logger.LogInformation(
+            "Fullscreen capture auto-confirmed: frame={FrameW}x{FrameH}, status={Status}",
+            frameWidth, frameHeight, status);
+
+        var copied = false;
+        try
+        {
+            copied = await TryExecuteOutputAsync(null, "Fullscreen capture");
+        }
+        finally
+        {
+            overlayWindow?.ApplyClipboardResult(copied, status);
+            CloseOverlayWindow();
+            if (!isClosed)
+            {
+                Logger.LogDebug("Resetting session state to Idle after fullscreen capture completed");
+                ApplySessionState(CaptureSessionState.Idle());
+            }
+        }
+    }
+
     private async Task<bool> TryCopyCropToClipboardAsync(ConfirmedCaptureSelection selection)
     {
-        if (swapChainResources is null)
+        return await TryExecuteOutputAsync(
+            new CropPixelRect(
+                selection.PixelRegion.X,
+                selection.PixelRegion.Y,
+                selection.PixelRegion.Width,
+                selection.PixelRegion.Height),
+            "Region capture");
+    }
+
+    private async Task<bool> TryExecuteOutputAsync(
+        CropPixelRect? cropRegion,
+        string sourceDescription)
+    {
+        using var outputFrame = CloneLatestOutputFrameSnapshot();
+        if (outputFrame is null)
         {
-            Logger.LogWarning("Clipboard output SKIPPED: swapChainResources is null");
+            Logger.LogWarning("Configured output SKIPPED: no WGC output frame snapshot is available");
             return false;
         }
+
+        StopPreview(reportStopped: false);
 
         try
         {
             Logger.LogDebug(
-                "Clipboard output started: crop=({X},{Y},{Width}x{Height}), frame={FrameW}x{FrameH}",
-                selection.PixelRegion.X, selection.PixelRegion.Y, selection.PixelRegion.Width, selection.PixelRegion.Height,
-                selection.FrameSize.Width, selection.FrameSize.Height);
+                "Configured output started: source={Source}, crop={Crop}, frame={FrameW}x{FrameH}",
+                sourceDescription,
+                FormatCrop(cropRegion),
+                outputFrame.Width,
+                outputFrame.Height);
 
-            // Capture back buffer reference before async operation
-            var backBuffer = swapChainResources.SwapChain.GetBuffer<Vortice.Direct3D11.ID3D11Texture2D>(0);
-            try
+            var request = new OutputRequest
             {
-                var request = new OutputRequest
-                {
-                    Texture = new CapturedFrameTexture(
-                        backBuffer,
-                        selection.FrameSize.Width,
-                        selection.FrameSize.Height,
-                        "SwapChain back buffer"),
-                    CropRegion = new CropPixelRect(
-                        selection.PixelRegion.X,
-                        selection.PixelRegion.Y,
-                        selection.PixelRegion.Width,
-                        selection.PixelRegion.Height),
-                    Policy = OutputPolicy.FromSettings(
-                        settingsProvider.OutputTarget,
-                        settingsProvider.CopyAsImage,
-                        settingsProvider.SavePath,
-                        settingsProvider.TimestampNaming,
-                        settingsProvider.AfterCaptureBehavior.ToString())
-                };
+                Texture = outputFrame,
+                CropRegion = cropRegion,
+                Policy = OutputPolicy.FromSettings(
+                    settingsProvider.OutputTarget,
+                    settingsProvider.CopyAsImage,
+                    settingsProvider.SavePath,
+                    settingsProvider.TimestampNaming,
+                    settingsProvider.AfterCaptureBehavior.ToString())
+            };
 
-                var result = await outputService.ExecuteOutputAsync(request);
+            var result = await outputService.ExecuteOutputAsync(request);
 
-                Logger.Log(
-                    result.IsSuccess ? LogLevel.Information : LogLevel.Warning,
-                    "Configured output {Outcome}: crop=({X},{Y},{Width}x{Height}), message={Message}, detail={Detail}, afterCapture={AfterCaptureOutcome}, afterCaptureDetail={AfterCaptureDetail}",
-                    result.IsSuccess ? "completed" : "failed",
-                    selection.PixelRegion.X, selection.PixelRegion.Y, selection.PixelRegion.Width, selection.PixelRegion.Height,
-                    result.UserMessage,
-                    result.TechnicalDetail,
-                    result.AfterCapture?.Outcome,
-                    result.AfterCapture?.TechnicalDetail);
-                return result.IsSuccess;
-            }
-            finally
-            {
-                backBuffer?.Dispose();
-            }
+            Logger.Log(
+                result.IsSuccess ? LogLevel.Information : LogLevel.Warning,
+                "Configured output {Outcome}: source={Source}, crop={Crop}, message={Message}, detail={Detail}, afterCapture={AfterCaptureOutcome}, afterCaptureDetail={AfterCaptureDetail}",
+                result.IsSuccess ? "completed" : "failed",
+                sourceDescription,
+                FormatCrop(cropRegion),
+                result.UserMessage,
+                result.TechnicalDetail,
+                result.AfterCapture?.Outcome,
+                result.AfterCapture?.TechnicalDetail);
+            return result.IsSuccess;
         }
         catch (Exception ex)
         {
-            var cropInfo = selection?.PixelRegion is { } r
-                ? $"crop=({r.X},{r.Y},{r.Width}x{r.Height})"
-                : "crop=unknown";
-            Logger.LogError(ex, "operation=ClipboardOutput, stage=ExecuteOutput, detail=Clipboard output EXCEPTION: {CropInfo}", cropInfo);
+            Logger.LogError(
+                ex,
+                "operation=ConfiguredOutput, stage=ExecuteOutput, detail=Configured output EXCEPTION: source={Source}, crop={Crop}",
+                sourceDescription,
+                FormatCrop(cropRegion));
             return false;
         }
     }
+
+    private static string FormatCrop(CropPixelRect? cropRegion) =>
+        cropRegion is { } crop
+            ? $"({crop.X},{crop.Y},{crop.Width}x{crop.Height})"
+            : "full-frame";
+
+    private CapturedFrameTexture? CloneLatestOutputFrameSnapshot()
+    {
+        lock (previewSync)
+        {
+            return latestOutputFrameSnapshot is null
+                ? null
+                : CreateOutputFrameSnapshot(latestOutputFrameSnapshot);
+        }
+    }
+
+    private CapturedFrameTexture CreateOutputFrameSnapshot(CapturedFrameTexture source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        if (source.Texture is null)
+        {
+            throw new InvalidOperationException("Captured frame texture is unavailable for output snapshot.");
+        }
+
+        var description = source.Texture.Description;
+        description.Usage = ResourceUsage.Default;
+        description.CPUAccessFlags = CpuAccessFlags.None;
+        description.MiscFlags = ResourceOptionFlags.None;
+
+        var snapshot = deviceResources.Device.CreateTexture2D(description);
+        try
+        {
+            deviceResources.ImmediateContext.CopyResource(snapshot, source.Texture);
+            return new CapturedFrameTexture(
+                snapshot,
+                source.Width,
+                source.Height,
+                "WGC output snapshot");
+        }
+        catch
+        {
+            snapshot.Dispose();
+            throw;
+        }
+    }
+
+    private static OverlayDisplayStatus ToOverlayDisplayStatus(PreviewReadinessState state) =>
+        state is PreviewReadinessState.Ready
+            ? OverlayDisplayStatus.HdrReady
+            : OverlayDisplayStatus.DegradedPreview;
 
     private void OnOverlayClosed(object sender, WindowEventArgs args)
     {

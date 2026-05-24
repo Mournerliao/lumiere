@@ -25,6 +25,7 @@ public sealed partial class OverlayWindow : Window
     private readonly CropController cropController = new();
     private bool isClosed;
     private bool isClosingRequested;
+    private bool cropInteractionEnabled = true;
     private OverlayPreviewLayout currentPreviewLayout = OverlayPreviewLayout.FillSurface(1, 1);
     private CaptureFrameSize currentCaptureFrameSize = new(1, 1);
     private OverlayState currentState = OverlayState.Initializing("Preparing HDR preview.");
@@ -108,6 +109,13 @@ public sealed partial class OverlayWindow : Window
 
         currentCaptureFrameSize = frameSize;
         UpdatePreviewLayout(RootGrid.ActualWidth, RootGrid.ActualHeight);
+    }
+
+    public void SetCropInteractionEnabled(bool enabled)
+    {
+        cropInteractionEnabled = enabled;
+        ApplyCropSelectionAvailability(currentState);
+        UpdateConfirmAvailability();
     }
 
     public void CloseSafely()
@@ -407,7 +415,8 @@ public sealed partial class OverlayWindow : Window
 
     private void ApplyCropSelectionAvailability(OverlayState state)
     {
-        var isEnabled = state.Status is not (
+        var isEnabled = cropInteractionEnabled
+            && state.Status is not (
             OverlayDisplayStatus.UnsupportedCapture
             or OverlayDisplayStatus.PreviewFailed
             or OverlayDisplayStatus.Closing
@@ -424,6 +433,7 @@ public sealed partial class OverlayWindow : Window
     private void UpdateConfirmAvailability()
     {
         ConfirmButton.IsEnabled = !isClosingRequested
+            && cropInteractionEnabled
             && !cropController.IsGestureActive
             && ConfirmedCaptureSelection.CanConfirm(cropController.Selection, currentState.Status);
     }

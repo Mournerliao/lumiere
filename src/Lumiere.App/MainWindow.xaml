@@ -85,16 +85,16 @@
 
           <local:CaptureActionCard
               x:Name="SelectCaptureTargetButton"
-              Background="{StaticResource AccentSoftBrush}"
-              BorderBrush="{StaticResource AccentBorderBrush}"
+              Background="{StaticResource SecondaryPanelBrush}"
+              BorderBrush="{StaticResource BorderBrush}"
               Click="OnSelectCaptureTargetClick"
               Description="Capture the current display"
               Icon="Camera"
-              IconBackground="{StaticResource AccentSoftBrush}"
-              IconBorderBrush="{StaticResource AccentBorderBrush}"
-              IconForeground="{StaticResource AccentBrush}"
+              IconBackground="{StaticResource SecondaryPanelBrush}"
+              IconBorderBrush="{StaticResource BorderBrush}"
+              IconForeground="{StaticResource MutedTextBrush}"
               SecondaryForeground="{StaticResource MutedTextBrush}"
-              ShortcutForeground="{StaticResource TextBrush}"
+              ShortcutForeground="{StaticResource SubtleTextBrush}"
               ShortcutText="Not assigned"
               Title="Full Screen" />
 
@@ -349,32 +349,24 @@
                   <Button
                       x:Name="SettingsHdrAlertsButton"
                       Grid.Column="1"
-                      Width="44"
-                      Height="24"
-                      MinWidth="0"
-                      HorizontalAlignment="Right"
-                      VerticalAlignment="Center"
                       AutomationProperties.HelpText="Show warnings when HDR is unavailable, degraded, unsupported, or failed."
                       AutomationProperties.Name="HDR alerts"
-                      Background="Transparent"
-                      BorderBrush="Transparent"
                       Click="OnSettingsHdrAlertsButtonClick"
-                      Padding="0"
-                      UseSystemFocusVisuals="True">
+                      Style="{StaticResource SettingsSwitchButtonStyle}">
                     <Border
                         x:Name="SettingsHdrAlertsSwitchTrack"
-                        Width="44"
-                        Height="24"
-                        Background="#FF3A3D40"
-                        CornerRadius="12">
+                        Width="48"
+                        Height="28"
+                        Background="{StaticResource SwitchTrackOffBrush}"
+                        CornerRadius="14">
                       <Ellipse
                           x:Name="SettingsHdrAlertsSwitchKnob"
-                          Width="16"
-                          Height="16"
+                          Width="20"
+                          Height="20"
                           Margin="4"
                           HorizontalAlignment="Left"
                           VerticalAlignment="Center"
-                          Fill="#FFA7A9AA" />
+                          Fill="{StaticResource SwitchKnobOffBrush}" />
                     </Border>
                   </Button>
                 </Grid>
@@ -412,14 +404,14 @@
                       Text="Output target policy is active"
                       TextWrapping="WrapWholeWords" />
                   <Border
-                      Height="40"
+                      Height="48"
                       Padding="4"
                       AutomationProperties.HelpText="Choose where completed captures are written."
                       AutomationProperties.Name="Destination"
                       Background="#2217191C"
                       BorderBrush="{StaticResource BorderBrush}"
                       BorderThickness="1"
-                      CornerRadius="8">
+                      CornerRadius="10">
                     <Grid ColumnSpacing="4">
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -437,16 +429,9 @@
                           <TextBlock
                               x:Name="SettingsDestinationClipboardText"
                               HorizontalAlignment="Center"
-                              FontSize="11"
+                              FontSize="12"
                               FontWeight="SemiBold"
                               Text="Clipboard" />
-                          <TextBlock
-                              x:Name="SettingsDestinationClipboardStatusText"
-                              HorizontalAlignment="Center"
-                              FontSize="8"
-                              FontWeight="SemiBold"
-                              Text="Selected"
-                              Visibility="Collapsed" />
                         </StackPanel>
                       </Button>
                       <Button
@@ -461,16 +446,9 @@
                           <TextBlock
                               x:Name="SettingsDestinationFolderText"
                               HorizontalAlignment="Center"
-                              FontSize="11"
+                              FontSize="12"
                               FontWeight="SemiBold"
                               Text="Folder" />
-                          <TextBlock
-                              x:Name="SettingsDestinationFolderStatusText"
-                              HorizontalAlignment="Center"
-                              FontSize="8"
-                              FontWeight="SemiBold"
-                              Text="Selected"
-                              Visibility="Collapsed" />
                         </StackPanel>
                       </Button>
                       <Button
@@ -485,16 +463,9 @@
                           <TextBlock
                               x:Name="SettingsDestinationBothText"
                               HorizontalAlignment="Center"
-                              FontSize="11"
+                              FontSize="12"
                               FontWeight="SemiBold"
                               Text="Both" />
-                          <TextBlock
-                              x:Name="SettingsDestinationBothStatusText"
-                              HorizontalAlignment="Center"
-                              FontSize="8"
-                              FontWeight="SemiBold"
-                              Text="Selected"
-                              Visibility="Collapsed" />
                         </StackPanel>
                       </Button>
                     </Grid>
@@ -609,31 +580,24 @@
                   <Button
                       x:Name="SettingsOpenAfterCaptureButton"
                       Grid.Column="1"
-                      Width="44"
-                      Height="24"
-                      MinWidth="0"
-                      VerticalAlignment="Center"
                       AutomationProperties.HelpText="Runs only when folder output produces a file artifact."
                       AutomationProperties.Name="After capture action"
-                      Background="Transparent"
-                      BorderBrush="Transparent"
                       IsEnabled="False"
-                      Padding="0"
-                      UseSystemFocusVisuals="True">
+                      Style="{StaticResource SettingsSwitchButtonStyle}">
                     <Border
                         x:Name="SettingsOpenAfterCaptureSwitchTrack"
-                        Width="44"
-                        Height="24"
-                        Background="#FF3A3D40"
-                        CornerRadius="12">
+                        Width="48"
+                        Height="28"
+                        Background="{StaticResource SwitchTrackOffBrush}"
+                        CornerRadius="14">
                       <Ellipse
                           x:Name="SettingsOpenAfterCaptureSwitchKnob"
-                          Width="16"
-                          Height="16"
+                          Width="20"
+                          Height="20"
                           Margin="4"
                           HorizontalAlignment="Left"
                           VerticalAlignment="Center"
-                          Fill="#FFA7A9AA" />
+                          Fill="{StaticResource SwitchKnobOffBrush}" />
                     </Border>
                   </Button>
                 </Grid>
@@ -661,31 +625,24 @@
                   <Button
                       x:Name="SettingsTimestampButton"
                       Grid.Column="1"
-                      Width="44"
-                      Height="24"
-                      MinWidth="0"
-                      VerticalAlignment="Center"
                       AutomationProperties.HelpText="Timestamp naming is display-only until settings persistence is implemented."
                       AutomationProperties.Name="Timestamp naming"
-                      Background="Transparent"
-                      BorderBrush="Transparent"
                       IsEnabled="False"
-                      Padding="0"
-                      UseSystemFocusVisuals="True">
+                      Style="{StaticResource SettingsSwitchButtonStyle}">
                     <Border
                         x:Name="SettingsTimestampSwitchTrack"
-                        Width="44"
-                        Height="24"
-                        Background="#FF3A3D40"
-                        CornerRadius="12">
+                        Width="48"
+                        Height="28"
+                        Background="{StaticResource SwitchTrackOffBrush}"
+                        CornerRadius="14">
                       <Ellipse
                           x:Name="SettingsTimestampSwitchKnob"
-                          Width="16"
-                          Height="16"
+                          Width="20"
+                          Height="20"
                           Margin="4"
                           HorizontalAlignment="Left"
                           VerticalAlignment="Center"
-                          Fill="#FFA7A9AA" />
+                          Fill="{StaticResource SwitchKnobOffBrush}" />
                     </Border>
                   </Button>
                 </Grid>
@@ -727,31 +684,24 @@
                 <Button
                     x:Name="SettingsCopyAsImageButton"
                     Grid.Column="1"
-                    Width="44"
-                    Height="24"
-                    MinWidth="0"
-                    VerticalAlignment="Center"
                     AutomationProperties.HelpText="Copy-as-image controls basic clipboard usability and does not mean validated HDR preservation."
                     AutomationProperties.Name="Copy as image"
-                    Background="Transparent"
-                    BorderBrush="Transparent"
                     Click="OnSettingsCopyAsImageButtonClick"
-                    Padding="0"
-                    UseSystemFocusVisuals="True">
+                    Style="{StaticResource SettingsSwitchButtonStyle}">
                   <Border
                       x:Name="SettingsCopyAsImageSwitchTrack"
-                      Width="44"
-                      Height="24"
-                      Background="#FF3A3D40"
-                      CornerRadius="12">
+                      Width="48"
+                      Height="28"
+                      Background="{StaticResource SwitchTrackOffBrush}"
+                      CornerRadius="14">
                     <Ellipse
                         x:Name="SettingsCopyAsImageSwitchKnob"
-                        Width="16"
-                        Height="16"
+                        Width="20"
+                        Height="20"
                         Margin="4"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
-                        Fill="#FFA7A9AA" />
+                        Fill="{StaticResource SwitchKnobOffBrush}" />
                   </Border>
                 </Button>
               </Grid>
