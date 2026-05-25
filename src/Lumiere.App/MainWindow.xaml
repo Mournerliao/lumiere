@@ -352,6 +352,7 @@
                       AutomationProperties.HelpText="Show warnings when HDR is unavailable, degraded, unsupported, or failed."
                       AutomationProperties.Name="HDR alerts"
                       Click="OnSettingsHdrAlertsButtonClick"
+                      IsEnabled="False"
                       Style="{StaticResource SettingsSwitchButtonStyle}">
                     <Border
                         x:Name="SettingsHdrAlertsSwitchTrack"

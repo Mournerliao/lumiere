@@ -992,7 +992,7 @@ public sealed partial class MainWindow : Window
                 SettingsHdrAlertsSwitchTrack,
                 SettingsHdrAlertsSwitchKnob,
                 projection.HdrAlertsEnabled,
-                isReadOnly: false);
+                isReadOnly: true);
             AutomationProperties.SetName(
                 SettingsHdrAlertsButton,
                 projection.HdrAlertsEnabled ? "HDR alerts: on" : "HDR alerts: off");
