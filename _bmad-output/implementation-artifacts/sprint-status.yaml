@@ -98,9 +98,9 @@ development_status:
   epic-7: in-progress
   7-1-add-tray-menu-with-status-and-commands: review
   7-2-open-main-window-and-settings-from-tray: review
-  7-3-register-global-capture-hotkeys: backlog
-  7-4-support-background-and-minimize-to-tray-workflow: backlog
-  7-5-quit-cleanly-from-tray: backlog
+  7-3-register-global-capture-hotkeys: review
+  7-4-support-background-and-minimize-to-tray-workflow: review
+  7-5-quit-cleanly-from-tray: review
   epic-7-retrospective: optional
   epic-8: backlog
   8-1-complete-evidence-based-hdr-state-mapping: backlog

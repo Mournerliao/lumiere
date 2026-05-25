@@ -47,6 +47,7 @@ public sealed partial class MainWindow : Window
     private readonly GraphicsDeviceResources deviceResources;
     private readonly GraphicsEngine graphicsEngine;
     private ITrayMenu? trayMenu;
+    private IGlobalHotkeyRegistrar? globalHotkeyRegistrar;
     private CaptureService? captureService;
     private CaptureSessionResources? captureSession;
     private PreviewFramePresenter? previewFramePresenter;
@@ -61,11 +62,13 @@ public sealed partial class MainWindow : Window
     private int fullscreenOutputStarted;
     private int previewSourceWidth;
     private int previewSourceHeight;
+    private int registeredHotkeyCount;
     private bool isClosed;
     private bool isDeviceDisposed;
     private bool applyingSessionState;
     private bool applyingSettingsProjection;
     private bool sizingMainPanel;
+    private bool isExplicitShutdown;
     private AppShellView activeShellView = AppShellView.Main;
     private int overlayDispatcherFallbackReported;
     private int uiDispatchFailureReported;
@@ -102,6 +105,8 @@ public sealed partial class MainWindow : Window
         SettingsButton.SizeChanged += OnHeaderDragAreaSizeChanged;
         SettingsHeaderDragArea.SizeChanged += OnHeaderDragAreaSizeChanged;
         SettingsBackButton.SizeChanged += OnHeaderDragAreaSizeChanged;
+        AppWindow.Closing += OnAppWindowClosing;
+        AppWindow.Changed += OnAppWindowChanged;
         Closed += OnWindowClosed;
 
         LumiereLoggerFactory.InitializeWithHeader(
@@ -134,6 +139,14 @@ public sealed partial class MainWindow : Window
     public TrayMenuSnapshot CreateTrayMenuSnapshot() =>
         CreateTrayMenuSnapshot(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
 
+    public void AttachGlobalHotkeys(IGlobalHotkeyRegistrar registrar)
+    {
+        globalHotkeyRegistrar?.Dispose();
+        globalHotkeyRegistrar = registrar ?? throw new ArgumentNullException(nameof(registrar));
+        globalHotkeyRegistrar.HotkeyPressed += OnGlobalHotkeyPressed;
+        RegisterConfiguredHotkeys();
+    }
+
     private async void OnSelectCaptureTargetClick(object sender, RoutedEventArgs e)
     {
         await ExecuteCaptureFromUiAsync(CaptureCommandMode.Fullscreen);
@@ -154,6 +167,36 @@ public sealed partial class MainWindow : Window
     {
         ApplyShellView(AppShellView.Main);
         Logger.LogDebug("Settings shell closed; returning to main panel.");
+    }
+
+    private void OnAppWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
+    {
+        if (isExplicitShutdown || isClosed)
+        {
+            return;
+        }
+
+        if (!IsBackgroundAvailable)
+        {
+            Logger.LogWarning("Background close requested, but tray/hotkeys are unavailable; closing normally.");
+            return;
+        }
+
+        args.Cancel = true;
+        HideToBackground("close");
+    }
+
+    private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
+    {
+        if (isExplicitShutdown || isClosed || !IsBackgroundAvailable)
+        {
+            return;
+        }
+
+        if (AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized })
+        {
+            HideToBackground("minimize");
+        }
     }
 
     private void OnSettingsHdrAlertsButtonClick(object sender, RoutedEventArgs e)
@@ -318,6 +361,19 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private void OnGlobalHotkeyPressed(object? sender, GlobalHotkeyPressedEventArgs args)
+    {
+        if (isClosed)
+        {
+            return;
+        }
+
+        if (!RootGrid.DispatcherQueue.TryEnqueue(async () => await HandleGlobalHotkeyAsync(args.Command)))
+        {
+            Logger.LogWarning("Global hotkey dropped because UI dispatcher rejected it: command={Command}", args.Command);
+        }
+    }
+
     private async Task HandleTrayMenuCommandAsync(TrayMenuCommand command)
     {
         if (isClosed)
@@ -341,8 +397,26 @@ public sealed partial class MainWindow : Window
                 ShowSettingsFromTray();
                 break;
             case TrayMenuCommand.Quit:
-                Close();
-                Application.Current.Exit();
+                QuitFromTray();
+                break;
+        }
+    }
+
+    private async Task HandleGlobalHotkeyAsync(HotkeyCommand command)
+    {
+        if (isClosed)
+        {
+            return;
+        }
+
+        Logger.LogDebug("Global hotkey received: {Command}", command);
+        switch (command)
+        {
+            case HotkeyCommand.FullscreenCapture:
+                await ExecuteCaptureFromUiAsync(CaptureCommandMode.Fullscreen);
+                break;
+            case HotkeyCommand.RegionCapture:
+                await ExecuteCaptureFromUiAsync(CaptureCommandMode.Region);
                 break;
         }
     }
@@ -370,6 +444,30 @@ public sealed partial class MainWindow : Window
 
         AppWindow.Show(true);
         Activate();
+    }
+
+    private bool IsBackgroundAvailable => trayMenu is not null || registeredHotkeyCount > 0;
+
+    private void HideToBackground(string reason)
+    {
+        AppWindow.Hide();
+        UpdateTrayMenu(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
+        Logger.LogInformation(
+            "Background workflow activated: reason={Reason}, trayAvailable={TrayAvailable}, hotkeysAvailable={HotkeysAvailable}",
+            reason,
+            trayMenu is not null,
+            registeredHotkeyCount > 0);
+    }
+
+    private void QuitFromTray()
+    {
+        Logger.LogInformation(
+            "Tray quit requested: captureActive={CaptureActive}, outputFrameAvailable={OutputFrameAvailable}",
+            captureService?.CurrentSessionState.HasNativeSession ?? false,
+            latestOutputFrameSnapshot is not null);
+        isExplicitShutdown = true;
+        Close();
+        Application.Current.Exit();
     }
 
     private void ConfigureWindowPresenter()
@@ -1079,6 +1177,60 @@ public sealed partial class MainWindow : Window
         ApplySettingsProjection(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
     }
 
+    private void RegisterConfiguredHotkeys()
+    {
+        if (globalHotkeyRegistrar is null)
+        {
+            return;
+        }
+
+        var plan = GlobalHotkeyRegistrationPlan.Project(settingsProvider);
+        var registrations = plan.RegistrableBindings()
+            .Select(ToGlobalHotkeyRegistration)
+            .ToArray();
+        var results = globalHotkeyRegistrar.Register(registrations);
+        registeredHotkeyCount = results.Count(result => result.Registered);
+        foreach (var binding in new[] { plan.Fullscreen, plan.Region }.Where(binding => !binding.CanRegister))
+        {
+            Logger.LogInformation(
+                "Global hotkey skipped: command={Command}, shortcut={Shortcut}, detail={Detail}",
+                binding.Command,
+                binding.DisplayValue,
+                binding.StatusMessage);
+        }
+
+        foreach (var result in results)
+        {
+            Logger.Log(
+                result.Registered ? LogLevel.Information : LogLevel.Warning,
+                "Global hotkey registration {Outcome}: command={Command}, shortcut={Shortcut}, detail={Detail}",
+                result.Registered ? "succeeded" : "failed",
+                result.Command,
+                result.DisplayText,
+                result.Detail);
+        }
+    }
+
+    private static GlobalHotkeyRegistration ToGlobalHotkeyRegistration(HotkeyBindingProjection binding)
+    {
+        var gesture = binding.Gesture ?? throw new InvalidOperationException("Registrable hotkey binding must include a gesture.");
+        var command = binding.Command switch
+        {
+            GlobalHotkeyCommand.RegionCapture => HotkeyCommand.RegionCapture,
+            _ => HotkeyCommand.FullscreenCapture,
+        };
+
+        return new GlobalHotkeyRegistration(
+            command,
+            Id: (int)command,
+            gesture.Control,
+            gesture.Shift,
+            gesture.Alt,
+            gesture.Windows,
+            gesture.VirtualKey,
+            gesture.DisplayText);
+    }
+
     private void ApplySettingsProjection(CaptureSessionState state)
     {
         var projection = SettingsPanelProjection.Project(settingsProvider, state, aboutInfoProvider);
@@ -1630,8 +1782,18 @@ public sealed partial class MainWindow : Window
 
         try
         {
+            AppWindow.Closing -= OnAppWindowClosing;
+            AppWindow.Changed -= OnAppWindowChanged;
             StopPreview(reportStopped: false);
             CloseOverlayWindow();
+            if (globalHotkeyRegistrar is not null)
+            {
+                globalHotkeyRegistrar.HotkeyPressed -= OnGlobalHotkeyPressed;
+                globalHotkeyRegistrar.Dispose();
+                globalHotkeyRegistrar = null;
+                registeredHotkeyCount = 0;
+            }
+
             if (trayMenu is not null)
             {
                 trayMenu.CommandRequested -= OnTrayMenuCommandRequested;

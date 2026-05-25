@@ -58,6 +58,16 @@ public partial class App : Application
                     .LogWarning(trayException, "Native tray menu could not be initialized.");
             }
 
+            try
+            {
+                mainWindow.AttachGlobalHotkeys(new WindowsGlobalHotkeyRegistrar());
+            }
+            catch (Exception hotkeyException)
+            {
+                LumiereLoggerFactory.CreateLogger(LogCategories.App)
+                    .LogWarning(hotkeyException, "Global hotkeys could not be initialized.");
+            }
+
             _window = mainWindow;
             _window.Activate();
         }

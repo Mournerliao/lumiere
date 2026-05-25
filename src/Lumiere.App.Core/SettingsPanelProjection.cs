@@ -23,10 +23,13 @@ public sealed record SettingsPanelProjection(
         ArgumentNullException.ThrowIfNull(settingsProvider);
         ArgumentNullException.ThrowIfNull(sessionState);
         aboutInfoProvider ??= AssemblyAboutInfoProvider.CreateFallback();
+        var hotkeyPlan = GlobalHotkeyRegistrationPlan.Project(settingsProvider);
 
         return new SettingsPanelProjection(
-            ShortcutSettingProjection.PendingRegistration("Fullscreen shortcut", settingsProvider.FullscreenShortcut),
-            ShortcutSettingProjection.PendingRegistration("Region shortcut", settingsProvider.RegionShortcut),
+            ShortcutSettingProjection.FromHotkeyBinding(
+                hotkeyPlan.Fullscreen),
+            ShortcutSettingProjection.FromHotkeyBinding(
+                hotkeyPlan.Region),
             settingsProvider.HdrAlertsEnabled,
             "Show warnings when HDR is unavailable, degraded, unsupported, or failed.",
             settingsProvider.HdrAlertsEnabled,
@@ -205,16 +208,19 @@ public sealed record ShortcutSettingProjection(
     string PendingReason,
     string HelpText)
 {
-    public static ShortcutSettingProjection PendingRegistration(string label, string? shortcut)
+    public static ShortcutSettingProjection FromHotkeyBinding(HotkeyBindingProjection binding)
     {
-        var displayValue = MainPanelProjection.FormatShortcut(shortcut);
-        const string pendingReason = "Global registration arrives in Epic 7";
+        ArgumentNullException.ThrowIfNull(binding);
+
+        var registrationState = binding.CanRegister
+            ? "Global registration is active when Windows accepts the shortcut."
+            : binding.StatusMessage;
         return new ShortcutSettingProjection(
-            label,
-            displayValue,
+            binding.Label,
+            binding.DisplayValue,
             IsReadOnly: true,
-            IsPendingRegistration: true,
-            pendingReason,
-            $"{label} is currently {displayValue}. Editing is pending until Epic 7 global hotkey registration.");
+            IsPendingRegistration: !binding.CanRegister,
+            registrationState,
+            $"{binding.Label} is currently {binding.DisplayValue}. {registrationState}");
     }
 }

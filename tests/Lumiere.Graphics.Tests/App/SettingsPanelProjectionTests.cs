@@ -41,10 +41,28 @@ public sealed class SettingsPanelProjectionTests
 
         Assert.True(projection.FullscreenShortcut.IsReadOnly);
         Assert.True(projection.FullscreenShortcut.IsPendingRegistration);
-        Assert.Equal("Global registration arrives in Epic 7", projection.FullscreenShortcut.PendingReason);
+        Assert.Contains("skipped", projection.FullscreenShortcut.PendingReason, StringComparison.OrdinalIgnoreCase);
         Assert.True(projection.RegionShortcut.IsReadOnly);
         Assert.True(projection.RegionShortcut.IsPendingRegistration);
-        Assert.Equal("Global registration arrives in Epic 7", projection.RegionShortcut.PendingReason);
+        Assert.Contains("skipped", projection.RegionShortcut.PendingReason, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Project_ValidShortcutRowsShowActiveRegistrationState()
+    {
+        var settings = new TestSettingsProvider
+        {
+            FullscreenShortcut = "Ctrl+Shift+F",
+            RegionShortcut = "Alt+F12",
+        };
+
+        var projection = SettingsPanelProjection.Project(settings, CreateState());
+
+        Assert.False(projection.FullscreenShortcut.IsPendingRegistration);
+        Assert.Equal("Ctrl+Shift+F", projection.FullscreenShortcut.DisplayValue);
+        Assert.Contains("active", projection.FullscreenShortcut.PendingReason, StringComparison.OrdinalIgnoreCase);
+        Assert.False(projection.RegionShortcut.IsPendingRegistration);
+        Assert.Equal("Alt+F12", projection.RegionShortcut.DisplayValue);
     }
 
     [Fact]
