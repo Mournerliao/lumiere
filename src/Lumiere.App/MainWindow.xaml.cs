@@ -134,6 +134,7 @@ public sealed partial class MainWindow : Window
         trayMenu = menu ?? throw new ArgumentNullException(nameof(menu));
         trayMenu.CommandRequested += OnTrayMenuCommandRequested;
         UpdateTrayMenu(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
+        MinimizeButton.IsEnabled = IsBackgroundAvailable;
     }
 
     public TrayMenuSnapshot CreateTrayMenuSnapshot() =>
@@ -145,6 +146,7 @@ public sealed partial class MainWindow : Window
         globalHotkeyRegistrar = registrar ?? throw new ArgumentNullException(nameof(registrar));
         globalHotkeyRegistrar.HotkeyPressed += OnGlobalHotkeyPressed;
         RegisterConfiguredHotkeys();
+        MinimizeButton.IsEnabled = IsBackgroundAvailable;
     }
 
     private async void OnSelectCaptureTargetClick(object sender, RoutedEventArgs e)
@@ -161,6 +163,14 @@ public sealed partial class MainWindow : Window
     {
         ApplyShellView(AppShellView.Settings);
         Logger.LogDebug("Settings shell opened; capture session state was preserved.");
+    }
+
+    private void OnMinimizeButtonClick(object sender, RoutedEventArgs e)
+    {
+        if (IsBackgroundAvailable)
+        {
+            HideToBackground("minimize");
+        }
     }
 
     private void OnSettingsBackButtonClick(object sender, RoutedEventArgs e)

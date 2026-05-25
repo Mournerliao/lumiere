@@ -74,10 +74,12 @@ GPT-5 Codex
 - 2026-05-25: Added `ITrayMenu`, native Win32 tray menu implementation, and app wiring.
 - 2026-05-25: `dotnet build Lumiere.sln -p:Platform=x64 --no-restore --verbosity minimal /nr:false` passed with 0 warnings/errors before full validation.
 - 2026-05-25: Full validation passed: restore succeeded; build succeeded with 0 warnings/errors; `Lumiere.Graphics.Tests` passed 265/265; format verification passed after CRLF normalization.
+- 2026-05-25: Fixed native tray icon initialization by binding `LoadIconW` explicitly instead of the non-exported neutral `LoadIcon` entry point.
 
 ### Completion Notes List
 
 - Tray menu state now includes Lumiere identity, HDR status, fullscreen/region capture commands with shortcut labels, open main window, settings, and quit.
+- Native tray icon initialization now uses the correct Unicode Win32 entry point.
 - Active capture states disable capture commands through the same session-state projection used by the main panel.
 - Native tray icon, hidden message window, and popup menu ownership are isolated in `Lumiere.Infrastructure.Interop`.
 - Validation level: Windows CI-pass for projection/routing/build guardrails. Real tray icon display, popup placement, shell behavior, and interaction require Windows manual validation.

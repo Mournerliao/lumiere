@@ -47,6 +47,9 @@ public partial class App : Application
             var aboutInfoProvider = new AssemblyAboutInfoProvider(typeof(App).Assembly);
 
             var mainWindow = new MainWindow(captureCommandCoordinator, outputService, settingsProvider, settingsProvider, settingsProvider, aboutInfoProvider, captureService, deviceResources);
+            _window = mainWindow;
+            _window.Activate();
+
             try
             {
                 var trayMenu = WindowsTrayMenu.CreateForWindow(mainWindow, mainWindow.CreateTrayMenuSnapshot());
@@ -67,9 +70,6 @@ public partial class App : Application
                 LumiereLoggerFactory.CreateLogger(LogCategories.App)
                     .LogWarning(hotkeyException, "Global hotkeys could not be initialized.");
             }
-
-            _window = mainWindow;
-            _window.Activate();
         }
         catch (Exception ex)
         {

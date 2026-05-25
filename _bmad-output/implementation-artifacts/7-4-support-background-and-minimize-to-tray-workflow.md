@@ -75,11 +75,13 @@ GPT-5 Codex
 - 2026-05-25: Kept tray and hotkey capture commands routed to existing capture state while the main window is hidden.
 - 2026-05-25: Full validation passed: restore succeeded; build succeeded with 0 warnings/errors; `Lumiere.Graphics.Tests` passed 273/273; format verification passed after CRLF normalization.
 - 2026-05-25: Fixed startup visibility regression by enabling close/minimize background handlers only after the first window activation and by responding only to presenter-state changes.
+- 2026-05-25: Moved tray and hotkey attachment after main-window activation so background integrations cannot prevent first-window display.
 
 ### Completion Notes List
 
 - Closing or minimizing now hides Lumiere into the background when tray/hotkey infrastructure is available.
 - Startup now leaves the main window visible; background close/minimize handlers are armed only after the first activation.
+- App launch now activates the main window before attaching tray and global hotkey integrations.
 - Tray and global hotkey capture commands can run without requiring the main window to be visible.
 - If background infrastructure is unavailable, the app logs the limitation and closes normally rather than stranding state.
 - Validation level: Windows CI-pass for build/routing guardrails. Real close/minimize shell behavior and hidden-window capture behavior require Windows manual validation.

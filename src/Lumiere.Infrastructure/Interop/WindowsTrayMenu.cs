@@ -10,6 +10,7 @@ public sealed class WindowsTrayMenu : ITrayMenu
     private const int WmCommand = 0x0111;
     private const int WmNull = 0x0000;
     private const int WmTrayIcon = 0x8000 + 42;
+    private const int WmLButtonDblClick = 0x0203;
     private const int WmRButtonUp = 0x0205;
     private const int WmContextMenu = 0x007B;
     private const int NifMessage = 0x00000001;
@@ -27,7 +28,7 @@ public sealed class WindowsTrayMenu : ITrayMenu
     private const uint TpmRightButton = 0x0002;
     private const uint TpmLeftAlign = 0x0000;
     private static readonly IntPtr IdiApplication = new(32512);
-    private static readonly IntPtr HwndMessage = new(-3);
+    private const int SwHide = 0;
 
     private readonly IntPtr ownerHwnd;
     private readonly WndProc wndProc;
@@ -85,15 +86,30 @@ public sealed class WindowsTrayMenu : ITrayMenu
 
     private IntPtr WindowProcedure(IntPtr hWnd, uint message, IntPtr wParam, IntPtr lParam)
     {
-        if (message == WmTrayIcon && (lParam.ToInt32() == WmRButtonUp || lParam.ToInt32() == WmContextMenu))
+        if (disposed)
         {
-            ShowMenu();
-            return IntPtr.Zero;
+            return DefWindowProc(hWnd, message, wParam, lParam);
+        }
+
+        if (message == WmTrayIcon)
+        {
+            var mouseMessage = (int)(lParam.ToInt64() & 0xFFFF);
+            if (mouseMessage == WmLButtonDblClick)
+            {
+                CommandRequested?.Invoke(this, new TrayMenuCommandRequestedEventArgs(TrayMenuCommand.OpenMainWindow));
+                return IntPtr.Zero;
+            }
+
+            if (mouseMessage == WmRButtonUp || mouseMessage == WmContextMenu)
+            {
+                ShowMenu();
+                return IntPtr.Zero;
+            }
         }
 
         if (message == WmCommand)
         {
-            var commandId = unchecked((ushort)wParam.ToInt32());
+            var commandId = (int)(wParam.ToInt64() & 0xFFFF);
             if (Enum.IsDefined(typeof(TrayMenuCommand), commandId))
             {
                 CommandRequested?.Invoke(this, new TrayMenuCommandRequestedEventArgs((TrayMenuCommand)commandId));
@@ -106,6 +122,12 @@ public sealed class WindowsTrayMenu : ITrayMenu
 
     private void ShowMenu()
     {
+        if (disposed)
+        {
+            return;
+        }
+
+        var currentSnapshot = snapshot;
         var menu = CreatePopupMenu();
         if (menu == IntPtr.Zero)
         {
@@ -114,15 +136,15 @@ public sealed class WindowsTrayMenu : ITrayMenu
 
         try
         {
-            AppendDisabledHeader(menu, snapshot.AppName);
-            AppendDisabledHeader(menu, snapshot.HdrStatusLabel);
+            AppendDisabledHeader(menu, currentSnapshot.AppName);
+            AppendDisabledHeader(menu, currentSnapshot.HdrStatusLabel);
             AppendMenu(menu, MfSeparator, UIntPtr.Zero, null);
-            AppendCommand(menu, TrayMenuCommand.FullscreenCapture, snapshot.FullscreenCapture);
-            AppendCommand(menu, TrayMenuCommand.RegionCapture, snapshot.RegionCapture);
+            AppendCommand(menu, TrayMenuCommand.FullscreenCapture, currentSnapshot.FullscreenCapture);
+            AppendCommand(menu, TrayMenuCommand.RegionCapture, currentSnapshot.RegionCapture);
             AppendMenu(menu, MfSeparator, UIntPtr.Zero, null);
-            AppendCommand(menu, TrayMenuCommand.OpenMainWindow, snapshot.OpenMainWindow);
-            AppendCommand(menu, TrayMenuCommand.OpenSettings, snapshot.OpenSettings);
-            AppendCommand(menu, TrayMenuCommand.Quit, snapshot.Quit);
+            AppendCommand(menu, TrayMenuCommand.OpenMainWindow, currentSnapshot.OpenMainWindow);
+            AppendCommand(menu, TrayMenuCommand.OpenSettings, currentSnapshot.OpenSettings);
+            AppendCommand(menu, TrayMenuCommand.Quit, currentSnapshot.Quit);
 
             GetCursorPos(out var point);
             SetForegroundWindow(ownerHwnd);
@@ -177,7 +199,7 @@ public sealed class WindowsTrayMenu : ITrayMenu
             0,
             0,
             0,
-            HwndMessage,
+            IntPtr.Zero,
             IntPtr.Zero,
             hInstance,
             IntPtr.Zero);
@@ -186,6 +208,8 @@ public sealed class WindowsTrayMenu : ITrayMenu
         {
             throw CreateInteropException("CreateWindowEx", "TrayInit");
         }
+
+        ShowWindow(messageHwnd, SwHide);
     }
 
     private void AddIcon()
@@ -321,10 +345,10 @@ public sealed class WindowsTrayMenu : ITrayMenu
     [DllImport("user32.dll", ExactSpelling = true, SetLastError = true)]
     private static extern bool DestroyWindow(IntPtr hWnd);
 
-    [DllImport("user32.dll", ExactSpelling = true)]
+    [DllImport("user32.dll", EntryPoint = "DefWindowProcW", ExactSpelling = true, SetLastError = true)]
     private static extern IntPtr DefWindowProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
-    [DllImport("user32.dll", ExactSpelling = true, SetLastError = true)]
+    [DllImport("user32.dll", EntryPoint = "LoadIconW", SetLastError = true)]
     private static extern IntPtr LoadIcon(IntPtr hInstance, IntPtr lpIconName);
 
     [DllImport("user32.dll", ExactSpelling = true, SetLastError = true)]
@@ -352,7 +376,7 @@ public sealed class WindowsTrayMenu : ITrayMenu
     [DllImport("user32.dll", ExactSpelling = true)]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
 
-    [DllImport("user32.dll", ExactSpelling = true)]
+    [DllImport("user32.dll", EntryPoint = "PostMessageW", ExactSpelling = true, SetLastError = true)]
     private static extern bool PostMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -360,4 +384,7 @@ public sealed class WindowsTrayMenu : ITrayMenu
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr GetModuleHandle(string? lpModuleName);
+
+    [DllImport("user32.dll", ExactSpelling = true, SetLastError = true)]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 }

@@ -10,7 +10,7 @@ public sealed class WindowsGlobalHotkeyRegistrar : IGlobalHotkeyRegistrar
     private const uint ModShift = 0x0004;
     private const uint ModWin = 0x0008;
     private const uint ModNoRepeat = 0x4000;
-    private static readonly IntPtr HwndMessage = new(-3);
+    private const int SwHide = 0;
 
     private readonly WndProc wndProc;
     private readonly string className;
@@ -93,7 +93,7 @@ public sealed class WindowsGlobalHotkeyRegistrar : IGlobalHotkeyRegistrar
 
     private IntPtr WindowProcedure(IntPtr hWnd, uint message, IntPtr wParam, IntPtr lParam)
     {
-        if (message == WmHotkey && registeredCommands.TryGetValue(wParam.ToInt32(), out var command))
+        if (message == WmHotkey && registeredCommands.TryGetValue((int)(wParam.ToInt64() & 0xFFFF), out var command))
         {
             HotkeyPressed?.Invoke(this, new GlobalHotkeyPressedEventArgs(command));
             return IntPtr.Zero;
@@ -155,7 +155,7 @@ public sealed class WindowsGlobalHotkeyRegistrar : IGlobalHotkeyRegistrar
             0,
             0,
             0,
-            HwndMessage,
+            IntPtr.Zero,
             IntPtr.Zero,
             hInstance,
             IntPtr.Zero);
@@ -164,6 +164,8 @@ public sealed class WindowsGlobalHotkeyRegistrar : IGlobalHotkeyRegistrar
         {
             throw CreateInteropException("CreateWindowEx", "HotkeyInit");
         }
+
+        ShowWindow(messageHwnd, SwHide);
     }
 
     private static NativeInteropException CreateInteropException(string operationName, string stage)
@@ -220,7 +222,7 @@ public sealed class WindowsGlobalHotkeyRegistrar : IGlobalHotkeyRegistrar
     [DllImport("user32.dll", ExactSpelling = true, SetLastError = true)]
     private static extern bool DestroyWindow(IntPtr hWnd);
 
-    [DllImport("user32.dll", ExactSpelling = true)]
+    [DllImport("user32.dll", EntryPoint = "DefWindowProcW", ExactSpelling = true, SetLastError = true)]
     private static extern IntPtr DefWindowProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
     [DllImport("user32.dll", ExactSpelling = true, SetLastError = true)]
@@ -231,4 +233,7 @@ public sealed class WindowsGlobalHotkeyRegistrar : IGlobalHotkeyRegistrar
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr GetModuleHandle(string? lpModuleName);
+
+    [DllImport("user32.dll", ExactSpelling = true, SetLastError = true)]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 }

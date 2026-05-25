@@ -152,14 +152,29 @@
                 Foreground="{StaticResource MutedTextBrush}"
                 Text="Checking HDR" />
           </StackPanel>
-          <TextBlock
+          <Button
+              x:Name="MinimizeButton"
               Grid.Column="1"
+              Width="28"
+              Height="28"
+              MinWidth="0"
               VerticalAlignment="Center"
-              FontSize="11"
-              Foreground="{StaticResource MutedTextBrush}"
-              AutomationProperties.Name="Minimize to background pending"
-              Text="Minimize"
-              ToolTipService.ToolTip="Background tray behavior arrives in Epic 7" />
+              IsEnabled="False"
+              AutomationProperties.Name="Minimize to background"
+              AutomationProperties.HelpText="Hide the window to the system tray. The app continues running in the background."
+              Background="Transparent"
+              BorderBrush="Transparent"
+              Click="OnMinimizeButtonClick"
+              HorizontalContentAlignment="Center"
+              VerticalContentAlignment="Center"
+              Padding="0"
+              ToolTipService.ToolTip="Minimize to tray">
+            <FontIcon
+                FontFamily="Segoe Fluent Icons"
+                Foreground="{StaticResource MutedTextBrush}"
+                FontSize="14"
+                Glyph="&#xE921;" />
+          </Button>
         </Grid>
       </Border>
     </Grid>
