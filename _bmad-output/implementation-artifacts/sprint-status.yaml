@@ -1,5 +1,5 @@
 # generated: 2026-05-09T17:29:57+0800
-# last_updated: 2026-05-23T23:59:00+08:00
+# last_updated: 2026-05-25T00:00:00+08:00
 # project: lumiere
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-09T17:29:57+0800
-last_updated: 2026-05-23T23:59:00+08:00
+last_updated: 2026-05-25T00:00:00+08:00
 project: lumiere
 project_key: NOKEY
 tracking_system: file-system
@@ -95,9 +95,9 @@ development_status:
   6-5-scope-export-and-color-format-options-honestly: done
   6-6-implement-supported-after-capture-behavior: done
   epic-6-retrospective: done
-  epic-7: backlog
-  7-1-add-tray-menu-with-status-and-commands: backlog
-  7-2-open-main-window-and-settings-from-tray: backlog
+  epic-7: in-progress
+  7-1-add-tray-menu-with-status-and-commands: review
+  7-2-open-main-window-and-settings-from-tray: review
   7-3-register-global-capture-hotkeys: backlog
   7-4-support-background-and-minimize-to-tray-workflow: backlog
   7-5-quit-cleanly-from-tray: backlog

@@ -46,6 +46,7 @@ public sealed partial class MainWindow : Window
     private readonly IAboutInfoProvider aboutInfoProvider;
     private readonly GraphicsDeviceResources deviceResources;
     private readonly GraphicsEngine graphicsEngine;
+    private ITrayMenu? trayMenu;
     private CaptureService? captureService;
     private CaptureSessionResources? captureSession;
     private PreviewFramePresenter? previewFramePresenter;
@@ -121,6 +122,17 @@ public sealed partial class MainWindow : Window
                 "Select a capture mode to begin.",
                 "Direct monitor capture bypasses the picker and starts preview immediately.")));
     }
+
+    public void AttachTrayMenu(ITrayMenu menu)
+    {
+        trayMenu?.Dispose();
+        trayMenu = menu ?? throw new ArgumentNullException(nameof(menu));
+        trayMenu.CommandRequested += OnTrayMenuCommandRequested;
+        UpdateTrayMenu(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
+    }
+
+    public TrayMenuSnapshot CreateTrayMenuSnapshot() =>
+        CreateTrayMenuSnapshot(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
 
     private async void OnSelectCaptureTargetClick(object sender, RoutedEventArgs e)
     {
@@ -291,6 +303,73 @@ public sealed partial class MainWindow : Window
                 UpdateMainPanelProjection(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
             }
         }
+    }
+
+    private void OnTrayMenuCommandRequested(object? sender, TrayMenuCommandRequestedEventArgs args)
+    {
+        if (isClosed)
+        {
+            return;
+        }
+
+        if (!RootGrid.DispatcherQueue.TryEnqueue(async () => await HandleTrayMenuCommandAsync(args.Command)))
+        {
+            Logger.LogWarning("Tray command dropped because UI dispatcher rejected it: command={Command}", args.Command);
+        }
+    }
+
+    private async Task HandleTrayMenuCommandAsync(TrayMenuCommand command)
+    {
+        if (isClosed)
+        {
+            return;
+        }
+
+        Logger.LogDebug("Tray command received: {Command}", command);
+        switch (command)
+        {
+            case TrayMenuCommand.FullscreenCapture:
+                await ExecuteCaptureFromUiAsync(CaptureCommandMode.Fullscreen);
+                break;
+            case TrayMenuCommand.RegionCapture:
+                await ExecuteCaptureFromUiAsync(CaptureCommandMode.Region);
+                break;
+            case TrayMenuCommand.OpenMainWindow:
+                ShowMainWindowFromTray();
+                break;
+            case TrayMenuCommand.OpenSettings:
+                ShowSettingsFromTray();
+                break;
+            case TrayMenuCommand.Quit:
+                Close();
+                Application.Current.Exit();
+                break;
+        }
+    }
+
+    private void ShowMainWindowFromTray()
+    {
+        RestoreAndActivateFromTray();
+        ApplyShellView(AppShellView.Main);
+        Logger.LogDebug("Main window opened from tray; capture session state was preserved.");
+    }
+
+    private void ShowSettingsFromTray()
+    {
+        RestoreAndActivateFromTray();
+        ApplyShellView(AppShellView.Settings);
+        Logger.LogDebug("Settings opened from tray; capture session state was preserved.");
+    }
+
+    private void RestoreAndActivateFromTray()
+    {
+        if (AppWindow.Presenter is OverlappedPresenter presenter)
+        {
+            presenter.Restore();
+        }
+
+        AppWindow.Show(true);
+        Activate();
     }
 
     private void ConfigureWindowPresenter()
@@ -949,6 +1028,7 @@ public sealed partial class MainWindow : Window
             var validatedState = state ?? throw new ArgumentNullException(nameof(state));
             captureService?.UpdateSessionState(validatedState);
             UpdateMainPanelProjection(validatedState);
+            UpdateTrayMenu(validatedState);
             var overlayState = CreateOverlayState(validatedState);
             overlayWindow?.ApplyState(overlayState);
             if (overlayWindow is not null && overlayState.RequiresFailureTeardown)
@@ -962,6 +1042,35 @@ public sealed partial class MainWindow : Window
             applyingSessionState = false;
         }
     }
+
+    private void UpdateTrayMenu(CaptureSessionState state)
+    {
+        try
+        {
+            trayMenu?.Update(CreateTrayMenuSnapshot(state));
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(exception, "Tray menu projection update failed.");
+        }
+    }
+
+    private TrayMenuSnapshot CreateTrayMenuSnapshot(CaptureSessionState state)
+    {
+        var projection = TrayMenuProjection.Project(state, settingsProvider, aboutInfoProvider);
+        return new TrayMenuSnapshot(
+            projection.AppName,
+            projection.HdrStatusLabel,
+            projection.HdrStatusDetail,
+            ToTrayItem(projection.FullscreenCapture),
+            ToTrayItem(projection.RegionCapture),
+            ToTrayItem(projection.OpenMainWindow),
+            ToTrayItem(projection.OpenSettings),
+            ToTrayItem(projection.Quit));
+    }
+
+    private static TrayMenuItemSnapshot ToTrayItem(TrayMenuCommandProjection command) =>
+        new(command.Label, command.ShortcutText, command.IsEnabled, command.IsActive);
 
     private void ApplyShortcutLabels()
     {
@@ -1523,6 +1632,12 @@ public sealed partial class MainWindow : Window
         {
             StopPreview(reportStopped: false);
             CloseOverlayWindow();
+            if (trayMenu is not null)
+            {
+                trayMenu.CommandRequested -= OnTrayMenuCommandRequested;
+                trayMenu.Dispose();
+                trayMenu = null;
+            }
         }
         finally
         {

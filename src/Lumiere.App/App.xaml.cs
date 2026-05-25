@@ -5,6 +5,7 @@ using Lumiere.Graphics.Output;
 using Lumiere.Infrastructure.Diagnostics;
 using Lumiere.Infrastructure.Interop;
 using Lumiere.Settings;
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 
 namespace Lumiere.App;
@@ -45,7 +46,19 @@ public partial class App : Application
                 LocalSettingsStore.CreateDefault(LumiereLoggerFactory.CreateLogger(LogCategories.Settings)));
             var aboutInfoProvider = new AssemblyAboutInfoProvider(typeof(App).Assembly);
 
-            _window = new MainWindow(captureCommandCoordinator, outputService, settingsProvider, settingsProvider, settingsProvider, aboutInfoProvider, captureService, deviceResources);
+            var mainWindow = new MainWindow(captureCommandCoordinator, outputService, settingsProvider, settingsProvider, settingsProvider, aboutInfoProvider, captureService, deviceResources);
+            try
+            {
+                var trayMenu = WindowsTrayMenu.CreateForWindow(mainWindow, mainWindow.CreateTrayMenuSnapshot());
+                mainWindow.AttachTrayMenu(trayMenu);
+            }
+            catch (Exception trayException)
+            {
+                LumiereLoggerFactory.CreateLogger(LogCategories.App)
+                    .LogWarning(trayException, "Native tray menu could not be initialized.");
+            }
+
+            _window = mainWindow;
             _window.Activate();
         }
         catch (Exception ex)
