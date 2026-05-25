@@ -69,6 +69,7 @@ public sealed partial class MainWindow : Window
     private bool applyingSettingsProjection;
     private bool sizingMainPanel;
     private bool isExplicitShutdown;
+    private bool backgroundWindowEventsEnabled;
     private AppShellView activeShellView = AppShellView.Main;
     private int overlayDispatcherFallbackReported;
     private int uiDispatchFailureReported;
@@ -105,8 +106,7 @@ public sealed partial class MainWindow : Window
         SettingsButton.SizeChanged += OnHeaderDragAreaSizeChanged;
         SettingsHeaderDragArea.SizeChanged += OnHeaderDragAreaSizeChanged;
         SettingsBackButton.SizeChanged += OnHeaderDragAreaSizeChanged;
-        AppWindow.Closing += OnAppWindowClosing;
-        AppWindow.Changed += OnAppWindowChanged;
+        Activated += OnWindowActivated;
         Closed += OnWindowClosed;
 
         LumiereLoggerFactory.InitializeWithHeader(
@@ -169,6 +169,20 @@ public sealed partial class MainWindow : Window
         Logger.LogDebug("Settings shell closed; returning to main panel.");
     }
 
+    private void OnWindowActivated(object sender, WindowActivatedEventArgs args)
+    {
+        if (backgroundWindowEventsEnabled || args.WindowActivationState is WindowActivationState.Deactivated)
+        {
+            return;
+        }
+
+        backgroundWindowEventsEnabled = true;
+        AppWindow.Closing += OnAppWindowClosing;
+        AppWindow.Changed += OnAppWindowChanged;
+        Activated -= OnWindowActivated;
+        Logger.LogDebug("Background close/minimize handlers enabled after first window activation.");
+    }
+
     private void OnAppWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
     {
         if (isExplicitShutdown || isClosed)
@@ -188,7 +202,7 @@ public sealed partial class MainWindow : Window
 
     private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
     {
-        if (isExplicitShutdown || isClosed || !IsBackgroundAvailable)
+        if (isExplicitShutdown || isClosed || !IsBackgroundAvailable || !args.DidPresenterChange)
         {
             return;
         }
@@ -1782,8 +1796,14 @@ public sealed partial class MainWindow : Window
 
         try
         {
-            AppWindow.Closing -= OnAppWindowClosing;
-            AppWindow.Changed -= OnAppWindowChanged;
+            Activated -= OnWindowActivated;
+            if (backgroundWindowEventsEnabled)
+            {
+                AppWindow.Closing -= OnAppWindowClosing;
+                AppWindow.Changed -= OnAppWindowChanged;
+                backgroundWindowEventsEnabled = false;
+            }
+
             StopPreview(reportStopped: false);
             CloseOverlayWindow();
             if (globalHotkeyRegistrar is not null)
