@@ -1,4 +1,6 @@
 using System.Runtime.InteropServices;
+using Lumiere.Infrastructure.Diagnostics;
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using WinRT.Interop;
 
@@ -6,6 +8,7 @@ namespace Lumiere.Infrastructure.Interop;
 
 public sealed class WindowsTrayMenu : ITrayMenu
 {
+    private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Infrastructure);
     private const int MaxTipLength = 128;
     private const int WmCommand = 0x0111;
     private const int WmNull = 0x0000;
@@ -55,6 +58,7 @@ public sealed class WindowsTrayMenu : ITrayMenu
     }
 
     public event EventHandler<TrayMenuCommandRequestedEventArgs>? CommandRequested;
+    public event EventHandler<TrayMenuShowRequestedEventArgs>? MenuShowRequested;
 
     public static WindowsTrayMenu CreateForWindow(Window owner, TrayMenuSnapshot initialSnapshot) =>
         new(WindowNative.GetWindowHandle(owner ?? throw new ArgumentNullException(nameof(owner))), initialSnapshot);
@@ -109,8 +113,9 @@ public sealed class WindowsTrayMenu : ITrayMenu
 
         if (message == WmCommand)
         {
-            var commandId = (int)(wParam.ToInt64() & 0xFFFF);
-            if (Enum.IsDefined(typeof(TrayMenuCommand), commandId))
+            int commandId = unchecked((int)(wParam.ToInt64() & 0xFFFF));
+            if (commandId >= (int)TrayMenuCommand.FullscreenCapture
+                && commandId <= (int)TrayMenuCommand.Quit)
             {
                 CommandRequested?.Invoke(this, new TrayMenuCommandRequestedEventArgs((TrayMenuCommand)commandId));
                 return IntPtr.Zero;
@@ -127,6 +132,43 @@ public sealed class WindowsTrayMenu : ITrayMenu
             return;
         }
 
+        GetCursorPos(out var point);
+        SetForegroundWindow(ownerHwnd);
+        var menuShowRequested = MenuShowRequested;
+        if (menuShowRequested is null)
+        {
+            ShowNativeMenu(point);
+            return;
+        }
+
+        try
+        {
+            menuShowRequested.Invoke(this, new TrayMenuShowRequestedEventArgs(point.X, point.Y, snapshot));
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(exception, "Custom tray menu failed to show; falling back to native popup menu.");
+            ShowNativeMenu(point);
+        }
+    }
+
+    private static void AppendDisabledHeader(IntPtr menu, string label) =>
+        AppendMenu(menu, MfString | MfGrayed, UIntPtr.Zero, label);
+
+    private static void AppendCommand(IntPtr menu, TrayMenuCommand command, TrayMenuItemSnapshot item)
+    {
+        var flags = MfString
+            | (item.IsEnabled ? 0 : MfGrayed)
+            | (item.IsActive ? MfChecked : 0);
+        var label = string.IsNullOrWhiteSpace(item.ShortcutText)
+            ? item.Label
+            : $"{item.Label}\t{item.ShortcutText}";
+
+        AppendMenu(menu, flags, new UIntPtr((uint)command), label);
+    }
+
+    private void ShowNativeMenu(POINT point)
+    {
         var currentSnapshot = snapshot;
         var menu = CreatePopupMenu();
         if (menu == IntPtr.Zero)
@@ -146,7 +188,6 @@ public sealed class WindowsTrayMenu : ITrayMenu
             AppendCommand(menu, TrayMenuCommand.OpenSettings, currentSnapshot.OpenSettings);
             AppendCommand(menu, TrayMenuCommand.Quit, currentSnapshot.Quit);
 
-            GetCursorPos(out var point);
             SetForegroundWindow(ownerHwnd);
             TrackPopupMenu(menu, TpmLeftAlign | TpmRightButton, point.X, point.Y, 0, messageHwnd, IntPtr.Zero);
             PostMessage(ownerHwnd, WmNull, IntPtr.Zero, IntPtr.Zero);
@@ -155,21 +196,6 @@ public sealed class WindowsTrayMenu : ITrayMenu
         {
             DestroyMenu(menu);
         }
-    }
-
-    private static void AppendDisabledHeader(IntPtr menu, string label) =>
-        AppendMenu(menu, MfString | MfGrayed, UIntPtr.Zero, label);
-
-    private static void AppendCommand(IntPtr menu, TrayMenuCommand command, TrayMenuItemSnapshot item)
-    {
-        var flags = MfString
-            | (item.IsEnabled ? 0 : MfGrayed)
-            | (item.IsActive ? MfChecked : 0);
-        var label = string.IsNullOrWhiteSpace(item.ShortcutText)
-            ? item.Label
-            : $"{item.Label}\t{item.ShortcutText}";
-
-        AppendMenu(menu, flags, new UIntPtr((uint)command), label);
     }
 
     private void RegisterWindowClass()

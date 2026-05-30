@@ -7,6 +7,7 @@ using Lumiere.Infrastructure.Interop;
 using Lumiere.Settings;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
+using WinRT.Interop;
 
 namespace Lumiere.App;
 
@@ -54,6 +55,20 @@ public partial class App : Application
             {
                 var trayMenu = WindowsTrayMenu.CreateForWindow(mainWindow, mainWindow.CreateTrayMenuSnapshot());
                 mainWindow.AttachTrayMenu(trayMenu);
+
+                try
+                {
+                    var ownerHwnd = WindowNative.GetWindowHandle(mainWindow);
+                    var trayMenuWindow = new TrayMenuWindow(ownerHwnd);
+                    trayMenuWindow.CommandSelected += (_, command) => mainWindow.DispatchTrayCommand(command);
+                    trayMenu.MenuShowRequested += (_, args) =>
+                        trayMenuWindow.ShowAt(args.CursorX, args.CursorY, args.Snapshot);
+                }
+                catch (Exception trayMenuWindowException)
+                {
+                    LumiereLoggerFactory.CreateLogger(LogCategories.App)
+                        .LogWarning(trayMenuWindowException, "Tray menu window could not be initialized; using native tray only.");
+                }
             }
             catch (Exception trayException)
             {

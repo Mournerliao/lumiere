@@ -385,6 +385,19 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    public void DispatchTrayCommand(TrayMenuCommand command)
+    {
+        if (isClosed)
+        {
+            return;
+        }
+
+        if (!RootGrid.DispatcherQueue.TryEnqueue(async () => await HandleTrayMenuCommandAsync(command)))
+        {
+            Logger.LogWarning("Tray command dropped because UI dispatcher rejected it: command={Command}", command);
+        }
+    }
+
     private void OnGlobalHotkeyPressed(object? sender, GlobalHotkeyPressedEventArgs args)
     {
         if (isClosed)

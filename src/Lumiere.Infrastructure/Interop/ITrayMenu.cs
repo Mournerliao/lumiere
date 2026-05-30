@@ -12,6 +12,13 @@ public sealed class TrayMenuCommandRequestedEventArgs(TrayMenuCommand command) :
     public TrayMenuCommand Command { get; } = command;
 }
 
+public sealed class TrayMenuShowRequestedEventArgs(int cursorX, int cursorY, TrayMenuSnapshot snapshot) : EventArgs
+{
+    public int CursorX { get; } = cursorX;
+    public int CursorY { get; } = cursorY;
+    public TrayMenuSnapshot Snapshot { get; } = snapshot;
+}
+
 public enum TrayMenuCommand
 {
     FullscreenCapture = 1,
