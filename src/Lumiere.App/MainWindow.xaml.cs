@@ -20,8 +20,9 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
-using Vortice.Direct3D11;
-using Windows.Graphics;
+using Vortice.Direct3D11;
+using Windows.Graphics;
+using WinRT.Interop;
 
 namespace Lumiere.App;
 
@@ -99,6 +100,10 @@ public sealed partial class MainWindow : Window
         SystemBackdrop = new MicaBackdrop();
         ConfigureWindowPresenter();
         SuppressWindowFrameBorder();
+
+        WindowFrameInterop.PreferRoundedCorners(this);
+
+        WindowFrameInterop.ExtendFrameIntoClientArea(WindowNative.GetWindowHandle(this));
         ApplyShortcutLabels();
         SizeToActiveShellView();
         RootGrid.Loaded += OnRootGridLoaded;
@@ -692,7 +697,9 @@ public sealed partial class MainWindow : Window
                 ScaleToPhysicalPixels(widthDips, scale),
                 ScaleToPhysicalPixels(heightDips, scale)));
             AppWindow.ResizeClient(clientSize);
+
             KeepWindowInsideWorkArea();
+
         }
         finally
         {
@@ -1481,24 +1488,32 @@ public sealed partial class MainWindow : Window
 
     private void ApplyMainCaptureCardStyles()
     {
-        ApplyMainCaptureCardStyle(SelectCaptureTargetButton, activeCaptureMode is CaptureCommandMode.Fullscreen);
-        ApplyMainCaptureCardStyle(RegionSelectButton, activeCaptureMode is CaptureCommandMode.Region);
+        ApplyMainCaptureCardStyle(
+            SelectCaptureTargetButton,
+            activeCaptureMode is CaptureCommandMode.Fullscreen,
+            isPrimary: true);
+        ApplyMainCaptureCardStyle(
+            RegionSelectButton,
+            activeCaptureMode is CaptureCommandMode.Region,
+            isPrimary: false);
     }
 
-    private void ApplyMainCaptureCardStyle(CaptureActionCard card, bool isActive)
+    private void ApplyMainCaptureCardStyle(CaptureActionCard card, bool isActive, bool isPrimary)
     {
-        card.Background = isActive
-            ? (Brush)Application.Current.Resources["AccentSoftBrush"]
+        var useAccent = isPrimary || isActive;
+
+        card.Background = useAccent
+            ? (Brush)Application.Current.Resources["PrimaryActionBrush"]
             : (Brush)Application.Current.Resources["SecondaryPanelBrush"];
-        card.BorderBrush = isActive
-            ? (Brush)Application.Current.Resources["AccentBorderBrush"]
+        card.BorderBrush = useAccent
+            ? (Brush)Application.Current.Resources["PrimaryActionBorderBrush"]
             : (Brush)Application.Current.Resources["BorderBrush"];
         card.IconBackground = card.Background;
         card.IconBorderBrush = card.BorderBrush;
-        card.IconForeground = isActive
+        card.IconForeground = useAccent
             ? (Brush)Application.Current.Resources["AccentBrush"]
             : (Brush)Application.Current.Resources["MutedTextBrush"];
-        card.ShortcutForeground = isActive
+        card.ShortcutForeground = useAccent
             ? (Brush)Application.Current.Resources["TextBrush"]
             : (Brush)Application.Current.Resources["SubtleTextBrush"];
     }

@@ -6,6 +6,8 @@ namespace Lumiere.Infrastructure.Interop;
 
 public static class WindowFrameInterop
 {
+    public const int DefaultRoundedCornerRadiusDips = 12;
+
     private const int GwlStyle = -16;
     private const long WsCaption = 0x00C00000L;
     private const long WsThickFrame = 0x00040000L;
@@ -19,7 +21,9 @@ public static class WindowFrameInterop
     private const int DwmwaNcRenderingPolicy = 2;
     private const int DwmncrpDisabled = 1;
     private const int DwmwaBorderColor = 34;
+    private const int DwmwaWindowCornerPreference = 33;
     private const int DwmwaColorNone = unchecked((int)0xFFFFFFFE);
+    private const int DwmwcpRound = 2;
 
     public static string SuppressNonClientBorder(Window window)
     {
@@ -89,6 +93,126 @@ public static class WindowFrameInterop
         }
 
         return $"Main window non-client frame was suppressed (style 0x{currentStyle.ToInt64():X} -> 0x{updatedStyle.ToInt64():X}).";
+    }
+
+    public static void PreferRoundedCorners(Window window)
+    {
+        ArgumentNullException.ThrowIfNull(window);
+        PreferRoundedCorners(WindowNative.GetWindowHandle(window));
+    }
+
+    public static void PreferRoundedCorners(IntPtr windowHandle)
+    {
+        if (windowHandle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        try
+        {
+            var preference = DwmwcpRound;
+            WindowNativeMethods.DwmSetWindowAttribute(
+                windowHandle,
+                DwmwaWindowCornerPreference,
+                ref preference,
+                sizeof(int));
+        }
+        catch (DllNotFoundException)
+        {
+        }
+        catch (EntryPointNotFoundException)
+        {
+        }
+    }
+
+    public static void ExtendFrameIntoClientArea(IntPtr windowHandle)
+    {
+        if (windowHandle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        var margins = new WindowNativeMethods.MARGINS
+        {
+            cxLeftWidth = -1,
+            cxRightWidth = -1,
+            cyTopHeight = -1,
+            cyBottomHeight = -1
+        };
+        WindowNativeMethods.DwmExtendFrameIntoClientArea(windowHandle, ref margins);
+    }
+
+    public static void SuppressDwmBorder(IntPtr windowHandle)
+    {
+        if (windowHandle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        try
+        {
+            var ncRenderingPolicy = DwmncrpDisabled;
+            WindowNativeMethods.DwmSetWindowAttribute(
+                windowHandle,
+                DwmwaNcRenderingPolicy,
+                ref ncRenderingPolicy,
+                sizeof(int));
+
+            var borderColor = DwmwaColorNone;
+            WindowNativeMethods.DwmSetWindowAttribute(
+                windowHandle,
+                DwmwaBorderColor,
+                ref borderColor,
+                sizeof(int));
+        }
+        catch (DllNotFoundException)
+        {
+        }
+        catch (EntryPointNotFoundException)
+        {
+        }
+    }
+
+    public static void ApplyRoundedRegion(
+        Window window,
+        int widthPixels,
+        int heightPixels,
+        double scale,
+        int cornerRadiusDips = DefaultRoundedCornerRadiusDips)
+    {
+        ArgumentNullException.ThrowIfNull(window);
+        ApplyRoundedRegion(WindowNative.GetWindowHandle(window), widthPixels, heightPixels, scale, cornerRadiusDips);
+    }
+
+    public static void ApplyRoundedRegion(
+        IntPtr windowHandle,
+        int widthPixels,
+        int heightPixels,
+        double scale,
+        int cornerRadiusDips = DefaultRoundedCornerRadiusDips)
+    {
+        if (windowHandle == IntPtr.Zero || widthPixels <= 0 || heightPixels <= 0)
+        {
+            return;
+        }
+
+        var radius = Math.Max(1, (int)Math.Ceiling(cornerRadiusDips * scale));
+        var region = WindowNativeMethods.CreateRoundRectRgn(
+            0,
+            0,
+            widthPixels + 1,
+            heightPixels + 1,
+            radius * 2,
+            radius * 2);
+        if (region == IntPtr.Zero)
+        {
+            return;
+        }
+
+        if (WindowNativeMethods.SetWindowRgn(windowHandle, region, true) == 0)
+        {
+            WindowNativeMethods.DeleteObject(region);
+        }
     }
 
     private static IntPtr ReadWindowStyle(IntPtr windowHandle)

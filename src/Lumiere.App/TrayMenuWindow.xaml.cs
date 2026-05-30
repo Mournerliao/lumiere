@@ -79,7 +79,9 @@ public sealed partial class TrayMenuWindow : Window
         }
 
         AppWindow.Move(new PointInt32(x, y));
+
         AppWindow.Resize(new SizeInt32(windowWidth, windowHeight));
+
         AppWindow.Show(true);
         BringToTopmost(x, y, windowWidth, windowHeight);
         Activate();
@@ -114,14 +116,26 @@ public sealed partial class TrayMenuWindow : Window
         AppWindow.SetPresenter(presenter);
 
         SetPopupWindowStyle(hwnd);
+
         AddWindowExStyle(hwnd, WsExTopmost | WsExToolwindow);
 
+
+
         if (ownerHwnd != IntPtr.Zero)
+
         {
+
             SetWindowLongPtr(hwnd, GwlHwndparent, ownerHwnd);
+
         }
 
-        TrySetDwmCornerPreference(hwnd, DwmwcpRound);
+
+
+        WindowFrameInterop.PreferRoundedCorners(hwnd);
+
+        WindowFrameInterop.ExtendFrameIntoClientArea(hwnd);
+
+        WindowFrameInterop.SuppressDwmBorder(hwnd);
     }
 
     private void OnWindowActivated(object sender, WindowActivatedEventArgs args)
@@ -168,7 +182,6 @@ public sealed partial class TrayMenuWindow : Window
     private const int WsExTopmost = 0x00000008;
     private const int WsExToolwindow = 0x00000080;
     private const int GwlHwndparent = -8;
-    private const uint DwmwcpRound = 1;
     private const uint MonitorDefaultToNearest = 2;
     private const int GwlStyle = -16;
     private const int GwlExstyle = -20;
@@ -250,20 +263,4 @@ public sealed partial class TrayMenuWindow : Window
         SetWindowPos(hwnd, HwndTopmost, x, y, width, height, SwpNoActivate | SwpShowWindow);
     }
 
-    private static void TrySetDwmCornerPreference(IntPtr hwnd, uint preference)
-    {
-        try
-        {
-            DwmSetWindowAttribute(hwnd, 33, ref preference, sizeof(uint));
-        }
-        catch (DllNotFoundException)
-        {
-        }
-        catch (EntryPointNotFoundException)
-        {
-        }
-    }
-
-    [DllImport("dwmapi.dll")]
-    private static extern int DwmSetWindowAttribute(IntPtr hwnd, uint dwAttribute, ref uint pvAttribute, uint cbAttribute);
 }

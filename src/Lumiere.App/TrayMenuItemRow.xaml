@@ -9,46 +9,65 @@
       HorizontalAlignment="Stretch"
       HorizontalContentAlignment="Stretch"
       Background="Transparent"
+      BorderBrush="Transparent"
       BorderThickness="0"
       Click="OnItemClick"
       CornerRadius="6"
-      MinHeight="36"
+      GotFocus="OnItemButtonGotFocus"
+      LostFocus="OnItemButtonLostFocus"
+      MinHeight="34"
       Padding="0"
+      PointerEntered="OnItemButtonPointerEntered"
+      PointerExited="OnItemButtonPointerExited"
+      PointerPressed="OnItemButtonPointerPressed"
+      PointerReleased="OnItemButtonPointerReleased"
       UseSystemFocusVisuals="False">
-    <Grid
+    <Button.Resources>
+      <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="Transparent" />
+      <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="Transparent" />
+      <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent" />
+      <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent" />
+    </Button.Resources>
+    <Border
+        x:Name="ItemSurface"
         Padding="12,6"
-        ColumnSpacing="12">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="Auto" />
-        <ColumnDefinition Width="*" />
-        <ColumnDefinition Width="Auto" />
-      </Grid.ColumnDefinitions>
+        Background="Transparent"
+        BorderBrush="Transparent"
+        BorderThickness="0"
+        CornerRadius="6">
+      <Grid ColumnSpacing="12">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
 
-      <ic:FluentIcon
-          x:Name="ItemIcon"
-          VerticalAlignment="Center"
-          Foreground="{StaticResource MutedTextBrush}"
-          Icon="{x:Bind Icon, Mode=OneWay}"
-          IconSize="Size16"
-          IconVariant="Regular" />
+        <ic:FluentIcon
+            x:Name="ItemIcon"
+            VerticalAlignment="Center"
+            Foreground="{StaticResource MutedTextBrush}"
+            Icon="{x:Bind Icon, Mode=OneWay}"
+            IconSize="Size20"
+            IconVariant="Regular" />
 
-      <TextBlock
-          x:Name="ItemLabel"
-          Grid.Column="1"
-          VerticalAlignment="Center"
-          FontSize="13"
-          Foreground="{StaticResource TextBrush}"
-          Text="{x:Bind Label, Mode=OneWay}" />
+        <TextBlock
+            x:Name="ItemLabel"
+            Grid.Column="1"
+            VerticalAlignment="Center"
+            FontSize="13"
+            Foreground="{StaticResource TextBrush}"
+            Text="{x:Bind Label, Mode=OneWay}" />
 
-      <TextBlock
-          x:Name="ItemShortcut"
-          Grid.Column="2"
-          VerticalAlignment="Center"
-          FontFamily="Consolas"
-          FontSize="11"
-          Foreground="{StaticResource SubtleTextBrush}"
-          Text="{x:Bind ShortcutText, Mode=OneWay}"
-          Visibility="{x:Bind ShortcutVisibility, Mode=OneWay}" />
-    </Grid>
+        <TextBlock
+            x:Name="ItemShortcut"
+            Grid.Column="2"
+            VerticalAlignment="Center"
+            FontFamily="Consolas"
+            FontSize="11"
+            Foreground="{StaticResource SubtleTextBrush}"
+            Text="{x:Bind ShortcutText, Mode=OneWay}"
+            Visibility="{x:Bind ShortcutVisibility, Mode=OneWay}" />
+      </Grid>
+    </Border>
   </Button>
 </UserControl>

@@ -1,11 +1,17 @@
 using FluentIcons.Common;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 
 namespace Lumiere.App;
 
 public sealed partial class TrayMenuItemRow : UserControl
 {
+    private bool hasKeyboardFocus;
+    private bool isPointerOver;
+    private bool isPointerPressed;
+
     public static readonly DependencyProperty IconProperty =
         DependencyProperty.Register(
             nameof(Icon),
@@ -37,6 +43,7 @@ public sealed partial class TrayMenuItemRow : UserControl
     public TrayMenuItemRow()
     {
         InitializeComponent();
+        IsEnabledChanged += (_, _) => UpdateInteractiveVisual();
     }
 
     public event RoutedEventHandler? Click;
@@ -80,11 +87,8 @@ public sealed partial class TrayMenuItemRow : UserControl
     {
         if (d is TrayMenuItemRow row)
         {
-            var brush = row.IsDestructive
-                ? (Microsoft.UI.Xaml.Media.SolidColorBrush)Application.Current.Resources["ErrorBrush"]
-                : (Microsoft.UI.Xaml.Media.SolidColorBrush)Application.Current.Resources["MutedTextBrush"];
-            row.ItemIcon.Foreground = brush;
-            row.ItemLabel.Foreground = brush;
+            row.ApplyDestructiveVisual();
+            row.UpdateInteractiveVisual();
         }
     }
 
@@ -92,4 +96,71 @@ public sealed partial class TrayMenuItemRow : UserControl
     {
         Click?.Invoke(this, e);
     }
+
+    private void OnItemButtonPointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        isPointerOver = true;
+        UpdateInteractiveVisual();
+    }
+
+    private void OnItemButtonPointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        isPointerOver = false;
+        isPointerPressed = false;
+        UpdateInteractiveVisual();
+    }
+
+    private void OnItemButtonPointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        isPointerPressed = true;
+        UpdateInteractiveVisual();
+    }
+
+    private void OnItemButtonPointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        isPointerPressed = false;
+        UpdateInteractiveVisual();
+    }
+
+    private void OnItemButtonGotFocus(object sender, RoutedEventArgs e)
+    {
+        hasKeyboardFocus = true;
+        UpdateInteractiveVisual();
+    }
+
+    private void OnItemButtonLostFocus(object sender, RoutedEventArgs e)
+    {
+        hasKeyboardFocus = false;
+        isPointerPressed = false;
+        UpdateInteractiveVisual();
+    }
+
+    private void ApplyDestructiveVisual()
+    {
+        var brush = ResourceBrush(IsDestructive ? "ErrorBrush" : "MutedTextBrush");
+        ItemIcon.Foreground = brush;
+        ItemLabel.Foreground = IsDestructive ? brush : ResourceBrush("TextBrush");
+    }
+
+    private void UpdateInteractiveVisual()
+    {
+        Opacity = IsEnabled ? 1.0 : 0.5;
+
+        var backgroundKey = "TransparentBrush";
+        if (IsEnabled && isPointerPressed)
+        {
+            backgroundKey = IsDestructive ? "MenuDestructivePressedBrush" : "MenuPressedBrush";
+        }
+        else if (IsEnabled && isPointerOver)
+        {
+            backgroundKey = IsDestructive ? "MenuDestructiveHoverBrush" : "MenuHoverBrush";
+        }
+
+        ItemSurface.Background = backgroundKey == "TransparentBrush"
+            ? new SolidColorBrush(Microsoft.UI.Colors.Transparent)
+            : ResourceBrush(backgroundKey);
+        ItemSurface.BorderBrush = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+    }
+
+    private static Brush ResourceBrush(string key) => (Brush)Application.Current.Resources[key];
 }

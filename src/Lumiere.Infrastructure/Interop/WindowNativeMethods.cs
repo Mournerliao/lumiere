@@ -13,8 +13,26 @@ internal static class WindowNativeMethods
     [DllImport("user32.dll", ExactSpelling = true, SetLastError = true)]
     internal static extern bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint);
 
-    [DllImport("dwmapi.dll", ExactSpelling = true)]
-    internal static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+    [DllImport("dwmapi.dll", ExactSpelling = true)]
+    internal static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
+    [DllImport("dwmapi.dll", ExactSpelling = true)]
+    internal static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref MARGINS margins);
+
+    [DllImport("user32.dll", ExactSpelling = true, SetLastError = true)]
+    internal static extern int SetWindowRgn(IntPtr hWnd, IntPtr hRgn, bool bRedraw);
+
+    [DllImport("gdi32.dll", ExactSpelling = true, SetLastError = true)]
+    internal static extern IntPtr CreateRoundRectRgn(
+        int nLeftRect,
+        int nTopRect,
+        int nRightRect,
+        int nBottomRect,
+        int nWidthEllipse,
+        int nHeightEllipse);
+
+    [DllImport("gdi32.dll", ExactSpelling = true, SetLastError = true)]
+    internal static extern bool DeleteObject(IntPtr hObject);
 
     [DllImport("user32.dll", ExactSpelling = true, SetLastError = true)]
     internal static extern bool SetWindowPos(
@@ -45,9 +63,33 @@ internal static class WindowNativeMethods
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct POINT
+
+    internal struct MARGINS
+
     {
-        public int X;
-        public int Y;
+
+        public int cxLeftWidth;
+
+        public int cxRightWidth;
+
+        public int cyTopHeight;
+
+        public int cyBottomHeight;
+
     }
+
+
+
+    [StructLayout(LayoutKind.Sequential)]
+
+    internal struct POINT
+
+    {
+
+        public int X;
+
+        public int Y;
+
+    }
+
 }
