@@ -9,7 +9,7 @@
     mc:Ignorable="d">
   <Grid
       x:Name="RootGrid"
-      Background="{StaticResource PanelBrush}"
+      Background="{StaticResource MicaSurfaceBrush}"
       RequestedTheme="Dark">
     <Grid x:Name="MainPanelRoot">
       <Grid.RowDefinitions>
@@ -85,16 +85,16 @@
 
           <local:CaptureActionCard
               x:Name="SelectCaptureTargetButton"
-              Background="{StaticResource SecondaryPanelBrush}"
-              BorderBrush="{StaticResource BorderBrush}"
+              Background="{StaticResource PrimaryActionBrush}"
+              BorderBrush="{StaticResource PrimaryActionBorderBrush}"
               Click="OnSelectCaptureTargetClick"
               Description="Capture the current display"
               Icon="Camera"
-              IconBackground="{StaticResource SecondaryPanelBrush}"
-              IconBorderBrush="{StaticResource BorderBrush}"
-              IconForeground="{StaticResource MutedTextBrush}"
+              IconBackground="{StaticResource AccentSoftBrush}"
+              IconBorderBrush="{StaticResource AccentBorderBrush}"
+              IconForeground="{StaticResource AccentBrush}"
               SecondaryForeground="{StaticResource MutedTextBrush}"
-              ShortcutForeground="{StaticResource SubtleTextBrush}"
+              ShortcutForeground="{StaticResource TextBrush}"
               ShortcutText="Not assigned"
               Title="Full Screen" />
 
