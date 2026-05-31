@@ -20,7 +20,7 @@
       Background="Transparent"
       BorderThickness="0"
       Click="OnActionButtonClick"
-      CornerRadius="8"
+      CornerRadius="12"
       Padding="0"
       ToolTipService.ToolTip="{Binding Description, ElementName=Root}">
     <Border
@@ -29,7 +29,7 @@
         Background="{Binding Background, ElementName=Root}"
         BorderBrush="{Binding BorderBrush, ElementName=Root}"
         BorderThickness="1"
-        CornerRadius="8">
+        CornerRadius="12">
       <Grid ColumnSpacing="14">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="Auto" />

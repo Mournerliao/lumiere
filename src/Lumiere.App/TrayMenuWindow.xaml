@@ -10,7 +10,6 @@
       MaxWidth="280"
       Padding="4"
       Background="{StaticResource MicaMenuSurfaceBrush}"
-      CornerRadius="12"
       RequestedTheme="Dark">
     <StackPanel Spacing="0">
 
