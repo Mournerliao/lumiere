@@ -1,10 +1,10 @@
 ---
-status: review
+status: done
 ---
 
 # Story 7.4: Support Background and Minimize-to-Tray Workflow
 
-Status: review
+Status: done
 
 ## Story
 

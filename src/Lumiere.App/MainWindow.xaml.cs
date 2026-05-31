@@ -70,6 +70,7 @@ public sealed partial class MainWindow : Window
     private bool isClosed;
     private bool isDeviceDisposed;
     private bool applyingSessionState;
+    private CaptureSessionState? pendingSessionState;
     private bool applyingSettingsProjection;
     private bool sizingMainPanel;
     private bool isExplicitShutdown;
@@ -1160,6 +1161,23 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    /// <summary>
+    /// Consolidates teardown and return-to-ready into a single atomic flow.
+    /// Stops preview, closes overlay, and resets to Idle state without relying
+    /// on fragile sequential Disposed then Idle UI calls.
+    /// </summary>
+    private void StopPreviewAndResetToIdle()
+    {
+        Logger.LogDebug("StopPreviewAndResetToIdle: beginning consolidated teardown and reset");
+        StopPreview(reportStopped: false);
+        CloseOverlayWindow();
+        if (!isClosed)
+        {
+            Logger.LogDebug("StopPreviewAndResetToIdle: applying Idle state");
+            ApplySessionState(CaptureSessionState.Idle());
+        }
+    }
+
     private void ApplySessionState(CaptureSessionState state)
     {
         // Must be called on the UI thread. Future entry points (hotkey, tray) must dispatch first.
@@ -1167,6 +1185,13 @@ public sealed partial class MainWindow : Window
 
         if (applyingSessionState)
         {
+            // Last-write-wins: overwrite the pending state with the latest.
+            // For state machines, the latest state is authoritative — intermediate states are stale.
+            // The pending state will be applied after the current projection completes.
+            pendingSessionState = state;
+            Logger.LogDebug(
+                "ApplySessionState REENTRANT: overwrote pending state with latest={Status}",
+                state.Status);
             return;
         }
 
@@ -1183,6 +1208,40 @@ public sealed partial class MainWindow : Window
             {
                 StopPreview(reportStopped: false);
                 CloseOverlayWindow();
+            }
+
+            // Apply any pending state that arrived during projection (last-write-wins).
+            // Guard against infinite loops from rapid reentrant calls and window close.
+            const int maxDeferredIterations = 10;
+            var deferredCount = 0;
+            while (pendingSessionState is not null && !isClosed && deferredCount < maxDeferredIterations)
+            {
+                var queuedState = pendingSessionState;
+                pendingSessionState = null;
+                deferredCount++;
+
+                Logger.LogDebug(
+                    "ApplySessionState DEFERRED: applying pending state={Status} (iteration {Count})",
+                    queuedState.Status, deferredCount);
+
+                captureService?.UpdateSessionState(queuedState);
+                UpdateMainPanelProjection(queuedState);
+                UpdateTrayMenu(queuedState);
+                var queuedOverlayState = CreateOverlayState(queuedState);
+                overlayWindow?.ApplyState(queuedOverlayState);
+                if (overlayWindow is not null && queuedOverlayState.RequiresFailureTeardown)
+                {
+                    StopPreview(reportStopped: false);
+                    CloseOverlayWindow();
+                }
+            }
+
+            if (deferredCount >= maxDeferredIterations)
+            {
+                Logger.LogWarning(
+                    "ApplySessionState DEFERRED: hit max iterations ({Max}), clearing pending state",
+                    maxDeferredIterations);
+                pendingSessionState = null;
             }
         }
         finally
@@ -1578,11 +1637,8 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        Logger.LogDebug("Overlay close requested (Escape/cancel), StopPreview called");
-        StopPreview();
-        CloseOverlayWindow();
-        Logger.LogDebug("Resetting session state to Idle after overlay close requested");
-        ApplySessionState(CaptureSessionState.Idle());
+        Logger.LogDebug("Overlay close requested (Escape/cancel), stopping preview and resetting to idle");
+        StopPreviewAndResetToIdle();
     }
 
     private async void OnOverlayCaptureConfirmed(object? sender, ConfirmedCaptureSelection selection)
@@ -1605,11 +1661,10 @@ public sealed partial class MainWindow : Window
         finally
         {
             overlayWindow?.ApplyClipboardResult(copied, selection.Status);
-            CloseOverlayWindow();
             if (!isClosed)
             {
-                Logger.LogDebug("Resetting session state to Idle after overlay capture confirmed");
-                ApplySessionState(CaptureSessionState.Idle());
+                Logger.LogDebug("Resetting to idle after overlay capture confirmed");
+                StopPreviewAndResetToIdle();
             }
         }
     }
@@ -1637,11 +1692,10 @@ public sealed partial class MainWindow : Window
         finally
         {
             overlayWindow?.ApplyClipboardResult(copied, status);
-            CloseOverlayWindow();
             if (!isClosed)
             {
-                Logger.LogDebug("Resetting session state to Idle after fullscreen capture completed");
-                ApplySessionState(CaptureSessionState.Idle());
+                Logger.LogDebug("Resetting to idle after fullscreen capture completed");
+                StopPreviewAndResetToIdle();
             }
         }
     }
@@ -1775,11 +1829,25 @@ public sealed partial class MainWindow : Window
             overlayWindow.Closed -= OnOverlayClosed;
             overlayWindow = null;
 
+            Logger.LogDebug("Overlay reference cleared, verifying capture action state");
+
             var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
             if (!isClosed && currentState.HasNativeSession)
             {
                 Logger.LogDebug("Stopping preview from OnOverlayClosed, current state: {Status}", currentState.Status);
                 StopPreview();
+            }
+
+            // Verify capture actions are re-enabled after overlay completion.
+            // This diagnostic confirms the authoritative session-state projection
+            // is driving capture action state, not overlay completion ordering.
+            if (!isClosed)
+            {
+                var projection = MainPanelProjection.Project(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
+                Logger.LogDebug(
+                    "Post-overlay capture action state: canStartCapture={CanStart}, sessionStatus={Status}",
+                    projection.CanStartCapture,
+                    captureService?.CurrentSessionState?.Status ?? CaptureSessionStatus.Idle);
             }
         }
     }

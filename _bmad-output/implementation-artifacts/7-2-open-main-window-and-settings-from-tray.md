@@ -1,10 +1,10 @@
 ---
-status: review
+status: done
 ---
 
 # Story 7.2: Open Main Window and Settings from Tray
 
-Status: review
+Status: done
 
 ## Story
 

@@ -1,5 +1,5 @@
 # generated: 2026-05-09T17:29:57+0800
-# last_updated: 2026-05-25T00:00:00+08:00
+# last_updated: 2026-05-26T00:00:00+08:00
 # project: lumiere
 # project_key: NOKEY
 # tracking_system: file-system
@@ -95,13 +95,14 @@ development_status:
   6-5-scope-export-and-color-format-options-honestly: done
   6-6-implement-supported-after-capture-behavior: done
   epic-6-retrospective: done
-  epic-7: in-progress
-  7-1-add-tray-menu-with-status-and-commands: review
-  7-2-open-main-window-and-settings-from-tray: review
-  7-3-register-global-capture-hotkeys: review
-  7-4-support-background-and-minimize-to-tray-workflow: review
-  7-5-quit-cleanly-from-tray: review
-  epic-7-retrospective: optional
+  epic-7: done
+  7-1-add-tray-menu-with-status-and-commands: done
+  7-2-open-main-window-and-settings-from-tray: done
+  7-3-register-global-capture-hotkeys: done
+  7-4-support-background-and-minimize-to-tray-workflow: done
+  7-5-quit-cleanly-from-tray: done
+  7-6-resolve-capture-state-technical-debt: done
+  epic-7-retrospective: done
   epic-8: backlog
   8-1-complete-evidence-based-hdr-state-mapping: backlog
   8-2-implement-actionable-hdr-alerts: backlog

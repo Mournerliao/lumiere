@@ -1,10 +1,10 @@
 ---
-status: review
+status: done
 ---
 
 # Story 7.5: Quit Cleanly from Tray
 
-Status: review
+Status: done
 
 ## Story
 

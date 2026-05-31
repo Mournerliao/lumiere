@@ -1,10 +1,10 @@
 ---
-status: review
+status: done
 ---
 
 # Story 7.3: Register Global Capture Hotkeys
 
-Status: review
+Status: done
 
 ## Story
 

@@ -1,10 +1,10 @@
 ---
-status: review
+status: done
 ---
 
 # Story 7.1: Add Tray Menu with Status and Commands
 
-Status: review
+Status: done
 
 ## Story
 

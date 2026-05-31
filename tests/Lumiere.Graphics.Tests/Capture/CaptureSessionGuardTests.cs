@@ -1,4 +1,5 @@
 using Lumiere.Capture;
+using Lumiere.Graphics.Devices;
 using Lumiere.Graphics.Hdr;
 using Windows.Graphics;
 using Xunit;
@@ -256,6 +257,62 @@ public sealed class CaptureSessionGuardTests
         Assert.Equal(1, (int)CaptureCommandOutcome.RejectedSessionActive);
         Assert.Equal(2, (int)CaptureCommandOutcome.RejectedNonRecoverable);
         Assert.Equal(3, (int)CaptureCommandOutcome.Failed);
+    }
+
+    [Fact]
+    public void ValidateCommand_And_TryReserveCommand_ProduceConsistentRejection_ForSelectingTarget()
+    {
+        var deviceProvider = new GraphicsDeviceProvider();
+        using var deviceResources = deviceProvider.CreateDevice();
+        var service = new CaptureService(deviceResources);
+        var state = CaptureSessionState.SelectingTarget();
+        service.UpdateSessionState(state);
+        var command = CaptureCommand.Fullscreen();
+
+        var validateResult = service.ValidateCommand(command);
+        service.UpdateSessionState(state); // Reset for TryReserveCommand
+        var reserveResult = service.TryReserveCommand(command);
+
+        Assert.True(validateResult.IsRejectedSessionActive);
+        Assert.True(reserveResult.IsRejectedSessionActive);
+    }
+
+    [Fact]
+    public void ValidateCommand_And_TryReserveCommand_ProduceConsistentRejection_ForCapturing()
+    {
+        var deviceProvider = new GraphicsDeviceProvider();
+        using var deviceResources = deviceProvider.CreateDevice();
+        var service = new CaptureService(deviceResources);
+        var target = CreateTarget();
+        var state = CaptureSessionState.Capturing(
+            target,
+            PreviewReadinessStatus.Ready("HDR-ready", "Test"));
+        service.UpdateSessionState(state);
+        var command = CaptureCommand.Region();
+
+        var validateResult = service.ValidateCommand(command);
+        service.UpdateSessionState(state); // Reset for TryReserveCommand
+        var reserveResult = service.TryReserveCommand(command);
+
+        Assert.True(validateResult.IsRejectedSessionActive);
+        Assert.True(reserveResult.IsRejectedSessionActive);
+    }
+
+    [Fact]
+    public void ValidateCommand_And_TryReserveCommand_ProduceConsistentRejection_ForDisposed()
+    {
+        var deviceProvider = new GraphicsDeviceProvider();
+        using var deviceResources = deviceProvider.CreateDevice();
+        var service = new CaptureService(deviceResources);
+        var state = CaptureSessionState.Disposed();
+        service.UpdateSessionState(state);
+        var command = CaptureCommand.Fullscreen();
+
+        var validateResult = service.ValidateCommand(command);
+        var reserveResult = service.TryReserveCommand(command);
+
+        Assert.True(validateResult.IsRejectedNonRecoverable);
+        Assert.True(reserveResult.IsRejectedNonRecoverable);
     }
 
     private static CaptureTarget CreateTarget() =>

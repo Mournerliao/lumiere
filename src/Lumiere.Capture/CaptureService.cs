@@ -94,6 +94,23 @@ public sealed class CaptureService
     }
 
     /// <summary>
+    /// Classifies a rejected command into the appropriate rejection outcome.
+    /// Single authoritative mapping from session status to rejection classification.
+    /// </summary>
+    private static CaptureCommandResult ClassifyRejection(
+        CaptureCommand command,
+        CaptureSessionState sessionState,
+        PreviewReadinessStatus? rejectionReason)
+    {
+        return sessionState.Status is CaptureSessionStatus.SelectingTarget
+            or CaptureSessionStatus.Initializing
+            or CaptureSessionStatus.Capturing
+            or CaptureSessionStatus.Degraded
+            ? CaptureCommandResult.RejectedSessionActive(command, sessionState, rejectionReason)
+            : CaptureCommandResult.RejectedNonRecoverable(command, sessionState, rejectionReason);
+    }
+
+    /// <summary>
     /// Validates whether a capture command can be accepted by the current session state.
     /// This is the primary entry point for capture commands from any app-facing entry point.
     /// Thread-safe: the guard check is atomic with state read.
@@ -116,12 +133,7 @@ public sealed class CaptureService
                     "ValidateCommand REJECTED: mode={Mode}, currentStatus={Status}, reason={Reason}",
                     command.Mode, sessionState.Status, rejectionReason?.TechnicalDetail);
 
-                return sessionState.Status is CaptureSessionStatus.SelectingTarget
-                    or CaptureSessionStatus.Initializing
-                    or CaptureSessionStatus.Capturing
-                    or CaptureSessionStatus.Degraded
-                    ? CaptureCommandResult.RejectedSessionActive(command, sessionState, rejectionReason)
-                    : CaptureCommandResult.RejectedNonRecoverable(command, sessionState, rejectionReason);
+                return ClassifyRejection(command, sessionState, rejectionReason);
             }
 
             Logger.LogInformation(
@@ -154,12 +166,7 @@ public sealed class CaptureService
                     "TryReserveCommand REJECTED: mode={Mode}, currentStatus={Status}, reason={Reason}",
                     command.Mode, sessionState.Status, rejectionReason?.TechnicalDetail);
 
-                return sessionState.Status is CaptureSessionStatus.SelectingTarget
-                    or CaptureSessionStatus.Initializing
-                    or CaptureSessionStatus.Capturing
-                    or CaptureSessionStatus.Degraded
-                    ? CaptureCommandResult.RejectedSessionActive(command, sessionState, rejectionReason)
-                    : CaptureCommandResult.RejectedNonRecoverable(command, sessionState, rejectionReason);
+                return ClassifyRejection(command, sessionState, rejectionReason);
             }
 
             sessionState = CaptureSessionState.SelectingTarget(

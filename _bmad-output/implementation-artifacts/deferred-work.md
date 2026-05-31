@@ -1,6 +1,6 @@
 # Deferred Work
 
-Updated: 2026-05-13
+Updated: 2026-05-26
 
 This file tracks work intentionally deferred after implementation, review, or retrospective. It is not a graveyard: every unresolved item should either have a target epic/story hint, an accepted-tech-debt label, or a clear reason it remains parked.
 
@@ -15,34 +15,26 @@ None currently known.
 ### Capture command rejection logic is duplicated
 
 - Source: Story 4.2 / 4.3 code review.
-- Current shape: `CaptureService.CanAcceptCommand()` decides whether a command is allowed, while `ValidateCommand()` and `TryReserveCommand()` independently classify rejection outcomes.
-- Risk: if allowed/rejected states change, outcome classification can drift.
-- Target: next capture-session refactor or Epic 7 tray/hotkey command routing.
-- Suggested acceptance criterion: Given a capture command is rejected, when the rejection result is produced, then the state allow/deny decision and rejection outcome come from one authoritative mapping.
+- Status: **Resolved in Story 7.6.** `ClassifyRejection()` method provides single authoritative mapping from session status to rejection outcome.
+- Evidence: `CaptureService.ValidateCommand()` and `TryReserveCommand()` both consume `ClassifyRejection()`.
 
 ### `ApplySessionState` reentrancy silently drops updates
 
 - Source: screenshot state reset follow-up.
-- Current shape: `MainWindow.ApplySessionState()` returns without applying a state when `applyingSessionState` is already true.
-- Risk: future tray/hotkey/output completion paths may depend on a state update that gets dropped.
-- Target: before adding tray/hotkey entry points, or during a focused app-state projection refactor.
-- Suggested acceptance criterion: Given a state update arrives during another state projection, when projection completes, then the later update is either applied, queued, or deliberately rejected with diagnostics.
+- Status: **Resolved in Story 7.6.** Reentrant calls now queue pending state and apply after current projection completes.
+- Evidence: `MainWindow.ApplySessionState()` uses `pendingSessionState` field and deferred application loop with diagnostic logging.
 
 ### Capture action re-enable path depends on current overlay completion ordering
 
 - Source: Story 4.3 review.
-- Current shape: `SetCaptureActionsEnabled(true)` is not called inside the overlay completion handler after `currentCaptureOverlay = null`.
-- Risk: this is safe only while overlay completion always flows through session-state reset; a future early-return or alternate completion path could leave capture actions disabled.
-- Target: before broadening overlay completion paths or adding tray/hotkey capture triggers.
-- Suggested acceptance criterion: Given overlay completion ends a selection session, when the overlay reference is cleared, then capture actions are either re-enabled by the authoritative session-state projection or an explicit diagnostic verifies why no re-enable is needed.
+- Status: **Resolved in Story 7.6.** Capture action re-enable is driven by authoritative session-state projection, with diagnostic logging in `OnOverlayClosed()`.
+- Evidence: `MainPanelProjection.Project(state)` drives `CanStartCapture` based on session state, not overlay completion ordering.
 
 ### Disposed-to-idle transition remains awkward
 
 - Source: screenshot state reset follow-up.
-- Current shape: some paths need sequential `Disposed` then `Idle` projections to communicate teardown and return-to-ready intent.
-- Risk: a future atomic reset path could skip user-visible teardown evidence or leave stale UI state.
-- Target: capture/app state cleanup story before tray/hotkey background workflows.
-- Suggested acceptance criterion: Given capture teardown finishes and the app should return to ready, when the reset path runs, then teardown evidence and final idle state are represented without relying on fragile sequential UI calls.
+- Status: **Resolved in Story 7.6.** `StopPreviewAndResetToIdle()` consolidates teardown and reset into single atomic flow.
+- Evidence: `OnOverlayCloseRequested`, `OnOverlayCaptureConfirmed`, and `CompleteFullscreenCaptureAsync` all use `StopPreviewAndResetToIdle()`.
 
 ### `CaptureSessionState.FromStartResult` contains a dead conditional
 
@@ -88,10 +80,8 @@ None currently known.
 ### Epic 7: Release-build UI-thread protection for non-main entry points
 
 - Source: Story 4.3 review.
-- Current shape: `Debug.Assert` documents UI-thread expectations in `ApplySessionState`, but Release builds do not enforce it.
-- Risk: tray/hotkey callbacks may call app state projection from the wrong thread.
-- Target: before or during Epic 7 tray/hotkey implementation.
-- Suggested acceptance criterion: Given a tray or hotkey command updates app-visible state, when it arrives off the UI thread, then the update is marshalled through `DispatcherQueue` or rejected with diagnostics.
+- Status: **Resolved in Epic 7.** All tray and hotkey commands dispatch through `DispatcherQueue` before mutating app state.
+- Evidence: Stories 7.1-7.5 all use `DispatcherQueue.TryEnqueue()` for tray/hotkey command handling.
 
 ### Future overlay story: InvalidCrop integration tests
 
@@ -171,8 +161,17 @@ None currently known.
 - Decision: accepted defensive behavior for now.
 - Revisit trigger: when adding a new session status, review command acceptance explicitly.
 
+## Deferred from: code review of story 7.6 (2026-05-26)
+
+- ClassifyRejection completeness — implicit default for new enum values [CaptureService.cs:105]. Future extensibility concern; current behavior is correct.
+- Deferred loop blocks UI thread with many pending states [MainWindow.xaml.cs:1213]. Low risk in practice; at most 1-2 states accumulate.
+- RequiresFailureTeardown behavior in deferred loop [MainWindow.xaml.cs:1228]. Correct but confusing; StopPreview calls during applyingSessionState will queue to pendingSessionState which the loop picks up.
+
 ## Recently Closed
 
+- Story 7.6 resolved 4 technical debt items: capture command rejection unification, ApplySessionState reentrancy, capture action re-enable diagnostics, Disposed-to-idle consolidation.
+- Epic 7 retrospective created `_bmad-output/implementation-artifacts/epic-7-retro-2026-05-26.md`.
+- Epic 7 UI-thread protection resolved: all tray/hotkey commands dispatch through `DispatcherQueue`.
 - Epic 4 retrospective created `_bmad-output/implementation-artifacts/epic-4-retro-2026-05-13.md`.
 - Epic 5 guardrail follow-through created `_bmad-output/implementation-artifacts/epic-5-implementation-guardrails.md`.
 
