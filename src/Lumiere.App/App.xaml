@@ -13,14 +13,19 @@
       <SolidColorBrush x:Key="MicaSurfaceBrush" Color="#E6111414" />
       <SolidColorBrush x:Key="MicaMenuSurfaceBrush" Color="#CC111414" />
       <SolidColorBrush x:Key="BorderBrush" Color="#24FFFFFF" />
+      <SolidColorBrush x:Key="DividerBrush" Color="#15FFFFFF" />
       <SolidColorBrush x:Key="TextBrush" Color="#FFFFFFFF" />
       <SolidColorBrush x:Key="MutedTextBrush" Color="#FFA0A0A0" />
       <SolidColorBrush x:Key="SubtleTextBrush" Color="#99FFFFFF" />
       <SolidColorBrush x:Key="AccentBrush" Color="#FF7067FF" />
       <SolidColorBrush x:Key="AccentSoftBrush" Color="#FF19192B" />
       <SolidColorBrush x:Key="AccentBorderBrush" Color="#805B55D6" />
-      <SolidColorBrush x:Key="PrimaryActionBrush" Color="#2419182F" />
-      <SolidColorBrush x:Key="PrimaryActionBorderBrush" Color="#667067FF" />
+      <SolidColorBrush x:Key="PrimaryActionBrush" Color="#1A7067FF" />
+      <SolidColorBrush x:Key="PrimaryActionBorderBrush" Color="#407067FF" />
+      <SolidColorBrush x:Key="PrimaryActionHoverBrush" Color="#2E7067FF" />
+      <SolidColorBrush x:Key="PrimaryActionHoverBorderBrush" Color="#737067FF" />
+      <SolidColorBrush x:Key="SecondaryPanelHoverBrush" Color="#FF252829" />
+      <SolidColorBrush x:Key="SecondaryBorderHoverBrush" Color="#40FFFFFF" />
       <SolidColorBrush x:Key="MenuHoverBrush" Color="#1FFFFFFF" />
       <SolidColorBrush x:Key="MenuPressedBrush" Color="#2BFFFFFF" />
       <SolidColorBrush x:Key="MenuFocusBorderBrush" Color="#807067FF" />

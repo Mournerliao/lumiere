@@ -63,6 +63,20 @@ public sealed partial class CaptureActionCard : UserControl
             typeof(CaptureActionCard),
             new PropertyMetadata(null));
 
+    public static readonly DependencyProperty HoverBackgroundProperty =
+        DependencyProperty.Register(
+            nameof(HoverBackground),
+            typeof(Brush),
+            typeof(CaptureActionCard),
+            new PropertyMetadata(null));
+
+    public static readonly DependencyProperty HoverBorderBrushProperty =
+        DependencyProperty.Register(
+            nameof(HoverBorderBrush),
+            typeof(Brush),
+            typeof(CaptureActionCard),
+            new PropertyMetadata(null));
+
     public static readonly DependencyProperty ShortcutTextProperty =
         DependencyProperty.Register(
             nameof(ShortcutText),
@@ -125,6 +139,18 @@ public sealed partial class CaptureActionCard : UserControl
         set => SetValue(ShortcutForegroundProperty, value);
     }
 
+    public Brush? HoverBackground
+    {
+        get => (Brush?)GetValue(HoverBackgroundProperty);
+        set => SetValue(HoverBackgroundProperty, value);
+    }
+
+    public Brush? HoverBorderBrush
+    {
+        get => (Brush?)GetValue(HoverBorderBrushProperty);
+        set => SetValue(HoverBorderBrushProperty, value);
+    }
+
     public string ShortcutText
     {
         get => (string)GetValue(ShortcutTextProperty);
@@ -134,5 +160,24 @@ public sealed partial class CaptureActionCard : UserControl
     private void OnActionButtonClick(object sender, RoutedEventArgs e)
     {
         Click?.Invoke(this, e);
+    }
+
+    private void OnActionButtonPointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (HoverBackground is { } hoverBg)
+        {
+            CardBorder.Background = hoverBg;
+        }
+
+        if (HoverBorderBrush is { } hoverBorder)
+        {
+            CardBorder.BorderBrush = hoverBorder;
+        }
+    }
+
+    private void OnActionButtonPointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        CardBorder.Background = Background;
+        CardBorder.BorderBrush = BorderBrush;
     }
 }

@@ -22,7 +22,7 @@
           x:Name="HeaderDragArea"
           Grid.Row="0"
           Padding="20,0"
-          BorderBrush="{StaticResource BorderBrush}"
+          BorderBrush="{StaticResource DividerBrush}"
           BorderThickness="0,0,0,1">
         <Grid ColumnSpacing="12">
           <Grid.ColumnDefinitions>
@@ -89,6 +89,8 @@
               BorderBrush="{StaticResource PrimaryActionBorderBrush}"
               Click="OnSelectCaptureTargetClick"
               Description="Capture the current display"
+              HoverBackground="{StaticResource PrimaryActionHoverBrush}"
+              HoverBorderBrush="{StaticResource PrimaryActionHoverBorderBrush}"
               Icon="Camera"
               IconBackground="{StaticResource AccentSoftBrush}"
               IconBorderBrush="{StaticResource AccentBorderBrush}"
@@ -104,6 +106,8 @@
               BorderBrush="{StaticResource BorderBrush}"
               Click="OnRegionCaptureClick"
               Description="Select a region by dragging"
+              HoverBackground="{StaticResource SecondaryPanelHoverBrush}"
+              HoverBorderBrush="{StaticResource SecondaryBorderHoverBrush}"
               Icon="Layer"
               IconBackground="{StaticResource SecondaryPanelBrush}"
               IconBorderBrush="{StaticResource BorderBrush}"
@@ -119,7 +123,7 @@
       <Border
           Grid.Row="2"
           Padding="20,0"
-          BorderBrush="{StaticResource BorderBrush}"
+          BorderBrush="{StaticResource DividerBrush}"
           BorderThickness="0,1,0,0">
         <Grid>
           <Grid.ColumnDefinitions>

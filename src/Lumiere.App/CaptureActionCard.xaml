@@ -22,8 +22,11 @@
       Click="OnActionButtonClick"
       CornerRadius="12"
       Padding="0"
+      PointerEntered="OnActionButtonPointerEntered"
+      PointerExited="OnActionButtonPointerExited"
       ToolTipService.ToolTip="{Binding Description, ElementName=Root}">
     <Border
+        x:Name="CardBorder"
         MinHeight="64"
         Padding="16,12"
         Background="{Binding Background, ElementName=Root}"
