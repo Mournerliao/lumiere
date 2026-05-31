@@ -20,8 +20,10 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
-using Vortice.Direct3D11;
-using Windows.Graphics;
+using Vortice.Direct3D11;
+
+using Windows.Graphics;
+
 using WinRT.Interop;
 
 namespace Lumiere.App;
@@ -48,6 +50,7 @@ public sealed partial class MainWindow : Window
     private readonly GraphicsDeviceResources deviceResources;
     private readonly GraphicsEngine graphicsEngine;
     private ITrayMenu? trayMenu;
+    private TrayMenuWindow? trayMenuWindow;
     private IGlobalHotkeyRegistrar? globalHotkeyRegistrar;
     private CaptureService? captureService;
     private CaptureSessionResources? captureSession;
@@ -140,6 +143,11 @@ public sealed partial class MainWindow : Window
         trayMenu.CommandRequested += OnTrayMenuCommandRequested;
         UpdateTrayMenu(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
         MinimizeButton.IsEnabled = IsBackgroundAvailable;
+    }
+
+    public void AttachTrayMenuWindow(TrayMenuWindow window)
+    {
+        trayMenuWindow = window ?? throw new ArgumentNullException(nameof(window));
     }
 
     public TrayMenuSnapshot CreateTrayMenuSnapshot() =>
@@ -1199,7 +1207,7 @@ public sealed partial class MainWindow : Window
 
     private TrayMenuSnapshot CreateTrayMenuSnapshot(CaptureSessionState state)
     {
-        var projection = TrayMenuProjection.Project(state, settingsProvider, aboutInfoProvider);
+        var projection = TrayMenuProjection.Project(state, settingsProvider, aboutInfoProvider, activeCaptureMode);
         return new TrayMenuSnapshot(
             projection.AppName,
             projection.HdrStatusLabel,
@@ -1473,8 +1481,12 @@ public sealed partial class MainWindow : Window
 
         SelectCaptureTargetButton.IsEnabled = projection.CanStartCapture;
         RegionSelectButton.IsEnabled = projection.CanStartCapture;
-        SelectCaptureTargetButton.Title = isIdle ? "Full Screen" : projection.ActionTitle;
-        RegionSelectButton.Title = isIdle ? "Region" : projection.ActionTitle;
+        SelectCaptureTargetButton.Title = (!isIdle && activeCaptureMode is CaptureCommandMode.Fullscreen)
+            ? projection.ActionTitle
+            : "Full Screen";
+        RegionSelectButton.Title = (!isIdle && activeCaptureMode is CaptureCommandMode.Region)
+            ? projection.ActionTitle
+            : "Region";
         ApplyMainCaptureCardStyles();
 
         TrustStatusGlyph.Glyph = GetTrustStatusGlyph(projection.TrustIcon);
@@ -1490,30 +1502,26 @@ public sealed partial class MainWindow : Window
     {
         ApplyMainCaptureCardStyle(
             SelectCaptureTargetButton,
-            activeCaptureMode is CaptureCommandMode.Fullscreen,
-            isPrimary: true);
+            activeCaptureMode is CaptureCommandMode.Fullscreen);
         ApplyMainCaptureCardStyle(
             RegionSelectButton,
-            activeCaptureMode is CaptureCommandMode.Region,
-            isPrimary: false);
+            activeCaptureMode is CaptureCommandMode.Region);
     }
 
-    private void ApplyMainCaptureCardStyle(CaptureActionCard card, bool isActive, bool isPrimary)
+    private void ApplyMainCaptureCardStyle(CaptureActionCard card, bool isActive)
     {
-        var useAccent = isPrimary || isActive;
-
-        card.Background = useAccent
+        card.Background = isActive
             ? (Brush)Application.Current.Resources["PrimaryActionBrush"]
             : (Brush)Application.Current.Resources["SecondaryPanelBrush"];
-        card.BorderBrush = useAccent
+        card.BorderBrush = isActive
             ? (Brush)Application.Current.Resources["PrimaryActionBorderBrush"]
             : (Brush)Application.Current.Resources["BorderBrush"];
         card.IconBackground = card.Background;
         card.IconBorderBrush = card.BorderBrush;
-        card.IconForeground = useAccent
+        card.IconForeground = isActive
             ? (Brush)Application.Current.Resources["AccentBrush"]
             : (Brush)Application.Current.Resources["MutedTextBrush"];
-        card.ShortcutForeground = useAccent
+        card.ShortcutForeground = isActive
             ? (Brush)Application.Current.Resources["TextBrush"]
             : (Brush)Application.Current.Resources["SubtleTextBrush"];
     }
@@ -1826,6 +1834,11 @@ public sealed partial class MainWindow : Window
 
     private void OnWindowClosed(object sender, WindowEventArgs args)
     {
+        if (isClosed)
+        {
+            return;
+        }
+
         isClosed = true;
         if (RootGrid.XamlRoot is not null)
         {
@@ -1857,6 +1870,12 @@ public sealed partial class MainWindow : Window
                 trayMenu.CommandRequested -= OnTrayMenuCommandRequested;
                 trayMenu.Dispose();
                 trayMenu = null;
+            }
+
+            if (trayMenuWindow is not null)
+            {
+                trayMenuWindow.CommandSelected -= null;
+                trayMenuWindow = null;
             }
         }
         finally

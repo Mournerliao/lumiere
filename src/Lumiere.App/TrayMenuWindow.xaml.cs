@@ -16,6 +16,7 @@ public sealed partial class TrayMenuWindow : Window
 
     private readonly IntPtr hwnd;
     private TrayMenuSnapshot? currentSnapshot;
+    private bool isShown;
 
     public TrayMenuWindow(IntPtr ownerHwnd)
     {
@@ -56,7 +57,7 @@ public sealed partial class TrayMenuWindow : Window
         currentSnapshot = snapshot;
         ApplySnapshot(snapshot);
 
-        var scale = GetDpiScale();
+        var scale = GetDpiScaleForPoint(cursorX, cursorY);
         RootGrid.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
         var contentSize = RootGrid.DesiredSize;
 
@@ -78,10 +79,9 @@ public sealed partial class TrayMenuWindow : Window
             y = cursorY;
         }
 
+        isShown = true;
         AppWindow.Move(new PointInt32(x, y));
-
         AppWindow.Resize(new SizeInt32(windowWidth, windowHeight));
-
         AppWindow.Show(true);
         BringToTopmost(x, y, windowWidth, windowHeight);
         Activate();
@@ -89,7 +89,13 @@ public sealed partial class TrayMenuWindow : Window
 
     public void Dismiss()
     {
-        AppWindow.Move(new PointInt32(-32000, -32000));
+        if (!isShown)
+        {
+            return;
+        }
+
+        isShown = false;
+        AppWindow.Hide();
     }
 
     private void ApplySnapshot(TrayMenuSnapshot snapshot)
@@ -119,22 +125,13 @@ public sealed partial class TrayMenuWindow : Window
 
         AddWindowExStyle(hwnd, WsExTopmost | WsExToolwindow);
 
-
-
         if (ownerHwnd != IntPtr.Zero)
-
         {
-
             SetWindowLongPtr(hwnd, GwlHwndparent, ownerHwnd);
-
         }
 
-
-
         WindowFrameInterop.PreferRoundedCorners(hwnd);
-
         WindowFrameInterop.ExtendFrameIntoClientArea(hwnd);
-
         WindowFrameInterop.SuppressDwmBorder(hwnd);
     }
 
@@ -156,6 +153,17 @@ public sealed partial class TrayMenuWindow : Window
     {
         var dpi = GetDpiForWindow(hwnd);
         return dpi / 96f;
+    }
+
+    private float GetDpiScaleForPoint(int x, int y)
+    {
+        var monitor = MonitorFromPoint(new POINT { X = x, Y = y }, MonitorDefaultToNearest);
+        if (GetDpiForMonitor(monitor, MdtEffectiveDpi, out var dpiX, out _) == 0)
+        {
+            return dpiX / 96f;
+        }
+
+        return GetDpiScale();
     }
 
     private RectInt32 GetWorkArea(int x, int y)
@@ -183,6 +191,7 @@ public sealed partial class TrayMenuWindow : Window
     private const int WsExToolwindow = 0x00000080;
     private const int GwlHwndparent = -8;
     private const uint MonitorDefaultToNearest = 2;
+    private const uint MdtEffectiveDpi = 0;
     private const int GwlStyle = -16;
     private const int GwlExstyle = -20;
     private const uint SwpNoActivate = 0x0010;
@@ -190,11 +199,11 @@ public sealed partial class TrayMenuWindow : Window
     private const uint SwpShowWindow = 0x0040;
     private static readonly IntPtr HwndTopmost = new(-1);
 
-    [DllImport("user32.dll")]
-    private static extern int SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
 
-    [DllImport("user32.dll")]
-    private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex);
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool SetWindowPos(
@@ -214,6 +223,9 @@ public sealed partial class TrayMenuWindow : Window
 
     [DllImport("user32.dll")]
     private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
+
+    [DllImport("shcore.dll")]
+    private static extern int GetDpiForMonitor(IntPtr hmonitor, uint dpiType, out uint dpiX, out uint dpiY);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct POINT
@@ -242,20 +254,22 @@ public sealed partial class TrayMenuWindow : Window
 
     private static void SetPopupWindowStyle(IntPtr hWnd)
     {
-        var current = GetWindowLong(hWnd, GwlStyle);
-        var updated = (current | WsPopup)
+        var current = GetWindowLongPtr(hWnd, GwlStyle);
+        var updated = new IntPtr(
+            current.ToInt64()
+            | WsPopup
             & ~WsCaption
             & ~WsThickFrame
             & ~WsMinimizeBox
-            & ~WsMaximizeBox;
-        SetWindowLongPtr(hWnd, GwlStyle, (IntPtr)updated);
+            & ~WsMaximizeBox);
+        SetWindowLongPtr(hWnd, GwlStyle, updated);
         SetWindowPos(hWnd, IntPtr.Zero, 0, 0, 0, 0, SwpNoActivate | SwpFrameChanged);
     }
 
     private static void AddWindowExStyle(IntPtr hWnd, int exStyle)
     {
-        var current = GetWindowLong(hWnd, GwlExstyle);
-        SetWindowLongPtr(hWnd, GwlExstyle, (IntPtr)(current | exStyle));
+        var current = GetWindowLongPtr(hWnd, GwlExstyle);
+        SetWindowLongPtr(hWnd, GwlExstyle, new IntPtr(current.ToInt64() | exStyle));
     }
 
     private void BringToTopmost(int x, int y, int width, int height)

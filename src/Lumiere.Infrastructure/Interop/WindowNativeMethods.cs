@@ -13,10 +13,14 @@ internal static class WindowNativeMethods
     [DllImport("user32.dll", ExactSpelling = true, SetLastError = true)]
     internal static extern bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint);
 
-    [DllImport("dwmapi.dll", ExactSpelling = true)]
-    internal static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
-
-    [DllImport("dwmapi.dll", ExactSpelling = true)]
+    [DllImport("dwmapi.dll", ExactSpelling = true)]
+
+    internal static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
+
+
+    [DllImport("dwmapi.dll", ExactSpelling = true)]
+
     internal static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref MARGINS margins);
 
     [DllImport("user32.dll", ExactSpelling = true, SetLastError = true)]

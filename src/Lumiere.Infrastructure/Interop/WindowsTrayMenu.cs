@@ -40,7 +40,7 @@ public sealed class WindowsTrayMenu : ITrayMenu
     private readonly IntPtr hIcon;
     private IntPtr messageHwnd;
     private TrayMenuSnapshot snapshot;
-    private bool disposed;
+    private volatile bool disposed;
 
     private WindowsTrayMenu(IntPtr ownerHwnd, TrayMenuSnapshot initialSnapshot)
     {
@@ -52,9 +52,18 @@ public sealed class WindowsTrayMenu : ITrayMenu
         className = $"LumiereTrayMenu_{Guid.NewGuid():N}";
         hInstance = GetModuleHandle(null);
         hIcon = LoadIcon(IntPtr.Zero, IdiApplication);
-        RegisterWindowClass();
-        CreateMessageWindow();
-        AddIcon();
+
+        try
+        {
+            RegisterWindowClass();
+            CreateMessageWindow();
+            AddIcon();
+        }
+        catch
+        {
+            DisposePartialInit();
+            throw;
+        }
     }
 
     public event EventHandler<TrayMenuCommandRequestedEventArgs>? CommandRequested;
@@ -253,7 +262,10 @@ public sealed class WindowsTrayMenu : ITrayMenu
     private void ModifyIcon()
     {
         var data = CreateNotifyIconData();
-        Shell_NotifyIcon(NimModify, ref data);
+        if (!Shell_NotifyIcon(NimModify, ref data))
+        {
+            Logger.LogWarning("Shell_NotifyIcon(NIM_MODIFY) failed; tray icon state may be stale.");
+        }
     }
 
     private void RemoveIcon()
@@ -265,6 +277,18 @@ public sealed class WindowsTrayMenu : ITrayMenu
 
         var data = CreateNotifyIconData();
         Shell_NotifyIcon(NimDelete, ref data);
+    }
+
+    private void DisposePartialInit()
+    {
+        RemoveIcon();
+        if (messageHwnd != IntPtr.Zero)
+        {
+            DestroyWindow(messageHwnd);
+            messageHwnd = IntPtr.Zero;
+        }
+
+        UnregisterClass(className, hInstance);
     }
 
     private NOTIFYICONDATA CreateNotifyIconData()
@@ -336,8 +360,6 @@ public sealed class WindowsTrayMenu : ITrayMenu
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
         public string szInfoTitle;
         public int dwInfoFlags;
-        public Guid guidItem;
-        public IntPtr hBalloonIcon;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -396,10 +418,10 @@ public sealed class WindowsTrayMenu : ITrayMenu
         IntPtr hWnd,
         IntPtr prcRect);
 
-    [DllImport("user32.dll", ExactSpelling = true)]
+    [DllImport("user32.dll", ExactSpelling = true, SetLastError = true)]
     private static extern bool GetCursorPos(out POINT lpPoint);
 
-    [DllImport("user32.dll", ExactSpelling = true)]
+    [DllImport("user32.dll", ExactSpelling = true, SetLastError = true)]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
 
     [DllImport("user32.dll", EntryPoint = "PostMessageW", ExactSpelling = true, SetLastError = true)]

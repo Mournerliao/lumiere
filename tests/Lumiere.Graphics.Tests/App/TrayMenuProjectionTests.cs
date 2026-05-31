@@ -40,13 +40,16 @@ public sealed class TrayMenuProjectionTests
                 CreateTarget(),
                 PreviewReadinessStatus.Ready("Ready", "HDR preview is ready.")),
             new StubSettingsProvider(string.Empty, string.Empty),
-            new StubAboutInfoProvider("Lumiere"));
+            new StubAboutInfoProvider("Lumiere"),
+            CaptureCommandMode.Fullscreen);
 
         Assert.False(projection.FullscreenCapture.IsEnabled);
         Assert.True(projection.FullscreenCapture.IsActive);
         Assert.Equal("Capturing...", projection.FullscreenCapture.Label);
         Assert.Equal("Not assigned", projection.FullscreenCapture.ShortcutText);
         Assert.False(projection.RegionCapture.IsEnabled);
+        Assert.False(projection.RegionCapture.IsActive);
+        Assert.Equal("Region", projection.RegionCapture.Label);
         Assert.True(projection.OpenMainWindow.IsEnabled);
         Assert.True(projection.OpenSettings.IsEnabled);
     }

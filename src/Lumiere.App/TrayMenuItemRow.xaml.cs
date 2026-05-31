@@ -8,6 +8,8 @@ namespace Lumiere.App;
 
 public sealed partial class TrayMenuItemRow : UserControl
 {
+    private static readonly SolidColorBrush TransparentBrush = new(Microsoft.UI.Colors.Transparent);
+
     private bool hasKeyboardFocus;
     private bool isPointerOver;
     private bool isPointerPressed;
@@ -142,24 +144,24 @@ public sealed partial class TrayMenuItemRow : UserControl
         ItemLabel.Foreground = IsDestructive ? brush : ResourceBrush("TextBrush");
     }
 
-    private void UpdateInteractiveVisual()
-    {
-        Opacity = IsEnabled ? 1.0 : 0.5;
-
-        var backgroundKey = "TransparentBrush";
-        if (IsEnabled && isPointerPressed)
-        {
-            backgroundKey = IsDestructive ? "MenuDestructivePressedBrush" : "MenuPressedBrush";
-        }
-        else if (IsEnabled && isPointerOver)
-        {
-            backgroundKey = IsDestructive ? "MenuDestructiveHoverBrush" : "MenuHoverBrush";
-        }
-
-        ItemSurface.Background = backgroundKey == "TransparentBrush"
-            ? new SolidColorBrush(Microsoft.UI.Colors.Transparent)
-            : ResourceBrush(backgroundKey);
-        ItemSurface.BorderBrush = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+    private void UpdateInteractiveVisual()
+    {
+        Opacity = IsEnabled ? 1.0 : 0.5;
+
+        var backgroundKey = "TransparentBrush";
+        if (IsEnabled && isPointerPressed)
+        {
+            backgroundKey = IsDestructive ? "MenuDestructivePressedBrush" : "MenuPressedBrush";
+        }
+        else if (IsEnabled && isPointerOver)
+        {
+            backgroundKey = IsDestructive ? "MenuDestructiveHoverBrush" : "MenuHoverBrush";
+        }
+
+        ItemSurface.Background = backgroundKey == "TransparentBrush"
+            ? TransparentBrush
+            : ResourceBrush(backgroundKey);
+        ItemSurface.BorderBrush = TransparentBrush;
     }
 
     private static Brush ResourceBrush(string key) => (Brush)Application.Current.Resources[key];

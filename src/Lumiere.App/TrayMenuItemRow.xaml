@@ -6,6 +6,7 @@
     x:Name="Root">
   <Button
       x:Name="ItemButton"
+      AllowFocusOnInteraction="False"
       HorizontalAlignment="Stretch"
       HorizontalContentAlignment="Stretch"
       Background="Transparent"
@@ -27,6 +28,8 @@
       <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="Transparent" />
       <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent" />
       <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent" />
+      <SolidColorBrush x:Key="ButtonFocusVisualPrimaryBrush" Color="Transparent" />
+      <SolidColorBrush x:Key="ButtonFocusVisualSecondaryBrush" Color="Transparent" />
     </Button.Resources>
     <Border
         x:Name="ItemSurface"

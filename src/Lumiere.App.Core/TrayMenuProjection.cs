@@ -16,7 +16,8 @@ public sealed record TrayMenuProjection(
     public static TrayMenuProjection Project(
         CaptureSessionState state,
         ISettingsProvider settingsProvider,
-        IAboutInfoProvider aboutInfoProvider)
+        IAboutInfoProvider aboutInfoProvider,
+        CaptureCommandMode? activeCaptureMode = null)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(settingsProvider);
@@ -44,13 +45,15 @@ public sealed record TrayMenuProjection(
                 settingsProvider.FullscreenShortcut,
                 main.CanStartCapture,
                 state.Status,
-                activeLabel),
+                activeLabel,
+                isActiveMode: activeCaptureMode == CaptureCommandMode.Fullscreen),
             RegionCapture: CreateCaptureCommand(
                 "Region",
                 settingsProvider.RegionShortcut,
                 main.CanStartCapture,
                 state.Status,
-                activeLabel),
+                activeLabel,
+                isActiveMode: activeCaptureMode == CaptureCommandMode.Region),
             OpenMainWindow: new TrayMenuCommandProjection("Open Lumiere", null, true, false),
             OpenSettings: new TrayMenuCommandProjection("Settings", null, true, false),
             Quit: new TrayMenuCommandProjection("Quit", null, true, false));
@@ -61,17 +64,24 @@ public sealed record TrayMenuProjection(
         string? shortcut,
         bool canStartCapture,
         CaptureSessionStatus status,
-        string activeLabel)
+        string activeLabel,
+        bool isActiveMode)
     {
-        var isActive = status is CaptureSessionStatus.SelectingTarget
+        var isSessionActive = status is CaptureSessionStatus.SelectingTarget
             or CaptureSessionStatus.Initializing
             or CaptureSessionStatus.Capturing
             or CaptureSessionStatus.Degraded;
 
+        var isBlocked = status is CaptureSessionStatus.Unsupported
+            or CaptureSessionStatus.Failed
+            or CaptureSessionStatus.Disposed;
+
+        var isActive = isSessionActive && isActiveMode;
+
         return new TrayMenuCommandProjection(
             isActive ? activeLabel : idleLabel,
             MainPanelProjection.FormatShortcut(shortcut),
-            canStartCapture,
+            canStartCapture && !isBlocked,
             isActive);
     }
 }

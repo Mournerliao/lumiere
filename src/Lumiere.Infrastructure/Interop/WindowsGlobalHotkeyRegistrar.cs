@@ -17,15 +17,24 @@ public sealed class WindowsGlobalHotkeyRegistrar : IGlobalHotkeyRegistrar
     private readonly IntPtr hInstance;
     private readonly Dictionary<int, HotkeyCommand> registeredCommands = [];
     private IntPtr messageHwnd;
-    private bool disposed;
+    private volatile bool disposed;
 
     public WindowsGlobalHotkeyRegistrar()
     {
         wndProc = WindowProcedure;
         className = $"LumiereHotkeys_{Guid.NewGuid():N}";
         hInstance = GetModuleHandle(null);
-        RegisterWindowClass();
-        CreateMessageWindow();
+
+        try
+        {
+            RegisterWindowClass();
+            CreateMessageWindow();
+        }
+        catch
+        {
+            DisposePartialInit();
+            throw;
+        }
     }
 
     public event EventHandler<GlobalHotkeyPressedEventArgs>? HotkeyPressed;
@@ -82,6 +91,17 @@ public sealed class WindowsGlobalHotkeyRegistrar : IGlobalHotkeyRegistrar
 
         disposed = true;
         UnregisterAll();
+        if (messageHwnd != IntPtr.Zero)
+        {
+            DestroyWindow(messageHwnd);
+            messageHwnd = IntPtr.Zero;
+        }
+
+        UnregisterClass(className, hInstance);
+    }
+
+    private void DisposePartialInit()
+    {
         if (messageHwnd != IntPtr.Zero)
         {
             DestroyWindow(messageHwnd);

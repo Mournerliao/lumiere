@@ -123,18 +123,42 @@ public sealed record HotkeyGesture(
         {
             if (IsControl(part))
             {
+                if (control)
+                {
+                    error = "Shortcut contains duplicate modifier 'Ctrl'.";
+                    return false;
+                }
+
                 control = true;
             }
             else if (part.Equals("Shift", StringComparison.OrdinalIgnoreCase))
             {
+                if (shift)
+                {
+                    error = "Shortcut contains duplicate modifier 'Shift'.";
+                    return false;
+                }
+
                 shift = true;
             }
             else if (part.Equals("Alt", StringComparison.OrdinalIgnoreCase))
             {
+                if (alt)
+                {
+                    error = "Shortcut contains duplicate modifier 'Alt'.";
+                    return false;
+                }
+
                 alt = true;
             }
             else if (IsWindows(part))
             {
+                if (windows)
+                {
+                    error = "Shortcut contains duplicate modifier 'Win'.";
+                    return false;
+                }
+
                 windows = true;
             }
             else if (key is null)

@@ -23,6 +23,10 @@ public partial class App : Application
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         GraphicsDeviceResources? deviceResources = null;
+        CaptureService? captureService = null;
+        ClipboardOutputService? clipboardOutputService = null;
+        ConfiguredOutputService? configuredOutputService = null;
+        AfterCaptureOutputService? outputService = null;
         try
         {
             // Manual service wiring — no DI container
@@ -34,13 +38,13 @@ public partial class App : Application
                 System.Diagnostics.Debug.WriteLine("Warning: Borderless capture not available, using default border options");
                 borderOptions = CaptureBorderOptions.RequireSystemBorder();
             }
-            var captureService = new CaptureService(deviceResources, borderOptions);
+            captureService = new CaptureService(deviceResources, borderOptions);
             var captureCommandCoordinator = new CaptureCommandCoordinator(captureService);
-            var clipboardOutputService = new ClipboardOutputService(deviceResources);
-            var configuredOutputService = new ConfiguredOutputService(
+            clipboardOutputService = new ClipboardOutputService(deviceResources);
+            configuredOutputService = new ConfiguredOutputService(
                 clipboardOutputService,
                 new FolderOutputService(clipboardOutputService));
-            var outputService = new AfterCaptureOutputService(
+            outputService = new AfterCaptureOutputService(
                 configuredOutputService,
                 new WindowsArtifactShellAction());
             var settingsProvider = new DefaultSettingsProvider(
@@ -63,6 +67,7 @@ public partial class App : Application
                     trayMenuWindow.CommandSelected += (_, command) => mainWindow.DispatchTrayCommand(command);
                     trayMenu.MenuShowRequested += (_, args) =>
                         trayMenuWindow.ShowAt(args.CursorX, args.CursorY, args.Snapshot);
+                    mainWindow.AttachTrayMenuWindow(trayMenuWindow);
                 }
                 catch (Exception trayMenuWindowException)
                 {

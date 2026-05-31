@@ -101,76 +101,81 @@ public static class WindowFrameInterop
         PreferRoundedCorners(WindowNative.GetWindowHandle(window));
     }
 
-    public static void PreferRoundedCorners(IntPtr windowHandle)
-    {
-        if (windowHandle == IntPtr.Zero)
-        {
-            return;
-        }
-
-        try
-        {
-            var preference = DwmwcpRound;
-            WindowNativeMethods.DwmSetWindowAttribute(
-                windowHandle,
-                DwmwaWindowCornerPreference,
-                ref preference,
-                sizeof(int));
-        }
-        catch (DllNotFoundException)
-        {
-        }
-        catch (EntryPointNotFoundException)
-        {
-        }
-    }
-
-    public static void ExtendFrameIntoClientArea(IntPtr windowHandle)
-    {
-        if (windowHandle == IntPtr.Zero)
-        {
-            return;
-        }
-
-        var margins = new WindowNativeMethods.MARGINS
-        {
-            cxLeftWidth = -1,
-            cxRightWidth = -1,
-            cyTopHeight = -1,
-            cyBottomHeight = -1
-        };
-        WindowNativeMethods.DwmExtendFrameIntoClientArea(windowHandle, ref margins);
-    }
-
-    public static void SuppressDwmBorder(IntPtr windowHandle)
-    {
-        if (windowHandle == IntPtr.Zero)
-        {
-            return;
-        }
-
-        try
-        {
-            var ncRenderingPolicy = DwmncrpDisabled;
-            WindowNativeMethods.DwmSetWindowAttribute(
-                windowHandle,
-                DwmwaNcRenderingPolicy,
-                ref ncRenderingPolicy,
-                sizeof(int));
-
-            var borderColor = DwmwaColorNone;
-            WindowNativeMethods.DwmSetWindowAttribute(
-                windowHandle,
-                DwmwaBorderColor,
-                ref borderColor,
-                sizeof(int));
-        }
-        catch (DllNotFoundException)
-        {
-        }
-        catch (EntryPointNotFoundException)
-        {
-        }
+    public static void PreferRoundedCorners(IntPtr windowHandle)
+    {
+        if (windowHandle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        try
+        {
+            var preference = DwmwcpRound;
+            WindowNativeMethods.DwmSetWindowAttribute(
+                windowHandle,
+                DwmwaWindowCornerPreference,
+                ref preference,
+                sizeof(int));
+        }
+        catch (DllNotFoundException)
+        {
+        }
+        catch (EntryPointNotFoundException)
+        {
+        }
+    }
+
+    public static void ExtendFrameIntoClientArea(IntPtr windowHandle)
+    {
+        if (windowHandle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        var margins = new WindowNativeMethods.MARGINS
+        {
+            cxLeftWidth = -1,
+            cxRightWidth = -1,
+            cyTopHeight = -1,
+            cyBottomHeight = -1
+        };
+
+        var hr = WindowNativeMethods.DwmExtendFrameIntoClientArea(windowHandle, ref margins);
+        if (hr < 0)
+        {
+            System.Diagnostics.Debug.WriteLine($"DwmExtendFrameIntoClientArea failed with HRESULT 0x{hr:X8}.");
+        }
+    }
+
+    public static void SuppressDwmBorder(IntPtr windowHandle)
+    {
+        if (windowHandle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        try
+        {
+            var ncRenderingPolicy = DwmncrpDisabled;
+            WindowNativeMethods.DwmSetWindowAttribute(
+                windowHandle,
+                DwmwaNcRenderingPolicy,
+                ref ncRenderingPolicy,
+                sizeof(int));
+
+            var borderColor = DwmwaColorNone;
+            WindowNativeMethods.DwmSetWindowAttribute(
+                windowHandle,
+                DwmwaBorderColor,
+                ref borderColor,
+                sizeof(int));
+        }
+        catch (DllNotFoundException)
+        {
+        }
+        catch (EntryPointNotFoundException)
+        {
+        }
     }
 
     public static void ApplyRoundedRegion(

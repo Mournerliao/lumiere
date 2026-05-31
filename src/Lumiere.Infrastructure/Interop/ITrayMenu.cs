@@ -3,6 +3,7 @@ namespace Lumiere.Infrastructure.Interop;
 public interface ITrayMenu : IDisposable
 {
     event EventHandler<TrayMenuCommandRequestedEventArgs>? CommandRequested;
+    event EventHandler<TrayMenuShowRequestedEventArgs>? MenuShowRequested;
 
     void Update(TrayMenuSnapshot snapshot);
 }
