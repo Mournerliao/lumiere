@@ -54,7 +54,7 @@
 
       <Border
           Margin="8,4"
-          BorderBrush="{StaticResource BorderBrush}"
+          BorderBrush="{StaticResource DividerBrush}"
           BorderThickness="0,1,0,0" />
 
       <local:TrayMenuItemRow

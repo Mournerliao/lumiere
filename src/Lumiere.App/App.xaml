@@ -26,11 +26,11 @@
       <SolidColorBrush x:Key="PrimaryActionHoverBorderBrush" Color="#737067FF" />
       <SolidColorBrush x:Key="SecondaryPanelHoverBrush" Color="#FF252829" />
       <SolidColorBrush x:Key="SecondaryBorderHoverBrush" Color="#40FFFFFF" />
-      <SolidColorBrush x:Key="MenuHoverBrush" Color="#1FFFFFFF" />
-      <SolidColorBrush x:Key="MenuPressedBrush" Color="#2BFFFFFF" />
+      <SolidColorBrush x:Key="MenuHoverBrush" Color="#B334363A" />
+      <SolidColorBrush x:Key="MenuPressedBrush" Color="#CC34363A" />
       <SolidColorBrush x:Key="MenuFocusBorderBrush" Color="#807067FF" />
-      <SolidColorBrush x:Key="MenuDestructiveHoverBrush" Color="#24EF4444" />
-      <SolidColorBrush x:Key="MenuDestructivePressedBrush" Color="#36EF4444" />
+      <SolidColorBrush x:Key="MenuDestructiveHoverBrush" Color="#1AEF4444" />
+      <SolidColorBrush x:Key="MenuDestructivePressedBrush" Color="#33EF4444" />
       <SolidColorBrush x:Key="SegmentSelectedBrush" Color="#FF7067FF" />
       <SolidColorBrush x:Key="SwitchTrackOnBrush" Color="#FF7067FF" />
       <SolidColorBrush x:Key="SwitchTrackOffBrush" Color="#FF3A3D40" />
