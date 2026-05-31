@@ -10,7 +10,6 @@ public sealed partial class TrayMenuItemRow : UserControl
 {
     private static readonly SolidColorBrush TransparentBrush = new(Microsoft.UI.Colors.Transparent);
 
-    private bool hasKeyboardFocus;
     private bool isPointerOver;
     private bool isPointerPressed;
 
@@ -126,13 +125,11 @@ public sealed partial class TrayMenuItemRow : UserControl
 
     private void OnItemButtonGotFocus(object sender, RoutedEventArgs e)
     {
-        hasKeyboardFocus = true;
         UpdateInteractiveVisual();
     }
 
     private void OnItemButtonLostFocus(object sender, RoutedEventArgs e)
     {
-        hasKeyboardFocus = false;
         isPointerPressed = false;
         UpdateInteractiveVisual();
     }

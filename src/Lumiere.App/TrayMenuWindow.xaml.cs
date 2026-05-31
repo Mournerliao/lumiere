@@ -269,7 +269,7 @@ public sealed partial class TrayMenuWindow : Window
     private static void AddWindowExStyle(IntPtr hWnd, int exStyle)
     {
         var current = GetWindowLongPtr(hWnd, GwlExstyle);
-        SetWindowLongPtr(hWnd, GwlExstyle, new IntPtr(current.ToInt64() | exStyle));
+        SetWindowLongPtr(hWnd, GwlExstyle, new IntPtr(current.ToInt64() | (uint)exStyle));
     }
 
     private void BringToTopmost(int x, int y, int width, int height)

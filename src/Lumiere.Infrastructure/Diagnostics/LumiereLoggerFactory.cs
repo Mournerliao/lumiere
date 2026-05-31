@@ -4,6 +4,10 @@ namespace Lumiere.Infrastructure.Diagnostics;
 
 public static class LumiereLoggerFactory
 {
+    public static readonly LogLevel DefaultMinimumLevel = LogLevel.Information;
+    public static readonly int DefaultMaxFileSizeBytes = 10 * 1024 * 1024;
+    public static readonly int DefaultRetentionDays = 7;
+
     private static SimpleLoggerFactory? factory;
     private static readonly object Sync = new();
     private static bool initialized;
@@ -63,30 +67,75 @@ public static class LumiereLoggerFactory
     private sealed class SimpleLoggerFactory : ILoggerFactory
     {
         private readonly LogLevel minimumLevel;
-        private readonly FileLoggerProvider provider;
+        private readonly FileLoggerProvider fileProvider;
+#if DEBUG
+        private readonly DebugLoggerProvider debugProvider;
+#endif
 
         internal SimpleLoggerFactory(LogLevel minimumLevel)
         {
             this.minimumLevel = minimumLevel;
-            provider = new FileLoggerProvider();
+            fileProvider = new FileLoggerProvider(
+                maxFileSizeBytes: DefaultMaxFileSizeBytes,
+                retentionDays: DefaultRetentionDays);
+#if DEBUG
+            debugProvider = new DebugLoggerProvider();
+#endif
         }
 
         public ILogger CreateLogger(string categoryName)
         {
-            var innerLogger = provider.CreateLogger(categoryName);
-            return new FilteredLogger(innerLogger, minimumLevel);
+            var fileLogger = fileProvider.CreateLogger(categoryName);
+#if DEBUG
+            var debugLogger = debugProvider.CreateLogger(categoryName);
+            var compositeLogger = new CompositeLogger(fileLogger, debugLogger);
+            return new FilteredLogger(compositeLogger, minimumLevel);
+#else
+            return new FilteredLogger(fileLogger, minimumLevel);
+#endif
         }
 
         public void AddProvider(ILoggerProvider provider)
         {
-            // No-op: we only support our built-in FileLoggerProvider
         }
 
         public void Dispose()
         {
-            provider.Dispose();
+            fileProvider.Dispose();
+#if DEBUG
+            debugProvider.Dispose();
+#endif
         }
     }
+
+#if DEBUG
+    private sealed class CompositeLogger : ILogger
+    {
+        private readonly ILogger primary;
+        private readonly ILogger secondary;
+
+        internal CompositeLogger(ILogger primary, ILogger secondary)
+        {
+            this.primary = primary;
+            this.secondary = secondary;
+        }
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull
+        {
+            primary.BeginScope(state);
+            return secondary.BeginScope(state);
+        }
+
+        public bool IsEnabled(LogLevel logLevel) =>
+            primary.IsEnabled(logLevel) || secondary.IsEnabled(logLevel);
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            primary.Log(logLevel, eventId, state, exception, formatter);
+            secondary.Log(logLevel, eventId, state, exception, formatter);
+        }
+    }
+#endif
 
     private sealed class FilteredLogger : ILogger
     {

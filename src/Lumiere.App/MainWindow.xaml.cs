@@ -118,7 +118,7 @@ public sealed partial class MainWindow : Window
         Closed += OnWindowClosed;
 
         LumiereLoggerFactory.InitializeWithHeader(
-            LogLevel.Information,
+            LumiereLoggerFactory.DefaultMinimumLevel,
             "Lumiere Validation Log",
             $"Started: {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
             $"OS: {Environment.OSVersion}",
@@ -126,8 +126,6 @@ public sealed partial class MainWindow : Window
             $"HdrConstants: WgcPixelFormat={HdrConstants.WgcFramePoolPixelFormat}, DxgiFormat={HdrConstants.DxgiSwapChainFormat}, ColorSpace={HdrConstants.DxgiColorSpace}",
             "NOTE: If NVIDIA GeForce Experience overlay appears (Alt+Z), disable 'In-Game Overlay' in GeForce Experience settings for stable capture.",
             "NOTE: Windows Graphics Capture may show a yellow system border. This unpackaged build cannot guarantee graphicsCaptureWithoutBorder consent.");
-
-        ValidationLogger.SetBridgeLogger(Logger);
 
         ApplySessionState(
             CaptureSessionState.Idle(PreviewReadinessStatus.Initializing(
