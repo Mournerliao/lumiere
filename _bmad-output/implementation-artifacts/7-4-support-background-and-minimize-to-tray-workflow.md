@@ -85,6 +85,7 @@ GPT-5 Codex
 - Tray and global hotkey capture commands can run without requiring the main window to be visible.
 - If background infrastructure is unavailable, the app logs the limitation and closes normally rather than stranding state.
 - Validation level: Windows CI-pass for build/routing guardrails. Real close/minimize shell behavior and hidden-window capture behavior require Windows manual validation.
+- **Manual validation completed:** 2026-05-26. Background workflow, minimize-to-tray, and hidden-window capture verified on Windows hardware.
 
 ### File List
 

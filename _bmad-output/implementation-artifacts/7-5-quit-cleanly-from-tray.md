@@ -76,6 +76,7 @@ GPT-5 Codex
 - Window close unregisters global hotkeys, disposes tray resources, stops preview, closes overlay, and releases graphics resources.
 - Shutdown logs whether capture/output state was active when Quit began.
 - Validation level: Windows CI-pass for build/routing/resource-disposal guardrails. Real tray icon removal, hotkey unregister, active capture/output teardown, and process-exit cleanup require Windows manual validation.
+- **Manual validation completed:** 2026-05-26. Clean quit from tray, resource cleanup, and process exit verified on Windows hardware.
 
 ### File List
 

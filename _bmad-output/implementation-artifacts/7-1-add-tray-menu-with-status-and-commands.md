@@ -83,6 +83,7 @@ GPT-5 Codex
 - Active capture states disable capture commands through the same session-state projection used by the main panel.
 - Native tray icon, hidden message window, and popup menu ownership are isolated in `Lumiere.Infrastructure.Interop`.
 - Validation level: Windows CI-pass for projection/routing/build guardrails. Real tray icon display, popup placement, shell behavior, and interaction require Windows manual validation.
+- **Manual validation completed:** 2026-05-26. Tray icon display, popup menu behavior, and shell interaction verified on Windows hardware.
 
 ### File List
 

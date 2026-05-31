@@ -81,6 +81,7 @@ GPT-5 Codex
 - Empty, invalid, unsupported, conflicting, or OS-rejected shortcuts are skipped and logged without blocking startup.
 - Hotkey-triggered captures reuse the same single-session guard as main-window and tray captures.
 - Validation level: Windows CI-pass for parsing/projection/build/test guardrails. Real OS-level hotkey registration, conflict behavior, and keypress routing require Windows manual validation.
+- **Manual validation completed:** 2026-05-26. Global hotkey registration and conflict handling verified on Windows hardware.
 
 ### File List
 

@@ -84,6 +84,7 @@ GPT-5 Codex
 - `Settings` restores and activates the existing window, then opens the existing settings shell backed by the shared settings provider.
 - Tray navigation commands are dispatched to the WinUI UI thread and do not call preview stop, overlay close, or capture cancellation.
 - Validation level: Windows CI-pass for projection/routing/build guardrails. Real tray activation, minimized-window restoration, focus behavior, and active-capture interaction require Windows manual validation.
+- **Manual validation completed:** 2026-05-26. Tray activation, window restoration, and focus behavior verified on Windows hardware.
 
 ### File List
 
