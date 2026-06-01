@@ -1296,3 +1296,183 @@ So that the team can decide whether Lumiere is ready for early users based on ex
 **Given** automated gates are part of release readiness
 **When** final validation is recorded
 **Then** restore, build, tests, and format verification are listed separately from Windows manual validation results.
+
+## Epic 9: Settings Panel Completion
+
+Users can fully configure all settings through the native settings panel, matching the v0 design spec intent. This epic completes the remaining settings controls: HDR alerts toggle, timestamp naming, save path selection, after-capture behavior, shortcut editing, and export color format options. Each control connects to the shared settings persistence and is consumed by the output pipeline, tray, hotkeys, and capture workflow.
+
+### Story 9-1: Enable HDR Alerts Toggle
+
+As a screenshot user,
+I want to enable or disable HDR alerts in settings,
+So that I can control whether Lumiere shows warnings when HDR is unavailable, degraded, unsupported, or failed.
+
+**Requirements Covered:** FR13, FR38; UX-DR10, UX-DR18
+
+**Acceptance Criteria:**
+
+**Given** settings are open
+**When** the HDR alerts section is displayed
+**Then** the HDR alerts toggle is enabled and reflects the current persisted preference.
+
+**Given** the user toggles HDR alerts
+**When** the preference is saved
+**Then** the change is persisted through `IHdrAlertSettingsWriter.SetHdrAlertsEnabled()` and reflected in subsequent HDR alert behavior.
+
+**Given** HDR alerts are disabled
+**When** a non-critical HDR warning occurs
+**Then** Lumiere suppresses optional alert chrome while preserving status and diagnostics.
+
+**Given** the toggle state is projected
+**When** the settings panel refreshes
+**Then** the toggle visual state matches the persisted `HdrAlertsEnabled` value.
+
+### Story 9-2: Enable Timestamp Naming Toggle
+
+As a screenshot user,
+I want to enable or disable timestamp-based file naming in settings,
+So that folder output uses consistent, safe filenames that avoid overwriting.
+
+**Requirements Covered:** FR26, FR38; UX-DR15, UX-DR18
+
+**Acceptance Criteria:**
+
+**Given** settings are open
+**When** the timestamp naming section is displayed
+**Then** the timestamp toggle is enabled and reflects the current persisted preference.
+
+**Given** the user toggles timestamp naming
+**When** the preference is saved
+**Then** the change is persisted through `ITimestampSettingsWriter.SetTimestampNaming()`.
+
+**Given** timestamp naming is enabled
+**When** folder output creates a file
+**Then** the filename uses deterministic invariant formatting and avoids overwriting existing files.
+
+**Given** timestamp naming is disabled
+**When** folder output creates a file
+**Then** the filename uses the configured or default naming policy without timestamp.
+
+### Story 9-3: Enable Save Path Selection
+
+As a screenshot user,
+I want to select or change the save folder for file output in settings,
+So that captures are saved to my preferred location.
+
+**Requirements Covered:** FR35, FR38; UX-DR13, UX-DR18
+
+**Acceptance Criteria:**
+
+**Given** settings are open and folder output is selected
+**When** the save path section is displayed
+**Then** the save path shows the current configured path with an editable selection control.
+
+**Given** the user activates the save path control
+**When** a native Windows folder picker is shown
+**Then** the user can select a new folder and the path is persisted through `ISavePathSettingsWriter.SetSavePath()`.
+
+**Given** the selected path is invalid, inaccessible, or permission denied
+**When** the path is validated
+**Then** the settings UI shows inline recovery guidance near the path control.
+
+**Given** the save path is changed
+**When** subsequent captures use folder output
+**Then** files are saved to the new configured path.
+
+### Story 9-4: Enable After-Capture Behavior Toggle
+
+As a screenshot user,
+I want to configure after-capture behavior in settings,
+So that Lumiere can automatically open or reveal the saved file after folder output.
+
+**Requirements Covered:** FR36, FR38; UX-DR14, UX-DR18
+
+**Acceptance Criteria:**
+
+**Given** settings are open and folder output is selected
+**When** the after-capture section is displayed
+**Then** the after-capture toggle is enabled and reflects the current persisted preference.
+
+**Given** the user toggles after-capture behavior
+**When** the preference is saved
+**Then** the change is persisted through `IAfterCaptureSettingsWriter.SetAfterCaptureBehavior()`.
+
+**Given** after-capture is set to "Open"
+**When** folder output creates a file
+**Then** Lumiere opens the saved file through Windows default application.
+
+**Given** after-capture is set to "Reveal"
+**When** folder output creates a file
+**Then** Lumiere reveals the saved file in Explorer.
+
+**Given** after-capture is set to "None"
+**When** folder output completes
+**Then** no additional action is taken and completion feedback is shown normally.
+
+**Given** output target is clipboard-only
+**When** after-capture behavior is evaluated
+**Then** the control is disabled with helper text explaining clipboard-only has no file artifact.
+
+### Story 9-5: Enable Shortcut Editing
+
+As a screenshot user,
+I want to configure fullscreen and region capture shortcuts in settings,
+So that Lumiere matches my workflow and key preferences.
+
+**Requirements Covered:** FR32, FR33, FR38; UX-DR8, UX-DR9, UX-DR18
+
+**Acceptance Criteria:**
+
+**Given** settings are open
+**When** the shortcuts section is displayed
+**Then** fullscreen and region shortcut controls are editable with current configured values.
+
+**Given** the user activates a shortcut control
+**When** the control enters edit mode
+**Then** the user can press a key combination to set the new shortcut.
+
+**Given** the user presses an invalid key combination
+**When** validation occurs
+**Then** the control shows inline feedback and preserves the previous valid shortcut.
+
+**Given** the shortcut conflicts with another registered hotkey
+**When** conflict detection runs
+**Then** the UI shows conflict feedback and offers recovery options.
+
+**Given** the shortcut cannot be registered with Windows
+**When** registration fails
+**Then** the UI shows registration failure feedback and preserves or restores a safe shortcut state.
+
+**Given** the shortcut is changed
+**When** the preference is saved
+**Then** the change is persisted through `IShortcutSettingsWriter` and the hotkey is re-registered.
+
+### Story 9-6: Enable Export Color Format Options
+
+As a screenshot user,
+I want to see export color format options in settings with clear validation status,
+So that I understand which formats are available and which are pending validation.
+
+**Requirements Covered:** FR29, NFR9; UX-DR11, UX-DR18
+
+**Acceptance Criteria:**
+
+**Given** settings are open
+**When** the export section is displayed
+**Then** HDR10, P3, and sRGB segments are visible with clear validation-scoped labels.
+
+**Given** the user views export options
+**When** implementation semantics are incomplete for HDR10 or P3
+**Then** those options are disabled or explicitly labeled as pending encoder metadata, conversion policy, and Windows validation.
+
+**Given** sRGB is selected as the default
+**When** the user views the export section
+**Then** sRGB shows as active with a note that it reflects the current basic PNG output surface.
+
+**Given** the user selects an enabled export option
+**When** the preference is saved
+**Then** the change is persisted through `IExportColorSettingsWriter`.
+
+**Given** an export format becomes available in the future
+**When** implementation semantics and validation are complete
+**Then** the corresponding segment becomes enabled and selectable.
