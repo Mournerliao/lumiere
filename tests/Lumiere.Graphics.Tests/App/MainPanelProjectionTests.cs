@@ -1,6 +1,7 @@
 using Lumiere.App;
 using Lumiere.Capture;
 using Lumiere.Graphics.Hdr;
+using Lumiere.Graphics.Output;
 using Windows.Graphics;
 using Xunit;
 
@@ -39,15 +40,16 @@ public sealed class MainPanelProjectionTests
     }
 
     [Theory]
-    [InlineData(PreviewReadinessState.Ready, "HDR Ready", MainPanelTrustIcon.CheckmarkCircle)]
-    [InlineData(PreviewReadinessState.Degraded, "Enable HDR", MainPanelTrustIcon.Desktop)]
-    [InlineData(PreviewReadinessState.Unsupported, "HDR unavailable", MainPanelTrustIcon.ErrorCircle)]
-    [InlineData(PreviewReadinessState.Failed, "HDR unavailable", MainPanelTrustIcon.ErrorCircle)]
-    [InlineData(PreviewReadinessState.Initializing, "Checking HDR", MainPanelTrustIcon.Clock)]
+    [InlineData(PreviewReadinessState.Ready, "HDR Ready", MainPanelTrustIcon.CheckmarkCircle, MainPanelTrustSeverity.Success)]
+    [InlineData(PreviewReadinessState.Degraded, "Enable HDR", MainPanelTrustIcon.Desktop, MainPanelTrustSeverity.Warning)]
+    [InlineData(PreviewReadinessState.Unsupported, "HDR unavailable", MainPanelTrustIcon.ErrorCircle, MainPanelTrustSeverity.Error)]
+    [InlineData(PreviewReadinessState.Failed, "Preview failed", MainPanelTrustIcon.ErrorBadge, MainPanelTrustSeverity.Error)]
+    [InlineData(PreviewReadinessState.Initializing, "Checking HDR", MainPanelTrustIcon.Clock, MainPanelTrustSeverity.Neutral)]
     public void ProjectStatus_MapsReadinessToConciseTrustSummary(
         PreviewReadinessState readinessState,
         string expectedLabel,
-        MainPanelTrustIcon expectedIcon)
+        MainPanelTrustIcon expectedIcon,
+        MainPanelTrustSeverity expectedSeverity)
     {
         var state = CreateState(readinessState);
 
@@ -55,7 +57,169 @@ public sealed class MainPanelProjectionTests
 
         Assert.Equal(expectedLabel, projection.TrustLabel);
         Assert.Equal(expectedIcon, projection.TrustIcon);
+        Assert.Equal(expectedSeverity, projection.TrustSeverity);
         Assert.False(string.IsNullOrWhiteSpace(projection.TrustMessage));
+    }
+
+    [Fact]
+    public void ProjectStatus_OutputCompleteShowsDistinctTrustLabel()
+    {
+        var state = CreateState(PreviewReadinessState.Ready);
+        var outputResult = OutputResult.ClipboardSuccess(1024);
+
+        var projection = MainPanelProjection.Project(state, outputResult);
+
+        Assert.Equal("Output complete", projection.TrustLabel);
+        Assert.Equal(MainPanelTrustIcon.InfoCircle, projection.TrustIcon);
+        Assert.Equal(MainPanelTrustSeverity.Info, projection.TrustSeverity);
+    }
+
+    [Fact]
+    public void ProjectStatus_OutputFailedShowsDistinctTrustLabel()
+    {
+        var state = CreateState(PreviewReadinessState.Ready);
+        var outputResult = OutputResult.ClipboardFailed("Clipboard write denied.");
+
+        var projection = MainPanelProjection.Project(state, outputResult);
+
+        Assert.Equal("Failed to copy to clipboard", projection.TrustLabel);
+        Assert.Equal(MainPanelTrustIcon.WarningCircle, projection.TrustIcon);
+        Assert.Equal(MainPanelTrustSeverity.Warning, projection.TrustSeverity);
+    }
+
+    [Fact]
+    public void ProjectStatus_AllDistinguishableStatesHaveDistinctLabels()
+    {
+        var target = CreateTarget();
+        var readyState = CaptureSessionState.Capturing(
+            target, PreviewReadinessStatus.Ready("Ready", "detail."));
+        var degradedState = CaptureSessionState.Degraded(
+            target,
+            PreviewReadinessStatus.Degraded(PreviewReadinessStage.Presentation, "Degraded", "detail."));
+        var unsupportedState = CaptureSessionState.Unsupported(
+            target,
+            PreviewReadinessStatus.Unsupported(PreviewReadinessStage.Capture, "Unsupported", "detail."));
+        var failedState = CaptureSessionState.Failed(
+            target,
+            PreviewReadinessStatus.Failed(PreviewReadinessStage.Capture, "Failed", "detail."));
+        var initializingState = CaptureSessionState.Initializing(
+            target, PreviewReadinessStatus.Initializing(PreviewReadinessStage.Capture, "Init", "detail."));
+
+        var outputSuccess = OutputResult.ClipboardSuccess(1);
+        var outputFailure = OutputResult.ClipboardFailed("fail");
+
+        var states = new (string Name, string ExpectedLabel, MainPanelTrustIcon ExpectedIcon)[]
+        {
+            ("HDR ready", "HDR Ready", MainPanelTrustIcon.CheckmarkCircle),
+            ("Checking HDR", "Checking HDR", MainPanelTrustIcon.Clock),
+            ("Enable HDR", "Enable HDR", MainPanelTrustIcon.Desktop),
+            ("HDR unavailable", "HDR unavailable", MainPanelTrustIcon.ErrorCircle),
+            ("Preview failed", "Preview failed", MainPanelTrustIcon.ErrorBadge),
+            ("Output complete", "Output complete", MainPanelTrustIcon.InfoCircle),
+            ("Output failed", "Failed to copy to clipboard", MainPanelTrustIcon.WarningCircle),
+        };
+
+        var projections = new[]
+        {
+            MainPanelProjection.Project(readyState),
+            MainPanelProjection.Project(initializingState),
+            MainPanelProjection.Project(degradedState),
+            MainPanelProjection.Project(unsupportedState),
+            MainPanelProjection.Project(failedState),
+            MainPanelProjection.Project(readyState, outputSuccess),
+            MainPanelProjection.Project(readyState, outputFailure),
+        };
+
+        for (int i = 0; i < states.Length; i++)
+        {
+            Assert.Equal(states[i].ExpectedLabel, projections[i].TrustLabel);
+            Assert.Equal(states[i].ExpectedIcon, projections[i].TrustIcon);
+        }
+
+        var distinctLabels = projections.Select(p => p.TrustLabel).Distinct().Count();
+        var distinctIcons = projections.Select(p => p.TrustIcon).Distinct().Count();
+        Assert.Equal(7, distinctLabels);
+        Assert.Equal(7, distinctIcons);
+    }
+
+    [Fact]
+    public void ProjectStatus_OutputResultOverridesReadiness()
+    {
+        var state = CreateState(PreviewReadinessState.Degraded);
+        var outputResult = OutputResult.ClipboardSuccess(512);
+
+        var projection = MainPanelProjection.Project(state, outputResult);
+
+        Assert.Equal("Output complete", projection.TrustLabel);
+        Assert.Equal(MainPanelTrustSeverity.Info, projection.TrustSeverity);
+    }
+
+    [Fact]
+    public void ProjectStatus_NullOutputResultShowsReadinessState()
+    {
+        var state = CreateState(PreviewReadinessState.Ready);
+
+        var withNull = MainPanelProjection.Project(state, null);
+        var withoutParam = MainPanelProjection.Project(state);
+
+        Assert.Equal(withoutParam.TrustLabel, withNull.TrustLabel);
+        Assert.Equal(withoutParam.TrustIcon, withNull.TrustIcon);
+        Assert.Equal(withoutParam.TrustSeverity, withNull.TrustSeverity);
+    }
+
+    [Theory]
+    [InlineData(PreviewReadinessState.Degraded)]
+    [InlineData(PreviewReadinessState.Unsupported)]
+    [InlineData(PreviewReadinessState.Failed)]
+    public void ProjectStatus_DegradedUnsupportedFailedDoNotUseSuccessLanguage(PreviewReadinessState readinessState)
+    {
+        var state = CreateState(readinessState);
+
+        var projection = MainPanelProjection.Project(state);
+
+        Assert.DoesNotContain("success", projection.TrustLabel, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("complete", projection.TrustLabel, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("ready", projection.TrustLabel, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectStatus_OutputFailedDoesNotUseSuccessLanguage()
+    {
+        var state = CreateState(PreviewReadinessState.Ready);
+        var outputResult = OutputResult.ClipboardFailed("denied");
+
+        var projection = MainPanelProjection.Project(state, outputResult);
+
+        Assert.DoesNotContain("success", projection.TrustLabel, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("complete", projection.TrustLabel, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectStatus_PartialSuccessShowsPartialLabel()
+    {
+        var state = CreateState(PreviewReadinessState.Ready);
+        var outputResult = OutputResult.FromTargets(
+            OutputTargetResult.Success(OutputTarget.Clipboard, "Copied to clipboard"),
+            OutputTargetResult.Failed(OutputTarget.Folder, "Failed to save to folder"));
+
+        var projection = MainPanelProjection.Project(state, outputResult);
+
+        Assert.Equal("Output partially complete", projection.TrustLabel);
+        Assert.Equal(MainPanelTrustIcon.WarningCircle, projection.TrustIcon);
+        Assert.Equal(MainPanelTrustSeverity.Warning, projection.TrustSeverity);
+    }
+
+    [Fact]
+    public void ProjectStatus_AllSkippedShowsSkippedLabel()
+    {
+        var state = CreateState(PreviewReadinessState.Ready);
+        var outputResult = OutputResult.ClipboardSkipped("Clipboard output skipped by settings");
+
+        var projection = MainPanelProjection.Project(state, outputResult);
+
+        Assert.Equal("Output skipped", projection.TrustLabel);
+        Assert.Equal(MainPanelTrustIcon.WarningCircle, projection.TrustIcon);
+        Assert.Equal(MainPanelTrustSeverity.Warning, projection.TrustSeverity);
     }
 
     private static CaptureSessionState CreateState(CaptureSessionStatus status)

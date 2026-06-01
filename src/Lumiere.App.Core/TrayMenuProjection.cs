@@ -1,4 +1,5 @@
 using Lumiere.Capture;
+using Lumiere.Graphics.Output;
 using Lumiere.Settings;
 
 namespace Lumiere.App;
@@ -17,13 +18,14 @@ public sealed record TrayMenuProjection(
         CaptureSessionState state,
         ISettingsProvider settingsProvider,
         IAboutInfoProvider aboutInfoProvider,
-        CaptureCommandMode? activeCaptureMode = null)
+        CaptureCommandMode? activeCaptureMode = null,
+        OutputResult? outputResult = null)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(settingsProvider);
         ArgumentNullException.ThrowIfNull(aboutInfoProvider);
 
-        var main = MainPanelProjection.Project(state);
+        var main = MainPanelProjection.Project(state, outputResult);
         var appName = string.IsNullOrWhiteSpace(aboutInfoProvider.AppName)
             ? "Lumiere"
             : aboutInfoProvider.AppName;

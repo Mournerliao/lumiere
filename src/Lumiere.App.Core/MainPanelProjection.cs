@@ -1,5 +1,6 @@
 using Lumiere.Capture;
 using Lumiere.Graphics.Hdr;
+using Lumiere.Graphics.Output;
 
 namespace Lumiere.App;
 
@@ -11,7 +12,7 @@ public sealed record MainPanelProjection(
     MainPanelTrustIcon TrustIcon,
     MainPanelTrustSeverity TrustSeverity)
 {
-    public static MainPanelProjection Project(CaptureSessionState state)
+    public static MainPanelProjection Project(CaptureSessionState state, OutputResult? outputResult = null)
     {
         ArgumentNullException.ThrowIfNull(state);
 
@@ -30,24 +31,44 @@ public sealed record MainPanelProjection(
             _ => "Ready to capture",
         };
 
-        var trust = state.Readiness.State switch
-        {
-            PreviewReadinessState.Ready => ("HDR Ready", MainPanelTrustIcon.CheckmarkCircle, MainPanelTrustSeverity.Success),
-            PreviewReadinessState.Degraded => ("Enable HDR", MainPanelTrustIcon.Desktop, MainPanelTrustSeverity.Warning),
-            PreviewReadinessState.Unsupported => ("HDR unavailable", MainPanelTrustIcon.ErrorCircle, MainPanelTrustSeverity.Error),
-            PreviewReadinessState.Failed => ("HDR unavailable", MainPanelTrustIcon.ErrorCircle, MainPanelTrustSeverity.Error),
-            _ => ("Checking HDR", MainPanelTrustIcon.Clock, MainPanelTrustSeverity.Neutral),
-        };
+        var trust = MapTrust(state.Readiness.State, outputResult);
 
         return new MainPanelProjection(
             canStartCapture,
             actionTitle,
-            trust.Item1,
+            trust.Label,
             string.IsNullOrWhiteSpace(state.UserFacingReason)
                 ? "HDR preview status is being checked."
                 : state.UserFacingReason,
-            trust.Item2,
-            trust.Item3);
+            trust.Icon,
+            trust.Severity);
+    }
+
+    private static (string Label, MainPanelTrustIcon Icon, MainPanelTrustSeverity Severity) MapTrust(
+        PreviewReadinessState readinessState,
+        OutputResult? outputResult)
+    {
+        if (outputResult is not null)
+        {
+            var hasFailure = outputResult.Targets.Any(t => t.Outcome == OutputOutcome.Failed);
+            if (outputResult.IsSuccess && !hasFailure)
+            {
+                return ("Output complete", MainPanelTrustIcon.InfoCircle, MainPanelTrustSeverity.Info);
+            }
+
+            var isAllSkipped = outputResult.Targets.All(t => t.Outcome == OutputOutcome.Skipped);
+            var label = isAllSkipped ? "Output skipped" : outputResult.UserMessage ?? "Output error";
+            return (label, MainPanelTrustIcon.WarningCircle, MainPanelTrustSeverity.Warning);
+        }
+
+        return readinessState switch
+        {
+            PreviewReadinessState.Ready => ("HDR Ready", MainPanelTrustIcon.CheckmarkCircle, MainPanelTrustSeverity.Success),
+            PreviewReadinessState.Degraded => ("Enable HDR", MainPanelTrustIcon.Desktop, MainPanelTrustSeverity.Warning),
+            PreviewReadinessState.Unsupported => ("HDR unavailable", MainPanelTrustIcon.ErrorCircle, MainPanelTrustSeverity.Error),
+            PreviewReadinessState.Failed => ("Preview failed", MainPanelTrustIcon.ErrorBadge, MainPanelTrustSeverity.Error),
+            _ => ("Checking HDR", MainPanelTrustIcon.Clock, MainPanelTrustSeverity.Neutral),
+        };
     }
 
     public static string FormatShortcut(string? shortcut) =>
@@ -62,6 +83,9 @@ public enum MainPanelTrustIcon
     CheckmarkCircle,
     Desktop,
     ErrorCircle,
+    ErrorBadge,
+    WarningCircle,
+    InfoCircle,
 }
 
 public enum MainPanelTrustSeverity
@@ -70,4 +94,5 @@ public enum MainPanelTrustSeverity
     Success,
     Warning,
     Error,
+    Info,
 }

@@ -1,4 +1,5 @@
 using Lumiere.Capture;
+using Lumiere.Graphics.Output;
 using Lumiere.Settings;
 
 namespace Lumiere.App;

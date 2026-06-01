@@ -187,3 +187,11 @@ None currently known.
 - "validation-scoped" jargon in accessibility text — Screen reader users won't understand this means "not functional".
 - ExportColorDisplayValue hardcoded to "sRGB" — Panel-level automation name always says "Export profile: sRGB" regardless of actual selection.
 - No test validates sRGB is default/active segment — Design Notes say "prefer sRGB" but no test explicitly asserts the policy.
+
+## Deferred from: code review of story 8-1 (2026-06-01)
+
+- AC1: 7 个可区分状态 vs 规格要求 8 个 — 基于 UX 分析，7 个标签已足够区分，8 状态需求留作未来优化
+- Gap Analysis #4: Degraded preview 与 Enable HDR 共享标签 — stage 区分在 UX 层面意义有限
+- Gap Analysis #5: Unsupported capture 与 HDR unavailable 共享标签 — 同上
+- `SettingsPanelProjection.cs` 有未使用的 `using Lumiere.Graphics.Output` 引入 — 可能为后续集成预留
+- "Output error" 与 Gap Analysis 术语 "Output failed" 不一致 — 术语统一留作后续

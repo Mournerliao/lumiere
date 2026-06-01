@@ -54,6 +54,34 @@ public sealed class TrayMenuProjectionTests
         Assert.True(projection.OpenSettings.IsEnabled);
     }
 
+    [Fact]
+    public void Project_OutputComplete_ShowsOutputCompleteInHdrStatus()
+    {
+        var projection = TrayMenuProjection.Project(
+            CaptureSessionState.Idle(PreviewReadinessStatus.Ready("Ready", "HDR preview is ready.")),
+            new StubSettingsProvider("Ctrl+Shift+F", "Ctrl+Shift+R"),
+            new StubAboutInfoProvider("Lumiere"),
+            outputResult: OutputResult.ClipboardSuccess(2048));
+
+        Assert.Equal("Output complete", projection.HdrStatusLabel);
+        Assert.True(projection.FullscreenCapture.IsEnabled);
+        Assert.True(projection.RegionCapture.IsEnabled);
+    }
+
+    [Fact]
+    public void Project_OutputFailed_ShowsOutputFailedInHdrStatus()
+    {
+        var projection = TrayMenuProjection.Project(
+            CaptureSessionState.Idle(PreviewReadinessStatus.Ready("Ready", "HDR preview is ready.")),
+            new StubSettingsProvider("Ctrl+Shift+F", "Ctrl+Shift+R"),
+            new StubAboutInfoProvider("Lumiere"),
+            outputResult: OutputResult.ClipboardFailed("Access denied."));
+
+        Assert.Equal("Failed to copy to clipboard", projection.HdrStatusLabel);
+        Assert.True(projection.FullscreenCapture.IsEnabled);
+        Assert.True(projection.RegionCapture.IsEnabled);
+    }
+
     private static CaptureTarget CreateTarget() =>
         CaptureTarget.CreateForTest(
             new SizeInt32

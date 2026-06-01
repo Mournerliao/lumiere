@@ -35,6 +35,9 @@ public sealed partial class MainWindow : Window
     private const string StatusMonitorGlyph = "\uE7F4";
     private const string StatusErrorCircleGlyph = "\uEA39";
     private const string StatusClockGlyph = "\uE121";
+    private const string StatusErrorBadgeGlyph = "\uE783";
+    private const string StatusWarningGlyph = "\uE7BA";
+    private const string StatusInfoGlyph = "\uE946";
     private const int MainPanelWidthDips = 360;
     private const int MainPanelHeightDips = 310;
     private const int SettingsPanelHeightDips = 640;
@@ -64,6 +67,7 @@ public sealed partial class MainWindow : Window
     private long previewGeneration;
     private long frameEventCount;
     private int fullscreenOutputStarted;
+    private OutputResult? lastOutputResult;
     private int previewSourceWidth;
     private int previewSourceHeight;
     private int registeredHotkeyCount;
@@ -150,7 +154,7 @@ public sealed partial class MainWindow : Window
     }
 
     public TrayMenuSnapshot CreateTrayMenuSnapshot() =>
-        CreateTrayMenuSnapshot(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
+        CreateTrayMenuSnapshot(captureService?.CurrentSessionState ?? CaptureSessionState.Idle(), lastOutputResult);
 
     public void AttachGlobalHotkeys(IGlobalHotkeyRegistrar registrar)
     {
@@ -664,7 +668,7 @@ public sealed partial class MainWindow : Window
     private void ApplyShellView(AppShellView view)
     {
         var state = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
-        var projection = AppShellProjection.Project(state, view);
+        var projection = AppShellProjection.Project(state, view, lastOutputResult);
         ClearHeaderDragRegion();
         activeShellView = projection.ActiveView;
 
@@ -675,7 +679,7 @@ public sealed partial class MainWindow : Window
             ? Visibility.Visible
             : Visibility.Collapsed;
 
-        UpdateMainPanelProjection(state);
+        UpdateMainPanelProjection(state, lastOutputResult);
         ApplySettingsProjection(state);
         SizeToActiveShellView();
         UpdateHeaderDragRegion();
@@ -770,6 +774,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        lastOutputResult = null;
         var requestedMode = activeCaptureMode;
         StopPreview(reportStopped: false);
         activeCaptureMode = requestedMode ?? CaptureCommandMode.Region;
@@ -1200,7 +1205,7 @@ public sealed partial class MainWindow : Window
         {
             var validatedState = state ?? throw new ArgumentNullException(nameof(state));
             captureService?.UpdateSessionState(validatedState);
-            UpdateMainPanelProjection(validatedState);
+            UpdateMainPanelProjection(validatedState, lastOutputResult);
             UpdateTrayMenu(validatedState);
             var overlayState = CreateOverlayState(validatedState);
             overlayWindow?.ApplyState(overlayState);
@@ -1225,7 +1230,7 @@ public sealed partial class MainWindow : Window
                     queuedState.Status, deferredCount);
 
                 captureService?.UpdateSessionState(queuedState);
-                UpdateMainPanelProjection(queuedState);
+                UpdateMainPanelProjection(queuedState, lastOutputResult);
                 UpdateTrayMenu(queuedState);
                 var queuedOverlayState = CreateOverlayState(queuedState);
                 overlayWindow?.ApplyState(queuedOverlayState);
@@ -1254,7 +1259,7 @@ public sealed partial class MainWindow : Window
     {
         try
         {
-            trayMenu?.Update(CreateTrayMenuSnapshot(state));
+            trayMenu?.Update(CreateTrayMenuSnapshot(state, lastOutputResult));
         }
         catch (Exception exception)
         {
@@ -1262,9 +1267,9 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private TrayMenuSnapshot CreateTrayMenuSnapshot(CaptureSessionState state)
+    private TrayMenuSnapshot CreateTrayMenuSnapshot(CaptureSessionState state, OutputResult? outputResult = null)
     {
-        var projection = TrayMenuProjection.Project(state, settingsProvider, aboutInfoProvider, activeCaptureMode);
+        var projection = TrayMenuProjection.Project(state, settingsProvider, aboutInfoProvider, activeCaptureMode, outputResult);
         return new TrayMenuSnapshot(
             projection.AppName,
             projection.HdrStatusLabel,
@@ -1530,9 +1535,9 @@ public sealed partial class MainWindow : Window
         track.Opacity = isReadOnly ? 0.7 : 1.0;
     }
 
-    private void UpdateMainPanelProjection(CaptureSessionState state)
+    private void UpdateMainPanelProjection(CaptureSessionState state, OutputResult? outputResult = null)
     {
-        var projection = MainPanelProjection.Project(state);
+        var projection = MainPanelProjection.Project(state, outputResult);
         var isIdle = state.Status is CaptureSessionStatus.Idle;
         var statusBrush = GetTrustStatusBrush(projection.TrustSeverity);
 
@@ -1590,6 +1595,7 @@ public sealed partial class MainWindow : Window
             MainPanelTrustSeverity.Success => "SuccessBrush",
             MainPanelTrustSeverity.Warning => "WarningBrush",
             MainPanelTrustSeverity.Error => "ErrorBrush",
+            MainPanelTrustSeverity.Info => "AccentBrush",
             _ => "MutedTextBrush",
         };
 
@@ -1602,6 +1608,9 @@ public sealed partial class MainWindow : Window
             MainPanelTrustIcon.CheckmarkCircle => StatusCheckmarkCircleGlyph,
             MainPanelTrustIcon.Desktop => StatusMonitorGlyph,
             MainPanelTrustIcon.ErrorCircle => StatusErrorCircleGlyph,
+            MainPanelTrustIcon.ErrorBadge => StatusErrorBadgeGlyph,
+            MainPanelTrustIcon.WarningCircle => StatusWarningGlyph,
+            MainPanelTrustIcon.InfoCircle => StatusInfoGlyph,
             _ => StatusClockGlyph,
         };
 
@@ -1746,6 +1755,7 @@ public sealed partial class MainWindow : Window
             };
 
             var result = await outputService.ExecuteOutputAsync(request);
+            lastOutputResult = result;
 
             Logger.Log(
                 result.IsSuccess ? LogLevel.Information : LogLevel.Warning,

@@ -315,7 +315,7 @@ public sealed class SettingsPanelProjectionTests
 
         var projection = SettingsPanelProjection.Project(settings, state);
 
-        Assert.Equal("HDR unavailable", projection.MainPanel.TrustLabel);
+        Assert.Equal("Preview failed", projection.MainPanel.TrustLabel);
         Assert.Equal(MainPanelTrustSeverity.Error, projection.MainPanel.TrustSeverity);
         Assert.False(projection.OptionalHdrAlertChromeEnabled);
     }
