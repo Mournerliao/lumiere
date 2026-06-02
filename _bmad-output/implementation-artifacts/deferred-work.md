@@ -195,3 +195,8 @@ None currently known.
 - Gap Analysis #5: Unsupported capture 与 HDR unavailable 共享标签 — 同上
 - `SettingsPanelProjection.cs` 有未使用的 `using Lumiere.Graphics.Output` 引入 — 可能为后续集成预留
 - "Output error" 与 Gap Analysis 术语 "Output failed" 不一致 — 术语统一留作后续
+
+## Deferred from: overlay info panel user-friendly optimization (2026-06-03)
+
+- 测试失败: `DefaultSettingsProviderTests.HdrAlertsEnabled_ReturnsTrue` 和 `AllProperties_ReturnConsistentValues` 失败 — 测试期望 `HdrAlertsEnabled` 默认为 `true`，但实际为 `false`。这是预先存在的问题，与本次更改无关。可能是设置文件中的值被设置为 `false`，需要检查测试环境或设置文件。
+- 审查发现: 缺少无障碍支持（AutomationProperties）、硬编码中文文本、缺少动画效果、缺少测试覆盖、缺少悬停状态等。

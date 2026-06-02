@@ -625,6 +625,13 @@ public sealed partial class OverlayWindow : Window
         }
     }
 
+    private void OnToggleTechnicalDetailsClick(object sender, RoutedEventArgs args)
+    {
+        var isExpanded = TechnicalDetailsBorder.Visibility == Visibility.Visible;
+        TechnicalDetailsBorder.Visibility = isExpanded ? Visibility.Collapsed : Visibility.Visible;
+        ToggleTechnicalDetailsButton.Content = isExpanded ? "Technical details ▸" : "Technical details ▾";
+    }
+
     private void OnClosed(object sender, WindowEventArgs args)
     {
         ClearInvalidCropFeedback();

@@ -131,11 +131,28 @@
               x:Name="StatusMessageTextBlock"
               Foreground="#E5E7EB"
               TextWrapping="Wrap" />
-          <TextBlock
-              x:Name="TechnicalDetailTextBlock"
-              Foreground="#D1D5DB"
+          <Button
+              x:Name="ToggleTechnicalDetailsButton"
+              Background="Transparent"
+              BorderThickness="0"
+              Padding="0"
+              HorizontalAlignment="Left"
+              Click="OnToggleTechnicalDetailsClick"
+              Content="Technical details ▸"
               FontSize="12"
-              TextWrapping="Wrap" />
+              Foreground="#9CA3AF" />
+          <Border
+              x:Name="TechnicalDetailsBorder"
+              Background="#44111827"
+              CornerRadius="4"
+              Padding="8"
+              Visibility="Collapsed">
+            <TextBlock
+                x:Name="TechnicalDetailTextBlock"
+                Foreground="#D1D5DB"
+                FontSize="11"
+                TextWrapping="Wrap" />
+          </Border>
           <StackPanel
               Orientation="Horizontal"
               Spacing="8">

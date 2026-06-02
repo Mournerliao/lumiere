@@ -247,7 +247,10 @@ public sealed partial class MainWindow : Window
         }
 
         hdrAlertSettingsWriter.SetHdrAlertsEnabled(!settingsProvider.HdrAlertsEnabled);
-        ApplySettingsProjection(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
+        var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
+        ApplySettingsProjection(currentState);
+        UpdateMainPanelProjection(currentState, lastOutputResult);
+        UpdateTrayMenu(currentState);
         Logger.LogDebug(
             "HDR alert preference updated in settings: enabled={HdrAlertsEnabled}",
             settingsProvider.HdrAlertsEnabled);
@@ -668,7 +671,7 @@ public sealed partial class MainWindow : Window
     private void ApplyShellView(AppShellView view)
     {
         var state = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
-        var projection = AppShellProjection.Project(state, view, lastOutputResult);
+        var projection = AppShellProjection.Project(state, view, lastOutputResult, settingsProvider.HdrAlertsEnabled);
         ClearHeaderDragRegion();
         activeShellView = projection.ActiveView;
 
@@ -1269,11 +1272,12 @@ public sealed partial class MainWindow : Window
 
     private TrayMenuSnapshot CreateTrayMenuSnapshot(CaptureSessionState state, OutputResult? outputResult = null)
     {
-        var projection = TrayMenuProjection.Project(state, settingsProvider, aboutInfoProvider, activeCaptureMode, outputResult);
+        var projection = TrayMenuProjection.Project(state, settingsProvider, aboutInfoProvider, activeCaptureMode, outputResult, settingsProvider.HdrAlertsEnabled);
         return new TrayMenuSnapshot(
             projection.AppName,
             projection.HdrStatusLabel,
             projection.HdrStatusDetail,
+            projection.TrayAlertMessage,
             ToTrayItem(projection.FullscreenCapture),
             ToTrayItem(projection.RegionCapture),
             ToTrayItem(projection.OpenMainWindow),
@@ -1537,7 +1541,7 @@ public sealed partial class MainWindow : Window
 
     private void UpdateMainPanelProjection(CaptureSessionState state, OutputResult? outputResult = null)
     {
-        var projection = MainPanelProjection.Project(state, outputResult);
+        var projection = MainPanelProjection.Project(state, outputResult, settingsProvider.HdrAlertsEnabled);
         var isIdle = state.Status is CaptureSessionStatus.Idle;
         var statusBrush = GetTrustStatusBrush(projection.TrustSeverity);
 
@@ -1558,6 +1562,29 @@ public sealed partial class MainWindow : Window
         TrustStatusLabel.Foreground = statusBrush;
         ToolTipService.SetToolTip(TrustStatusLabel, projection.TrustMessage);
         AutomationProperties.SetHelpText(TrustStatusLabel, projection.TrustMessage);
+
+        ApplyHdrAlert(projection);
+    }
+
+    private void ApplyHdrAlert(MainPanelProjection projection)
+    {
+        if (projection.HasAlert)
+        {
+            HdrAlertInfoBar.Severity = projection.TrustSeverity switch
+            {
+                MainPanelTrustSeverity.Error => InfoBarSeverity.Error,
+                MainPanelTrustSeverity.Warning => InfoBarSeverity.Warning,
+                _ => InfoBarSeverity.Informational,
+            };
+            HdrAlertInfoBar.Message = projection.AlertMessage;
+            HdrAlertInfoBar.IsOpen = true;
+            HdrAlertInfoBar.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            HdrAlertInfoBar.IsOpen = false;
+            HdrAlertInfoBar.Visibility = Visibility.Collapsed;
+        }
     }
 
     private void ApplyMainCaptureCardStyles()
@@ -1853,7 +1880,7 @@ public sealed partial class MainWindow : Window
             // is driving capture action state, not overlay completion ordering.
             if (!isClosed)
             {
-                var projection = MainPanelProjection.Project(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
+                var projection = MainPanelProjection.Project(captureService?.CurrentSessionState ?? CaptureSessionState.Idle(), hdrAlertsEnabled: settingsProvider.HdrAlertsEnabled);
                 Logger.LogDebug(
                     "Post-overlay capture action state: canStartCapture={CanStart}, sessionStatus={Status}",
                     projection.CanStartCapture,
@@ -1891,18 +1918,25 @@ public sealed partial class MainWindow : Window
             target.Kind is CaptureTargetKind.Display,
             target.DisplayName);
 
-    private static OverlayState CreateOverlayState(CaptureSessionState sessionState)
+    private OverlayState CreateOverlayState(CaptureSessionState sessionState)
     {
         ArgumentNullException.ThrowIfNull(sessionState);
 
         var message = sessionState.UserFacingReason ?? string.Empty;
         var detail = sessionState.TechnicalDetail ?? string.Empty;
+        var hdrAlertsEnabled = settingsProvider.HdrAlertsEnabled;
         return sessionState.Status switch
         {
             CaptureSessionStatus.Capturing => OverlayState.HdrReady(message, detail),
-            CaptureSessionStatus.Degraded => OverlayState.DegradedPreview(message, detail),
-            CaptureSessionStatus.Unsupported => OverlayState.UnsupportedCapture(message, detail),
-            CaptureSessionStatus.Failed => OverlayState.PreviewFailed(message, detail),
+            CaptureSessionStatus.Degraded => OverlayState.DegradedPreview(
+                hdrAlertsEnabled ? "HDR 功能未启用，预览质量可能降低。请在 Windows 设置 > 显示中启用 HDR。" : string.Empty,
+                detail),
+            CaptureSessionStatus.Unsupported => OverlayState.UnsupportedCapture(
+                hdrAlertsEnabled ? "当前显示器不支持 HDR 捕获。请检查显示器规格和连接方式。" : string.Empty,
+                detail),
+            CaptureSessionStatus.Failed => OverlayState.PreviewFailed(
+                "预览失败，捕获可能无法产生高质量输出。" + (string.IsNullOrEmpty(message) ? string.Empty : $" {message}"),
+                detail),
             CaptureSessionStatus.Disposed => OverlayState.Disposed(message, detail),
             _ => OverlayState.Initializing(message, detail),
         };
