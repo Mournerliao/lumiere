@@ -200,3 +200,14 @@ None currently known.
 
 - 测试失败: `DefaultSettingsProviderTests.HdrAlertsEnabled_ReturnsTrue` 和 `AllProperties_ReturnConsistentValues` 失败 — 测试期望 `HdrAlertsEnabled` 默认为 `true`，但实际为 `false`。这是预先存在的问题，与本次更改无关。可能是设置文件中的值被设置为 `false`，需要检查测试环境或设置文件。
 - 审查发现: 缺少无障碍支持（AutomationProperties）、硬编码中文文本、缺少动画效果、缺少测试覆盖、缺少悬停状态等。
+
+## Deferred from: code review of story 8-2 (2026-06-03)
+
+- Multi-monitor probe hardcodes output index 0 — `HdrDisplayCapability.cs:92` always queries first output. On multi-monitor setups with different HDR states per display, probe result may not match capture target.
+- Duplicated alert-message mapping logic — `MainPanelProjection.MapAlertMessage` and `TrayMenuProjection.MapTrayAlertMessage` share identical guard logic and switch structure.
+- Tray alert label always uses Warning color — `TrayMenuWindow.xaml:46` hardcodes WarningBrush for all severities. Unsupported/Failed show yellow in tray but red in main panel.
+- Fixed window height may clip InfoBar content — `MainPanelHeightDips = 310` with Auto-sized InfoBar row.
+- No test coverage for Probe() COM paths — `HdrDisplayCapabilityTests.cs` tests only constructed records, not actual COM interop probing.
+- swapChain3 double-disposed on error path — `SwapChainManager.cs` catch and finally blocks both dispose swapChain3.
+- Probe(IDXGIDevice) overload is dead code — zero callers and zero test coverage.
+- SwapChainManager probes HDR capability without caching — allocates COM objects on each Configure call.

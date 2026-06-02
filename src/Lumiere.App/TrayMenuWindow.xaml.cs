@@ -101,6 +101,16 @@ public sealed partial class TrayMenuWindow : Window
     private void ApplySnapshot(TrayMenuSnapshot snapshot)
     {
         HdrStatusLabel.Text = snapshot.HdrStatusLabel;
+        if (!string.IsNullOrEmpty(snapshot.TrayAlertMessage))
+        {
+            HdrAlertLabel.Text = snapshot.TrayAlertMessage;
+            HdrAlertLabel.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            HdrAlertLabel.Text = string.Empty;
+            HdrAlertLabel.Visibility = Visibility.Collapsed;
+        }
         FullscreenItem.Label = snapshot.FullscreenCapture.Label;
         FullscreenItem.ShortcutText = snapshot.FullscreenCapture.ShortcutText ?? string.Empty;
         FullscreenItem.IsEnabled = snapshot.FullscreenCapture.IsEnabled;

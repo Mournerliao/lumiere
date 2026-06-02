@@ -52,9 +52,12 @@ public sealed class SwapChainManager
 
             Logger.LogDebug("SwapChain created: format={Format}, colorSpace={ColorSpace}", options.CreateDescription().Format, options.ColorSpace);
 
+            var displayCapability = HdrDisplayCapability.Probe(factory);
+
             var presentationEvidence = SwapChainColorSpaceConfigurator.Configure(
                 new SwapChainColorSpaceController(swapChain3),
-                options.ColorSpace);
+                options.ColorSpace,
+                displayCapability);
 
             attachPreview(swapChain);
 

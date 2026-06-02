@@ -9,7 +9,6 @@ public sealed record SettingsPanelProjection(
     ShortcutSettingProjection RegionShortcut,
     bool HdrAlertsEnabled,
     string HdrAlertsHelpText,
-    bool OptionalHdrAlertChromeEnabled,
     OutputSettingsProjection Output,
     AboutInfoProjection About,
     bool TimestampNaming,
@@ -33,7 +32,6 @@ public sealed record SettingsPanelProjection(
                 hotkeyPlan.Region),
             settingsProvider.HdrAlertsEnabled,
             "Show warnings when HDR is unavailable, degraded, unsupported, or failed.",
-            settingsProvider.HdrAlertsEnabled,
             OutputSettingsProjection.ReadOnly(
                 settingsProvider.OutputTarget,
                 settingsProvider.SavePath,
@@ -43,7 +41,7 @@ public sealed record SettingsPanelProjection(
             AboutInfoProjection.FromProvider(aboutInfoProvider),
             settingsProvider.TimestampNaming,
             settingsProvider.CopyAsImage,
-            MainPanelProjection.Project(sessionState));
+            MainPanelProjection.Project(sessionState, hdrAlertsEnabled: settingsProvider.HdrAlertsEnabled));
     }
 }
 

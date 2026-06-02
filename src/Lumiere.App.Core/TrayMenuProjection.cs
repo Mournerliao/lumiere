@@ -1,4 +1,5 @@
 using Lumiere.Capture;
+using Lumiere.Graphics.Hdr;
 using Lumiere.Graphics.Output;
 using Lumiere.Settings;
 
@@ -8,6 +9,7 @@ public sealed record TrayMenuProjection(
     string AppName,
     string HdrStatusLabel,
     string HdrStatusDetail,
+    string TrayAlertMessage,
     TrayMenuCommandProjection FullscreenCapture,
     TrayMenuCommandProjection RegionCapture,
     TrayMenuCommandProjection OpenMainWindow,
@@ -19,13 +21,14 @@ public sealed record TrayMenuProjection(
         ISettingsProvider settingsProvider,
         IAboutInfoProvider aboutInfoProvider,
         CaptureCommandMode? activeCaptureMode = null,
-        OutputResult? outputResult = null)
+        OutputResult? outputResult = null,
+        bool hdrAlertsEnabled = false)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(settingsProvider);
         ArgumentNullException.ThrowIfNull(aboutInfoProvider);
 
-        var main = MainPanelProjection.Project(state, outputResult);
+        var main = MainPanelProjection.Project(state, outputResult, hdrAlertsEnabled);
         var appName = string.IsNullOrWhiteSpace(aboutInfoProvider.AppName)
             ? "Lumiere"
             : aboutInfoProvider.AppName;
@@ -38,10 +41,13 @@ public sealed record TrayMenuProjection(
             _ => main.ActionTitle,
         };
 
+        var trayAlertMessage = MapTrayAlertMessage(state.Readiness.State, outputResult, hdrAlertsEnabled);
+
         return new TrayMenuProjection(
             AppName: appName,
             HdrStatusLabel: main.TrustLabel,
             HdrStatusDetail: main.TrustMessage,
+            TrayAlertMessage: trayAlertMessage,
             FullscreenCapture: CreateCaptureCommand(
                 "Full Screen",
                 settingsProvider.FullscreenShortcut,
@@ -59,6 +65,22 @@ public sealed record TrayMenuProjection(
             OpenMainWindow: new TrayMenuCommandProjection("Open Lumiere", null, true, false),
             OpenSettings: new TrayMenuCommandProjection("Settings", null, true, false),
             Quit: new TrayMenuCommandProjection("Quit", null, true, false));
+    }
+
+    private static string MapTrayAlertMessage(PreviewReadinessState readinessState, OutputResult? outputResult, bool hdrAlertsEnabled)
+    {
+        if (!hdrAlertsEnabled || outputResult is not null)
+        {
+            return string.Empty;
+        }
+
+        return readinessState switch
+        {
+            PreviewReadinessState.Degraded => "Enable HDR for best quality",
+            PreviewReadinessState.Unsupported => "HDR unavailable on this display",
+            PreviewReadinessState.Failed => "Preview failed",
+            _ => string.Empty,
+        };
     }
 
     private static TrayMenuCommandProjection CreateCaptureCommand(

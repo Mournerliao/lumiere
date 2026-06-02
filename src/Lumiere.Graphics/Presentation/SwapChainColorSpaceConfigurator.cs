@@ -14,7 +14,8 @@ public static class SwapChainColorSpaceConfigurator
 
     public static PreviewReadinessStatus Configure(
         ISwapChainColorSpaceController controller,
-        ColorSpaceType colorSpace)
+        ColorSpaceType colorSpace,
+        HdrDisplayCapability? displayCapability = null)
     {
         ArgumentNullException.ThrowIfNull(controller);
 
@@ -28,6 +29,17 @@ public static class SwapChainColorSpaceConfigurator
                     PreviewReadinessStage.Presentation,
                     "Preview cannot be proven HDR-correct on the current display path.",
                     $"{CheckOperationName} returned {support} for {colorSpace}.");
+            }
+
+            if (displayCapability is { State: HdrDisplayState.Inactive })
+            {
+                Logger.LogInformation(
+                    "ColorSpace check passed but display HDR is inactive (colorSpace={DisplayColorSpace}, device={DeviceName}); marking degraded.",
+                    displayCapability.DisplayColorSpace, displayCapability.DeviceName);
+                return PreviewReadinessStatus.Degraded(
+                    PreviewReadinessStage.Presentation,
+                    "Enable HDR in Windows Display settings for best capture quality.",
+                    $"Display color space is {displayCapability.DisplayColorSpace} (device: {displayCapability.DeviceName}); HDR is not active.");
             }
 
             controller.SetColorSpace1(colorSpace);

@@ -76,7 +76,6 @@ public sealed class SettingsPanelProjectionTests
         var projection = SettingsPanelProjection.Project(settings, CreateState());
 
         Assert.False(projection.HdrAlertsEnabled);
-        Assert.False(projection.OptionalHdrAlertChromeEnabled);
     }
 
     [Theory]
@@ -317,7 +316,6 @@ public sealed class SettingsPanelProjectionTests
 
         Assert.Equal("Preview failed", projection.MainPanel.TrustLabel);
         Assert.Equal(MainPanelTrustSeverity.Error, projection.MainPanel.TrustSeverity);
-        Assert.False(projection.OptionalHdrAlertChromeEnabled);
     }
 
     private static CaptureSessionState CreateState() =>

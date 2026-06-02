@@ -222,6 +222,113 @@ public sealed class MainPanelProjectionTests
         Assert.Equal(MainPanelTrustSeverity.Warning, projection.TrustSeverity);
     }
 
+    [Theory]
+    [InlineData(PreviewReadinessState.Degraded)]
+    [InlineData(PreviewReadinessState.Unsupported)]
+    [InlineData(PreviewReadinessState.Failed)]
+    public void AlertMessage_NonEmptyForDegradedUnsupportedFailedWhenAlertsEnabled(PreviewReadinessState readinessState)
+    {
+        var state = CreateState(readinessState);
+
+        var projection = MainPanelProjection.Project(state, hdrAlertsEnabled: true);
+
+        Assert.True(projection.HasAlert);
+        Assert.False(string.IsNullOrWhiteSpace(projection.AlertMessage));
+    }
+
+    [Theory]
+    [InlineData(PreviewReadinessState.Degraded)]
+    [InlineData(PreviewReadinessState.Unsupported)]
+    [InlineData(PreviewReadinessState.Failed)]
+    [InlineData(PreviewReadinessState.Ready)]
+    [InlineData(PreviewReadinessState.Initializing)]
+    public void AlertMessage_EmptyForAllStatesWhenAlertsDisabled(PreviewReadinessState readinessState)
+    {
+        var state = CreateState(readinessState);
+
+        var projection = MainPanelProjection.Project(state, hdrAlertsEnabled: false);
+
+        Assert.False(projection.HasAlert);
+        Assert.Equal(string.Empty, projection.AlertMessage);
+    }
+
+    [Theory]
+    [InlineData(PreviewReadinessState.Ready)]
+    [InlineData(PreviewReadinessState.Initializing)]
+    public void AlertMessage_EmptyWhenReadinessReadyOrInitializingRegardlessOfAlertsEnabled(PreviewReadinessState readinessState)
+    {
+        var state = CreateState(readinessState);
+
+        var projectionEnabled = MainPanelProjection.Project(state, hdrAlertsEnabled: true);
+        var projectionDisabled = MainPanelProjection.Project(state, hdrAlertsEnabled: false);
+
+        Assert.False(projectionEnabled.HasAlert);
+        Assert.Equal(string.Empty, projectionEnabled.AlertMessage);
+        Assert.False(projectionDisabled.HasAlert);
+        Assert.Equal(string.Empty, projectionDisabled.AlertMessage);
+    }
+
+    [Fact]
+    public void AlertMessage_EmptyWhenOutputResultPresentRegardlessOfAlertsEnabled()
+    {
+        var state = CreateState(PreviewReadinessState.Degraded);
+        var outputResult = OutputResult.ClipboardSuccess(512);
+
+        var projection = MainPanelProjection.Project(state, outputResult, hdrAlertsEnabled: true);
+
+        Assert.False(projection.HasAlert);
+        Assert.Equal(string.Empty, projection.AlertMessage);
+    }
+
+    [Fact]
+    public void AlertMessage_DegradedShowsEnableHdrHint()
+    {
+        var state = CreateState(PreviewReadinessState.Degraded);
+
+        var projection = MainPanelProjection.Project(state, hdrAlertsEnabled: true);
+
+        Assert.Contains("HDR", projection.AlertMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void AlertMessage_UnsupportedShowsNotSupportedHint()
+    {
+        var state = CreateState(PreviewReadinessState.Unsupported);
+
+        var projection = MainPanelProjection.Project(state, hdrAlertsEnabled: true);
+
+        Assert.Contains("not supported", projection.AlertMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void AlertMessage_FailedShowsPreviewFailedHint()
+    {
+        var state = CreateState(PreviewReadinessState.Failed);
+
+        var projection = MainPanelProjection.Project(state, hdrAlertsEnabled: true);
+
+        Assert.Contains("Preview failed", projection.AlertMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void AlertMessage_DoesNotClaimHdrPreservation()
+    {
+        var degradedState = CreateState(PreviewReadinessState.Degraded);
+        var unsupportedState = CreateState(PreviewReadinessState.Unsupported);
+        var failedState = CreateState(PreviewReadinessState.Failed);
+
+        var degraded = MainPanelProjection.Project(degradedState, hdrAlertsEnabled: true);
+        var unsupported = MainPanelProjection.Project(unsupportedState, hdrAlertsEnabled: true);
+        var failed = MainPanelProjection.Project(failedState, hdrAlertsEnabled: true);
+
+        Assert.DoesNotContain("HDR-preserving", degraded.AlertMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR preserving", degraded.AlertMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR-preserving", unsupported.AlertMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR preserving", unsupported.AlertMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR-preserving", failed.AlertMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR preserving", failed.AlertMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static CaptureSessionState CreateState(CaptureSessionStatus status)
     {
         var target = CreateTarget();

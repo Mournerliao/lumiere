@@ -10,9 +10,14 @@ public sealed record MainPanelProjection(
     string TrustLabel,
     string TrustMessage,
     MainPanelTrustIcon TrustIcon,
-    MainPanelTrustSeverity TrustSeverity)
+    MainPanelTrustSeverity TrustSeverity,
+    string AlertMessage,
+    bool HasAlert)
 {
-    public static MainPanelProjection Project(CaptureSessionState state, OutputResult? outputResult = null)
+    public static MainPanelProjection Project(
+        CaptureSessionState state,
+        OutputResult? outputResult = null,
+        bool hdrAlertsEnabled = false)
     {
         ArgumentNullException.ThrowIfNull(state);
 
@@ -32,6 +37,7 @@ public sealed record MainPanelProjection(
         };
 
         var trust = MapTrust(state.Readiness.State, outputResult);
+        var alertMessage = MapAlertMessage(state.Readiness.State, outputResult, hdrAlertsEnabled);
 
         return new MainPanelProjection(
             canStartCapture,
@@ -41,7 +47,9 @@ public sealed record MainPanelProjection(
                 ? "HDR preview status is being checked."
                 : state.UserFacingReason,
             trust.Icon,
-            trust.Severity);
+            trust.Severity,
+            alertMessage,
+            !string.IsNullOrEmpty(alertMessage));
     }
 
     private static (string Label, MainPanelTrustIcon Icon, MainPanelTrustSeverity Severity) MapTrust(
@@ -68,6 +76,25 @@ public sealed record MainPanelProjection(
             PreviewReadinessState.Unsupported => ("HDR unavailable", MainPanelTrustIcon.ErrorCircle, MainPanelTrustSeverity.Error),
             PreviewReadinessState.Failed => ("Preview failed", MainPanelTrustIcon.ErrorBadge, MainPanelTrustSeverity.Error),
             _ => ("Checking HDR", MainPanelTrustIcon.Clock, MainPanelTrustSeverity.Neutral),
+        };
+    }
+
+    private static string MapAlertMessage(
+        PreviewReadinessState readinessState,
+        OutputResult? outputResult,
+        bool hdrAlertsEnabled)
+    {
+        if (!hdrAlertsEnabled || outputResult is not null)
+        {
+            return string.Empty;
+        }
+
+        return readinessState switch
+        {
+            PreviewReadinessState.Degraded => "Enable HDR in Windows Display settings for best capture quality.",
+            PreviewReadinessState.Unsupported => "HDR capture is not supported on this display.",
+            PreviewReadinessState.Failed => "Preview failed. Capture may not produce HDR-quality output.",
+            _ => string.Empty,
         };
     }
 

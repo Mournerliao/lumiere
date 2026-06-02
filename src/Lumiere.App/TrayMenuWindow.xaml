@@ -40,6 +40,12 @@
               FontSize="10"
               Foreground="{StaticResource MutedTextBrush}"
               Text="" />
+          <TextBlock
+              x:Name="HdrAlertLabel"
+              FontSize="10"
+              Foreground="{StaticResource WarningBrush}"
+              Text=""
+              Visibility="Collapsed" />
         </StackPanel>
       </Grid>
 

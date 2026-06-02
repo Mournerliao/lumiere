@@ -11,14 +11,14 @@ public sealed record AppShellProjection(
 
     public bool IsSettingsVisible => ActiveView is AppShellView.Settings;
 
-    public static AppShellProjection Project(CaptureSessionState state, AppShellView activeView, OutputResult? outputResult = null) =>
-        new(activeView, MainPanelProjection.Project(state, outputResult));
+    public static AppShellProjection Project(CaptureSessionState state, AppShellView activeView, OutputResult? outputResult = null, bool hdrAlertsEnabled = false) =>
+        new(activeView, MainPanelProjection.Project(state, outputResult, hdrAlertsEnabled));
 
-    public AppShellProjection OpenSettings(CaptureSessionState state, OutputResult? outputResult = null) =>
-        Project(state, AppShellView.Settings, outputResult);
+    public AppShellProjection OpenSettings(CaptureSessionState state, OutputResult? outputResult = null, bool hdrAlertsEnabled = false) =>
+        Project(state, AppShellView.Settings, outputResult, hdrAlertsEnabled);
 
-    public AppShellProjection CloseSettings(CaptureSessionState state, OutputResult? outputResult = null) =>
-        Project(state, AppShellView.Main, outputResult);
+    public AppShellProjection CloseSettings(CaptureSessionState state, OutputResult? outputResult = null, bool hdrAlertsEnabled = false) =>
+        Project(state, AppShellView.Main, outputResult, hdrAlertsEnabled);
 }
 
 public enum AppShellView

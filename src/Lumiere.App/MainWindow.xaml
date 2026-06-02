@@ -14,7 +14,9 @@
     <Grid x:Name="MainPanelRoot">
       <Grid.RowDefinitions>
         <RowDefinition Height="64" />
+        <RowDefinition Height="Auto" />
         <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" />
         <RowDefinition Height="42" />
       </Grid.RowDefinitions>
 
@@ -77,7 +79,7 @@
       </Border>
 
       <Grid
-          Grid.Row="1"
+          Grid.Row="2"
           Padding="20,18">
         <StackPanel
             VerticalAlignment="Center"
@@ -120,8 +122,18 @@
         </StackPanel>
       </Grid>
 
+      <InfoBar
+          x:Name="HdrAlertInfoBar"
+          Grid.Row="3"
+          Margin="12,0"
+          Closed="OnHdrAlertInfoBarClosed"
+          IsClosable="True"
+          IsOpen="False"
+          Severity="Warning"
+          Visibility="Collapsed" />
+
       <Border
-          Grid.Row="2"
+          Grid.Row="4"
           Padding="20,0"
           BorderBrush="{StaticResource DividerBrush}"
           BorderThickness="0,1,0,0">
@@ -181,6 +193,7 @@
           </Button>
         </Grid>
       </Border>
+
     </Grid>
 
     <Grid

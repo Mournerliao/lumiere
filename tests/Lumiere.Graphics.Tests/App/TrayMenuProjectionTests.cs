@@ -82,6 +82,75 @@ public sealed class TrayMenuProjectionTests
         Assert.True(projection.RegionCapture.IsEnabled);
     }
 
+    [Fact]
+    public void TrayAlertMessage_NonEmptyForDegradedWhenAlertsEnabled()
+    {
+        var projection = TrayMenuProjection.Project(
+            CaptureSessionState.Degraded(
+                CreateTarget(),
+                PreviewReadinessStatus.Degraded(PreviewReadinessStage.Presentation, "Degraded", "detail.")),
+            new StubSettingsProvider(string.Empty, string.Empty),
+            new StubAboutInfoProvider("Lumiere"),
+            hdrAlertsEnabled: true);
+
+        Assert.False(string.IsNullOrEmpty(projection.TrayAlertMessage));
+    }
+
+    [Fact]
+    public void TrayAlertMessage_EmptyWhenAlertsDisabled()
+    {
+        var projection = TrayMenuProjection.Project(
+            CaptureSessionState.Degraded(
+                CreateTarget(),
+                PreviewReadinessStatus.Degraded(PreviewReadinessStage.Presentation, "Degraded", "detail.")),
+            new StubSettingsProvider(string.Empty, string.Empty),
+            new StubAboutInfoProvider("Lumiere"),
+            hdrAlertsEnabled: false);
+
+        Assert.Equal(string.Empty, projection.TrayAlertMessage);
+    }
+
+    [Fact]
+    public void TrayAlertMessage_EmptyForReadyStateRegardlessOfAlertsEnabled()
+    {
+        var projectionEnabled = TrayMenuProjection.Project(
+            CaptureSessionState.Idle(PreviewReadinessStatus.Ready("Ready", "HDR preview is ready.")),
+            new StubSettingsProvider(string.Empty, string.Empty),
+            new StubAboutInfoProvider("Lumiere"),
+            hdrAlertsEnabled: true);
+
+        Assert.Equal(string.Empty, projectionEnabled.TrayAlertMessage);
+    }
+
+    [Fact]
+    public void TrayAlertMessage_NonEmptyForUnsupportedWhenAlertsEnabled()
+    {
+        var projection = TrayMenuProjection.Project(
+            CaptureSessionState.Unsupported(
+                PreviewReadinessStatus.Unsupported(PreviewReadinessStage.Presentation, "HDR unavailable", "HDR capture is not supported.")),
+            new StubSettingsProvider(string.Empty, string.Empty),
+            new StubAboutInfoProvider("Lumiere"),
+            hdrAlertsEnabled: true);
+
+        Assert.False(string.IsNullOrEmpty(projection.TrayAlertMessage));
+        Assert.Contains("HDR", projection.TrayAlertMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void TrayAlertMessage_NonEmptyForFailedWhenAlertsEnabled()
+    {
+        var projection = TrayMenuProjection.Project(
+            CaptureSessionState.Failed(
+                CreateTarget(),
+                PreviewReadinessStatus.Failed(PreviewReadinessStage.Presentation, "Preview failed", "Preview failure.")),
+            new StubSettingsProvider(string.Empty, string.Empty),
+            new StubAboutInfoProvider("Lumiere"),
+            hdrAlertsEnabled: true);
+
+        Assert.False(string.IsNullOrEmpty(projection.TrayAlertMessage));
+        Assert.Contains("failed", projection.TrayAlertMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static CaptureTarget CreateTarget() =>
         CaptureTarget.CreateForTest(
             new SizeInt32

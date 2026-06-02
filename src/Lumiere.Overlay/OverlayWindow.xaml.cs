@@ -94,6 +94,9 @@ public sealed partial class OverlayWindow : Window
         currentState = state;
         StatusLabelTextBlock.Text = state.Label;
         StatusMessageTextBlock.Text = state.Message;
+        StatusMessageTextBlock.Visibility = string.IsNullOrEmpty(state.Message)
+            ? Visibility.Collapsed
+            : Visibility.Visible;
         UpdateTechnicalDetail();
         ApplyStatusStyle(OverlayStatusStyle.FromStatus(state.Status));
         ApplyCropSelectionAvailability(state);

@@ -78,6 +78,7 @@ public sealed partial class MainWindow : Window
     private bool applyingSettingsProjection;
     private bool sizingMainPanel;
     private bool isExplicitShutdown;
+    private bool hdrAlertDismissed;
     private bool backgroundWindowEventsEnabled;
     private AppShellView activeShellView = AppShellView.Main;
     private int overlayDispatcherFallbackReported;
@@ -247,6 +248,7 @@ public sealed partial class MainWindow : Window
         }
 
         hdrAlertSettingsWriter.SetHdrAlertsEnabled(!settingsProvider.HdrAlertsEnabled);
+        hdrAlertDismissed = false;
         var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
         ApplySettingsProjection(currentState);
         UpdateMainPanelProjection(currentState, lastOutputResult);
@@ -1568,23 +1570,33 @@ public sealed partial class MainWindow : Window
 
     private void ApplyHdrAlert(MainPanelProjection projection)
     {
-        if (projection.HasAlert)
+        if (!projection.HasAlert)
         {
-            HdrAlertInfoBar.Severity = projection.TrustSeverity switch
-            {
-                MainPanelTrustSeverity.Error => InfoBarSeverity.Error,
-                MainPanelTrustSeverity.Warning => InfoBarSeverity.Warning,
-                _ => InfoBarSeverity.Informational,
-            };
-            HdrAlertInfoBar.Message = projection.AlertMessage;
-            HdrAlertInfoBar.IsOpen = true;
-            HdrAlertInfoBar.Visibility = Visibility.Visible;
-        }
-        else
-        {
+            hdrAlertDismissed = false;
             HdrAlertInfoBar.IsOpen = false;
             HdrAlertInfoBar.Visibility = Visibility.Collapsed;
+            return;
         }
+
+        if (hdrAlertDismissed)
+        {
+            return;
+        }
+
+        HdrAlertInfoBar.Severity = projection.TrustSeverity switch
+        {
+            MainPanelTrustSeverity.Error => InfoBarSeverity.Error,
+            MainPanelTrustSeverity.Warning => InfoBarSeverity.Warning,
+            _ => InfoBarSeverity.Informational,
+        };
+        HdrAlertInfoBar.Message = projection.AlertMessage;
+        HdrAlertInfoBar.IsOpen = true;
+        HdrAlertInfoBar.Visibility = Visibility.Visible;
+    }
+
+    private void OnHdrAlertInfoBarClosed(InfoBar sender, InfoBarClosedEventArgs args)
+    {
+        hdrAlertDismissed = true;
     }
 
     private void ApplyMainCaptureCardStyles()
@@ -1927,16 +1939,14 @@ public sealed partial class MainWindow : Window
         var hdrAlertsEnabled = settingsProvider.HdrAlertsEnabled;
         return sessionState.Status switch
         {
-            CaptureSessionStatus.Capturing => OverlayState.HdrReady(message, detail),
+            CaptureSessionStatus.Capturing => OverlayState.HdrReady(string.Empty, detail),
             CaptureSessionStatus.Degraded => OverlayState.DegradedPreview(
-                hdrAlertsEnabled ? "HDR 功能未启用，预览质量可能降低。请在 Windows 设置 > 显示中启用 HDR。" : string.Empty,
+                hdrAlertsEnabled ? "Enable HDR in Windows for best capture quality" : string.Empty,
                 detail),
             CaptureSessionStatus.Unsupported => OverlayState.UnsupportedCapture(
-                hdrAlertsEnabled ? "当前显示器不支持 HDR 捕获。请检查显示器规格和连接方式。" : string.Empty,
+                hdrAlertsEnabled ? "HDR capture is not supported on this display" : string.Empty,
                 detail),
-            CaptureSessionStatus.Failed => OverlayState.PreviewFailed(
-                "预览失败，捕获可能无法产生高质量输出。" + (string.IsNullOrEmpty(message) ? string.Empty : $" {message}"),
-                detail),
+            CaptureSessionStatus.Failed => OverlayState.PreviewFailed(message, detail),
             CaptureSessionStatus.Disposed => OverlayState.Disposed(message, detail),
             _ => OverlayState.Initializing(message, detail),
         };
