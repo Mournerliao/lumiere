@@ -1,5 +1,5 @@
 # generated: 2026-05-09T17:29:57+0800
-# last_updated: 2026-06-03T21:00:00+08:00
+# last_updated: 2026-06-04T21:00:00+08:00
 # project: lumiere
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-09T17:29:57+0800
-last_updated: 2026-06-03T21:00:00+08:00
+last_updated: 2026-06-04T21:00:00+08:00
 project: lumiere
 project_key: NOKEY
 tracking_system: file-system
@@ -103,13 +103,13 @@ development_status:
   7-5-quit-cleanly-from-tray: done
   7-6-resolve-capture-state-technical-debt: done
   epic-7-retrospective: done
-  epic-8: in-progress
+  epic-8: done
   8-1-complete-evidence-based-hdr-state-mapping: done
   8-2-implement-actionable-hdr-alerts: done
   8-3-strengthen-structured-diagnostics-and-failure-mapping: done
   8-4-record-validation-level-for-every-mvp-capability: done
   8-5-run-mvp-release-validation-matrix: done
-  epic-8-retrospective: optional
+  epic-8-retrospective: done
   epic-9: backlog
   9-1-enable-hdr-alerts-toggle: backlog
   9-2-enable-timestamp-naming-toggle: backlog
