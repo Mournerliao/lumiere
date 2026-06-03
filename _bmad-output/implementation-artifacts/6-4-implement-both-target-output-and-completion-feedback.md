@@ -61,6 +61,10 @@ so that one capture can support quick sharing and durable storage.
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass** — Automated gates pass on Windows. Both-target orchestration tested. Known gap: slow OS behavior and resource teardown not validated.
+
 ### Story Scope
 
 Story 6.4 completes configured multi-target output orchestration and aggregate completion/failure feedback. It does not implement folder picker UI, export/color options, after-capture actions, tray, or hotkeys.

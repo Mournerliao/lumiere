@@ -54,6 +54,10 @@ so that I am not misled about HDR preservation.
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass** — Automated gates pass on Windows. Controls confirmed disabled/validation-scoped; no manual validation required for intentionally pending behavior.
+
 ### Story Scope
 
 Story 6.5 intentionally does not implement HDR10, P3, ICC metadata, encoder metadata policy, or target-app compatibility behavior. Visible HDR10/P3/sRGB controls are allowed as design-reference surface only when clearly validation-scoped and not described as validated output behavior.

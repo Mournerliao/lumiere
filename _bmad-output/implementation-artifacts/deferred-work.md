@@ -201,6 +201,23 @@ None currently known.
 - 测试失败: `DefaultSettingsProviderTests.HdrAlertsEnabled_ReturnsTrue` 和 `AllProperties_ReturnConsistentValues` 失败 — 测试期望 `HdrAlertsEnabled` 默认为 `true`，但实际为 `false`。这是预先存在的问题，与本次更改无关。可能是设置文件中的值被设置为 `false`，需要检查测试环境或设置文件。
 - 审查发现: 缺少无障碍支持（AutomationProperties）、硬编码中文文本、缺少动画效果、缺少测试覆盖、缺少悬停状态等。
 
+## Deferred from: code review of story 8-3 (2026-06-03)
+
+- Double-dispose of `swapChain3` in `SwapChainManager` catch+finally [SwapChainManager.cs:70,83] — pre-existing, already tracked from Story 8-2 review
+- `InteropFailureDiagnostics.Write` uses unbounded `exception.ToString()` [InteropFailureDiagnostics.cs:14] — pre-existing pattern, may produce multi-KB log entries
+- `TryReportFrameFailure` bare catch swallows callback exceptions [CaptureService.cs:387] — pre-existing, diagnostic logging executes before the callback so diagnostic is not lost
+
+## Deferred from: code review of story 8-4 (2026-06-03)
+
+- `SessionDiagnosticScope.Dispose()` 缺乏线程安全保障 — `disposed` 字段非 volatile 也无 Interlocked 保护 [SessionDiagnosticScope.cs:43-52]，当前单线程使用低风险
+- `DiagnosticContext` 8 个工厂方法大量重复样板代码 [DiagnosticContext.cs]，风格偏好非功能问题
+- `InteropFailureDiagnostics.LogAndFormat` 返回值含完整调用栈，传播到 PreviewReadinessStatus [InteropFailureDiagnostics.cs:14]，pre-existing pattern
+- `DiagnosticRecord.Create` 不验证空/空白字符串 [DiagnosticRecord.cs:27-30]，防御性编码当前无实际风险
+- `SessionDiagnosticScope` 8 字符十六进制 ID 碰撞风险 [SessionDiagnosticScope.cs:27-32]，概率极低
+- `CaptureService` 日志格式与 `MapFailureToReadiness` 格式重复维护 [CaptureService.cs:276 vs 309]，DRY 违反
+- `MapFailureToReadiness` 行为从"记录+格式化"变为"仅格式化" [CaptureService.cs:309-325]，当前调用点已正确记录但方法语义变更
+- `DiagnosticRecord.Exception` 可变引用类型 [DiagnosticRecord.cs:15]，微小风险当前无实际影响
+
 ## Deferred from: code review of story 8-2 (2026-06-03)
 
 - Multi-monitor probe hardcodes output index 0 — `HdrDisplayCapability.cs:92` always queries first output. On multi-monitor setups with different HDR states per display, probe result may not match capture target.

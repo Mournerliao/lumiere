@@ -380,7 +380,7 @@ public sealed partial class MainWindow : Window
                     CaptureSessionState.Failed(null, PreviewReadinessStatus.Failed(
                         PreviewReadinessStage.Capture,
                         "Preview failed",
-                        InteropFailureDiagnostics.Write(exception))));
+                        InteropFailureDiagnostics.LogAndFormat(exception, Logger))));
                 CloseOverlayWindow();
             }
         }

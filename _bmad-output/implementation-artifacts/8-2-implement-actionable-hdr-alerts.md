@@ -66,6 +66,10 @@ FR12, FR13, FR20, NFR14, NFR22; UX-DR10
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass** — Automated gates pass on Windows. Alert projection and preference integration tested. Known gap: alert display on real HDR/SDR displays not validated.
+
 ### Architecture Guardrails
 
 - **State model ownership:** `PreviewReadinessState` and `PreviewReadinessStatus` live in `Lumiere.Graphics.Hdr`. `CaptureSessionState` and `CaptureSessionStatus` live in `Lumiere.Capture`. `MainPanelProjection` and `TrayMenuProjection` live in `Lumiere.App`. `OverlayState` lives in `Lumiere.Overlay`. Alert projections are UI-layer concerns in `Lumiere.App`; do NOT add alert states to the core capture or graphics models.

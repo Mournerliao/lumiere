@@ -41,9 +41,11 @@ public sealed class CaptureCommandCoordinator : ICaptureCommandCoordinator
         }
         else
         {
-            Logger.LogWarning(
-                "ExecuteAsync REJECTED: mode={Mode}, outcome={Outcome}",
-                command.Mode, result.Outcome);
+            var diagnostic = DiagnosticContext.CaptureWarning(
+                stage: "CommandValidation",
+                userFacingState: "Capture command rejected",
+                technicalDetail: $"mode={command.Mode}, outcome={result.Outcome}, reason={result.Readiness?.TechnicalDetail ?? "none"}");
+            diagnostic.LogTo(Logger);
         }
 
         return Task.FromResult(result);

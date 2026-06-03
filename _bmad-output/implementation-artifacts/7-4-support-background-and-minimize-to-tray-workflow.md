@@ -44,6 +44,10 @@ so that capture stays low-interruption.
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows manual-pass** — Automated gates pass. Windows manual validation completed by Dana on 2026-05-26.
+
 ### Story Scope
 
 Story 7.4 makes ordinary close/minimize hide Lumiere into the background when tray or hotkeys are available. It does not add onboarding, a background settings toggle, or installer-level startup behavior.

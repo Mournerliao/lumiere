@@ -53,7 +53,13 @@ public static class SwapChainColorSpaceConfigurator
         }
         catch (SwapChainPresentationException exception)
         {
-            Logger.LogError(exception, "ColorSpace FAILED (SwapChainPresentation)");
+            var diagnostic = DiagnosticContext.PreviewFailure(
+                stage: "ColorSpaceConfiguration",
+                userFacingState: "Preview color space setup failed",
+                technicalDetail: $"Operation={SetOperationName}, Detail={exception.Message}",
+                exception: exception);
+            diagnostic.LogTo(Logger);
+
             return PreviewReadinessStatus.Failed(
                 PreviewReadinessStage.Presentation,
                 "Preview color space setup failed before HDR correctness could be validated.",
@@ -65,7 +71,13 @@ public static class SwapChainColorSpaceConfigurator
                 ? string.Empty
                 : $" HRESULT {NativeInteropException.FormatHResult(exception.HResult)}.";
 
-            Logger.LogError(exception, "ColorSpace FAILED: {Operation}:{HResult} {Message}", SetOperationName, hResult, exception.Message);
+            var diagnostic = DiagnosticContext.PreviewFailure(
+                stage: "ColorSpaceConfiguration",
+                userFacingState: "Preview color space setup failed",
+                technicalDetail: $"Operation={SetOperationName}, {hResult} {exception.Message}",
+                exception: exception);
+            diagnostic.LogTo(Logger);
+
             return PreviewReadinessStatus.Failed(
                 PreviewReadinessStage.Presentation,
                 "Preview color space setup failed before HDR correctness could be validated.",

@@ -61,6 +61,10 @@ so that captures copied to the clipboard behave consistently with settings.
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass** — Automated gates pass on Windows. Clipboard routing and settings integration tested. Known gap: real clipboard compatibility with target apps (Paint, Photos, Chromium) not validated.
+
 ### Story Scope
 
 Story 6.2 makes clipboard output obey the output policy created in Story 6.1. It does not implement folder output, both-target orchestration, file naming, export/color formats, after-capture actions, tray, or hotkeys.

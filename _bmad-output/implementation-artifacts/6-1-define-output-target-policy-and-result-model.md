@@ -69,6 +69,10 @@ so that clipboard, folder, and both-target behavior is predictable from settings
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass** — Automated gates pass on Windows. Output policy and result model tested; no hardware dependencies.
+
 ### Story Scope
 
 Story 6.1 starts Epic 6 by turning output settings into a real policy/result contract. It should make output behavior predictable from shared persisted settings, but it should not finish every output target. Folder writing is Story 6.3, both-target orchestration/feedback is Story 6.4, export/color option scoping is Story 6.5, and after-capture behavior is Story 6.6.

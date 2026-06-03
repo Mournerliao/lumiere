@@ -55,6 +55,10 @@ so that I can identify the app and understand its purpose.
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass** — Automated gates pass on Windows. Assembly metadata projection tested; packaged version display not manually validated.
+
 ### Story Scope
 
 Story 5.6 finishes Epic 5's native settings surface by making the About section real instead of hardcoded placeholder text. It does not implement packaging, signing, update checks, diagnostics UI, tray, hotkeys, output policy, or HDR output preservation.

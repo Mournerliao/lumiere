@@ -85,6 +85,10 @@ so that capture starts from the low-interruption workflow promised by the rebase
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass** — Automated gates pass on Windows. Code changes for picker/dashboard demotion; no Windows manual validation recorded.
+
 ### Story Scope
 
 This story is a **code implementation story** that removes dashboard-era UI patterns and legacy picker-first assumptions from the default user path. The primary output is a restructured main window layout, renamed resources, and documentation-level demotion of picker infrastructure.

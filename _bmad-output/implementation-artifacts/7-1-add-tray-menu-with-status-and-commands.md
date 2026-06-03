@@ -44,6 +44,10 @@ so that I can use Lumiere without bringing the main window forward.
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows manual-pass** — Automated gates pass. Windows manual validation completed by Dana on 2026-05-26.
+
 ### Story Scope
 
 Story 7.1 adds tray status and command presentation plus typed command routing. It does not implement global hotkeys, minimize-to-tray close policy, or the final quit-cleanup validation matrix reserved for later Epic 7 stories.

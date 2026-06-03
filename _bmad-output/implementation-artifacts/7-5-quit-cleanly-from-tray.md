@@ -39,6 +39,10 @@ so that background operation does not leave native resources behind.
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows manual-pass** — Automated gates pass. Windows manual validation completed by Dana on 2026-05-26.
+
 ### Story Scope
 
 Story 7.5 completes the MVP Epic 7 shutdown path from tray Quit. It does not run or document the final Epic 8 release validation matrix.

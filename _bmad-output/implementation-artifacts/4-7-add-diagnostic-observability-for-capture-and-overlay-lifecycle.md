@@ -74,6 +74,10 @@ so that lifecycle correctness can be verified from logs rather than relying sole
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass** — Automated gates pass on Windows. Structured logging code and test changes; no Windows manual validation recorded.
+
 ### Story Scope
 
 This is an **implementation story** that adds diagnostic observability to the capture and overlay lifecycle. The primary output is **code changes** that add structured logging to critical lifecycle paths.

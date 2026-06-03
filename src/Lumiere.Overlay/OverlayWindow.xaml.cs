@@ -235,14 +235,19 @@ public sealed partial class OverlayWindow : Window
                 presenter.DpiScale,
                 out var confirmed))
         {
-            Logger.LogWarning("RequestCaptureConfirm BLOCKED: TryCreate failed (selection invalid or status not confirmable)");
+            var diagnostic = DiagnosticContext.CaptureWarning(
+                stage: "OverlayConfirm",
+                userFacingState: "Capture confirmation blocked",
+                technicalDetail: "TryCreate failed (selection invalid or status not confirmable)");
+            diagnostic.LogTo(Logger);
+
             UpdateConfirmAvailability();
             return;
         }
 
         Logger.LogInformation(
-            "RequestCaptureConfirm: confirmed crop=({X},{Y},{Width}x{Height}), status={Status}",
-            confirmed.PixelRegion.X, confirmed.PixelRegion.Y, confirmed.PixelRegion.Width, confirmed.PixelRegion.Height,
+            "RequestCaptureConfirm: confirmed crop=({Width}x{Height}), status={Status}",
+            confirmed.PixelRegion.Width, confirmed.PixelRegion.Height,
             confirmed.Status);
 
         isClosingRequested = true;
@@ -552,7 +557,12 @@ public sealed partial class OverlayWindow : Window
     {
         if (isClosingRequested || !cancelRequestGate.TryRequestCancel())
         {
-            Logger.LogWarning("Escape cancel BLOCKED: isClosingRequested={IsClosing}", isClosingRequested);
+            var diagnostic = DiagnosticContext.CaptureWarning(
+                stage: "OverlayCancel",
+                userFacingState: "Cancel request blocked",
+                technicalDetail: $"isClosingRequested={isClosingRequested}");
+            diagnostic.LogTo(Logger);
+
             return;
         }
 

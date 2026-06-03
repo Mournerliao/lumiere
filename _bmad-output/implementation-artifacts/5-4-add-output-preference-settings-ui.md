@@ -79,6 +79,10 @@ so that I can configure capture output once before using any entry point.
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass** — Automated gates pass on Windows. Pending controls confirmed disabled/read-only; no manual validation required for pending behavior.
+
 ### Story Scope
 
 This story upgrades the existing settings output and clipboard placeholders into a complete, honest settings UI surface for planned output preferences. It does **not** implement configured output behavior. Epic 6 owns output target policy, folder writes, timestamp filename policy, both-target completion, copy-as-image execution semantics, after-capture behavior, and per-target success/failure feedback.

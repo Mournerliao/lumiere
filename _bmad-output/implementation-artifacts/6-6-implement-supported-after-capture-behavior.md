@@ -57,6 +57,10 @@ so that clipboard-only captures do not trigger confusing no-op actions.
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass** — Automated gates pass on Windows. After-capture routing tested. Known gap: Explorer reveal/open behavior not validated on Windows hardware.
+
 ### Story Scope
 
 Story 6.6 implements the supported post-output action for file artifacts only. It must not add a gallery, editor workflow, folder picker, output format conversion, tray behavior, or global hotkeys.

@@ -65,6 +65,10 @@ so that main window, future tray commands, and future hotkeys cannot start confl
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass** — Automated gates pass on Windows. Code and test changes for capture session contract; no Windows manual validation recorded.
+
 ### Story Scope
 
 This story is a **code implementation story** that establishes the MVP session contract for capture commands. The primary output is a typed command model and session guard that prevents conflicting capture sessions.

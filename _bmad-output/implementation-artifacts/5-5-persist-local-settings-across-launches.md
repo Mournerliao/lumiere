@@ -63,6 +63,10 @@ so that capture entry points obey the same preferences every time I launch the a
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass** — Automated gates pass on Windows. JSON persistence logic tested; app relaunch persistence not manually validated.
+
 ### Story Scope
 
 Story 5.5 replaces the in-session settings stub with a local persisted settings source. It does not implement shortcut editing, global hotkey registration, configured output behavior, folder writes, save-path picking, timestamp file naming, copy-as-image execution, or after-capture actions.

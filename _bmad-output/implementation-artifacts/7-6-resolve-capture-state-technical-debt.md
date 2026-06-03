@@ -67,6 +67,10 @@ so that tray, hotkey, and background capture paths do not expose latent state ma
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass** — Automated gates pass on Windows. Internal refactoring with no hardware dependencies; no manual validation required.
+
 ### Story Scope
 
 Story 7.6 is a pre-Epic-8 cleanup story that resolves 4 technical debt items carried forward from Epic 4/5. These items increase risk in release validation scenarios where tray, hotkey, and background capture paths interact with state management.

@@ -48,7 +48,7 @@ public sealed class ClipboardOutputService : IOutputService, IOutputPngEncoder, 
         {
             if (!ValidateRegion(pixelX, pixelY, pixelWidth, pixelHeight, sourceWidth, sourceHeight))
             {
-                Logger.LogWarning("Clipboard region INVALID: ({X},{Y},{Width}x{Height}) in {SourceWidth}x{SourceHeight}", pixelX, pixelY, pixelWidth, pixelHeight, sourceWidth, sourceHeight);
+                Logger.LogWarning("Clipboard region INVALID: ({Width}x{Height}) in {SourceWidth}x{SourceHeight}", pixelWidth, pixelHeight, sourceWidth, sourceHeight);
                 return false;
             }
 
@@ -56,12 +56,18 @@ public sealed class ClipboardOutputService : IOutputService, IOutputPngEncoder, 
             var pngBytes = await EncodePngAsync(frame, new CropPixelRect(pixelX, pixelY, pixelWidth, pixelHeight));
             await WriteToClipboardAsync(pngBytes);
 
-            Logger.LogInformation("Clipboard output success: PNG encoded, {Bytes} bytes, crop=({X},{Y},{Width}x{Height})", pngBytes.Length, pixelX, pixelY, pixelWidth, pixelHeight);
+            Logger.LogInformation("Clipboard output success: PNG encoded, {Bytes} bytes, crop=({Width}x{Height})", pngBytes.Length, pixelWidth, pixelHeight);
             return true;
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Clipboard output FAILED");
+            var diagnostic = DiagnosticContext.OutputFailure(
+                stage: "ClipboardWrite",
+                userFacingState: "Failed to copy to clipboard",
+                technicalDetail: $"operation=ClipboardOutput, stage=ExecuteOutput, exception={ex.GetType().Name}: {ex.Message}",
+                exception: ex);
+            diagnostic.LogTo(Logger);
+
             return false;
         }
     }
@@ -93,7 +99,13 @@ public sealed class ClipboardOutputService : IOutputService, IOutputPngEncoder, 
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "operation=ClipboardOutput, stage=ExecuteOutput, detail=Clipboard output FAILED");
+            var diagnostic = DiagnosticContext.OutputFailure(
+                stage: "ClipboardOutput",
+                userFacingState: "Failed to copy to clipboard",
+                technicalDetail: $"operation=ClipboardOutput, stage=ExecuteOutput, exception={ex.GetType().Name}: {ex.Message}",
+                exception: ex);
+            diagnostic.LogTo(Logger);
+
             return OutputResult.ClipboardFailed(ex.Message);
         }
     }
@@ -118,7 +130,7 @@ public sealed class ClipboardOutputService : IOutputService, IOutputPngEncoder, 
         {
             if (!ValidateRegion(pixelX, pixelY, pixelWidth, pixelHeight, texture.Width, texture.Height))
             {
-                Logger.LogWarning("ExecuteOutputAsync region INVALID: operation=ClipboardOutput, stage=ValidateRegion, crop=({X},{Y},{Width}x{Height}) in {SourceWidth}x{SourceHeight}", pixelX, pixelY, pixelWidth, pixelHeight, texture.Width, texture.Height);
+                Logger.LogWarning("ExecuteOutputAsync region INVALID: operation=ClipboardOutput, stage=ValidateRegion, crop=({Width}x{Height}) in {SourceWidth}x{SourceHeight}", pixelWidth, pixelHeight, texture.Width, texture.Height);
                 return OutputResult.Skipped("Invalid crop region");
             }
 
@@ -130,17 +142,23 @@ public sealed class ClipboardOutputService : IOutputService, IOutputPngEncoder, 
 
             await WriteToClipboardAsync(pngBytes);
 
-            Logger.LogInformation("ExecuteOutputAsync success: operation=ClipboardOutput, stage=Complete, bytes={Bytes}, crop=({X},{Y},{Width}x{Height})", pngBytes.Length, pixelX, pixelY, pixelWidth, pixelHeight);
+            Logger.LogInformation("ExecuteOutputAsync success: operation=ClipboardOutput, stage=Complete, bytes={Bytes}, crop=({Width}x{Height})", pngBytes.Length, pixelWidth, pixelHeight);
             return OutputResult.ClipboardSuccess(pngBytes.Length);
         }
         catch (OperationCanceledException)
         {
-            Logger.LogInformation("operation=ClipboardOutput, stage=Cancelled, detail=Output cancelled by caller, crop=({X},{Y},{Width}x{Height})", pixelX, pixelY, pixelWidth, pixelHeight);
+            Logger.LogInformation("operation=ClipboardOutput, stage=Cancelled, detail=Output cancelled by caller, crop=({Width}x{Height})", pixelWidth, pixelHeight);
             throw;
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "operation=ClipboardOutput, stage=ExecuteOutput, detail=ExecuteOutputAsync FAILED, crop=({X},{Y},{Width}x{Height})", pixelX, pixelY, pixelWidth, pixelHeight);
+            var diagnostic = DiagnosticContext.OutputFailure(
+                stage: "ClipboardNativeOutput",
+                userFacingState: "Failed to copy to clipboard",
+                technicalDetail: $"operation=ClipboardOutput, stage=ExecuteOutput, exception={ex.GetType().Name}: {ex.Message}",
+                exception: ex);
+            diagnostic.LogTo(Logger);
+
             return OutputResult.ClipboardFailed(ex.Message);
         }
     }

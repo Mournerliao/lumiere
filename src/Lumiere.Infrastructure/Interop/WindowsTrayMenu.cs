@@ -156,7 +156,13 @@ public sealed class WindowsTrayMenu : ITrayMenu
         }
         catch (Exception exception)
         {
-            Logger.LogWarning(exception, "Custom tray menu failed to show; falling back to native popup menu.");
+            var diagnostic = DiagnosticContext.TrayWarning(
+                stage: "ShowMenu",
+                userFacingState: "Tray menu display failed",
+                technicalDetail: $"Custom tray menu failed to show: {exception.GetType().Name}: {exception.Message}. Falling back to native popup menu.",
+                exception: exception);
+            diagnostic.LogTo(Logger);
+
             ShowNativeMenu(point);
         }
     }
@@ -264,7 +270,11 @@ public sealed class WindowsTrayMenu : ITrayMenu
         var data = CreateNotifyIconData();
         if (!Shell_NotifyIcon(NimModify, ref data))
         {
-            Logger.LogWarning("Shell_NotifyIcon(NIM_MODIFY) failed; tray icon state may be stale.");
+            var diagnostic = DiagnosticContext.TrayWarning(
+                stage: "ModifyIcon",
+                userFacingState: "Tray icon update failed",
+                technicalDetail: "Shell_NotifyIcon(NIM_MODIFY) failed; tray icon state may be stale.");
+            diagnostic.LogTo(Logger);
         }
     }
 

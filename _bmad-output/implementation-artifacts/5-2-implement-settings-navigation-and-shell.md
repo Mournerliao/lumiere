@@ -76,6 +76,10 @@ so that I can configure capture behavior without leaving the native app experien
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass** — Automated gates pass on Windows. Settings projection logic tested; rendered settings UI not manually validated.
+
 ### Story Scope
 
 This story turns the Story 5.1 settings affordance from disabled/pending into a real native settings navigation shell. It should let users open settings from the compact main panel, see an organized settings page or panel, and return to the main panel without losing capture/session state.

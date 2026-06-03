@@ -65,6 +65,10 @@ so that the capture experience matches the intended MVP interaction model.
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass** — Automated gates pass on Windows. Overlay UX code and test changes; no Windows manual validation recorded.
+
 ### Story Scope
 
 This is an **implementation story** that fixes specific UX deviations discovered during Epic 3 validation. The primary output is **code changes** to the overlay module that align the capture experience with the UX specification.

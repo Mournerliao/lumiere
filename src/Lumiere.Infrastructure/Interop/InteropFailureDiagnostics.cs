@@ -1,22 +1,25 @@
+using Lumiere.Infrastructure.Diagnostics;
+using Microsoft.Extensions.Logging;
+
 namespace Lumiere.Infrastructure.Interop;
 
 public static class InteropFailureDiagnostics
 {
-    public static string Write(Exception exception)
+    private static readonly ILogger DefaultLogger = LumiereLoggerFactory.CreateLogger(LogCategories.Infrastructure);
+
+    public static string LogAndFormat(Exception exception, ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(exception);
 
-        var diagnosticDetail = exception.ToString();
-        var logPath = Path.Combine(Path.GetTempPath(), "lumiere-last-error.txt");
+        var effectiveLogger = logger ?? DefaultLogger;
+        var technicalDetail = $"{exception.GetType().Name}: {exception.Message}";
+        var diagnostic = DiagnosticContext.InteropFailure(
+            stage: "InteropException",
+            userFacingState: "Operation failed",
+            technicalDetail: technicalDetail,
+            exception: exception);
+        diagnostic.LogTo(effectiveLogger);
 
-        try
-        {
-            File.WriteAllText(logPath, diagnosticDetail);
-            return $"{diagnosticDetail}{Environment.NewLine}{Environment.NewLine}Log: {logPath}";
-        }
-        catch
-        {
-            return diagnosticDetail;
-        }
+        return exception.ToString();
     }
 }

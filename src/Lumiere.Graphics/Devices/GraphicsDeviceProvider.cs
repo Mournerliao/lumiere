@@ -59,7 +59,12 @@ public sealed class GraphicsDeviceProvider
             immediateContext?.Dispose();
             device?.Dispose();
 
-            Logger.LogError(exception, "D3D11Device FAILED: {Detail}", FormatExceptionDetail(exception));
+            var diagnostic = DiagnosticContext.PreviewFailure(
+                stage: "DeviceCreation",
+                userFacingState: "Graphics device creation failed",
+                technicalDetail: $"Operation={OperationName}, Detail={FormatExceptionDetail(exception)}",
+                exception: exception);
+            diagnostic.LogTo(Logger);
 
             throw CreateFailure(FormatExceptionDetail(exception), exception);
         }

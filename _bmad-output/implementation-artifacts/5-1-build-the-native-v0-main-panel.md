@@ -80,6 +80,10 @@ so that Lumiere feels like a focused screenshot utility rather than a dashboard 
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass + partial manual** — Automated gates pass. Single HDR 4K at 150% DPI manually validated. Known gaps: text scaling, high contrast, mixed-DPI, SDR display, multi-monitor not validated. See `docs/validation/mvp-validation-registry.md`.
+
 ### Story Scope
 
 This is a **native WinUI main panel implementation story**. It updates the app's first visible surface so it matches the v0 MVP reference intent: compact Lumiere identity, fullscreen and region capture actions, shortcut labels, HDR status summary, settings entry, and minimize/background intent.

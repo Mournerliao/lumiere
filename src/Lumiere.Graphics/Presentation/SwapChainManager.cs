@@ -70,7 +70,12 @@ public sealed class SwapChainManager
             swapChain3?.Dispose();
             swapChain?.Dispose();
 
-            Logger.LogError(exception, "SwapChain FAILED: {Detail}", FormatExceptionDetail(exception));
+            var diagnostic = DiagnosticContext.PreviewFailure(
+                stage: "SwapChainCreation",
+                userFacingState: "Preview initialization failed",
+                technicalDetail: $"Operation={OperationName}, Detail={FormatExceptionDetail(exception)}",
+                exception: exception);
+            diagnostic.LogTo(Logger);
 
             throw CreateFailure(FormatExceptionDetail(exception), exception);
         }

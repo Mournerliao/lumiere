@@ -129,9 +129,11 @@ public sealed class CaptureService
 
             if (!CanAcceptCommand(sessionState, command, out var rejectionReason))
             {
-                Logger.LogWarning(
-                    "ValidateCommand REJECTED: mode={Mode}, currentStatus={Status}, reason={Reason}",
-                    command.Mode, sessionState.Status, rejectionReason?.TechnicalDetail);
+                var diagnostic = DiagnosticContext.CaptureWarning(
+                    stage: "CommandValidation",
+                    userFacingState: "Capture command rejected",
+                    technicalDetail: $"mode={command.Mode}, currentStatus={sessionState.Status}, reason={rejectionReason?.TechnicalDetail ?? "none"}");
+                diagnostic.LogTo(Logger);
 
                 return ClassifyRejection(command, sessionState, rejectionReason);
             }
@@ -162,9 +164,11 @@ public sealed class CaptureService
 
             if (!CanAcceptCommand(sessionState, command, out var rejectionReason))
             {
-                Logger.LogWarning(
-                    "TryReserveCommand REJECTED: mode={Mode}, currentStatus={Status}, reason={Reason}",
-                    command.Mode, sessionState.Status, rejectionReason?.TechnicalDetail);
+                var diagnostic = DiagnosticContext.CaptureWarning(
+                    stage: "CommandReservation",
+                    userFacingState: "Capture command rejected",
+                    technicalDetail: $"mode={command.Mode}, currentStatus={sessionState.Status}, reason={rejectionReason?.TechnicalDetail ?? "none"}");
+                diagnostic.LogTo(Logger);
 
                 return ClassifyRejection(command, sessionState, rejectionReason);
             }
@@ -269,7 +273,14 @@ public sealed class CaptureService
             (framePool as IDisposable)?.Dispose();
             (direct3DDevice as IDisposable)?.Dispose();
 
-            Logger.LogError(exception, "StartCapture EXCEPTION");
+            var diagnostic = DiagnosticContext.CaptureFailure(
+                stage: "StartCapture",
+                userFacingState: "Preview failed",
+                technicalDetail: exception is NativeInteropException nativeEx
+                    ? $"Operation={nativeEx.OperationName}, Stage={nativeEx.Stage}, HRESULT={NativeInteropException.FormatHResult(nativeEx.HResultCode)}, Detail={nativeEx.TechnicalDetail}"
+                    : $"Exception={exception.GetType().Name}: {exception.Message}",
+                exception: exception);
+            diagnostic.LogTo(Logger);
 
             return CaptureStartResult.NotStarted(MapFailureToReadiness(exception));
         }
@@ -304,13 +315,13 @@ public sealed class CaptureService
             return PreviewReadinessStatus.Failed(
                 PreviewReadinessStage.Interop,
                 "Preview failed",
-                InteropFailureDiagnostics.Write(nativeInteropException));
+                $"Operation={nativeInteropException.OperationName}, Stage={nativeInteropException.Stage}, HRESULT={NativeInteropException.FormatHResult(nativeInteropException.HResultCode)}, Detail={nativeInteropException.TechnicalDetail}");
         }
 
         return PreviewReadinessStatus.Failed(
             PreviewReadinessStage.Capture,
             "Preview failed",
-            InteropFailureDiagnostics.Write(exception));
+            $"Exception={exception.GetType().Name}: {exception.Message}");
     }
 
     private static void HandleFrameArrived(
@@ -355,7 +366,12 @@ public sealed class CaptureService
         {
             if (frameFailureGate.TryMarkFailed())
             {
-                Logger.LogError(exception, "FrameArrived FAILED");
+                var diagnostic = DiagnosticContext.CaptureFailure(
+                    stage: "FrameArrived",
+                    userFacingState: "Preview failed",
+                    technicalDetail: $"Frame processing failed: {exception.GetType().Name}: {exception.Message}",
+                    exception: exception);
+                diagnostic.LogTo(Logger);
                 TryReportFrameFailure(exception, onFrameFailed);
             }
         }

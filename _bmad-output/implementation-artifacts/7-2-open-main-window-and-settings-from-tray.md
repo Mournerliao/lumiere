@@ -44,6 +44,10 @@ so that background operation still gives me access to configuration.
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows manual-pass** — Automated gates pass. Windows manual validation completed by Dana on 2026-05-26.
+
 ### Story Scope
 
 Story 7.2 wires tray navigation commands to the already-running main window and settings shell. It does not implement minimize-to-tray policy, global hotkey registration, or final quit cleanup; those remain in later Epic 7 stories.

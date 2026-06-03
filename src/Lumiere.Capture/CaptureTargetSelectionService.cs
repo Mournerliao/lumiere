@@ -61,7 +61,7 @@ public sealed class CaptureTargetSelectionService
                 PreviewReadinessStatus.Unsupported(
                     PreviewReadinessStage.Capture,
                     "Unsupported capture",
-                    InteropFailureDiagnostics.Write(exception)));
+                    InteropFailureDiagnostics.LogAndFormat(exception)));
         }
         catch (ArgumentException exception)
         {
@@ -69,7 +69,7 @@ public sealed class CaptureTargetSelectionService
                 PreviewReadinessStatus.Failed(
                     PreviewReadinessStage.Capture,
                     "Preview failed",
-                    InteropFailureDiagnostics.Write(exception)));
+                    InteropFailureDiagnostics.LogAndFormat(exception)));
         }
         catch (Exception exception)
         {
@@ -77,7 +77,7 @@ public sealed class CaptureTargetSelectionService
                 PreviewReadinessStatus.Failed(
                     PreviewReadinessStage.Interop,
                     "Preview failed",
-                    InteropFailureDiagnostics.Write(exception)));
+                    InteropFailureDiagnostics.LogAndFormat(exception)));
         }
     }
 }

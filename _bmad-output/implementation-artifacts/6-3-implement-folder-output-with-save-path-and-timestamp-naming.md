@@ -60,6 +60,10 @@ so that file output is reliable and does not overwrite previous captures.
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass** — Automated gates pass on Windows. Path policy and naming logic tested. Known gap: protected folders, long paths, filesystem edge cases not validated.
+
 ### Story Scope
 
 Story 6.3 implements file artifact output for folder target and timestamp naming. It does not implement both-target orchestration feedback beyond folder target results, folder picker UI, after-capture open/reveal, export/color options, tray, or hotkeys.

@@ -81,6 +81,10 @@ so that Lumiere matches my workflow and warning tolerance.
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass** — Automated gates pass on Windows. Settings projection tested; keyboard navigation and screen reader not validated.
+
 ### Story Scope
 
 This story upgrades the existing Story 5.2 settings placeholders for `SHORTCUTS` and `HDR ALERTS`.

@@ -105,30 +105,27 @@ public sealed class DirectMonitorCaptureTargetSelectionService
         }
         catch (NotSupportedException exception)
         {
-            Logger.LogWarning(exception, "Direct capture NOT SUPPORTED");
             return Task.FromResult(CaptureTargetSelectionResult.Unsupported(
                 PreviewReadinessStatus.Unsupported(
                     PreviewReadinessStage.Capture,
                     "Unsupported capture",
-                    InteropFailureDiagnostics.Write(exception))));
+                    InteropFailureDiagnostics.LogAndFormat(exception, Logger))));
         }
         catch (ArgumentException exception)
         {
-            Logger.LogError(exception, "Direct capture FAILED (ArgumentException)");
             return Task.FromResult(CaptureTargetSelectionResult.Failed(
                 PreviewReadinessStatus.Failed(
                     PreviewReadinessStage.Capture,
                     "Preview failed",
-                    InteropFailureDiagnostics.Write(exception))));
+                    InteropFailureDiagnostics.LogAndFormat(exception, Logger))));
         }
         catch (Exception exception)
         {
-            Logger.LogError(exception, "Direct capture FAILED (Exception)");
             return Task.FromResult(CaptureTargetSelectionResult.Failed(
                 PreviewReadinessStatus.Failed(
                     PreviewReadinessStage.Interop,
                     "Preview failed",
-                    InteropFailureDiagnostics.Write(exception))));
+                    InteropFailureDiagnostics.LogAndFormat(exception, Logger))));
         }
     }
 
@@ -186,7 +183,7 @@ public sealed class DirectMonitorCaptureTargetSelectionService
                 PreviewReadinessStatus.Unsupported(
                     PreviewReadinessStage.Capture,
                     "Unsupported capture",
-                    InteropFailureDiagnostics.Write(exception)));
+                    InteropFailureDiagnostics.LogAndFormat(exception, Logger)));
         }
         catch (ArgumentException exception)
         {
@@ -194,7 +191,7 @@ public sealed class DirectMonitorCaptureTargetSelectionService
                 PreviewReadinessStatus.Failed(
                     PreviewReadinessStage.Capture,
                     "Preview failed",
-                    InteropFailureDiagnostics.Write(exception)));
+                    InteropFailureDiagnostics.LogAndFormat(exception, Logger)));
         }
         catch (Exception exception)
         {
@@ -202,7 +199,7 @@ public sealed class DirectMonitorCaptureTargetSelectionService
                 PreviewReadinessStatus.Failed(
                     PreviewReadinessStage.Interop,
                     "Preview failed",
-                    InteropFailureDiagnostics.Write(exception)));
+                    InteropFailureDiagnostics.LogAndFormat(exception, Logger)));
         }
     }
 
@@ -219,14 +216,14 @@ public sealed class DirectMonitorCaptureTargetSelectionService
                 PreviewReadinessStatus.Unsupported(
                     stage,
                     "Unsupported capture",
-                    InteropFailureDiagnostics.Write(exception)));
+                    InteropFailureDiagnostics.LogAndFormat(exception)));
         }
 
         return CaptureTargetSelectionResult.Failed(
             PreviewReadinessStatus.Failed(
                 stage,
                 "Preview failed",
-                InteropFailureDiagnostics.Write(exception)));
+                InteropFailureDiagnostics.LogAndFormat(exception)));
     }
 
     private async Task<CaptureTarget?> PickFallbackTargetAsync()

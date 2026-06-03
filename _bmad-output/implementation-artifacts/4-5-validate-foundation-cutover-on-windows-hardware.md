@@ -211,6 +211,10 @@ so that UI and output work does not build on unverified direct capture, overlay,
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass + partial manual** — Automated gates pass. Partial Windows manual validation performed: direct monitor capture, overlay placement, valid crop release, clipboard attempt, and repeated lifecycle on single HDR 4K at 150% DPI. Known gaps: Escape cancel with/without active crop, multi-monitor behavior, DPI scales 100%/125%/200%, SDR display behavior, clipboard lock recovery. See `docs/validation/mvp-validation-registry.md` for full gap inventory.
+
 ### Story Scope
 
 This is a **validation story**, not an implementation story. The primary output is a **validation report** documenting Windows hardware behavior for the foundation cutover completed in Stories 4.1–4.4.

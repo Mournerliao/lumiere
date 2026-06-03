@@ -53,6 +53,10 @@ FR11, FR14, FR20, NFR10, NFR21, UX-DR5
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass** — Automated gates pass on Windows. HDR state projection tested. Known gap: HDR/SDR display behavior on real displays not validated.
+
 ### Architecture Guardrails
 
 - **State model ownership:** `PreviewReadinessState` and `PreviewReadinessStatus` live in `Lumiere.Graphics.Hdr`. `CaptureSessionState` and `CaptureSessionStatus` live in `Lumiere.Capture`. `MainPanelProjection`, `TrayMenuProjection`, and `SettingsPanelProjection` live in `Lumiere.App.Core`. `OverlayState` and `OverlayDisplayStatus` live in `Lumiere.Overlay`. New states must be added to the owning module.

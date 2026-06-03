@@ -112,6 +112,10 @@ so that later MVP epics can connect UI and system integration without adding mor
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows CI-pass** — Automated gates pass on Windows. Interface and seam introduction; no Windows manual validation recorded.
+
 ### Story Scope
 
 This story is an **architecture/seam story** that creates interfaces and wiring for future epics. The primary output is a set of narrow interfaces (`ICaptureCommandCoordinator`, `IOutputService`, `ISettingsProvider`) and their initial implementations, plus a refactored `MainWindow` that consumes them.

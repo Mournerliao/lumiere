@@ -44,6 +44,10 @@ so that I can trigger Lumiere from my current workflow.
 
 ## Dev Notes
 
+### Validation Level
+
+**Windows manual-pass** — Automated gates pass. Windows manual validation completed by Dana on 2026-05-26.
+
 ### Story Scope
 
 Story 7.3 registers global capture hotkeys from existing persisted shortcut settings. Shortcut editing remains read-only in this MVP slice; empty default settings mean no hotkeys are registered until settings contain valid shortcut values.

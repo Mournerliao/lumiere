@@ -53,6 +53,6 @@ public sealed class PreviewFramePresenter
         return PreviewReadinessStatus.Failed(
             PreviewReadinessStage.Presentation,
             "Preview failed",
-            InteropFailureDiagnostics.Write(exception));
+            InteropFailureDiagnostics.LogAndFormat(exception));
     }
 }

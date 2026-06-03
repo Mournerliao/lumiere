@@ -66,6 +66,10 @@ so that the rebaselined MVP starts from a deliberate foundation instead of accid
 
 ## Dev Notes
 
+### Validation Level
+
+**Mac edit** — Documentation/audit story only; no runtime code changes, no Windows hardware dependencies.
+
 ### Story Scope
 
 Story 4.1 is an **audit and documentation story**, not a code implementation story. The primary output is a classification document that maps every major Epic 1-3 capability to its MVP cutover status. This document becomes the authoritative reference for all subsequent Epic 4+ stories: they must check this classification before deciding to retain, modify, or remove existing code.

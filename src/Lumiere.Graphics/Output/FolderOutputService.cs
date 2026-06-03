@@ -88,7 +88,13 @@ public sealed class FolderOutputService : IOutputService
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
-            Logger.LogWarning(ex, "operation=FolderOutput, stage=Write, detail=Folder output failed");
+            var diagnostic = DiagnosticContext.OutputWarning(
+                stage: "FolderWrite",
+                userFacingState: "Failed to save file",
+                technicalDetail: $"operation=FolderOutput, stage=Write, exception={ex.GetType().Name}: {ex.Message}",
+                exception: ex);
+            diagnostic.LogTo(Logger);
+
             return Failed("Failed to save file", ex.Message);
         }
     }

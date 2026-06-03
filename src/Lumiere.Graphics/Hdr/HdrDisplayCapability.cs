@@ -39,7 +39,13 @@ public sealed record HdrDisplayCapability(
         }
         catch (Exception exception)
         {
-            Logger.LogWarning(exception, "HDR display probe failed; falling back to Unknown.");
+            var diagnostic = DiagnosticContext.PreviewWarning(
+                stage: "HdrDisplayProbe",
+                userFacingState: "HDR display detection failed",
+                technicalDetail: $"Probe method=IDXGIDevice, Detail={exception.GetType().Name}: {exception.Message}",
+                exception: exception);
+            diagnostic.LogTo(Logger);
+
             return Unknown();
         }
         finally
@@ -73,7 +79,13 @@ public sealed record HdrDisplayCapability(
         }
         catch (Exception exception)
         {
-            Logger.LogWarning(exception, "HDR display probe (factory) failed; falling back to Unknown.");
+            var diagnostic = DiagnosticContext.PreviewWarning(
+                stage: "HdrDisplayProbe",
+                userFacingState: "HDR display detection failed",
+                technicalDetail: $"Probe method=IDXGIFactory2, Detail={exception.GetType().Name}: {exception.Message}",
+                exception: exception);
+            diagnostic.LogTo(Logger);
+
             return Unknown();
         }
         finally
