@@ -228,3 +228,9 @@ None currently known.
 - swapChain3 double-disposed on error path — `SwapChainManager.cs` catch and finally blocks both dispose swapChain3.
 - Probe(IDXGIDevice) overload is dead code — zero callers and zero test coverage.
 - SwapChainManager probes HDR capability without caching — allocates COM objects on each Configure call.
+
+## Deferred from: code review of story 8-5 (2026-06-03)
+
+- Automated gate results lack evidence artifact links (CI logs, test result files) — enhancement for future validation cycles
+- "Known Limitations" in release matrix mixes Limitation and Deferred risk classifications in user-facing summary — intentional presentation choice
+- Pre-existing Graphics Tests failures (DefaultSettingsProviderTests) not classified in Section 3 gap inventory — pre-existing issue documented in deferred-work.md

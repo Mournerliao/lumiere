@@ -135,11 +135,12 @@ The following capabilities require Windows manual validation but currently only 
 
 | Category | Gap Count | Blocker for Release? |
 |----------|-----------|---------------------|
-| Hardware/platform behavior (Epic 4) | 5 | Yes — core capture loop depends on these |
-| Settings/accessibility (Epic 5) | 5 | Partial — accessibility gaps are release quality concerns |
-| Output behavior (Epic 6) | 4 | Partial — clipboard/folder behavior needs real validation |
-| HDR display (Epic 8) | 3 | Yes — HDR trust claims require display evidence |
-| **Total** | **17** | |
+| Hardware/platform behavior (Epic 4) | 5 | No — all gaps classified as limitation or deferred risk |
+| Settings/accessibility (Epic 5) | 5 | No — accessibility gaps are limitations for early release |
+| Output behavior (Epic 6) | 4 | No — clipboard/folder behavior classified as limitation |
+| HDR display (Epic 8) | 4 | No — HDR trust gaps classified as deferred risk |
+| Performance/stability (NFR1, NFR5) | 3 | No — responsiveness and resource gaps classified as limitation |
+| **Total** | **21** | **No blockers — see release validation matrix for authoritative assessment** |
 
 ## Story-Level Validation Evidence Map
 
@@ -155,20 +156,20 @@ The following capabilities require Windows manual validation but currently only 
 | Epic 7 | 7.6 | Windows CI-pass | Technical debt cleanup; no hardware dependencies |
 | Epic 8 | 8.1, 8.2, 8.3 | Windows CI-pass | HDR state mapping, alerts, diagnostics — all code/test work |
 | Epic 8 | 8.4 | Windows CI-pass | This story — documentation/audit with diagnostic framework |
+| Epic 8 | 8.5 | Windows CI-pass | Automated gates executed; release validation matrix created; manual scenarios catalogued as not-run |
 
 ## Existing Validation Documentation
 
-Three validation docs existed before this registry and provide partial coverage:
-
 | Document | Path | Coverage | Validation Level |
 |----------|------|----------|-----------------|
+| **MVP Release Validation Matrix** | `docs/validation/mvp-release-validation-matrix.md` | All FR/NFR — **authoritative release-readiness document** | Automated gates executed; 43 manual scenarios catalogued (not-run pending human tester) |
 | Lifecycle Validation | `docs/validation/lifecycle-validation.md` | FR45, NFR5, NFR11 | Checklist defined; partial manual execution from Story 4.5 |
 | Overlay Validation | `docs/validation/overlay-validation.md` | FR47, NFR3, NFR27 | Checklist defined; partial manual execution from Story 4.5 |
 | Output Validation | `docs/validation/output-validation.md` | FR48, NFR8, NFR19 | Scope table defined; manual validation required but not executed |
 
 ## How to Use This Registry
 
-1. **Before release claims**: Check that any capability mentioned in release copy has at least the required validation level.
+1. **Before release claims**: Check that any capability mentioned in release copy has at least the required validation level. Consult `docs/validation/mvp-release-validation-matrix.md` for the authoritative release-readiness assessment.
 2. **Before new stories**: Reference the gap list to identify validation work that should accompany implementation.
-3. **After Windows manual validation**: Update the relevant row with evidence, date, tester, and device/display configuration.
-4. **For Story 8.5**: This registry feeds the release validation matrix. Gaps here become explicit entries in the matrix.
+3. **After Windows manual validation**: Update the relevant row with evidence, date, tester, and device/display configuration. Also update the release validation matrix.
+4. **For release readiness**: The release validation matrix (`docs/validation/mvp-release-validation-matrix.md`) is the authoritative document. This registry feeds into it.
