@@ -1,3 +1,4 @@
+using System.Threading;
 using Microsoft.Extensions.Logging;
 
 namespace Lumiere.Infrastructure.Diagnostics;
@@ -5,7 +6,7 @@ namespace Lumiere.Infrastructure.Diagnostics;
 public sealed class SessionDiagnosticScope : IDisposable
 {
     private readonly IDisposable? scope;
-    private bool disposed;
+    private int disposed;
 
     private SessionDiagnosticScope(IDisposable? scope, string sessionId, string? correlationId)
     {
@@ -42,12 +43,11 @@ public sealed class SessionDiagnosticScope : IDisposable
 
     public void Dispose()
     {
-        if (disposed)
+        if (Interlocked.Exchange(ref disposed, 1) != 0)
         {
             return;
         }
 
-        disposed = true;
         scope?.Dispose();
     }
 }

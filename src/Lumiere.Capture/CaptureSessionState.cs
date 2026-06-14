@@ -102,11 +102,6 @@ public sealed record CaptureSessionState
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(result);
 
-        if (result.Started)
-        {
-            return FromReadiness(target, result.Readiness, treatReadyAsCapturing: false);
-        }
-
         return FromReadiness(target, result.Readiness, treatReadyAsCapturing: false);
     }
 

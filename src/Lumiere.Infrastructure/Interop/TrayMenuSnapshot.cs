@@ -5,6 +5,7 @@ public sealed record TrayMenuSnapshot(
     string HdrStatusLabel,
     string HdrStatusDetail,
     string TrayAlertMessage,
+    int TrayAlertSeverity,
     TrayMenuItemSnapshot FullscreenCapture,
     TrayMenuItemSnapshot RegionCapture,
     TrayMenuItemSnapshot OpenMainWindow,

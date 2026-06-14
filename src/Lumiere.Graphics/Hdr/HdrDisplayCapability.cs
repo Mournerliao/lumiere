@@ -20,45 +20,11 @@ public sealed record HdrDisplayCapability(
 
     public bool IsHdrActive => State == HdrDisplayState.Active;
 
-    public static HdrDisplayCapability Probe(IDXGIDevice dxgiDevice)
-    {
-        ArgumentNullException.ThrowIfNull(dxgiDevice);
-
-        IDXGIAdapter? adapter = null;
-
-        try
-        {
-            adapter = dxgiDevice.GetAdapter();
-            if (adapter is null)
-            {
-                Logger.LogWarning("HDR display probe: IDXGIDevice.Adapter returned null; falling back to Unknown.");
-                return Unknown();
-            }
-
-            return ProbeAdapter(adapter);
-        }
-        catch (Exception exception)
-        {
-            var diagnostic = DiagnosticContext.PreviewWarning(
-                stage: "HdrDisplayProbe",
-                userFacingState: "HDR display detection failed",
-                technicalDetail: $"Probe method=IDXGIDevice, Detail={exception.GetType().Name}: {exception.Message}",
-                exception: exception);
-            diagnostic.LogTo(Logger);
-
-            return Unknown();
-        }
-        finally
-        {
-            adapter?.Dispose();
-        }
-    }
-
     /// <summary>
-    /// Probes HDR display capability using a freshly-created DXGI factory.
-    /// Unlike <see cref="Probe(IDXGIDevice)"/>, this enumerates a fresh adapter
-    /// from the factory, ensuring the output description reflects the current
-    /// display HDR state rather than cached state from an older adapter object.
+    /// Probes HDR display capability using a DXGI factory.
+    /// Enumerates adapter index 0 and output index 0 from the factory.
+    /// On multi-monitor setups with different HDR states per display,
+    /// this probe reflects the first output's state only.
     /// </summary>
     public static HdrDisplayCapability Probe(IDXGIFactory2 factory)
     {

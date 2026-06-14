@@ -105,6 +105,9 @@ public sealed partial class TrayMenuWindow : Window
         {
             HdrAlertLabel.Text = snapshot.TrayAlertMessage;
             HdrAlertLabel.Visibility = Visibility.Visible;
+            HdrAlertLabel.Foreground = snapshot.TrayAlertSeverity >= 3
+                ? (Brush)Application.Current.Resources["ErrorBrush"]
+                : (Brush)Application.Current.Resources["WarningBrush"];
         }
         else
         {

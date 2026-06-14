@@ -51,7 +51,7 @@ public partial class App : Application
                 LocalSettingsStore.CreateDefault(LumiereLoggerFactory.CreateLogger(LogCategories.Settings)));
             var aboutInfoProvider = new AssemblyAboutInfoProvider(typeof(App).Assembly);
 
-            var mainWindow = new MainWindow(captureCommandCoordinator, outputService, settingsProvider, settingsProvider, settingsProvider, settingsProvider, settingsProvider, settingsProvider, settingsProvider, settingsProvider, aboutInfoProvider, captureService, deviceResources);
+            var mainWindow = new MainWindow(captureCommandCoordinator, outputService, settingsProvider, settingsProvider, aboutInfoProvider, captureService, deviceResources);
             _window = mainWindow;
             _window.Activate();
 

@@ -41,7 +41,8 @@ public sealed class DefaultSettingsProviderTests
     [Fact]
     public void HdrAlertsEnabled_ReturnsTrue()
     {
-        var provider = new DefaultSettingsProvider();
+        using var fixture = new SettingsFileFixture();
+        var provider = new DefaultSettingsProvider(new LocalSettingsStore(fixture.SettingsPath));
 
         Assert.True(provider.HdrAlertsEnabled);
     }
@@ -160,7 +161,8 @@ public sealed class DefaultSettingsProviderTests
     [Fact]
     public void AllProperties_ReturnConsistentValues()
     {
-        var provider = new DefaultSettingsProvider();
+        using var fixture = new SettingsFileFixture();
+        var provider = new DefaultSettingsProvider(new LocalSettingsStore(fixture.SettingsPath));
 
         // Verify all properties return expected MVP defaults
         Assert.Equal(OutputTarget.Clipboard, provider.OutputTarget);

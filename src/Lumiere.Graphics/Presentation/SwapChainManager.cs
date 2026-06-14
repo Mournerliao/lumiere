@@ -12,6 +12,8 @@ public sealed class SwapChainManager
     private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Graphics);
     private const string OperationName = "IDXGIFactory2.CreateSwapChainForComposition";
 
+    private static HdrDisplayCapability? cachedHdrCapability;
+
     public SwapChainResources CreateAttachedCompositionSwapChain(
         GraphicsDeviceResources deviceResources,
         SwapChainCreationOptions options,
@@ -52,7 +54,7 @@ public sealed class SwapChainManager
 
             Logger.LogDebug("SwapChain created: format={Format}, colorSpace={ColorSpace}", options.CreateDescription().Format, options.ColorSpace);
 
-            var displayCapability = HdrDisplayCapability.Probe(factory);
+            var displayCapability = cachedHdrCapability ??= HdrDisplayCapability.Probe(factory);
 
             var presentationEvidence = SwapChainColorSpaceConfigurator.Configure(
                 new SwapChainColorSpaceController(swapChain3),
@@ -67,7 +69,6 @@ public sealed class SwapChainManager
         }
         catch (Exception exception)
         {
-            swapChain3?.Dispose();
             swapChain?.Dispose();
 
             var diagnostic = DiagnosticContext.PreviewFailure(
@@ -86,7 +87,7 @@ public sealed class SwapChainManager
         }
     }
 
-    public static PreviewReadinessStatus MapFailureToReadiness(Exception exception) =>
+    public static PreviewReadinessStatus FormatFailureAsReadiness(Exception exception) =>
         PreviewReadinessStatus.Failed(
             PreviewReadinessStage.Presentation,
             "Preview presentation setup failed before HDR correctness could be validated.",

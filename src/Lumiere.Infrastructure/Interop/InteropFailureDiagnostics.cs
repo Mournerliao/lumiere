@@ -20,6 +20,7 @@ public static class InteropFailureDiagnostics
             exception: exception);
         diagnostic.LogTo(effectiveLogger);
 
-        return exception.ToString();
+        var full = exception.ToString();
+        return full.Length > 2048 ? full[..2048] + "...[truncated]" : full;
     }
 }

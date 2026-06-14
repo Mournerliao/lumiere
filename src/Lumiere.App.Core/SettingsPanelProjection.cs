@@ -98,6 +98,25 @@ public sealed record OutputSettingsProjection(
     private const string ExportColorHelp =
         "Export profiles are shown to match the design reference. HDR10 and P3 require encoder metadata, conversion policy, target-app assumptions, and Windows validation before they become real output behavior.";
 
+    private static readonly IReadOnlyList<ExportColorOptionProjection> DefaultExportColorOptions =
+    [
+        new(
+            "HDR10",
+            IsSelected: false,
+            IsReadOnly: true,
+            "HDR10 export is pending encoder metadata, HDR metadata policy, target-app compatibility, and Windows validation."),
+        new(
+            "P3",
+            IsSelected: false,
+            IsReadOnly: true,
+            "P3 export is pending color metadata, conversion policy, target-app compatibility, and Windows validation."),
+        new(
+            "sRGB",
+            IsSelected: true,
+            IsReadOnly: false,
+            "sRGB reflects the current basic PNG output surface; advanced fidelity validation is pending."),
+    ];
+
     public static OutputSettingsProjection ReadOnly(
         Lumiere.Graphics.Output.OutputTarget outputTarget,
         string? savePath,
@@ -140,30 +159,11 @@ public sealed record OutputSettingsProjection(
             afterCaptureHelpText,
             isAfterCaptureSelected,
             IsAfterCaptureReadOnly: false,
-            "sRGB",
+            DefaultExportColorOptions.FirstOrDefault(o => o.IsSelected)?.Label ?? "sRGB",
             ExportColorHelp,
             IsExportColorReadOnly: true,
-            CreateExportColorOptions());
+            DefaultExportColorOptions);
     }
-
-    private static IReadOnlyList<ExportColorOptionProjection> CreateExportColorOptions() =>
-    [
-        new(
-            "HDR10",
-            IsSelected: false,
-            IsReadOnly: true,
-            "HDR10 export is pending encoder metadata, HDR metadata policy, target-app compatibility, and Windows validation."),
-        new(
-            "P3",
-            IsSelected: false,
-            IsReadOnly: true,
-            "P3 export is pending color metadata, conversion policy, target-app compatibility, and Windows validation."),
-        new(
-            "sRGB",
-            IsSelected: true,
-            IsReadOnly: false,
-            "sRGB reflects the current basic PNG output surface; advanced fidelity validation is pending."),
-    ];
 
     private static (string DisplayValue, string HelpText, bool IsSelected) ProjectAfterCapture(
         Lumiere.Graphics.Output.OutputTarget outputTarget,

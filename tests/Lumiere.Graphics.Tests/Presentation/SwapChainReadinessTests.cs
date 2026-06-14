@@ -69,7 +69,7 @@ public sealed class SwapChainReadinessTests
             unchecked((int)0x8001010E),
             "SetSwapChain must run on the owning UI thread.");
 
-        var status = SwapChainManager.MapFailureToReadiness(exception);
+        var status = SwapChainManager.FormatFailureAsReadiness(exception);
 
         Assert.Equal(PreviewReadinessState.Failed, status.State);
         Assert.Equal(PreviewReadinessStage.Presentation, status.Stage);

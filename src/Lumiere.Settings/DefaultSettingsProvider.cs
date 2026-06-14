@@ -5,7 +5,7 @@ namespace Lumiere.Settings;
 /// <summary>
 /// Provides shared local settings for MVP settings consumers.
 /// </summary>
-public sealed class DefaultSettingsProvider : ISettingsProvider, IHdrAlertSettingsWriter, IOutputSettingsWriter, ITimestampSettingsWriter, ISavePathSettingsWriter, IAfterCaptureSettingsWriter, IShortcutSettingsWriter, IExportColorSettingsWriter
+public sealed class DefaultSettingsProvider : ISettingsWriterAggregator
 {
     private readonly LocalSettingsStore store;
     private LocalSettingsSnapshot settings;

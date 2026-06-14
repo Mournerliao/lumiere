@@ -84,16 +84,11 @@ public sealed record MainPanelProjection(
         OutputResult? outputResult,
         bool hdrAlertsEnabled)
     {
-        if (!hdrAlertsEnabled || outputResult is not null)
+        return AlertMapping.Classify(readinessState, outputResult, hdrAlertsEnabled) switch
         {
-            return string.Empty;
-        }
-
-        return readinessState switch
-        {
-            PreviewReadinessState.Degraded => "Enable HDR in Windows Display settings for best capture quality.",
-            PreviewReadinessState.Unsupported => "HDR capture is not supported on this display.",
-            PreviewReadinessState.Failed => "Preview failed. Capture may not produce HDR-quality output.",
+            AlertMapping.AlertSeverity.Degraded => "Enable HDR in Windows Display settings for best capture quality.",
+            AlertMapping.AlertSeverity.Unsupported => "HDR capture is not supported on this display.",
+            AlertMapping.AlertSeverity.Failed => "Preview failed. Capture may not produce HDR-quality output.",
             _ => string.Empty,
         };
     }

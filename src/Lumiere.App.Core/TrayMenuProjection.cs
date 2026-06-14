@@ -10,6 +10,7 @@ public sealed record TrayMenuProjection(
     string HdrStatusLabel,
     string HdrStatusDetail,
     string TrayAlertMessage,
+    int TrayAlertSeverity,
     TrayMenuCommandProjection FullscreenCapture,
     TrayMenuCommandProjection RegionCapture,
     TrayMenuCommandProjection OpenMainWindow,
@@ -42,12 +43,14 @@ public sealed record TrayMenuProjection(
         };
 
         var trayAlertMessage = MapTrayAlertMessage(state.Readiness.State, outputResult, hdrAlertsEnabled);
+        var alertSeverity = AlertMapping.Classify(state.Readiness.State, outputResult, hdrAlertsEnabled);
 
         return new TrayMenuProjection(
             AppName: appName,
             HdrStatusLabel: main.TrustLabel,
             HdrStatusDetail: main.TrustMessage,
             TrayAlertMessage: trayAlertMessage,
+            TrayAlertSeverity: (int)alertSeverity,
             FullscreenCapture: CreateCaptureCommand(
                 "Full Screen",
                 settingsProvider.FullscreenShortcut,
@@ -69,16 +72,11 @@ public sealed record TrayMenuProjection(
 
     private static string MapTrayAlertMessage(PreviewReadinessState readinessState, OutputResult? outputResult, bool hdrAlertsEnabled)
     {
-        if (!hdrAlertsEnabled || outputResult is not null)
+        return AlertMapping.Classify(readinessState, outputResult, hdrAlertsEnabled) switch
         {
-            return string.Empty;
-        }
-
-        return readinessState switch
-        {
-            PreviewReadinessState.Degraded => "Enable HDR for best quality",
-            PreviewReadinessState.Unsupported => "HDR unavailable on this display",
-            PreviewReadinessState.Failed => "Preview failed",
+            AlertMapping.AlertSeverity.Degraded => "Enable HDR for best quality",
+            AlertMapping.AlertSeverity.Unsupported => "HDR unavailable on this display",
+            AlertMapping.AlertSeverity.Failed => "Preview failed",
             _ => string.Empty,
         };
     }

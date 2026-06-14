@@ -46,13 +46,7 @@ public sealed partial class MainWindow : Window
     private readonly ICaptureCommandCoordinator captureCommandCoordinator;
     private readonly IOutputService outputService;
     private readonly ISettingsProvider settingsProvider;
-    private readonly IHdrAlertSettingsWriter hdrAlertSettingsWriter;
-    private readonly IOutputSettingsWriter outputSettingsWriter;
-    private readonly ITimestampSettingsWriter timestampSettingsWriter;
-    private readonly ISavePathSettingsWriter savePathSettingsWriter;
-    private readonly IAfterCaptureSettingsWriter afterCaptureSettingsWriter;
-    private readonly IShortcutSettingsWriter shortcutSettingsWriter;
-    private readonly IExportColorSettingsWriter exportColorSettingsWriter;
+    private readonly ISettingsWriterAggregator settingsWriter;
     private readonly IAboutInfoProvider aboutInfoProvider;
     private readonly GraphicsDeviceResources deviceResources;
     private readonly GraphicsEngine graphicsEngine;
@@ -93,13 +87,7 @@ public sealed partial class MainWindow : Window
         ICaptureCommandCoordinator captureCommandCoordinator,
         IOutputService outputService,
         ISettingsProvider settingsProvider,
-        IHdrAlertSettingsWriter hdrAlertSettingsWriter,
-        IOutputSettingsWriter outputSettingsWriter,
-        ITimestampSettingsWriter timestampSettingsWriter,
-        ISavePathSettingsWriter savePathSettingsWriter,
-        IAfterCaptureSettingsWriter afterCaptureSettingsWriter,
-        IShortcutSettingsWriter shortcutSettingsWriter,
-        IExportColorSettingsWriter exportColorSettingsWriter,
+        ISettingsWriterAggregator settingsWriter,
         IAboutInfoProvider aboutInfoProvider,
         CaptureService captureService,
         GraphicsDeviceResources deviceResources)
@@ -107,13 +95,7 @@ public sealed partial class MainWindow : Window
         this.captureCommandCoordinator = captureCommandCoordinator ?? throw new ArgumentNullException(nameof(captureCommandCoordinator));
         this.outputService = outputService ?? throw new ArgumentNullException(nameof(outputService));
         this.settingsProvider = settingsProvider ?? throw new ArgumentNullException(nameof(settingsProvider));
-        this.hdrAlertSettingsWriter = hdrAlertSettingsWriter ?? throw new ArgumentNullException(nameof(hdrAlertSettingsWriter));
-        this.outputSettingsWriter = outputSettingsWriter ?? throw new ArgumentNullException(nameof(outputSettingsWriter));
-        this.timestampSettingsWriter = timestampSettingsWriter ?? throw new ArgumentNullException(nameof(timestampSettingsWriter));
-        this.savePathSettingsWriter = savePathSettingsWriter ?? throw new ArgumentNullException(nameof(savePathSettingsWriter));
-        this.afterCaptureSettingsWriter = afterCaptureSettingsWriter ?? throw new ArgumentNullException(nameof(afterCaptureSettingsWriter));
-        this.shortcutSettingsWriter = shortcutSettingsWriter ?? throw new ArgumentNullException(nameof(shortcutSettingsWriter));
-        this.exportColorSettingsWriter = exportColorSettingsWriter ?? throw new ArgumentNullException(nameof(exportColorSettingsWriter));
+        this.settingsWriter = settingsWriter ?? throw new ArgumentNullException(nameof(settingsWriter));
         this.aboutInfoProvider = aboutInfoProvider ?? throw new ArgumentNullException(nameof(aboutInfoProvider));
         this.captureService = captureService ?? throw new ArgumentNullException(nameof(captureService));
         this.deviceResources = deviceResources ?? throw new ArgumentNullException(nameof(deviceResources));
@@ -261,7 +243,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        hdrAlertSettingsWriter.SetHdrAlertsEnabled(!settingsProvider.HdrAlertsEnabled);
+        settingsWriter.SetHdrAlertsEnabled(!settingsProvider.HdrAlertsEnabled);
         hdrAlertDismissed = false;
         var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
         ApplySettingsProjection(currentState);
@@ -279,7 +261,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        timestampSettingsWriter.SetTimestampNaming(!settingsProvider.TimestampNaming);
+        settingsWriter.SetTimestampNaming(!settingsProvider.TimestampNaming);
         var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
         ApplySettingsProjection(currentState);
         Logger.LogDebug(
@@ -305,7 +287,7 @@ public sealed partial class MainWindow : Window
             var folder = await picker.PickSingleFolderAsync();
             if (folder is not null)
             {
-                savePathSettingsWriter.SetSavePath(folder.Path);
+                settingsWriter.SetSavePath(folder.Path);
                 var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
                 ApplySettingsProjection(currentState);
                 Logger.LogDebug(
@@ -332,7 +314,7 @@ public sealed partial class MainWindow : Window
             AfterCaptureBehavior.Open => AfterCaptureBehavior.Reveal,
             _ => AfterCaptureBehavior.None,
         };
-        afterCaptureSettingsWriter.SetAfterCaptureBehavior(next);
+        settingsWriter.SetAfterCaptureBehavior(next);
         var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
         ApplySettingsProjection(currentState);
         Logger.LogDebug(
@@ -350,7 +332,7 @@ public sealed partial class MainWindow : Window
         var newShortcut = await ShowShortcutCaptureDialog("Fullscreen Capture Shortcut");
         if (newShortcut is not null)
         {
-            shortcutSettingsWriter.SetFullscreenShortcut(newShortcut);
+            settingsWriter.SetFullscreenShortcut(newShortcut);
             var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
             ApplySettingsProjection(currentState);
             Logger.LogDebug("Fullscreen shortcut updated: {Shortcut}", settingsProvider.FullscreenShortcut);
@@ -367,7 +349,7 @@ public sealed partial class MainWindow : Window
         var newShortcut = await ShowShortcutCaptureDialog("Region Capture Shortcut");
         if (newShortcut is not null)
         {
-            shortcutSettingsWriter.SetRegionShortcut(newShortcut);
+            settingsWriter.SetRegionShortcut(newShortcut);
             var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
             ApplySettingsProjection(currentState);
             Logger.LogDebug("Region shortcut updated: {Shortcut}", settingsProvider.RegionShortcut);
@@ -414,10 +396,10 @@ public sealed partial class MainWindow : Window
             dialog.Hide();
         });
 
-        dialog.KeyDown += keyDownHandler;
+        dialog.PreviewKeyDown += keyDownHandler;
         var showTask = dialog.ShowAsync();
         var result = await tcs.Task;
-        dialog.KeyDown -= keyDownHandler;
+        dialog.PreviewKeyDown -= keyDownHandler;
         return result;
     }
 
@@ -437,7 +419,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        outputSettingsWriter.SetOutputTarget(target);
+        settingsWriter.SetOutputTarget(target);
         ApplySettingsProjection(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
         Logger.LogDebug(
             "Output target preference updated in settings: target={OutputTarget}",
@@ -451,7 +433,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        outputSettingsWriter.SetCopyAsImage(!settingsProvider.CopyAsImage);
+        settingsWriter.SetCopyAsImage(!settingsProvider.CopyAsImage);
         ApplySettingsProjection(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
         Logger.LogDebug(
             "Copy-as-image preference updated in settings: enabled={CopyAsImage}",
@@ -1443,6 +1425,7 @@ public sealed partial class MainWindow : Window
             projection.HdrStatusLabel,
             projection.HdrStatusDetail,
             projection.TrayAlertMessage,
+            projection.TrayAlertSeverity,
             ToTrayItem(projection.FullscreenCapture),
             ToTrayItem(projection.RegionCapture),
             ToTrayItem(projection.OpenMainWindow),
