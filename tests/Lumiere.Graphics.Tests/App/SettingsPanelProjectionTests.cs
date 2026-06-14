@@ -39,10 +39,10 @@ public sealed class SettingsPanelProjectionTests
     {
         var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
 
-        Assert.True(projection.FullscreenShortcut.IsReadOnly);
+        Assert.False(projection.FullscreenShortcut.IsReadOnly);
         Assert.True(projection.FullscreenShortcut.IsPendingRegistration);
         Assert.Contains("skipped", projection.FullscreenShortcut.PendingReason, StringComparison.OrdinalIgnoreCase);
-        Assert.True(projection.RegionShortcut.IsReadOnly);
+        Assert.False(projection.RegionShortcut.IsReadOnly);
         Assert.True(projection.RegionShortcut.IsPendingRegistration);
         Assert.Contains("skipped", projection.RegionShortcut.PendingReason, StringComparison.OrdinalIgnoreCase);
     }
@@ -128,7 +128,7 @@ public sealed class SettingsPanelProjectionTests
 
         var projection = SettingsPanelProjection.Project(settings, CreateState());
 
-        Assert.True(projection.Output.IsSavePathReadOnly);
+        Assert.False(projection.Output.IsSavePathReadOnly);
         Assert.Equal("Not configured", projection.Output.SavePathDisplayValue);
         Assert.Contains("Folder output uses", projection.Output.SavePathHelpText);
         Assert.Contains("read-only", projection.Output.SavePathHelpText);
@@ -146,7 +146,7 @@ public sealed class SettingsPanelProjectionTests
 
         var projection = SettingsPanelProjection.Project(settings, CreateState());
 
-        Assert.True(projection.Output.IsSavePathReadOnly);
+        Assert.False(projection.Output.IsSavePathReadOnly);
         Assert.Equal("Not configured", projection.Output.SavePathDisplayValue);
         Assert.Contains("Folder output uses", projection.Output.SavePathHelpText);
         Assert.Contains("read-only", projection.Output.SavePathHelpText);
@@ -170,11 +170,12 @@ public sealed class SettingsPanelProjectionTests
     {
         var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
 
+        Assert.False(projection.IsHdrAlertsReadOnly);
         Assert.False(projection.Output.IsReadOnly);
         Assert.False(projection.Output.IsCopyAsImageReadOnly);
-        Assert.True(projection.Output.IsSavePathReadOnly);
-        Assert.True(projection.Output.IsTimestampReadOnly);
-        Assert.True(projection.Output.IsAfterCaptureReadOnly);
+        Assert.False(projection.Output.IsSavePathReadOnly);
+        Assert.False(projection.Output.IsTimestampReadOnly);
+        Assert.False(projection.Output.IsAfterCaptureReadOnly);
         Assert.True(projection.Output.IsExportColorReadOnly);
         Assert.Contains("Output target policy is active", projection.Output.PendingReason);
         Assert.Contains("clipboard", projection.Output.PendingReason);
@@ -225,7 +226,9 @@ public sealed class SettingsPanelProjectionTests
         Assert.True(projection.Output.IsExportColorReadOnly);
 
         Assert.Equal(["HDR10", "P3", "sRGB"], projection.Output.ExportColorOptions.Select(option => option.Label).ToArray());
-        Assert.All(projection.Output.ExportColorOptions, option => Assert.True(option.IsReadOnly));
+        Assert.True(projection.Output.ExportColorOptions[0].IsReadOnly);
+        Assert.True(projection.Output.ExportColorOptions[1].IsReadOnly);
+        Assert.False(projection.Output.ExportColorOptions[2].IsReadOnly);
         Assert.False(projection.Output.ExportColorOptions[0].IsSelected);
         Assert.False(projection.Output.ExportColorOptions[1].IsSelected);
         Assert.True(projection.Output.ExportColorOptions[2].IsSelected);
@@ -350,6 +353,8 @@ public sealed class SettingsPanelProjectionTests
         public string RegionShortcut { get; init; } = string.Empty;
 
         public AfterCaptureBehavior AfterCaptureBehavior { get; init; } = AfterCaptureBehavior.None;
+
+        public string ExportColorFormat { get; init; } = "sRGB";
     }
 
     private sealed class TestAboutInfoProvider : IAboutInfoProvider

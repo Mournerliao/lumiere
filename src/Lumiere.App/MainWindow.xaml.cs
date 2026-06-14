@@ -21,9 +21,8 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using Vortice.Direct3D11;
-
 using Windows.Graphics;
-
+using Windows.Storage.Pickers;
 using WinRT.Interop;
 
 namespace Lumiere.App;
@@ -49,6 +48,11 @@ public sealed partial class MainWindow : Window
     private readonly ISettingsProvider settingsProvider;
     private readonly IHdrAlertSettingsWriter hdrAlertSettingsWriter;
     private readonly IOutputSettingsWriter outputSettingsWriter;
+    private readonly ITimestampSettingsWriter timestampSettingsWriter;
+    private readonly ISavePathSettingsWriter savePathSettingsWriter;
+    private readonly IAfterCaptureSettingsWriter afterCaptureSettingsWriter;
+    private readonly IShortcutSettingsWriter shortcutSettingsWriter;
+    private readonly IExportColorSettingsWriter exportColorSettingsWriter;
     private readonly IAboutInfoProvider aboutInfoProvider;
     private readonly GraphicsDeviceResources deviceResources;
     private readonly GraphicsEngine graphicsEngine;
@@ -91,6 +95,11 @@ public sealed partial class MainWindow : Window
         ISettingsProvider settingsProvider,
         IHdrAlertSettingsWriter hdrAlertSettingsWriter,
         IOutputSettingsWriter outputSettingsWriter,
+        ITimestampSettingsWriter timestampSettingsWriter,
+        ISavePathSettingsWriter savePathSettingsWriter,
+        IAfterCaptureSettingsWriter afterCaptureSettingsWriter,
+        IShortcutSettingsWriter shortcutSettingsWriter,
+        IExportColorSettingsWriter exportColorSettingsWriter,
         IAboutInfoProvider aboutInfoProvider,
         CaptureService captureService,
         GraphicsDeviceResources deviceResources)
@@ -100,6 +109,11 @@ public sealed partial class MainWindow : Window
         this.settingsProvider = settingsProvider ?? throw new ArgumentNullException(nameof(settingsProvider));
         this.hdrAlertSettingsWriter = hdrAlertSettingsWriter ?? throw new ArgumentNullException(nameof(hdrAlertSettingsWriter));
         this.outputSettingsWriter = outputSettingsWriter ?? throw new ArgumentNullException(nameof(outputSettingsWriter));
+        this.timestampSettingsWriter = timestampSettingsWriter ?? throw new ArgumentNullException(nameof(timestampSettingsWriter));
+        this.savePathSettingsWriter = savePathSettingsWriter ?? throw new ArgumentNullException(nameof(savePathSettingsWriter));
+        this.afterCaptureSettingsWriter = afterCaptureSettingsWriter ?? throw new ArgumentNullException(nameof(afterCaptureSettingsWriter));
+        this.shortcutSettingsWriter = shortcutSettingsWriter ?? throw new ArgumentNullException(nameof(shortcutSettingsWriter));
+        this.exportColorSettingsWriter = exportColorSettingsWriter ?? throw new ArgumentNullException(nameof(exportColorSettingsWriter));
         this.aboutInfoProvider = aboutInfoProvider ?? throw new ArgumentNullException(nameof(aboutInfoProvider));
         this.captureService = captureService ?? throw new ArgumentNullException(nameof(captureService));
         this.deviceResources = deviceResources ?? throw new ArgumentNullException(nameof(deviceResources));
@@ -256,6 +270,155 @@ public sealed partial class MainWindow : Window
         Logger.LogDebug(
             "HDR alert preference updated in settings: enabled={HdrAlertsEnabled}",
             settingsProvider.HdrAlertsEnabled);
+    }
+
+    private void OnSettingsTimestampButtonClick(object sender, RoutedEventArgs e)
+    {
+        if (applyingSettingsProjection)
+        {
+            return;
+        }
+
+        timestampSettingsWriter.SetTimestampNaming(!settingsProvider.TimestampNaming);
+        var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
+        ApplySettingsProjection(currentState);
+        Logger.LogDebug(
+            "Timestamp naming preference updated in settings: enabled={TimestampNaming}",
+            settingsProvider.TimestampNaming);
+    }
+
+    private async void OnSettingsSavePathTapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+    {
+        if (applyingSettingsProjection)
+        {
+            return;
+        }
+
+        var picker = new FolderPicker();
+        var hwnd = WindowNative.GetWindowHandle(this);
+        InitializeWithWindow.Initialize(picker, hwnd);
+        picker.SuggestedStartLocation = PickerLocationId.Desktop;
+        picker.FileTypeFilter.Add("*");
+
+        try
+        {
+            var folder = await picker.PickSingleFolderAsync();
+            if (folder is not null)
+            {
+                savePathSettingsWriter.SetSavePath(folder.Path);
+                var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
+                ApplySettingsProjection(currentState);
+                Logger.LogDebug(
+                    "Save path updated in settings: path={SavePath}",
+                    settingsProvider.SavePath);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Folder picker failed; save path unchanged.");
+        }
+    }
+
+    private void OnSettingsAfterCaptureButtonClick(object sender, RoutedEventArgs e)
+    {
+        if (applyingSettingsProjection)
+        {
+            return;
+        }
+
+        var next = settingsProvider.AfterCaptureBehavior switch
+        {
+            AfterCaptureBehavior.None => AfterCaptureBehavior.Open,
+            AfterCaptureBehavior.Open => AfterCaptureBehavior.Reveal,
+            _ => AfterCaptureBehavior.None,
+        };
+        afterCaptureSettingsWriter.SetAfterCaptureBehavior(next);
+        var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
+        ApplySettingsProjection(currentState);
+        Logger.LogDebug(
+            "After-capture behavior updated in settings: behavior={AfterCaptureBehavior}",
+            settingsProvider.AfterCaptureBehavior);
+    }
+
+    private async void OnFullscreenShortcutTapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+    {
+        if (applyingSettingsProjection)
+        {
+            return;
+        }
+
+        var newShortcut = await ShowShortcutCaptureDialog("Fullscreen Capture Shortcut");
+        if (newShortcut is not null)
+        {
+            shortcutSettingsWriter.SetFullscreenShortcut(newShortcut);
+            var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
+            ApplySettingsProjection(currentState);
+            Logger.LogDebug("Fullscreen shortcut updated: {Shortcut}", settingsProvider.FullscreenShortcut);
+        }
+    }
+
+    private async void OnRegionShortcutTapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+    {
+        if (applyingSettingsProjection)
+        {
+            return;
+        }
+
+        var newShortcut = await ShowShortcutCaptureDialog("Region Capture Shortcut");
+        if (newShortcut is not null)
+        {
+            shortcutSettingsWriter.SetRegionShortcut(newShortcut);
+            var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
+            ApplySettingsProjection(currentState);
+            Logger.LogDebug("Region shortcut updated: {Shortcut}", settingsProvider.RegionShortcut);
+        }
+    }
+
+    private async Task<string?> ShowShortcutCaptureDialog(string title)
+    {
+        var dialog = new ContentDialog
+        {
+            Title = title,
+            Content = "Press a key combination (Ctrl, Alt, or Shift + another key). Press Escape to cancel.",
+            CloseButtonText = "Cancel",
+            XamlRoot = Content.XamlRoot,
+        };
+
+        var tcs = new TaskCompletionSource<string?>();
+        var keyDownHandler = (Microsoft.UI.Xaml.Input.KeyEventHandler)((sender, args) =>
+        {
+            var key = args.OriginalKey;
+            if (key == Windows.System.VirtualKey.Escape)
+            {
+                tcs.TrySetResult(null);
+                dialog.Hide();
+                return;
+            }
+
+            var ctrl = InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Control).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+            var shift = InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Shift).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+            var alt = InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Menu).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+
+            if (!ctrl && !shift && !alt)
+            {
+                return;
+            }
+
+            var parts = new List<string>();
+            if (ctrl) parts.Add("Ctrl");
+            if (shift) parts.Add("Shift");
+            if (alt) parts.Add("Alt");
+            parts.Add(key.ToString());
+            var shortcut = string.Join("+", parts);
+            tcs.TrySetResult(shortcut);
+            dialog.Hide();
+        });
+
+        dialog.KeyDown += keyDownHandler;
+        var showTask = dialog.ShowAsync();
+        var result = await tcs.Task;
+        dialog.KeyDown -= keyDownHandler;
+        return result;
     }
 
     private void OnSettingsDestinationClipboardClick(object sender, RoutedEventArgs e) =>
@@ -1369,11 +1532,12 @@ public sealed partial class MainWindow : Window
             ToolTipService.SetToolTip(SettingsRegionShortcutValuePill, projection.RegionShortcut.PendingReason);
 
             SettingsHdrAlertsHelperText.Text = "When HDR is unavailable";
+            SettingsHdrAlertsButton.IsEnabled = !projection.IsHdrAlertsReadOnly;
             ApplySwitchState(
                 SettingsHdrAlertsSwitchTrack,
                 SettingsHdrAlertsSwitchKnob,
                 projection.HdrAlertsEnabled,
-                isReadOnly: true);
+                projection.IsHdrAlertsReadOnly);
             AutomationProperties.SetName(
                 SettingsHdrAlertsButton,
                 projection.HdrAlertsEnabled ? "HDR alerts: on" : "HDR alerts: off");

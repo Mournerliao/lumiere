@@ -8,6 +8,7 @@ public sealed record SettingsPanelProjection(
     ShortcutSettingProjection FullscreenShortcut,
     ShortcutSettingProjection RegionShortcut,
     bool HdrAlertsEnabled,
+    bool IsHdrAlertsReadOnly,
     string HdrAlertsHelpText,
     OutputSettingsProjection Output,
     AboutInfoProjection About,
@@ -31,6 +32,7 @@ public sealed record SettingsPanelProjection(
             ShortcutSettingProjection.FromHotkeyBinding(
                 hotkeyPlan.Region),
             settingsProvider.HdrAlertsEnabled,
+            IsHdrAlertsReadOnly: false,
             "Show warnings when HDR is unavailable, degraded, unsupported, or failed.",
             OutputSettingsProjection.ReadOnly(
                 settingsProvider.OutputTarget,
@@ -127,17 +129,17 @@ public sealed record OutputSettingsProjection(
             OutputPolicyActiveReason,
             savePathDisplayValue,
             "Folder output uses the configured save path. Editing the path remains read-only until picker behavior is implemented.",
-            IsSavePathReadOnly: true,
+            IsSavePathReadOnly: false,
             timestampNaming,
             "Timestamp naming is active for folder output and uses invariant safe filenames.",
-            IsTimestampReadOnly: true,
+            IsTimestampReadOnly: false,
             copyAsImage,
             "Copy-as-image controls basic usability; basic clipboard usability does not mean validated HDR preservation.",
             IsCopyAsImageReadOnly: false,
             afterCaptureDisplayValue,
             afterCaptureHelpText,
             isAfterCaptureSelected,
-            IsAfterCaptureReadOnly: true,
+            IsAfterCaptureReadOnly: false,
             "sRGB",
             ExportColorHelp,
             IsExportColorReadOnly: true,
@@ -159,7 +161,7 @@ public sealed record OutputSettingsProjection(
         new(
             "sRGB",
             IsSelected: true,
-            IsReadOnly: true,
+            IsReadOnly: false,
             "sRGB reflects the current basic PNG output surface; advanced fidelity validation is pending."),
     ];
 
@@ -217,7 +219,7 @@ public sealed record ShortcutSettingProjection(
         return new ShortcutSettingProjection(
             binding.Label,
             binding.DisplayValue,
-            IsReadOnly: true,
+            IsReadOnly: false,
             IsPendingRegistration: !binding.CanRegister,
             registrationState,
             $"{binding.Label} is currently {binding.DisplayValue}. {registrationState}");

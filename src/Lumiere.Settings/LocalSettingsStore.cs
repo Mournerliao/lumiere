@@ -110,7 +110,7 @@ public sealed class LocalSettingsStore
 
     private LocalSettingsLoadResult Validate(PersistedSettings persisted)
     {
-        if (persisted.SchemaVersion != LocalSettingsSnapshot.CurrentSchemaVersion)
+        if (persisted.SchemaVersion is not (1 or 2))
         {
             return Invalid($"Unsupported settings schema version {persisted.SchemaVersion}; using safe defaults.");
         }
@@ -132,8 +132,12 @@ public sealed class LocalSettingsStore
             return Invalid("Required boolean settings are missing; using safe defaults.");
         }
 
+        var exportColorFormat = string.IsNullOrWhiteSpace(persisted.ExportColorFormat)
+            ? "sRGB"
+            : persisted.ExportColorFormat.Trim();
+
         var settings = new LocalSettingsSnapshot(
-            persisted.SchemaVersion,
+            LocalSettingsSnapshot.CurrentSchemaVersion,
             outputTarget,
             NormalizeOptional(persisted.SavePath),
             persisted.TimestampNaming.Value,
@@ -141,7 +145,8 @@ public sealed class LocalSettingsStore
             persisted.HdrAlertsEnabled.Value,
             NormalizeRequired(persisted.FullscreenShortcut),
             NormalizeRequired(persisted.RegionShortcut),
-            afterCaptureBehavior);
+            afterCaptureBehavior,
+            exportColorFormat);
 
         return new LocalSettingsLoadResult(settings, UsedFallback: false, DiagnosticDetail: null);
     }
@@ -188,6 +193,8 @@ public sealed class LocalSettingsStore
 
         public string? AfterCaptureBehavior { get; init; }
 
+        public string? ExportColorFormat { get; init; }
+
         public static PersistedSettings FromSnapshot(LocalSettingsSnapshot snapshot) =>
             new()
             {
@@ -200,6 +207,7 @@ public sealed class LocalSettingsStore
                 FullscreenShortcut = snapshot.FullscreenShortcut,
                 RegionShortcut = snapshot.RegionShortcut,
                 AfterCaptureBehavior = snapshot.AfterCaptureBehavior.ToString(),
+                ExportColorFormat = snapshot.ExportColorFormat,
             };
     }
 }

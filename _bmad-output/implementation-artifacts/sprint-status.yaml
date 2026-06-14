@@ -110,11 +110,11 @@ development_status:
   8-4-record-validation-level-for-every-mvp-capability: done
   8-5-run-mvp-release-validation-matrix: done
   epic-8-retrospective: done
-  epic-9: backlog
-  9-1-enable-hdr-alerts-toggle: backlog
-  9-2-enable-timestamp-naming-toggle: backlog
-  9-3-enable-save-path-selection: backlog
-  9-4-enable-after-capture-behavior-toggle: backlog
-  9-5-enable-shortcut-editing: backlog
-  9-6-enable-export-color-format-options: backlog
-  epic-9-retrospective: optional
+  epic-9: done
+  9-1-enable-hdr-alerts-toggle: done
+  9-2-enable-timestamp-naming-toggle: done
+  9-3-enable-save-path-selection: done
+  9-4-enable-after-capture-behavior-toggle: done
+  9-5-enable-shortcut-editing: done
+  9-6-enable-export-color-format-options: done
+  epic-9-retrospective: done

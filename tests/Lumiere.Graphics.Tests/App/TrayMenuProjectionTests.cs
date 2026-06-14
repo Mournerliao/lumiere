@@ -187,5 +187,7 @@ public sealed class TrayMenuProjectionTests
         public bool CopyAsImage => true;
 
         public AfterCaptureBehavior AfterCaptureBehavior => AfterCaptureBehavior.None;
+
+        public string ExportColorFormat => "sRGB";
     }
 }

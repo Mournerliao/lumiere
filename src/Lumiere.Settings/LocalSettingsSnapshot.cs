@@ -14,9 +14,10 @@ public sealed record LocalSettingsSnapshot(
     bool HdrAlertsEnabled,
     string FullscreenShortcut,
     string RegionShortcut,
-    AfterCaptureBehavior AfterCaptureBehavior)
+    AfterCaptureBehavior AfterCaptureBehavior,
+    string ExportColorFormat)
 {
-    public const int CurrentSchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
 
     public static readonly LocalSettingsSnapshot Default = new(
         CurrentSchemaVersion,
@@ -27,5 +28,6 @@ public sealed record LocalSettingsSnapshot(
         HdrAlertsEnabled: true,
         FullscreenShortcut: string.Empty,
         RegionShortcut: string.Empty,
-        AfterCaptureBehavior.None);
+        AfterCaptureBehavior.None,
+        ExportColorFormat: "sRGB");
 }

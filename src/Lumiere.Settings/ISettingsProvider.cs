@@ -46,4 +46,9 @@ public interface ISettingsProvider
     /// Gets the supported post-capture behavior preference.
     /// </summary>
     AfterCaptureBehavior AfterCaptureBehavior { get; }
+
+    /// <summary>
+    /// Gets the export color format preference (e.g., "sRGB").
+    /// </summary>
+    string ExportColorFormat { get; }
 }

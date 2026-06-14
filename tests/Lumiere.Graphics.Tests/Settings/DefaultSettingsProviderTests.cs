@@ -116,7 +116,8 @@ public sealed class DefaultSettingsProviderTests
             HdrAlertsEnabled: false,
             FullscreenShortcut: "Ctrl+Alt+F",
             RegionShortcut: "Ctrl+Alt+R",
-            AfterCaptureBehavior: AfterCaptureBehavior.Open));
+            AfterCaptureBehavior: AfterCaptureBehavior.Open,
+            ExportColorFormat: "sRGB"));
 
         var provider = new DefaultSettingsProvider(new LocalSettingsStore(fixture.SettingsPath));
 

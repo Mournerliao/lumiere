@@ -85,5 +85,7 @@ public sealed class GlobalHotkeyRegistrationPlanTests
         public string RegionShortcut { get; init; } = string.Empty;
 
         public AfterCaptureBehavior AfterCaptureBehavior { get; init; } = AfterCaptureBehavior.None;
+
+        public string ExportColorFormat { get; init; } = "sRGB";
     }
 }

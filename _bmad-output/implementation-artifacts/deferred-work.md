@@ -1,6 +1,6 @@
 # Deferred Work
 
-Updated: 2026-05-26
+Updated: 2026-06-14
 
 This file tracks work intentionally deferred after implementation, review, or retrospective. It is not a graveyard: every unresolved item should either have a target epic/story hint, an accepted-tech-debt label, or a clear reason it remains parked.
 
@@ -234,3 +234,12 @@ None currently known.
 - Automated gate results lack evidence artifact links (CI logs, test result files) — enhancement for future validation cycles
 - "Known Limitations" in release matrix mixes Limitation and Deferred risk classifications in user-facing summary — intentional presentation choice
 - Pre-existing Graphics Tests failures (DefaultSettingsProviderTests) not classified in Section 3 gap inventory — pre-existing issue documented in deferred-work.md
+
+## Deferred from: Epic 9 implementation (2026-06-14)
+
+- MainWindow constructor has 13 parameters — code smell, should be refactored to use a settings writer aggregator or service locator
+- Shortcut editing uses basic ContentDialog — full key binding editor with conflict detection, validation, and recovery is deferred
+- Export color format selection is UI-only — actual format conversion, encoder metadata, and Windows validation are not implemented
+- FolderPicker is Windows manual validation only — cannot be validated in CI
+- XamlCompiler fragility with `dotnet format` removing "unused" using statements — recurring issue in WinUI projects
+- No new unit tests added for the 6 new writer interfaces — existing projection tests cover the read-only state changes

@@ -291,7 +291,8 @@
                       Background="#241D2024"
                       BorderBrush="{StaticResource BorderBrush}"
                       BorderThickness="1"
-                      CornerRadius="8">
+                      CornerRadius="8"
+                      Tapped="OnFullscreenShortcutTapped">
                     <TextBlock
                         x:Name="SettingsFullscreenShortcutValueText"
                         HorizontalAlignment="Center"
@@ -326,7 +327,8 @@
                       Background="#241D2024"
                       BorderBrush="{StaticResource BorderBrush}"
                       BorderThickness="1"
-                      CornerRadius="8">
+                      CornerRadius="8"
+                      Tapped="OnRegionShortcutTapped">
                     <TextBlock
                         x:Name="SettingsRegionShortcutValueText"
                         HorizontalAlignment="Center"
@@ -384,7 +386,6 @@
                       AutomationProperties.HelpText="Show warnings when HDR is unavailable, degraded, unsupported, or failed."
                       AutomationProperties.Name="HDR alerts"
                       Click="OnSettingsHdrAlertsButtonClick"
-                      IsEnabled="False"
                       Style="{StaticResource SettingsSwitchButtonStyle}">
                     <Border
                         x:Name="SettingsHdrAlertsSwitchTrack"
@@ -609,12 +610,13 @@
                       MaxWidth="150"
                       Padding="12,6"
                       VerticalAlignment="Center"
-                      AutomationProperties.HelpText="Folder output uses this configured path. Editing remains read-only until picker behavior is implemented."
+                      AutomationProperties.HelpText="Select the folder for file output captures."
                       AutomationProperties.Name="Save path"
                       Background="#241D2024"
                       BorderBrush="{StaticResource BorderBrush}"
                       BorderThickness="1"
-                      CornerRadius="8">
+                      CornerRadius="8"
+                      Tapped="OnSettingsSavePathTapped">
                     <TextBlock
                         x:Name="SettingsSavePathValueText"
                         FontSize="12"
@@ -651,7 +653,7 @@
                       Grid.Column="1"
                       AutomationProperties.HelpText="Runs only when folder output produces a file artifact."
                       AutomationProperties.Name="After capture action"
-                      IsEnabled="False"
+                      Click="OnSettingsAfterCaptureButtonClick"
                       Style="{StaticResource SettingsSwitchButtonStyle}">
                     <Border
                         x:Name="SettingsOpenAfterCaptureSwitchTrack"
@@ -694,9 +696,9 @@
                   <Button
                       x:Name="SettingsTimestampButton"
                       Grid.Column="1"
-                      AutomationProperties.HelpText="Timestamp naming is display-only until settings persistence is implemented."
+                      AutomationProperties.HelpText="Timestamp naming controls whether folder output uses safe invariant filenames."
                       AutomationProperties.Name="Timestamp naming"
-                      IsEnabled="False"
+                      Click="OnSettingsTimestampButtonClick"
                       Style="{StaticResource SettingsSwitchButtonStyle}">
                     <Border
                         x:Name="SettingsTimestampSwitchTrack"

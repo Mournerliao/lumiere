@@ -38,7 +38,8 @@ public sealed class LocalSettingsStoreTests : IDisposable
             HdrAlertsEnabled: false,
             FullscreenShortcut: "Ctrl+Shift+F",
             RegionShortcut: "Ctrl+Shift+R",
-            AfterCaptureBehavior: AfterCaptureBehavior.Reveal);
+            AfterCaptureBehavior: AfterCaptureBehavior.Reveal,
+            ExportColorFormat: "sRGB");
         var store = new LocalSettingsStore(settingsPath);
 
         store.Save(expected);
