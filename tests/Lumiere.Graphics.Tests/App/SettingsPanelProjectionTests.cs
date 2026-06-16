@@ -287,7 +287,7 @@ public sealed class SettingsPanelProjectionTests
         var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState(), aboutInfo);
 
         Assert.Equal("Lumiere Preview", projection.About.AppName);
-        Assert.Equal("2.3.4", projection.About.Version);
+        Assert.Equal("v2.3.4", projection.About.Version);
         Assert.Equal("Native Windows HDR-first capture and preview.", projection.About.Description);
     }
 

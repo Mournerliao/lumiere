@@ -58,8 +58,28 @@ public sealed record AboutInfoProjection(
 
         return new AboutInfoProjection(
             Normalize(provider.AppName, "Lumiere"),
-            Normalize(provider.Version, "1.0.0"),
+            FormatVersion(provider.Version),
             Normalize(provider.Description, "Native Windows HDR-first capture and preview."));
+    }
+
+    private static string FormatVersion(string? version)
+    {
+        var normalized = Normalize(version, "1.0.0");
+        var dashIndex = normalized.IndexOf('-');
+        var plusIndex = normalized.IndexOf('+');
+        var trimmed = normalized;
+        if (plusIndex >= 0)
+        {
+            trimmed = normalized[..plusIndex];
+        }
+        else if (dashIndex >= 0)
+        {
+            trimmed = normalized[..dashIndex];
+        }
+
+        return trimmed.StartsWith("v", StringComparison.OrdinalIgnoreCase)
+            ? trimmed
+            : $"v{trimmed}";
     }
 
     private static string Normalize(string? value, string fallback)

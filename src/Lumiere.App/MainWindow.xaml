@@ -257,7 +257,7 @@
         <StackPanel Spacing="20">
           <StackPanel
               AutomationProperties.Name="Shortcuts settings section"
-              AutomationProperties.HelpText="Shortcut values are visible, but global registration and editing arrive in Epic 7."
+              AutomationProperties.HelpText="Keyboard shortcuts for fullscreen and region capture."
               Spacing="9">
             <local:SettingsSectionHeader
                 IconGlyph="&#xE765;"
@@ -340,11 +340,7 @@
                 </Grid>
               </StackPanel>
             </Border>
-            <TextBlock
-                Margin="16,-3,0,0"
-                FontSize="10"
-                Foreground="{StaticResource MutedTextBrush}"
-                Text="Global registration arrives in Epic 7" />
+
           </StackPanel>
 
           <StackPanel
@@ -367,19 +363,12 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
-                  <StackPanel VerticalAlignment="Center" Spacing="3">
-                    <TextBlock
-                        FontSize="13"
-                        FontWeight="SemiBold"
-                        Foreground="{StaticResource TextBrush}"
-                        Text="HDR alerts" />
-                    <TextBlock
-                        x:Name="SettingsHdrAlertsHelperText"
-                        FontSize="11"
-                        Foreground="{StaticResource MutedTextBrush}"
-                        Text="When HDR is unavailable"
-                        TextWrapping="WrapWholeWords" />
-                  </StackPanel>
+                  <TextBlock
+                      VerticalAlignment="Center"
+                      FontSize="13"
+                      FontWeight="SemiBold"
+                      Foreground="{StaticResource TextBrush}"
+                      Text="HDR alerts" />
                   <Button
                       x:Name="SettingsHdrAlertsButton"
                       Grid.Column="1"
@@ -412,19 +401,12 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
-                  <StackPanel VerticalAlignment="Center" Spacing="3">
-                    <TextBlock
-                        FontSize="13"
-                        FontWeight="SemiBold"
-                        Foreground="{StaticResource TextBrush}"
-                        Text="Export" />
-                    <TextBlock
-                        x:Name="SettingsExportHelperText"
-                        FontSize="11"
-                        Foreground="{StaticResource MutedTextBrush}"
-                        Text=""
-                        TextWrapping="WrapWholeWords" />
-                  </StackPanel>
+                  <TextBlock
+                      VerticalAlignment="Center"
+                      FontSize="13"
+                      FontWeight="SemiBold"
+                      Foreground="{StaticResource TextBrush}"
+                      Text="Export" />
                   <Border
                       x:Name="SettingsExportSegmentsPanel"
                       Grid.Column="1"
@@ -500,21 +482,13 @@
                 BorderThickness="1"
                 CornerRadius="12">
               <StackPanel>
-                <StackPanel
-                    Padding="0,16,0,18"
-                    Spacing="10">
+                <StackPanel Padding="0,16,0,18" Spacing="10">
                   <TextBlock
                       CharacterSpacing="80"
                       FontSize="11"
                       FontWeight="SemiBold"
                       Foreground="{StaticResource MutedTextBrush}"
                       Text="DESTINATION" />
-                  <TextBlock
-                      x:Name="SettingsDestinationHelperText"
-                      FontSize="11"
-                      Foreground="{StaticResource MutedTextBrush}"
-                      Text="Output target policy is active"
-                      TextWrapping="WrapWholeWords" />
                   <Border
                       Height="48"
                       Padding="4"
@@ -586,47 +560,60 @@
                 <Border
                     Height="1"
                     Background="{StaticResource BorderBrush}" />
-                <Grid MinHeight="64" ColumnSpacing="14">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                  </Grid.ColumnDefinitions>
-                  <StackPanel VerticalAlignment="Center" Spacing="3">
-                    <TextBlock
-                        FontSize="13"
-                        FontWeight="SemiBold"
-                        Foreground="{StaticResource TextBrush}"
-                        Text="Save path" />
-                    <TextBlock
-                        x:Name="SettingsSavePathHelperText"
-                        FontSize="11"
-                        Foreground="{StaticResource MutedTextBrush}"
-                        Text="Folder output uses the configured path; editing remains read-only"
-                        TextWrapping="WrapWholeWords" />
-                  </StackPanel>
-                  <Border
-                      x:Name="SettingsSavePathValuePill"
-                      Grid.Column="1"
-                      MaxWidth="150"
-                      Padding="12,6"
-                      VerticalAlignment="Center"
-                      AutomationProperties.HelpText="Select the folder for file output captures."
-                      AutomationProperties.Name="Save path"
-                      Background="#241D2024"
-                      BorderBrush="{StaticResource BorderBrush}"
-                      BorderThickness="1"
-                      CornerRadius="8"
-                      Tapped="OnSettingsSavePathTapped">
-                    <TextBlock
-                        x:Name="SettingsSavePathValueText"
-                        FontSize="12"
-                        FontWeight="SemiBold"
-                        Foreground="{StaticResource MutedTextBrush}"
-                        Text="Not configured"
-                        TextTrimming="CharacterEllipsis"
-                        TextWrapping="NoWrap" />
-                  </Border>
-                </Grid>
+                <StackPanel x:Name="SettingsSavePathRow" Padding="0,16,0,18">
+                  <TextBlock
+                      Margin="0,0,0,8"
+                      FontSize="13"
+                      FontWeight="SemiBold"
+                      Foreground="{StaticResource TextBrush}"
+                      Text="Save Path" />
+                  <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Border
+                        x:Name="SettingsSavePathValueBorder"
+                        Padding="10,7"
+                        VerticalAlignment="Center"
+                        Background="#1A1D2024"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6">
+                      <TextBlock
+                          x:Name="SettingsSavePathValueText"
+                          FontSize="11"
+                          FontFamily="Cascadia Mono, Consolas"
+                          Foreground="{StaticResource MutedTextBrush}"
+                          Text="Not configured"
+                          TextTrimming="CharacterEllipsis"
+                          TextWrapping="NoWrap" />
+                    </Border>
+                    <Button
+                        x:Name="SettingsSavePathBrowseButton"
+                        Grid.Column="1"
+                        Width="Auto"
+                        MinWidth="80"
+                        Padding="10,7"
+                        HorizontalAlignment="Right"
+                        AutomationProperties.Name="Browse for save folder"
+                        Style="{StaticResource SettingsSwitchButtonStyle}"
+                        Tapped="OnSettingsSavePathTapped">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon
+                            FontFamily="Segoe Fluent Icons"
+                            Foreground="{StaticResource MutedTextBrush}"
+                            FontSize="12"
+                            Glyph="&#xE8B7;" />
+                        <TextBlock
+                            FontSize="11"
+                            FontWeight="SemiBold"
+                            Foreground="{StaticResource MutedTextBrush}"
+                            Text="Browse" />
+                      </StackPanel>
+                    </Button>
+                  </Grid>
+                </StackPanel>
                 <Border
                     Height="1"
                     Background="{StaticResource BorderBrush}" />
@@ -635,19 +622,12 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
-                  <StackPanel VerticalAlignment="Center" Spacing="3">
-                    <TextBlock
-                        FontSize="13"
-                        FontWeight="SemiBold"
-                        Foreground="{StaticResource TextBrush}"
-                        Text="After capture" />
-                    <TextBlock
-                        x:Name="SettingsAfterCaptureHelperText"
-                        FontSize="11"
-                        Foreground="{StaticResource MutedTextBrush}"
-                        Text="Runs only when folder output produces a file artifact"
-                        TextWrapping="WrapWholeWords" />
-                  </StackPanel>
+                  <TextBlock
+                      VerticalAlignment="Center"
+                      FontSize="13"
+                      FontWeight="SemiBold"
+                      Foreground="{StaticResource TextBrush}"
+                      Text="Open after capture" />
                   <Button
                       x:Name="SettingsOpenAfterCaptureButton"
                       Grid.Column="1"
@@ -680,19 +660,12 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
-                  <StackPanel VerticalAlignment="Center" Spacing="3">
-                    <TextBlock
-                        FontSize="13"
-                        FontWeight="SemiBold"
-                        Foreground="{StaticResource TextBrush}"
-                        Text="Timestamp" />
-                    <TextBlock
-                        x:Name="SettingsTimestampHelperText"
-                        FontSize="11"
-                        Foreground="{StaticResource MutedTextBrush}"
-                        Text="Pending output behavior"
-                        TextWrapping="WrapWholeWords" />
-                  </StackPanel>
+                  <TextBlock
+                      VerticalAlignment="Center"
+                      FontSize="13"
+                      FontWeight="SemiBold"
+                      Foreground="{StaticResource TextBrush}"
+                      Text="Timestamp" />
                   <Button
                       x:Name="SettingsTimestampButton"
                       Grid.Column="1"
@@ -722,8 +695,10 @@
           </StackPanel>
 
           <StackPanel
+              x:Name="SettingsClipboardSection"
               AutomationProperties.Name="Clipboard settings section"
-              AutomationProperties.HelpText="Clipboard options are shown read-only; configured output behavior consumes the saved preference."
+              AutomationProperties.HelpText="Copy-as-image controls basic clipboard usability."
+              Visibility="Collapsed"
               Spacing="9">
             <local:SettingsSectionHeader
                 IconGlyph="&#xE8C8;"
@@ -739,19 +714,12 @@
                   <ColumnDefinition Width="*" />
                   <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <StackPanel VerticalAlignment="Center" Spacing="3">
-                  <TextBlock
-                      FontSize="13"
-                      FontWeight="SemiBold"
-                      Foreground="{StaticResource TextBrush}"
-                      Text="Copy as image" />
-                  <TextBlock
-                      x:Name="SettingsCopyAsImageHelperText"
-                      FontSize="11"
-                      Foreground="{StaticResource MutedTextBrush}"
-                      Text="Basic clipboard usability, not validated HDR preservation"
-                      TextWrapping="WrapWholeWords" />
-                </StackPanel>
+                <TextBlock
+                    VerticalAlignment="Center"
+                    FontSize="13"
+                    FontWeight="SemiBold"
+                    Foreground="{StaticResource TextBrush}"
+                    Text="Copy as image" />
                 <Button
                     x:Name="SettingsCopyAsImageButton"
                     Grid.Column="1"
@@ -781,7 +749,7 @@
 
           <StackPanel
               AutomationProperties.Name="About settings section"
-              AutomationProperties.HelpText="Version details arrive in the native about story."
+              AutomationProperties.HelpText="Version and product information."
               Spacing="9">
             <local:SettingsSectionHeader
                 IconGlyph="&#xE946;"
@@ -819,8 +787,7 @@
                     FontSize="11"
                     Foreground="{StaticResource MutedTextBrush}"
                     Text="Native screenshot reference for HDR-first capture."
-                    TextTrimming="CharacterEllipsis"
-                    TextWrapping="NoWrap" />
+                    TextWrapping="Wrap" />
               </StackPanel>
             </Border>
           </StackPanel>

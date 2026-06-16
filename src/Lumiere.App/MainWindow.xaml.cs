@@ -308,12 +308,9 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        var next = settingsProvider.AfterCaptureBehavior switch
-        {
-            AfterCaptureBehavior.None => AfterCaptureBehavior.Open,
-            AfterCaptureBehavior.Open => AfterCaptureBehavior.Reveal,
-            _ => AfterCaptureBehavior.None,
-        };
+        var next = settingsProvider.AfterCaptureBehavior == AfterCaptureBehavior.Open
+            ? AfterCaptureBehavior.None
+            : AfterCaptureBehavior.Open;
         settingsWriter.SetAfterCaptureBehavior(next);
         var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
         ApplySettingsProjection(currentState);
@@ -1514,7 +1511,6 @@ public sealed partial class MainWindow : Window
             AutomationProperties.SetHelpText(SettingsRegionShortcutValuePill, projection.RegionShortcut.HelpText);
             ToolTipService.SetToolTip(SettingsRegionShortcutValuePill, projection.RegionShortcut.PendingReason);
 
-            SettingsHdrAlertsHelperText.Text = "When HDR is unavailable";
             SettingsHdrAlertsButton.IsEnabled = !projection.IsHdrAlertsReadOnly;
             ApplySwitchState(
                 SettingsHdrAlertsSwitchTrack,
@@ -1524,15 +1520,18 @@ public sealed partial class MainWindow : Window
             AutomationProperties.SetName(
                 SettingsHdrAlertsButton,
                 projection.HdrAlertsEnabled ? "HDR alerts: on" : "HDR alerts: off");
-            AutomationProperties.SetHelpText(SettingsHdrAlertsButton, projection.HdrAlertsHelpText);
+            AutomationProperties.SetHelpText(SettingsHdrAlertsButton, "Show warnings when HDR is unavailable, degraded, unsupported, or failed.");
             ApplyDestinationSegmentProjection(projection.Output);
+
+            var showSavePath = projection.Output.IsFolderSelected || projection.Output.IsBothSelected;
+            SettingsSavePathRow.Visibility = showSavePath ? Visibility.Visible : Visibility.Collapsed;
+
             SettingsSavePathValueText.Text = projection.Output.SavePathDisplayValue;
-            SettingsSavePathHelperText.Text = projection.Output.SavePathHelpText;
-            AutomationProperties.SetName(SettingsSavePathValuePill, $"Save path: {projection.Output.SavePathDisplayValue}");
-            AutomationProperties.SetHelpText(SettingsSavePathValuePill, projection.Output.SavePathHelpText);
-            ToolTipService.SetToolTip(
-                SettingsSavePathValuePill,
-                $"{projection.Output.SavePathDisplayValue}. {projection.Output.SavePathHelpText}");
+            AutomationProperties.SetName(SettingsSavePathValueBorder, $"Save path: {projection.Output.SavePathDisplayValue}");
+            AutomationProperties.SetHelpText(SettingsSavePathValueBorder, "Select the folder for file output captures.");
+
+            var showClipboard = projection.Output.IsClipboardSelected || projection.Output.IsBothSelected;
+            SettingsClipboardSection.Visibility = showClipboard ? Visibility.Visible : Visibility.Collapsed;
 
             SettingsOpenAfterCaptureButton.IsEnabled = !projection.Output.IsAfterCaptureReadOnly;
             ApplySwitchState(
@@ -1540,9 +1539,8 @@ public sealed partial class MainWindow : Window
                 SettingsOpenAfterCaptureSwitchKnob,
                 projection.Output.IsAfterCaptureSelected,
                 projection.Output.IsAfterCaptureReadOnly);
-            SettingsAfterCaptureHelperText.Text = projection.Output.AfterCaptureHelpText;
-            AutomationProperties.SetName(SettingsOpenAfterCaptureButton, $"After capture: {projection.Output.AfterCaptureDisplayValue}");
-            AutomationProperties.SetHelpText(SettingsOpenAfterCaptureButton, projection.Output.AfterCaptureHelpText);
+            AutomationProperties.SetName(SettingsOpenAfterCaptureButton, $"Open after capture: {(projection.Output.IsAfterCaptureSelected ? "on" : "off")}");
+            AutomationProperties.SetHelpText(SettingsOpenAfterCaptureButton, "Open the saved file after folder output completes.");
 
             SettingsTimestampButton.IsEnabled = !projection.Output.IsTimestampReadOnly;
             ApplySwitchState(
@@ -1550,11 +1548,10 @@ public sealed partial class MainWindow : Window
                 SettingsTimestampSwitchKnob,
                 projection.Output.TimestampNaming,
                 projection.Output.IsTimestampReadOnly);
-            SettingsTimestampHelperText.Text = projection.Output.TimestampHelpText;
             AutomationProperties.SetName(
                 SettingsTimestampButton,
                 projection.Output.TimestampNaming ? "Timestamp naming: on" : "Timestamp naming: off");
-            AutomationProperties.SetHelpText(SettingsTimestampButton, projection.Output.TimestampHelpText);
+            AutomationProperties.SetHelpText(SettingsTimestampButton, "Timestamp naming controls whether folder output uses safe invariant filenames.");
 
             SettingsCopyAsImageButton.IsEnabled = !projection.Output.IsCopyAsImageReadOnly;
             ApplySwitchState(
@@ -1562,11 +1559,10 @@ public sealed partial class MainWindow : Window
                 SettingsCopyAsImageSwitchKnob,
                 projection.Output.CopyAsImage,
                 projection.Output.IsCopyAsImageReadOnly);
-            SettingsCopyAsImageHelperText.Text = projection.Output.CopyAsImageHelpText;
             AutomationProperties.SetName(
                 SettingsCopyAsImageButton,
                 projection.Output.CopyAsImage ? "Copy as image: on" : "Copy as image: off");
-            AutomationProperties.SetHelpText(SettingsCopyAsImageButton, projection.Output.CopyAsImageHelpText);
+            AutomationProperties.SetHelpText(SettingsCopyAsImageButton, "Copy-as-image controls basic clipboard usability.");
 
             ApplyExportColorProjection(projection.Output);
 
@@ -1608,12 +1604,10 @@ public sealed partial class MainWindow : Window
         AutomationProperties.SetName(SettingsDestinationClipboardSegment, "Destination option: Clipboard");
         AutomationProperties.SetName(SettingsDestinationFolderSegment, "Destination option: Folder");
         AutomationProperties.SetName(SettingsDestinationBothSegment, "Destination option: Both");
-        SettingsDestinationHelperText.Text = output.PendingReason;
     }
 
     private void ApplyExportColorProjection(OutputSettingsProjection output)
     {
-        SettingsExportHelperText.Text = output.ExportColorHelpText;
         AutomationProperties.SetName(SettingsExportSegmentsPanel, $"Export profile: {output.ExportColorDisplayValue}");
         AutomationProperties.SetHelpText(SettingsExportSegmentsPanel, output.ExportColorHelpText);
         ToolTipService.SetToolTip(SettingsExportSegmentsPanel, output.ExportColorHelpText);
