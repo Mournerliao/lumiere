@@ -64,6 +64,16 @@ public static class PerfectHdrFidelityProjection
         return ProjectValidationCore(outputProfile, record);
     }
 
+    public static ValidationPanelProjection ProjectValidation(
+        OutputProfileContract outputProfile,
+        OutputValidationSessionArtifact artifact,
+        ValidationRecordProjection? record = null)
+    {
+        ArgumentNullException.ThrowIfNull(outputProfile);
+        ArgumentNullException.ThrowIfNull(artifact);
+        return ProjectValidationCore(artifact.ApplyTo(outputProfile), record);
+    }
+
     private static ValidationPanelProjection ProjectValidationCore(
         OutputProfileContract outputProfile,
         ValidationRecordProjection? record) =>

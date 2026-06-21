@@ -188,6 +188,53 @@ public sealed class PerfectHdrFidelityProjectionTests
     }
 
     [Fact]
+    public void ProjectValidation_AppliesValidationSessionArtifactToViewerMatrix()
+    {
+        var contract = OutputProfileContract.Hdr10Pq with
+        {
+            IsExecutable = true,
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+        };
+        var artifact = new OutputValidationSessionArtifact(
+            Date: "2026-06-21",
+            Tester: "QA",
+            BuildCommit: "04a8dd6",
+            WindowsVersion: "Windows 11 24H2",
+            Device: "HDR workstation",
+            Gpu: "Test GPU",
+            DisplaySetup: "HDR primary",
+            HdrState: "HDR enabled",
+            DpiScales: ["150%"],
+            EntryPointsTested: ["Main panel"],
+            OutputTargetsTested: ["Clipboard"],
+            TargetAppsTested: ["Windows Photos"],
+            ChecklistIdsCovered: ["REL-OUT-01"],
+            ResultSummary: "Windows Photos HDR validation passed.",
+            EvidencePaths: ["docs/validation/evidence/photos.md"],
+            KnownLimitations: ["Paint and Chromium not yet validated"],
+            FollowUpIssuesOrStories: ["Validate remaining viewers"],
+            OutputProfileRecords:
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer("Windows Photos"),
+                    ]),
+            ]);
+
+        var validation = PerfectHdrFidelityProjection.ProjectValidation(contract, artifact);
+        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(artifact.ApplyTo(contract));
+
+        Assert.Contains(validation.ViewerMatrix, viewer =>
+            viewer.Name == "Windows Photos"
+            && viewer.Status == ValidationEvidenceStatus.Pass);
+        Assert.Contains(validation.ViewerMatrix, viewer =>
+            viewer.Name == "Chromium browsers"
+            && viewer.Status == ValidationEvidenceStatus.NotRun);
+        Assert.Equal(FidelityClaimKind.Unvalidated, profile.FidelityClaim.Kind);
+    }
+
+    [Fact]
     public void ProjectValidationRecord_UsesBuildVersionAndKeepsManualValidationNotRun()
     {
         var record = PerfectHdrFidelityProjection.ProjectValidationRecord("v2.3.4");
