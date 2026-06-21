@@ -301,6 +301,17 @@ public sealed record OutputProfileExecutionCapabilities(
             : new(profiles);
     }
 
+    public static OutputProfileExecutionCapabilities FromHdr10JxrCodecReadiness(
+        Hdr10JxrCodecReadiness readiness)
+    {
+        ArgumentNullException.ThrowIfNull(readiness);
+        return readiness.IsReady
+            ? Create(
+                OutputProfileExecutionCapability.SrgbCompatibility,
+                OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder)
+            : CompatibilityOnly;
+    }
+
     public OutputProfileContract SelectEffectiveProfile(OutputProfileContract requestedProfile)
     {
         ArgumentNullException.ThrowIfNull(requestedProfile);
@@ -344,6 +355,12 @@ public sealed record OutputProfileExecutionCapability(
             OutputProfileKind.Hdr10Pq,
             OutputFidelityMode.HdrPreserved,
             OutputArtifactEncoderImplementation.NotImplemented);
+
+    public static OutputProfileExecutionCapability Hdr10PreservedImplementedArtifactEncoder { get; } =
+        new(
+            OutputProfileKind.Hdr10Pq,
+            OutputFidelityMode.HdrPreserved,
+            OutputArtifactEncoderImplementation.Implemented);
 }
 
 public sealed record OutputFormatContract(

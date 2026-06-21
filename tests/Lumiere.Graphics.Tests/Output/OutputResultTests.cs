@@ -82,7 +82,7 @@ public sealed class OutputResultTests
             RequestedProfile = requested,
             ExecutionCapabilities = OutputProfileExecutionCapabilities.Create(
                 OutputProfileExecutionCapability.SrgbCompatibility,
-                ImplementedHdr10PreservedCapability),
+                OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder),
         };
 
         var result = OutputResult.ClipboardSuccess(1024)
@@ -105,9 +105,4 @@ public sealed class OutputResultTests
             OutputMetadataPolicy.AttachHdr10StaticMetadata,
             OutputTargetAppAssumption.RequiresHdrViewerValidation);
 
-    private static OutputProfileExecutionCapability ImplementedHdr10PreservedCapability { get; } =
-        new(
-            OutputProfileKind.Hdr10Pq,
-            OutputFidelityMode.HdrPreserved,
-            OutputArtifactEncoderImplementation.Implemented);
 }

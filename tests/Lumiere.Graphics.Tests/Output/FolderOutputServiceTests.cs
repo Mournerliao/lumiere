@@ -92,7 +92,7 @@ public sealed class FolderOutputServiceTests
                 RequestedProfile = requestedProfile,
                 ExecutionCapabilities = OutputProfileExecutionCapabilities.Create(
                     OutputProfileExecutionCapability.SrgbCompatibility,
-                    ImplementedHdr10PreservedCapability),
+                    OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder),
             },
         });
 
@@ -196,9 +196,4 @@ public sealed class FolderOutputServiceTests
             OutputMetadataPolicy.AttachHdr10StaticMetadata,
             OutputTargetAppAssumption.RequiresHdrViewerValidation);
 
-    private static OutputProfileExecutionCapability ImplementedHdr10PreservedCapability { get; } =
-        new(
-            OutputProfileKind.Hdr10Pq,
-            OutputFidelityMode.HdrPreserved,
-            OutputArtifactEncoderImplementation.Implemented);
 }

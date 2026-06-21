@@ -200,13 +200,55 @@ public sealed class OutputPolicyTests
             validationArtifacts: [CompleteHdr10Artifact()],
             executionCapabilities: OutputProfileExecutionCapabilities.Create(
                 OutputProfileExecutionCapability.SrgbCompatibility,
-                ImplementedHdr10PreservedCapability));
+                OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder));
 
         Assert.Equal(OutputProfileKind.Hdr10Pq, policy.EffectiveProfile.Kind);
         Assert.True(policy.EffectiveProfile.IsExecutable);
         Assert.Equal(OutputFidelityMode.HdrPreserved, policy.EffectiveProfile.FidelityMode);
         Assert.Equal(OutputTransferFunction.PqSt2084, policy.EffectiveProfile.FormatContract.TransferFunction);
         Assert.False(policy.UsesCompatibilityProfileFallback);
+    }
+
+    [Fact]
+    public void FromHdr10JxrCodecReadiness_KeepsCompatibilityOnlyWhenCodecIsPending()
+    {
+        var capabilities = OutputProfileExecutionCapabilities.FromHdr10JxrCodecReadiness(
+            Hdr10JxrCodecReadiness.PendingNativeWicImplementation);
+        var policy = OutputPolicy.FromSettings(
+            OutputTarget.Folder,
+            copyAsImage: true,
+            savePath: "C:\\Captures",
+            timestampNaming: true,
+            afterCaptureBehavior: null,
+            exportColorFormat: "HDR10",
+            validationArtifacts: [CompleteHdr10Artifact()],
+            executionCapabilities: capabilities);
+
+        Assert.Equal(OutputProfileKind.Hdr10Pq, policy.RequestedProfile.Kind);
+        Assert.True(policy.RequestedProfile.HasCompleteFormatContract);
+        Assert.Equal(OutputProfileKind.SrgbCompatibilityPng, policy.EffectiveProfile.Kind);
+        Assert.True(policy.UsesCompatibilityProfileFallback);
+    }
+
+    [Fact]
+    public void FromHdr10JxrCodecReadiness_EnablesHdr10OnlyWhenCodecReadinessIsComplete()
+    {
+        var capabilities = OutputProfileExecutionCapabilities.FromHdr10JxrCodecReadiness(ReadyHdr10JxrReadiness);
+        var policy = OutputPolicy.FromSettings(
+            OutputTarget.Folder,
+            copyAsImage: true,
+            savePath: "C:\\Captures",
+            timestampNaming: true,
+            afterCaptureBehavior: null,
+            exportColorFormat: "HDR10",
+            validationArtifacts: [CompleteHdr10Artifact()],
+            executionCapabilities: capabilities);
+
+        Assert.Equal(OutputProfileKind.Hdr10Pq, policy.EffectiveProfile.Kind);
+        Assert.True(policy.EffectiveProfile.IsExecutable);
+        Assert.Equal(OutputFidelityMode.HdrPreserved, policy.EffectiveProfile.FidelityMode);
+        Assert.Equal(OutputArtifactEncoderImplementation.Implemented, capabilities.Profiles.Single(
+            profile => profile.ProfileKind is OutputProfileKind.Hdr10Pq).ArtifactEncoderImplementation);
     }
 
     private static OutputValidationSessionArtifact CompleteHdr10Artifact() =>
@@ -275,9 +317,11 @@ public sealed class OutputPolicyTests
             ColorSpace: "RgbFullG2084NoneP2020",
             Detail: "Validated target-aware HDR match evidence.");
 
-    private static OutputProfileExecutionCapability ImplementedHdr10PreservedCapability { get; } =
+    private static Hdr10JxrCodecReadiness ReadyHdr10JxrReadiness { get; } =
         new(
-            OutputProfileKind.Hdr10Pq,
-            OutputFidelityMode.HdrPreserved,
-            OutputArtifactEncoderImplementation.Implemented);
+            HasNativeWicJpegXrEncoder: true,
+            AcceptsRgba16FloatSource: true,
+            WritesHdr10Metadata: true,
+            HasWindowsManualViewerValidation: true,
+            Blockers: []);
 }
