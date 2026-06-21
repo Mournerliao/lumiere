@@ -53,6 +53,7 @@ public sealed class Hdr10JxrOutputEncoderTests
         Assert.Contains("not implemented", exception.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("metadata", exception.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("validation", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("WIC JPEG XR", exception.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(1, readback.Calls);
         Assert.Same(texture, readback.Texture);
     }
@@ -133,6 +134,21 @@ public sealed class Hdr10JxrOutputEncoderTests
         Assert.Contains("complete HDR10-preserved", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void PendingHdr10JxrCodec_ReadinessRecordsImplementationAndValidationBlockers()
+    {
+        var readiness = new PendingHdr10JxrCodec().Readiness;
+
+        Assert.False(readiness.IsReady);
+        Assert.False(readiness.HasNativeWicJpegXrEncoder);
+        Assert.True(readiness.AcceptsRgba16FloatSource);
+        Assert.False(readiness.WritesHdr10Metadata);
+        Assert.False(readiness.HasWindowsManualViewerValidation);
+        Assert.Contains(readiness.Blockers, blocker => blocker.Contains("WIC JPEG XR", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(readiness.Blockers, blocker => blocker.Contains("metadata", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(readiness.Blockers, blocker => blocker.Contains("viewer validation", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static OutputFormatContract CompleteHdr10Contract { get; } =
         new(
             OutputPixelFormat.R16G16B16A16Float,
@@ -153,6 +169,14 @@ public sealed class Hdr10JxrOutputEncoderTests
         }
 
         public Hdr10JxrCodecInput? Input { get; private set; }
+
+        public Hdr10JxrCodecReadiness Readiness { get; } =
+            new(
+                HasNativeWicJpegXrEncoder: true,
+                AcceptsRgba16FloatSource: true,
+                WritesHdr10Metadata: true,
+                HasWindowsManualViewerValidation: true,
+                Blockers: []);
 
         public Task<byte[]> EncodeAsync(
             Hdr10JxrCodecInput input,

@@ -2,9 +2,44 @@ namespace Lumiere.Graphics.Output;
 
 public interface IHdr10JxrCodec
 {
+    Hdr10JxrCodecReadiness Readiness { get; }
+
     Task<byte[]> EncodeAsync(
         Hdr10JxrCodecInput input,
         CancellationToken cancellationToken = default);
+}
+
+public sealed record Hdr10JxrCodecReadiness(
+    bool HasNativeWicJpegXrEncoder,
+    bool AcceptsRgba16FloatSource,
+    bool WritesHdr10Metadata,
+    bool HasWindowsManualViewerValidation,
+    IReadOnlyList<string> Blockers)
+{
+    public static Hdr10JxrCodecReadiness PendingNativeWicImplementation { get; } =
+        new(
+            HasNativeWicJpegXrEncoder: false,
+            AcceptsRgba16FloatSource: true,
+            WritesHdr10Metadata: false,
+            HasWindowsManualViewerValidation: false,
+            Blockers:
+            [
+                "Native Windows WIC JPEG XR codec integration is not implemented.",
+                "HDR10 static metadata write policy is not implemented.",
+                "Windows manual viewer validation for the emitted JXR artifact has not passed.",
+            ]);
+
+    public bool IsReady =>
+        HasNativeWicJpegXrEncoder
+        && AcceptsRgba16FloatSource
+        && WritesHdr10Metadata
+        && HasWindowsManualViewerValidation
+        && Blockers.Count == 0;
+
+    public string FormatBlockers() =>
+        IsReady
+            ? "HDR10 JXR codec readiness passed."
+            : string.Join(" ", Blockers);
 }
 
 public sealed record Hdr10JxrCodecInput
@@ -41,6 +76,8 @@ public sealed record Hdr10JxrCodecInput
 
 public sealed class PendingHdr10JxrCodec : IHdr10JxrCodec
 {
+    public Hdr10JxrCodecReadiness Readiness => Hdr10JxrCodecReadiness.PendingNativeWicImplementation;
+
     public Task<byte[]> EncodeAsync(
         Hdr10JxrCodecInput input,
         CancellationToken cancellationToken = default)
@@ -49,6 +86,6 @@ public sealed class PendingHdr10JxrCodec : IHdr10JxrCodec
         cancellationToken.ThrowIfCancellationRequested();
 
         throw new OutputArtifactEncodingException(
-            "HDR10 JXR encoding is not implemented yet; native Windows WIC JPEG XR codec integration, HDR metadata, and viewer validation are required before this profile can be enabled.");
+            $"HDR10 JXR encoding is not implemented yet. {Readiness.FormatBlockers()}");
     }
 }

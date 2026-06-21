@@ -23,6 +23,15 @@ Any enabled HDR10, P3, sRGB, ICC, HEIF, AVIF, JPEG XL, or similar export/color o
 - Windows manual validation date, device/display configuration, app versions, and observed result.
 - Known limitations and user-facing copy that avoids unsupported preservation claims.
 
+### HDR10 JPEG XR Pending Codec Requirements
+
+The HDR10 `.jxr` output path is not enabled until the codec readiness record proves all of the following:
+
+- Native Windows WIC JPEG XR integration is implemented for `.jxr`/WMP container output.
+- The codec accepts the captured `R16G16B16A16_FLOAT` source readback without routing through sRGB PNG conversion.
+- HDR10 static metadata write policy is implemented and recorded.
+- Windows manual viewer validation passes for every named target viewer before runtime capability is marked implemented.
+
 ## Manual Validation Scenarios
 
 1. Clipboard output to Paint, Photos, and at least one Chromium-based app.
