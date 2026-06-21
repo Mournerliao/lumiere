@@ -44,6 +44,26 @@ public sealed class SwapChainReadinessTests
     }
 
     [Fact]
+    public void UnknownTargetAwareDisplayCapabilityReportsDegradedPresentationStatus()
+    {
+        var controller = new FakeColorSpaceController(
+            SwapChainColorSpaceSupportFlags.Present,
+            setSucceeds: true);
+
+        var status = SwapChainColorSpaceConfigurator.Configure(
+            controller,
+            HdrConstants.DxgiColorSpace,
+            HdrDisplayCapability.Unknown(),
+            requireTargetedDisplayCapability: true);
+
+        Assert.Equal(PreviewReadinessState.Degraded, status.State);
+        Assert.Equal(PreviewReadinessStage.Presentation, status.Stage);
+        Assert.True(status.RequiresUserAttention);
+        Assert.Contains("target", status.TechnicalDetail ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(controller.SetColorSpace);
+    }
+
+    [Fact]
     public void SetColorSpaceFailureReportsFailedPresentationStatus()
     {
         var controller = new FakeColorSpaceController(

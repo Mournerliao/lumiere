@@ -62,7 +62,8 @@ public sealed class SwapChainManager
             var presentationEvidence = SwapChainColorSpaceConfigurator.Configure(
                 new SwapChainColorSpaceController(swapChain3),
                 options.ColorSpace,
-                displayCapability);
+                displayCapability,
+                requireTargetedDisplayCapability: targetHint is not null);
 
             attachPreview(swapChain);
 

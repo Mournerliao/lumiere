@@ -15,7 +15,8 @@ public static class SwapChainColorSpaceConfigurator
     public static PreviewReadinessStatus Configure(
         ISwapChainColorSpaceController controller,
         ColorSpaceType colorSpace,
-        HdrDisplayCapability? displayCapability = null)
+        HdrDisplayCapability? displayCapability = null,
+        bool requireTargetedDisplayCapability = false)
     {
         ArgumentNullException.ThrowIfNull(controller);
 
@@ -40,6 +41,16 @@ public static class SwapChainColorSpaceConfigurator
                     PreviewReadinessStage.Presentation,
                     "Enable HDR in Windows Display settings for best capture quality.",
                     $"Display color space is {displayCapability.DisplayColorSpace} (device: {displayCapability.DeviceName}); HDR is not active.");
+            }
+
+            if (requireTargetedDisplayCapability && displayCapability is { State: HdrDisplayState.Unknown })
+            {
+                Logger.LogInformation(
+                    "ColorSpace check passed but target-aware display capability could not be resolved; marking degraded.");
+                return PreviewReadinessStatus.Degraded(
+                    PreviewReadinessStage.Presentation,
+                    "HDR readiness is unvalidated for the selected capture target.",
+                    "Target-aware display capability could not be matched to a DXGI output.");
             }
 
             controller.SetColorSpace1(colorSpace);
