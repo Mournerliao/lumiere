@@ -1559,7 +1559,7 @@ public sealed partial class MainWindow : Window
         var projection = SettingsPanelProjection.Project(
             settingsProvider,
             state,
-            validation.Artifacts,
+            validation,
             aboutInfoProvider: aboutInfoProvider,
             executionCapabilities: outputCapabilities);
 

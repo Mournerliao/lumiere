@@ -41,9 +41,45 @@ public sealed record SettingsPanelProjection(
         IAboutInfoProvider? aboutInfoProvider = null,
         OutputProfileExecutionCapabilities? executionCapabilities = null)
     {
+        ArgumentNullException.ThrowIfNull(validationArtifacts);
+        return ProjectCore(
+            settingsProvider,
+            sessionState,
+            validationArtifacts,
+            aboutInfoProvider,
+            executionCapabilities,
+            validationRecordFactory: PerfectHdrFidelityProjection.ProjectValidationRecord);
+    }
+
+    public static SettingsPanelProjection Project(
+        ISettingsProvider settingsProvider,
+        CaptureSessionState sessionState,
+        OutputValidationArtifactSnapshot validationSnapshot,
+        IAboutInfoProvider? aboutInfoProvider = null,
+        OutputProfileExecutionCapabilities? executionCapabilities = null)
+    {
+        ArgumentNullException.ThrowIfNull(validationSnapshot);
+        return ProjectCore(
+            settingsProvider,
+            sessionState,
+            validationSnapshot.Artifacts,
+            aboutInfoProvider,
+            executionCapabilities,
+            buildVersion => PerfectHdrFidelityProjection.ProjectValidationRecord(buildVersion, validationSnapshot));
+    }
+
+    private static SettingsPanelProjection ProjectCore(
+        ISettingsProvider settingsProvider,
+        CaptureSessionState sessionState,
+        IEnumerable<OutputValidationSessionArtifact> validationArtifacts,
+        IAboutInfoProvider? aboutInfoProvider,
+        OutputProfileExecutionCapabilities? executionCapabilities,
+        Func<string?, ValidationRecordProjection> validationRecordFactory)
+    {
         ArgumentNullException.ThrowIfNull(settingsProvider);
         ArgumentNullException.ThrowIfNull(sessionState);
         ArgumentNullException.ThrowIfNull(validationArtifacts);
+        ArgumentNullException.ThrowIfNull(validationRecordFactory);
         aboutInfoProvider ??= AssemblyAboutInfoProvider.CreateFallback();
         var capabilities = executionCapabilities ?? OutputProfileExecutionCapabilities.CompatibilityOnly;
         var hotkeyPlan = GlobalHotkeyRegistrationPlan.Project(settingsProvider);
@@ -75,7 +111,7 @@ public sealed record SettingsPanelProjection(
                 selectedProfileContract,
                 artifacts,
                 capabilities,
-                PerfectHdrFidelityProjection.ProjectValidationRecord(about.Version),
+                validationRecordFactory(about.Version),
                 readiness: sessionState.Readiness),
             about,
             settingsProvider.TimestampNaming,

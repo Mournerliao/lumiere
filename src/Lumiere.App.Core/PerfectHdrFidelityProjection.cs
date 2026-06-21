@@ -473,6 +473,39 @@ public static class PerfectHdrFidelityProjection
             "docs/validation/release-validation-checklist.md");
     }
 
+    public static ValidationRecordProjection ProjectValidationRecord(
+        string? buildVersion,
+        OutputValidationArtifactSnapshot validationSnapshot)
+    {
+        ArgumentNullException.ThrowIfNull(validationSnapshot);
+
+        var baseline = ProjectValidationRecord(buildVersion);
+        if (validationSnapshot.HasLoadIssues)
+        {
+            var firstIssue = validationSnapshot.LoadIssues[0];
+            return baseline with
+            {
+                WindowsManualValidationStatus = ValidationEvidenceStatus.Limited,
+                WindowsManualValidationDetail =
+                    $"{validationSnapshot.Artifacts.Count} output validation artifact(s) loaded, but {validationSnapshot.LoadIssues.Count} file(s) were ignored. Fix ignored JSON/schema files before counting Windows manual output evidence. First issue: {Path.GetFileName(firstIssue.Path)}: {firstIssue.Detail}",
+                EvidenceDocumentPath = "docs/validation/output-validation.md",
+            };
+        }
+
+        if (validationSnapshot.HasArtifacts)
+        {
+            return baseline with
+            {
+                WindowsManualValidationStatus = ValidationEvidenceStatus.Limited,
+                WindowsManualValidationDetail =
+                    $"{validationSnapshot.Artifacts.Count} output validation artifact(s) loaded for this session. Release gates still require target-aware HDR, visual match, HDR preservation, and HDR10 metadata recognition to pass.",
+                EvidenceDocumentPath = "docs/validation/output-validation.md",
+            };
+        }
+
+        return baseline;
+    }
+
     public static string NormalizeExportColorFormat(string? exportColorFormat)
         => OutputProfileContract.FromSettingsValue(exportColorFormat).Label;
 

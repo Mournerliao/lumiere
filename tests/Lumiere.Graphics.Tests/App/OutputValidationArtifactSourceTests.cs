@@ -80,6 +80,55 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.DoesNotContain("HDR-preserved", projection.MainPanel.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void LoadedSnapshotSurfacesArtifactLoadIssuesInSettingsValidationRecord()
+    {
+        var snapshot = new OutputValidationArtifactSnapshot(
+            [CreateArtifact("2026-06-21", "Windows Photos")],
+            [new("C:\\Validation\\bad.json", "JsonException: invalid JSON")]);
+        var settings = new TestSettingsProvider
+        {
+            ExportColorFormat = "HDR10",
+        };
+
+        var projection = SettingsPanelProjection.Project(
+            settings,
+            CaptureSessionState.Idle(),
+            snapshot,
+            executionCapabilities: OutputProfileExecutionCapabilities.CompatibilityOnly);
+
+        Assert.Equal(ValidationEvidenceStatus.Limited, projection.Validation.Record.WindowsManualValidationStatus);
+        Assert.Contains("1 output validation artifact", projection.Validation.Record.WindowsManualValidationDetail);
+        Assert.Contains("1 file", projection.Validation.Record.WindowsManualValidationDetail);
+        Assert.Contains("bad.json", projection.Validation.Record.WindowsManualValidationDetail);
+        Assert.Contains("JsonException", projection.Validation.Record.WindowsManualValidationDetail);
+        Assert.Equal("docs/validation/output-validation.md", projection.Validation.Record.EvidenceDocumentPath);
+        Assert.Equal("Fallback", projection.MainPanel.OutputProfile.StatusLabel);
+        Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
+    }
+
+    [Fact]
+    public void LoadedSnapshotWithoutIssuesSurfacesArtifactCountAsLimitedManualEvidence()
+    {
+        var snapshot = new OutputValidationArtifactSnapshot(
+            [
+                CreateArtifact("2026-06-21", "Microsoft Paint"),
+                CreateArtifact("2026-06-22", "Windows Photos"),
+            ],
+            []);
+
+        var projection = SettingsPanelProjection.Project(
+            new TestSettingsProvider(),
+            CaptureSessionState.Idle(),
+            snapshot,
+            executionCapabilities: OutputProfileExecutionCapabilities.CompatibilityOnly);
+
+        Assert.Equal(ValidationEvidenceStatus.Limited, projection.Validation.Record.WindowsManualValidationStatus);
+        Assert.Contains("2 output validation artifact", projection.Validation.Record.WindowsManualValidationDetail);
+        Assert.Contains("Release gates", projection.Validation.Record.WindowsManualValidationDetail);
+        Assert.Equal("docs/validation/output-validation.md", projection.Validation.Record.EvidenceDocumentPath);
+    }
+
     private static OutputValidationSessionArtifact CreateArtifact(string date, string viewerName) =>
         new(
             Date: date,
