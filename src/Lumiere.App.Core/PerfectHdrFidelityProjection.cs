@@ -48,9 +48,35 @@ public static class PerfectHdrFidelityProjection
         OutputProfileContract contract,
         PreviewReadinessStatus? readiness,
         OutputProfileExecutionCapabilities executionCapabilities)
+        => ProjectOutputProfile(
+            contract,
+            readiness,
+            executionCapabilities,
+            OutputTarget.Folder);
+
+    public static OutputProfileProjection ProjectOutputProfile(
+        OutputProfileContract contract,
+        PreviewReadinessStatus? readiness,
+        OutputProfileExecutionCapabilities executionCapabilities,
+        OutputTarget outputTarget)
     {
         ArgumentNullException.ThrowIfNull(contract);
         ArgumentNullException.ThrowIfNull(executionCapabilities);
+        return outputTarget switch
+        {
+            OutputTarget.Clipboard when contract.Kind is not OutputProfileKind.SrgbCompatibilityPng =>
+                ProjectClipboardCompatibilityProfile(contract, readiness),
+            OutputTarget.Both when contract.Kind is not OutputProfileKind.SrgbCompatibilityPng =>
+                ProjectMixedTargetProfile(contract, readiness, executionCapabilities),
+            _ => ProjectFolderScopedProfile(contract, readiness, executionCapabilities),
+        };
+    }
+
+    private static OutputProfileProjection ProjectFolderScopedProfile(
+        OutputProfileContract contract,
+        PreviewReadinessStatus? readiness,
+        OutputProfileExecutionCapabilities executionCapabilities)
+    {
         var effectiveContract = executionCapabilities.SelectEffectiveProfile(contract);
         var requestedContract = SelectRuntimeClaimContract(contract, effectiveContract);
         var requestedProjection = ProjectOutputProfileCore(requestedContract, readiness);
@@ -76,6 +102,46 @@ public static class PerfectHdrFidelityProjection
             IsReadOnly = gatePresentation.IsReadOnly,
             Contract = CreateContractProjection(requestedContract, gatePresentation.StatusLabel),
             FidelityClaim = effectiveProjection.FidelityClaim,
+        };
+    }
+
+    private static OutputProfileProjection ProjectClipboardCompatibilityProfile(
+        OutputProfileContract contract,
+        PreviewReadinessStatus? readiness)
+    {
+        var requestedProjection = ProjectOutputProfileCore(
+            contract with
+            {
+                IsExecutable = false,
+                FidelityMode = OutputFidelityMode.Unvalidated,
+            },
+            readiness);
+        var compatibilityProjection = ProjectOutputProfileCore(OutputProfileContract.SrgbCompatibilityPng, readiness);
+        return requestedProjection with
+        {
+            StatusLabel = "Compat",
+            Detail = $"Clipboard output stays on sRGB compatibility output for this session. {contract.Label} viewer evidence and format-contract progress do not promote the clipboard target into an HDR-preserved path.",
+            IsReadOnly = true,
+            Contract = CreateContractProjection(contract, "Compat"),
+            FidelityClaim = compatibilityProjection.FidelityClaim,
+        };
+    }
+
+    private static OutputProfileProjection ProjectMixedTargetProfile(
+        OutputProfileContract contract,
+        PreviewReadinessStatus? readiness,
+        OutputProfileExecutionCapabilities executionCapabilities)
+    {
+        var folderProjection = ProjectFolderScopedProfile(contract, readiness, executionCapabilities);
+        return folderProjection with
+        {
+            Detail = $"{folderProjection.Detail} Both-target output still keeps clipboard on sRGB compatibility fallback, so the combined session does not become one uniform {contract.Label} fidelity path.",
+            FidelityClaim = new FidelityClaimProjection(
+                FidelityClaimKind.Converted,
+                "Converted",
+                $"Both-target output can validate {contract.Label} for folder artifacts separately, but clipboard output still uses sRGB compatibility fallback for this session.",
+                MainPanelTrustIcon.InfoCircle,
+                MainPanelTrustSeverity.Warning),
         };
     }
 
@@ -112,7 +178,17 @@ public static class PerfectHdrFidelityProjection
     {
         ArgumentNullException.ThrowIfNull(contract);
         ArgumentNullException.ThrowIfNull(artifacts);
-        return ProjectOutputProfile(OutputValidationSessionArtifact.ApplyAllTo(contract, artifacts));
+        return ProjectOutputProfile(contract, artifacts, OutputTarget.Folder);
+    }
+
+    public static OutputProfileProjection ProjectOutputProfile(
+        OutputProfileContract contract,
+        IEnumerable<OutputValidationSessionArtifact> artifacts,
+        OutputTarget outputTarget)
+    {
+        ArgumentNullException.ThrowIfNull(contract);
+        ArgumentNullException.ThrowIfNull(artifacts);
+        return ProjectOutputProfile(ApplyArtifactsForOutputTarget(contract, artifacts, outputTarget));
     }
 
     public static OutputProfileProjection ProjectOutputProfile(
@@ -122,8 +198,19 @@ public static class PerfectHdrFidelityProjection
     {
         ArgumentNullException.ThrowIfNull(contract);
         ArgumentNullException.ThrowIfNull(artifacts);
+        return ProjectOutputProfile(contract, artifacts, readiness, OutputTarget.Folder);
+    }
+
+    public static OutputProfileProjection ProjectOutputProfile(
+        OutputProfileContract contract,
+        IEnumerable<OutputValidationSessionArtifact> artifacts,
+        PreviewReadinessStatus? readiness,
+        OutputTarget outputTarget)
+    {
+        ArgumentNullException.ThrowIfNull(contract);
+        ArgumentNullException.ThrowIfNull(artifacts);
         return ProjectOutputProfile(
-            OutputValidationSessionArtifact.ApplyAllTo(contract, artifacts),
+            ApplyArtifactsForOutputTarget(contract, artifacts, outputTarget),
             readiness);
     }
 
@@ -136,10 +223,24 @@ public static class PerfectHdrFidelityProjection
         ArgumentNullException.ThrowIfNull(contract);
         ArgumentNullException.ThrowIfNull(artifacts);
         ArgumentNullException.ThrowIfNull(executionCapabilities);
+        return ProjectOutputProfile(contract, artifacts, readiness, executionCapabilities, OutputTarget.Folder);
+    }
+
+    public static OutputProfileProjection ProjectOutputProfile(
+        OutputProfileContract contract,
+        IEnumerable<OutputValidationSessionArtifact> artifacts,
+        PreviewReadinessStatus? readiness,
+        OutputProfileExecutionCapabilities executionCapabilities,
+        OutputTarget outputTarget)
+    {
+        ArgumentNullException.ThrowIfNull(contract);
+        ArgumentNullException.ThrowIfNull(artifacts);
+        ArgumentNullException.ThrowIfNull(executionCapabilities);
         return ProjectOutputProfile(
-            OutputValidationSessionArtifact.ApplyAllTo(contract, artifacts),
+            ApplyArtifactsForOutputTarget(contract, artifacts, outputTarget),
             readiness,
-            executionCapabilities);
+            executionCapabilities,
+            outputTarget);
     }
 
     public static ValidationPanelProjection ProjectValidation(ValidationRecordProjection? record = null) =>
@@ -239,14 +340,34 @@ public static class PerfectHdrFidelityProjection
         OutputProfileExecutionCapabilities executionCapabilities,
         ValidationRecordProjection? record = null,
         PreviewReadinessStatus? readiness = null)
+        => ProjectValidation(
+            outputProfile,
+            artifacts,
+            executionCapabilities,
+            record,
+            readiness,
+            OutputTarget.Folder);
+
+    public static ValidationPanelProjection ProjectValidation(
+        OutputProfileContract outputProfile,
+        IEnumerable<OutputValidationSessionArtifact> artifacts,
+        OutputProfileExecutionCapabilities executionCapabilities,
+        ValidationRecordProjection? record,
+        PreviewReadinessStatus? readiness,
+        OutputTarget outputTarget)
     {
         ArgumentNullException.ThrowIfNull(outputProfile);
         ArgumentNullException.ThrowIfNull(artifacts);
         ArgumentNullException.ThrowIfNull(executionCapabilities);
         var artifactArray = artifacts.ToArray();
-        var requestedProfile = OutputValidationSessionArtifact.ApplyAllTo(outputProfile, artifactArray);
+        var requestedProfile = ApplyArtifactsForOutputTarget(outputProfile, artifactArray, outputTarget);
         var effectiveProfile = executionCapabilities.SelectEffectiveProfile(requestedProfile);
-        var projectedProfile = ProjectOutputProfile(outputProfile, artifactArray, readiness, executionCapabilities);
+        var projectedProfile = ProjectOutputProfile(
+            outputProfile,
+            artifactArray,
+            readiness,
+            executionCapabilities,
+            outputTarget);
         return ProjectValidationCore(
             SelectRuntimeClaimContract(requestedProfile, effectiveProfile),
             projectedProfile,
@@ -254,6 +375,15 @@ public static class PerfectHdrFidelityProjection
             SelectCompleteTargetHdrEvidence(artifactArray),
             record);
     }
+
+    private static OutputProfileContract ApplyArtifactsForOutputTarget(
+        OutputProfileContract contract,
+        IEnumerable<OutputValidationSessionArtifact> artifacts,
+        OutputTarget outputTarget) =>
+        OutputProfileTargetScope.ApplyValidationArtifacts(
+            contract,
+            artifacts,
+            outputTarget);
 
     private static OutputProfileContract SelectRuntimeClaimContract(
         OutputProfileContract requestedProfile,

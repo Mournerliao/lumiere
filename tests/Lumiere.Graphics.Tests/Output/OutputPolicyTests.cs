@@ -167,6 +167,24 @@ public sealed class OutputPolicyTests
     }
 
     [Fact]
+    public void FromSettings_ClipboardTargetDoesNotInheritFolderOnlyHdrValidationIntoRequestedProfile()
+    {
+        var policy = OutputPolicy.FromSettings(
+            OutputTarget.Clipboard,
+            copyAsImage: true,
+            savePath: null,
+            timestampNaming: true,
+            afterCaptureBehavior: null,
+            exportColorFormat: "HDR10",
+            validationArtifacts: [CompleteHdr10Artifact()]);
+
+        Assert.Equal(OutputProfileKind.Hdr10Pq, policy.RequestedProfile.Kind);
+        Assert.False(policy.RequestedProfile.HasCompleteFormatContract);
+        Assert.Equal(OutputProfileKind.SrgbCompatibilityPng, policy.EffectiveProfile.Kind);
+        Assert.True(policy.UsesCompatibilityProfileFallback);
+    }
+
+    [Fact]
     public void FromSettings_KeepsValidatedHdrProfileFallbackWhenRuntimeEncoderIsNotImplemented()
     {
         var policy = OutputPolicy.FromSettings(
@@ -207,6 +225,53 @@ public sealed class OutputPolicyTests
         Assert.Equal(OutputFidelityMode.HdrPreserved, policy.EffectiveProfile.FidelityMode);
         Assert.Equal(OutputTransferFunction.PqSt2084, policy.EffectiveProfile.FormatContract.TransferFunction);
         Assert.False(policy.UsesCompatibilityProfileFallback);
+    }
+
+    [Fact]
+    public void FromSettings_BothTargetUsesPerTargetEffectiveProfiles()
+    {
+        var policy = OutputPolicy.FromSettings(
+            OutputTarget.Both,
+            copyAsImage: true,
+            savePath: "C:\\Captures",
+            timestampNaming: true,
+            afterCaptureBehavior: null,
+            exportColorFormat: "HDR10",
+            validationArtifacts: [CompleteHdr10Artifact()],
+            executionCapabilities: OutputProfileExecutionCapabilities.Create(
+                OutputProfileExecutionCapability.SrgbCompatibility,
+                OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder));
+
+        Assert.Equal(OutputProfileKind.Hdr10Pq, policy.RequestedProfile.Kind);
+        Assert.Equal(OutputProfileKind.SrgbCompatibilityPng, policy.EffectiveProfile.Kind);
+        Assert.True(policy.UsesCompatibilityProfileFallback);
+        Assert.Equal(OutputProfileKind.SrgbCompatibilityPng, policy.EffectiveProfileFor(OutputTarget.Clipboard).Kind);
+        Assert.Equal(OutputProfileKind.Hdr10Pq, policy.EffectiveProfileFor(OutputTarget.Folder).Kind);
+        Assert.True(policy.UsesCompatibilityProfileFallbackFor(OutputTarget.Clipboard));
+        Assert.False(policy.UsesCompatibilityProfileFallbackFor(OutputTarget.Folder));
+    }
+
+    [Fact]
+    public void FromSettings_BothTargetKeepsFolderScopedHdrEvidenceOnRequestedProfileWithoutPromotingAggregatePath()
+    {
+        var policy = OutputPolicy.FromSettings(
+            OutputTarget.Both,
+            copyAsImage: true,
+            savePath: "C:\\Captures",
+            timestampNaming: true,
+            afterCaptureBehavior: null,
+            exportColorFormat: "HDR10",
+            validationArtifacts: [CompleteHdr10Artifact()],
+            executionCapabilities: OutputProfileExecutionCapabilities.Create(
+                OutputProfileExecutionCapability.SrgbCompatibility,
+                OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder));
+
+        Assert.Equal(OutputProfileKind.Hdr10Pq, policy.RequestedProfile.Kind);
+        Assert.True(policy.RequestedProfile.HasCompleteFormatContract);
+        Assert.Equal(OutputProfileKind.SrgbCompatibilityPng, policy.EffectiveProfile.Kind);
+        Assert.True(policy.UsesCompatibilityProfileFallback);
+        Assert.Equal(OutputProfileKind.Hdr10Pq, policy.EffectiveProfileFor(OutputTarget.Folder).Kind);
+        Assert.Equal(OutputProfileKind.SrgbCompatibilityPng, policy.EffectiveProfileFor(OutputTarget.Clipboard).Kind);
     }
 
     [Fact]

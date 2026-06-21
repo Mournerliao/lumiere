@@ -104,6 +104,40 @@ public sealed class FolderOutputServiceTests
     }
 
     [Fact]
+    public async Task ExecuteOutputAsync_BothTargetUsesFolderSpecificEffectiveProfileForArtifactEncoding()
+    {
+        var requestedProfile = OutputProfileContract.Hdr10Pq with
+        {
+            FormatContract = CompleteHdr10Contract,
+        };
+        var encoder = new TestArtifactEncoder([7, 8, 9], "jxr");
+        var service = CreateService(encoder, directoryExists: _ => true);
+
+        var result = await service.ExecuteOutputAsync(new OutputRequest
+        {
+            Texture = new CapturedFrameTexture(null, 16, 16, "Test frame"),
+            Policy = OutputPolicy.Default with
+            {
+                Target = OutputTarget.Both,
+                CopyAsImage = true,
+                SavePath = "C:\\Captures",
+                RequestedProfile = requestedProfile,
+                ExecutionCapabilities = OutputProfileExecutionCapabilities.Create(
+                    OutputProfileExecutionCapability.SrgbCompatibility,
+                    OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder),
+            },
+        });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("C:\\Captures\\Lumiere-20260523-090807-123.jxr", result.Targets.Single().ArtifactPath);
+        Assert.Equal(OutputProfileKind.Hdr10Pq, encoder.Profile?.Kind);
+        Assert.Equal(OutputProfileKind.SrgbCompatibilityPng, result.EffectiveProfile.Kind);
+        Assert.True(result.UsesCompatibilityProfileFallback);
+        Assert.Equal(OutputProfileKind.Hdr10Pq, result.EffectiveProfileFor(OutputTarget.Folder).Kind);
+        Assert.False(result.UsesCompatibilityProfileFallbackFor(OutputTarget.Folder));
+    }
+
+    [Fact]
     public async Task ExecuteOutputAsync_WriteFailureReturnsRecoverableFailure()
     {
         var service = CreateService(

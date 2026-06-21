@@ -68,10 +68,11 @@ public sealed class FolderOutputService : IOutputService
 
         try
         {
+            var folderProfile = request.Policy.EffectiveProfileFor(OutputTarget.Folder);
             var artifact = await encoder.EncodeArtifactAsync(
                 request.Texture,
                 request.CropRegion,
-                request.Policy.EffectiveProfile,
+                folderProfile,
                 cancellationToken);
             var artifactPath = pathPolicy.CreateCandidatePath(
                 request.Policy,

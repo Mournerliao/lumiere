@@ -66,12 +66,30 @@ public sealed record OutputPolicy(
     /// <summary>
     /// Gets the executable output profile currently used by the output pipeline.
     /// </summary>
-    public OutputProfileContract EffectiveProfile => ExecutionCapabilities.SelectEffectiveProfile(RequestedProfile);
+    public OutputProfileContract EffectiveProfile => ResolveAggregateEffectiveProfile();
 
     /// <summary>
     /// Gets whether a requested non-executable profile falls back to the compatibility profile.
     /// </summary>
     public bool UsesCompatibilityProfileFallback => RequestedProfile.Kind != EffectiveProfile.Kind;
+
+    /// <summary>
+    /// Gets the executable output profile used by a concrete output target.
+    /// </summary>
+    public OutputProfileContract EffectiveProfileFor(OutputTarget target) =>
+        target switch
+        {
+            OutputTarget.Clipboard => OutputProfileContract.SrgbCompatibilityPng,
+            OutputTarget.Folder => ExecutionCapabilities.SelectEffectiveProfile(RequestedProfile),
+            OutputTarget.Both => ResolveAggregateEffectiveProfile(),
+            _ => OutputProfileContract.SrgbCompatibilityPng,
+        };
+
+    /// <summary>
+    /// Gets whether a concrete target uses a compatibility fallback for the requested profile.
+    /// </summary>
+    public bool UsesCompatibilityProfileFallbackFor(OutputTarget target) =>
+        RequestedProfile.Kind != EffectiveProfileFor(target).Kind;
 
     /// <summary>
     /// Creates a policy from raw settings values without taking a dependency on the settings module.
@@ -89,7 +107,10 @@ public sealed record OutputPolicy(
         var requestedProfile = OutputProfileContract.FromSettingsValue(exportColorFormat);
         if (validationArtifacts is not null)
         {
-            requestedProfile = OutputValidationSessionArtifact.ApplyAllTo(requestedProfile, validationArtifacts);
+            requestedProfile = OutputProfileTargetScope.ApplyValidationArtifacts(
+                requestedProfile,
+                validationArtifacts,
+                target);
         }
 
         return new(
@@ -100,6 +121,30 @@ public sealed record OutputPolicy(
             string.IsNullOrWhiteSpace(afterCaptureBehavior) ? null : afterCaptureBehavior.Trim(),
             requestedProfile,
             executionCapabilities ?? OutputProfileExecutionCapabilities.CompatibilityOnly);
+    }
+
+    private OutputProfileContract ResolveAggregateEffectiveProfile()
+    {
+        var attemptedProfiles = new List<OutputProfileContract>(capacity: 2);
+        if (ShouldAttemptClipboard)
+        {
+            attemptedProfiles.Add(EffectiveProfileFor(OutputTarget.Clipboard));
+        }
+
+        if (ShouldAttemptFolder)
+        {
+            attemptedProfiles.Add(EffectiveProfileFor(OutputTarget.Folder));
+        }
+
+        if (attemptedProfiles.Count == 0)
+        {
+            return OutputProfileContract.SrgbCompatibilityPng;
+        }
+
+        var first = attemptedProfiles[0];
+        return attemptedProfiles.All(profile => profile.Kind == first.Kind)
+            ? first
+            : OutputProfileContract.SrgbCompatibilityPng;
     }
 }
 

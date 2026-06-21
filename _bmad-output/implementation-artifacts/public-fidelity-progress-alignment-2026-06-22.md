@@ -37,6 +37,8 @@ Evidence:
 
 - Code can represent target-aware match evidence and unresolved target states.
 - Settings, main panel, tray, overlay, and validation projections expose target-aware evidence.
+- `harness/validation/target-aware-hdr-validation.md` now defines the focused Windows manual workflow for proving that trust state follows the active capture target across single-display and mixed-display topologies.
+- Main-panel, tray, and overlay trust detail now prefix the active capture target directly, so mixed-monitor validation is no longer forced to infer which display the current HDR state refers to.
 
 Remaining blockers:
 
@@ -65,6 +67,11 @@ Evidence:
 - Output-profile UI now distinguishes `Build`, `Validate`, and `Ready` states instead of collapsing every non-executable HDR10 path into one generic fallback label.
 - Validation surfaces now expose the current output-profile gate directly, so testers do not need to infer `Build` / `Validate` / `Ready` only from the lower evidence rows.
 - Selected output-contract surfaces now follow the same runtime distinction, so a complete HDR10 format contract no longer keeps saying `pending implementation` once the app has moved into `Validate` or `Ready`.
+- Mixed `Both` output sessions now keep per-target execution semantics intact instead of collapsing clipboard and folder into one synthetic runtime profile. Clipboard result evidence stays `sRGB` compatibility-first, while folder result evidence can independently report `HDR10` artifact execution.
+- HDR10 JXR runtime evidence now also requires the manual validation artifact to cover `Folder` output explicitly. Clipboard-only artifacts no longer count toward the first HDR-preserved file-output path.
+- Output validation artifacts can now narrow target coverage per profile record through `outputTargetsCovered`, so one manual session can honestly say "session covered Both, but the HDR10 record only proves Folder" without over-claiming clipboard evidence as file-output release proof.
+- Runtime output policy now uses the same target-aware artifact-scope seam as the UI projections. Requested-profile evidence no longer applies broader folder-side HDR10 validation to clipboard sessions before runtime fallback is resolved.
+- Folder output execution now also consumes the folder-specific effective profile in `Both` sessions. This closes the gap where the UI/result model could describe a mixed clipboard+folder session honestly, but the file artifact encoder was still being driven by the aggregate `sRGB` fallback profile.
 
 Remaining blockers:
 
@@ -80,6 +87,11 @@ Evidence:
 - `Hdr10JxrViewerValidationEvidence` now participates in the runtime gate that decides whether HDR10 can become executable for the current validated session.
 - Settings and main-panel export-profile projection now surface whether HDR10 is blocked by implementation work or by missing Windows manual evidence.
 - Settings and main-panel selected-contract text now mirrors that same split, so testers can tell whether HDR10 is still blocked by build/runtime prerequisites or only by missing Windows manual viewer evidence.
+- Output-result projection now inherits the selected session gate as well, so successful copy/save feedback can still say the requested HDR10 path is at `Build` or `Validate` while runtime output falls back to `sRGB`.
+- Output-result evidence now also calls out per-target fidelity in mixed `Both` sessions, so target-app compatibility work is no longer hidden behind a single aggregate profile when clipboard and folder take different output paths.
+- The HDR10 target-app compatibility gate now ignores clipboard-only artifacts for the JXR path, keeping runtime readiness aligned with the real file-based artifact path rather than any generic viewer record.
+- The same gate now also respects record-level target coverage when a mixed session validates different target semantics for different profiles, reducing ambiguity before real Windows manual artifacts are recorded.
+- Selected-profile projections now also respect the active output target. Folder-side HDR10 evidence can still advance `Folder` and `Both` sessions, but it no longer causes `Clipboard` sessions to present `Build` / `Validate` / `Ready` as though the clipboard path itself had become HDR-preserved.
 
 Remaining blockers:
 
@@ -132,6 +144,8 @@ Evidence:
 - Tests assert that unvalidated paths do not claim HDR-preserved behavior.
 - Validation panel wording keeps public release claims behind evidence gates.
 - Tray surfaces now also carry explicit output-profile gate state (`Build`, `Validate`, `Ready`, `Compat`) instead of relying only on the fidelity-claim line to imply runtime status.
+- Overlay fidelity cue projection now uses the same target-aware readiness, validation artifacts, and runtime output-capability gate that the main panel uses before surfacing `HDR-preserved` status.
+- Overlay fidelity copy now also exposes the selected output-profile gate directly, so overlay users are no longer limited to a generic converted/unvalidated label when the requested HDR path is still blocked at `Build` or `Validate`.
 
 ### 13-2 Harden Native Settings and Accessibility Semantics - in-progress
 
@@ -145,6 +159,8 @@ Evidence:
 - Export profile helper copy and automation text now avoid internal `validation-scoped` jargon in favor of clearer user-facing availability language while keeping the same release-gate honesty.
 - Shortcut capture and save-path browsing rows now use standard `Button` activation rather than `Tapped`-only surfaces.
 - A focused implementation record exists at `_bmad-output/implementation-artifacts/13-2-harden-native-settings-and-accessibility-semantics.md`.
+- Main-window shell sizing now uses a typed layout projection and reacts to alert visibility, reducing the risk that long HDR status text or `InfoBar` states squeeze compact utility content before manual DPI/text-scaling validation is run.
+- The compact main panel now uses a scroll boundary for its body content while keeping header, alert, and footer structure fixed, so layout pressure falls onto secondary summary content before primary capture actions become unreachable.
 
 Remaining blockers:
 

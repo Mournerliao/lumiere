@@ -64,6 +64,7 @@ public sealed class OutputValidationArtifactSourceTests
         var settings = new TestSettingsProvider
         {
             ExportColorFormat = "HDR10",
+            OutputTarget = OutputTarget.Folder,
         };
 
         var projection = SettingsPanelProjection.Project(
@@ -89,6 +90,7 @@ public sealed class OutputValidationArtifactSourceTests
         var settings = new TestSettingsProvider
         {
             ExportColorFormat = "HDR10",
+            OutputTarget = OutputTarget.Folder,
         };
 
         var projection = SettingsPanelProjection.Project(
