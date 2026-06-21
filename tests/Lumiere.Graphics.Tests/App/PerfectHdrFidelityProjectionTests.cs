@@ -164,7 +164,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Equal(PerfectHdrFidelityProjection.ReleaseTarget, validation.ReleaseTarget);
         Assert.Contains("evidence", validation.Summary, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(validation.Rows, row => row.Label == "Target-aware HDR" && row.Status == ValidationEvidenceStatus.NotRun);
-        Assert.Contains(validation.Rows, row => row.Label == "Visual-match output" && row.Status == ValidationEvidenceStatus.Limited);
+        Assert.Contains(validation.Rows, row => row.Label == "Visual-match output" && row.Status == ValidationEvidenceStatus.NotRun);
         Assert.Contains(validation.Rows, row => row.Label == "HDR-preserved profile" && row.Status == ValidationEvidenceStatus.NotRun);
         Assert.Contains(validation.Rows, row => row.Label == "Target app matrix" && row.Status == ValidationEvidenceStatus.NotRun);
     }
@@ -301,6 +301,42 @@ public sealed class PerfectHdrFidelityProjectionTests
             ]);
 
         Assert.All(validation.ViewerMatrix, viewer => Assert.Equal(ValidationEvidenceStatus.Pass, viewer.Status));
+    }
+
+    [Fact]
+    public void ProjectValidation_ReportsVisualMatchPassedWhenAllNamedViewerEvidencePasses()
+    {
+        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+            OutputProfileContract.SrgbCompatibilityPng,
+            [
+                SdrArtifactFor("Microsoft Paint"),
+                SdrArtifactFor("Windows Photos"),
+                SdrArtifactFor("Chromium browsers"),
+            ]);
+        var visualRow = Assert.Single(
+            validation.Rows,
+            row => row.Label == "Visual-match output");
+
+        Assert.Equal(ValidationEvidenceStatus.Pass, visualRow.Status);
+        Assert.Contains("visual-match evidence passed", visualRow.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectValidation_ReportsVisualMatchLimitedWhenSomeNamedViewerEvidenceIsMissing()
+    {
+        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+            OutputProfileContract.SrgbCompatibilityPng,
+            [
+                SdrArtifactFor("Microsoft Paint"),
+            ]);
+        var visualRow = Assert.Single(
+            validation.Rows,
+            row => row.Label == "Visual-match output");
+
+        Assert.Equal(ValidationEvidenceStatus.Limited, visualRow.Status);
+        Assert.Contains("missing", visualRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Windows Photos", visualRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Chromium browsers", visualRow.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -444,6 +480,39 @@ public sealed class PerfectHdrFidelityProjectionTests
                 {
                     FormatContract = CompleteHdr10Contract,
                 },
+            ]);
+
+    private static OutputValidationSessionArtifact SdrArtifactFor(string viewerName) =>
+        new(
+            Date: "2026-06-21",
+            Tester: "QA",
+            BuildCommit: "485bc31",
+            WindowsVersion: "Windows 11 24H2",
+            Device: "HDR workstation",
+            Gpu: "Test GPU",
+            DisplaySetup: "HDR primary",
+            HdrState: "HDR enabled",
+            DpiScales: ["150%"],
+            EntryPointsTested: ["Main panel"],
+            OutputTargetsTested: ["Clipboard"],
+            TargetAppsTested: [viewerName],
+            ChecklistIdsCovered: ["REL-OUT-01"],
+            ResultSummary: $"{viewerName} visual-match validation passed.",
+            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            KnownLimitations: [],
+            FollowUpIssuesOrStories: [],
+            OutputProfileRecords:
+            [
+                new(
+                    OutputProfileKind.SrgbCompatibilityPng,
+                    [
+                        new(
+                            viewerName,
+                            OutputCompatibilityEvidenceStatus.Pass,
+                            OutputCompatibilityEvidenceStatus.Pass,
+                            OutputCompatibilityEvidenceStatus.NotApplicable,
+                            "Validated SDR visual-match viewer."),
+                    ]),
             ]);
 
     private static OutputFormatContract CompleteHdr10Contract { get; } =

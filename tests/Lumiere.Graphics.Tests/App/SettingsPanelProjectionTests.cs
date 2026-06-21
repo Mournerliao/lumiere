@@ -387,6 +387,32 @@ public sealed class SettingsPanelProjectionTests
     }
 
     [Fact]
+    public void Project_SurfacesPassedVisualMatchEvidenceInValidationPanel()
+    {
+        var projection = SettingsPanelProjection.Project(
+            new TestSettingsProvider(),
+            CreateState(),
+            [
+                SdrArtifactFor("Microsoft Paint"),
+                SdrArtifactFor("Windows Photos"),
+                SdrArtifactFor("Chromium browsers"),
+            ]);
+        var visualRow = Assert.Single(
+            projection.Validation.Rows,
+            row => row.Label == "Visual-match output");
+
+        Assert.Equal(ValidationEvidenceStatus.Pass, visualRow.Status);
+        Assert.Contains("visual-match evidence passed", visualRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.All(
+            projection.Validation.ViewerMatrix,
+            viewer =>
+            {
+                Assert.Equal(ValidationEvidenceStatus.Pass, viewer.ArtifactHandlingStatus);
+                Assert.Equal(ValidationEvidenceStatus.Pass, viewer.VisualMatchStatus);
+            });
+    }
+
+    [Fact]
     public void Project_SelectedSrgbProfileSurfacesCompatibilityContractPolicy()
     {
         var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
@@ -407,6 +433,7 @@ public sealed class SettingsPanelProjectionTests
 
         Assert.Equal(PerfectHdrFidelityProjection.ReleaseTarget, projection.Validation.ReleaseTarget);
         Assert.Contains(projection.Validation.Rows, row => row.Label == "Target-aware HDR");
+        Assert.Contains(projection.Validation.Rows, row => row.Label == "Visual-match output" && row.Status == ValidationEvidenceStatus.NotRun);
         Assert.Contains(projection.Validation.Rows, row => row.Label == "HDR-preserved profile");
         Assert.Contains("Named viewers", projection.Validation.ViewerMatrixSummary, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(projection.Validation.ViewerMatrix, viewer => viewer.Name == "Microsoft Paint");
@@ -615,6 +642,39 @@ public sealed class SettingsPanelProjectionTests
                 {
                     FormatContract = CompleteHdr10Contract,
                 },
+            ]);
+
+    private static OutputValidationSessionArtifact SdrArtifactFor(string viewerName) =>
+        new(
+            Date: "2026-06-21",
+            Tester: "QA",
+            BuildCommit: "72c3be7",
+            WindowsVersion: "Windows 11 24H2",
+            Device: "HDR workstation",
+            Gpu: "Test GPU",
+            DisplaySetup: "HDR primary",
+            HdrState: "HDR enabled",
+            DpiScales: ["150%"],
+            EntryPointsTested: ["Settings panel"],
+            OutputTargetsTested: ["Clipboard"],
+            TargetAppsTested: [viewerName],
+            ChecklistIdsCovered: ["REL-OUT-01"],
+            ResultSummary: $"{viewerName} visual-match validation passed.",
+            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            KnownLimitations: [],
+            FollowUpIssuesOrStories: [],
+            OutputProfileRecords:
+            [
+                new(
+                    OutputProfileKind.SrgbCompatibilityPng,
+                    [
+                        new(
+                            viewerName,
+                            OutputCompatibilityEvidenceStatus.Pass,
+                            OutputCompatibilityEvidenceStatus.Pass,
+                            OutputCompatibilityEvidenceStatus.NotApplicable,
+                            "Validated SDR visual-match viewer."),
+                    ]),
             ]);
 
     private static OutputFormatContract CompleteHdr10Contract { get; } =

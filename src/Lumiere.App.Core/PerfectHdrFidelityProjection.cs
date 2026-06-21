@@ -135,10 +135,7 @@ public static class PerfectHdrFidelityProjection
             "Public release waits for evidence; SDR compatibility remains fallback only.",
             [
                 ProjectTargetAwareHdrRow(readiness),
-                new(
-                    "Visual-match output",
-                    ValidationEvidenceStatus.Limited,
-                    "QQ-style gray, white, and highlight checks are the benchmark."),
+                ProjectVisualMatchRow(outputProfile),
                 ProjectHdrPreservedProfileRow(outputProfile),
                 new(
                     "Target app matrix",
@@ -148,6 +145,45 @@ public static class PerfectHdrFidelityProjection
             "Named viewers must prove artifact handling, visual match, and fidelity separately.",
             outputProfile.ViewerEvidence.Select(ProjectViewerEvidence).ToArray(),
             record ?? ProjectValidationRecord(null));
+
+    private static ValidationEvidenceRowProjection ProjectVisualMatchRow(OutputProfileContract outputProfile)
+    {
+        var evidence = outputProfile.EvaluateEvidence();
+        if (evidence.AllowsVisualMatchClaim)
+        {
+            return new ValidationEvidenceRowProjection(
+                "Visual-match output",
+                ValidationEvidenceStatus.Pass,
+                $"{evidence.VisualMatchGateDetail} QQ-style gray, white, and highlight checks remain the visual benchmark.");
+        }
+
+        var blockers = outputProfile.ViewerEvidence
+            .Where(viewer =>
+                viewer.ArtifactHandlingStatus is not OutputCompatibilityEvidenceStatus.Pass
+                || viewer.VisualMatchStatus is not OutputCompatibilityEvidenceStatus.Pass)
+            .ToArray();
+        var status = blockers.Length == outputProfile.ViewerEvidence.Count
+            ? ValidationEvidenceStatus.NotRun
+            : blockers.Any(viewer =>
+                viewer.ArtifactHandlingStatus is OutputCompatibilityEvidenceStatus.Fail
+                || viewer.VisualMatchStatus is OutputCompatibilityEvidenceStatus.Fail)
+                    ? ValidationEvidenceStatus.Fail
+                    : ValidationEvidenceStatus.Limited;
+        var detail = status switch
+        {
+            ValidationEvidenceStatus.NotRun =>
+                "Visual-match validation is not run for the selected profile. QQ-style gray, white, and highlight checks are the benchmark.",
+            ValidationEvidenceStatus.Fail =>
+                $"Visual-match evidence failed for {FormatViewerNames(blockers)}. QQ-style gray, white, and highlight checks are the benchmark.",
+            _ =>
+                $"Visual-match evidence is missing for {FormatViewerNames(blockers)}. QQ-style gray, white, and highlight checks are the benchmark.",
+        };
+
+        return new ValidationEvidenceRowProjection(
+            "Visual-match output",
+            status,
+            detail);
+    }
 
     private static ValidationEvidenceRowProjection ProjectHdrPreservedProfileRow(OutputProfileContract outputProfile)
     {
@@ -180,6 +216,12 @@ public static class PerfectHdrFidelityProjection
             "Target-aware HDR",
             ValidationEvidenceStatus.NotRun,
             "Mixed HDR/SDR monitor evidence is required.");
+    }
+
+    private static string FormatViewerNames(IEnumerable<OutputViewerCompatibilityEvidence> viewers)
+    {
+        var names = viewers.Select(viewer => viewer.Name).ToArray();
+        return names.Length == 0 ? "named viewers" : string.Join(", ", names);
     }
 
     public static ValidationRecordProjection ProjectValidationRecord(string? buildVersion)
