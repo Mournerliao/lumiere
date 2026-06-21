@@ -1,6 +1,6 @@
 # Deferred Work
 
-Updated: 2026-06-14 (cleanup pass)
+Updated: 2026-06-21 (public fidelity cleanup pass)
 
 This file tracks work intentionally deferred after implementation, review, or retrospective. It is not a graveyard: every unresolved item should either have a target epic/story hint, an accepted-tech-debt label, or a clear reason it remains parked.
 
@@ -9,6 +9,28 @@ Resolved review history belongs in story files or review artifacts. Historical m
 ## MVP Blockers or Active Defects
 
 None currently known.
+
+## Public Perfect HDR Fidelity Release Blockers
+
+These items do not block the existing MVP foundation or private validation builds. They do block public release claims of perfect HDR fidelity for supported paths.
+
+### Target-aware HDR detection
+
+- Source: 2026-06-21 course correction and prior Story 8-2 review.
+- Current limitation: HDR probing has relied on first-output style evidence in parts of the pipeline and is not sufficient for mixed HDR/SDR multi-monitor public claims.
+- Required before public release: Epic 10 target-aware display/output identity, active-target HDR probing, and mixed-monitor validation evidence.
+
+### HDR fidelity contract and supported output profile semantics
+
+- Source: 2026-06-21 course correction.
+- Current limitation: basic PNG/clipboard usability exists, while HDR10/P3 or HDR-preserving output semantics are not yet implemented and validated.
+- Required before public release: Epic 11 fidelity definition, output profile contract, conversion/tone-mapping policy, metadata policy, and target-app compatibility evidence.
+
+### Public release validation evidence
+
+- Source: 2026-06-21 course correction and `docs/validation/release-validation-checklist.md`.
+- Current limitation: manual validation evidence exists or may exist informally, but it must be backfilled into the release checklist and expanded for public fidelity claims.
+- Required before public release: Epic 12 validation content/scenarios, public fidelity gate status, and long-run resource trend evidence.
 
 ## Active Technical Debt
 
@@ -78,8 +100,8 @@ None currently unresolved.
 - Source: Story 8-2 review.
 - `HdrDisplayCapability.Probe(IDXGIFactory2)` always queries adapter 0, output 0.
 - On multi-monitor setups with different HDR states per display, probe result may not match capture target.
-- Status: documented limitation. XML doc comment added to `Probe` method.
-- Correct fix requires passing the capture target's display adapter/output — future feature.
+- Status: no longer acceptable as a public-release limitation for perfect HDR fidelity. Tracked as Epic 10 work.
+- Correct fix requires passing the capture target's display adapter/output.
 
 ## Accepted Decisions / No Current Action
 

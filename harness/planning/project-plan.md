@@ -13,6 +13,8 @@
 
 **当前权威 MVP 交互与界面范围** 以 [`harness/design/v0-mvp-reference/`](../design/v0-mvp-reference/) 及 [`harness/design/index.md`](../design/index.md) 中的说明为准。该原型为 **UX 参考**（Next/React），**不得**将 Web 技术栈或组件实现迁入生产代码；WinUI 3 与原生图形管线仍是行为与正确性的唯一来源。
 
+**当前公开发布目标** 已调整为 **Perfect HDR Fidelity Public Release**：MVP 闭环可作为内部/私有预览基础，但公开发布必须通过目标显示器级 HDR 检测、输出语义、色彩转换/元数据策略、目标应用兼容性与 Windows 真机验证门槛。详见 [`docs/validation/release-validation-checklist.md`](../../docs/validation/release-validation-checklist.md) 中的 Perfect HDR Fidelity gates。
+
 ---
 
 ## 产品判断（长期不变）
@@ -32,6 +34,8 @@ Lumiere 的理想体验是：用户通过快捷键、托盘或主窗口触发截
 ## 当前 MVP 路线
 
 MVP 聚焦 **低打扰、可重复的截图闭环**：从主窗口或托盘进入捕获 → 全屏或区域选择 → 完成一次输出（剪贴板与/或落盘）→ 轻量反馈后回到用户工作。
+
+MVP 完成不等于公开发布完成。当前路线将 MVP 定义为 **capture/workflow foundation**，用于继续验证和构建；公开发布需要后续 Epic 10+ 的 HDR 保真证据链补齐后再判断。
 
 与设计稿一致的交互意图包括（详见 [`harness/design/index.md`](../design/index.md)）：
 
@@ -136,6 +140,8 @@ flowchart TB
 
 **设计稿中的导出格式（HDR10 / P3 / sRGB）** 是 **UX 占位与讨论起点**：落地时必须映射到真实编码器、色彩元数据与验证级别；在未完成 Windows 手动验证前，规划文档与 UI 均不得将其表述为已完成特性。
 
+公开发布前，任何可选择的输出 profile 都必须具备明确 contract：源像素格式、目标格式、transfer function、色彩基准、转换或 tone mapping 策略、元数据策略、目标应用假设与 Windows 验证记录。没有 contract 的 profile 必须隐藏、禁用或明确标记为未验证。
+
 ---
 
 ## UX 实现准则
@@ -146,7 +152,9 @@ flowchart TB
 
 ---
 
-## 执行路线（MVP 顺序）
+## 执行路线
+
+### MVP foundation 顺序
 
 1. **最小捕获闭环**：在目标显示器上建立 WGC FP16 捕获 → 纹理进入预览管线 → 可取消/重入且资源干净。
 2. **区域选择与提交**：覆盖层几何与提交语义对齐设计稿（释放有效区域即完成）；全屏路径无额外打断。
@@ -155,6 +163,14 @@ flowchart TB
 5. **HDR 状态与提示**：映射真实系统状态；`HDR 不可用/未开启` 时的提示受设置开关约束。
 6. **设置持久化与打磨**：schema 稳定、默认值安全；与设计稿对齐的导出/色彩选项在 **验证通过后** 逐步解锁或灰度。
 
+### Public perfect-HDR-fidelity 顺序
+
+1. **目标显示器级 HDR 检测**：capture target 必须能映射到实际 DXGI output/display capability；不能再依赖全局或 adapter 0 / output 0 推断。
+2. **HDR fidelity contract**：定义数据保留、HDR 预览匹配、SDR 兼容转换、HDR 文件导出之间的边界。
+3. **输出 profile 管线**：为首个支持的输出 profile 实现真实转换/元数据策略，并保持未验证 profile 禁用或隐藏。
+4. **兼容性矩阵**：验证剪贴板/文件输出在明确目标应用中的行为，不把“写入成功”说成“HDR 保真成功”。
+5. **公开发布验证矩阵**：覆盖 HDR/SDR/混合显示器、DPI、多显示器、重复生命周期资源趋势与 release copy review。
+
 ---
 
 ## 验证标准
@@ -162,6 +178,7 @@ flowchart TB
 - **Windows CI**：`dotnet restore` / `build` / `test` / `format`（见 [`AGENTS.md`](../../AGENTS.md) 与 cross-platform 工作流）。
 - **Windows 真机**：WinUI 启动、WGC 权限、交换链呈现、HDR 显示器上的视觉抽查、多显示器与常见分辨率场景。
 - **完成定义**：涉及 WGC、DXGI、HDR 显示行为的 story，若无真机验证记录，不得标为完整交付，仅可作为实现中或待验证。
+- **公开发布门槛**：Perfect HDR Fidelity Public Release 还必须通过 [`docs/validation/release-validation-checklist.md`](../../docs/validation/release-validation-checklist.md) 中的 public-release gates；`NOT RUN` 或 `FAIL` 的 gate 不得被 release copy 暗示为已支持。
 
 ---
 
@@ -169,10 +186,11 @@ flowchart TB
 
 - [x] Harness 与 MVP 设计参考（v0）已纳入 [`harness/design/`](../design/)
 - [x] 解决方案与分层实现工程已存在（具体程序集命名可随架构演进调整）
-- [ ] 主窗口 / 托盘 / 设置与 v0 信息架构对齐（WinUI 落地）
-- [ ] MVP 捕获闭环在 Windows 真机 HDR 场景下通过验证
-- [ ] 输出管线（剪贴板 + 落盘）与设置项端到端一致
-- [ ] HDR 状态与提示与真实系统能力映射，文案符合验证语言
+- [x] MVP foundation 已形成主窗口 / 托盘 / 设置 / 输出 / HDR 状态 / 快捷键的基础闭环（以 Epic 1-9 为基础）
+- [ ] 已有 Windows 真机验证结论回填到 Release Validation Checklist
+- [ ] 目标显示器级 HDR 检测完成并验证（Epic 10）
+- [ ] HDR 输出语义、转换/元数据策略与首个支持 output profile 完成（Epic 11）
+- [ ] Perfect HDR Fidelity Public Release validation suite 完成并形成公开发布证据（Epic 12）
 
 ---
 

@@ -1,5 +1,5 @@
 # generated: 2026-05-09T17:29:57+0800
-# last_updated: 2026-06-04T21:00:00+08:00
+# last_updated: 2026-06-21T00:00:00+08:00
 # project: lumiere
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-09T17:29:57+0800
-last_updated: 2026-06-04T21:00:00+08:00
+last_updated: 2026-06-21T00:00:00+08:00
 project: lumiere
 project_key: NOKEY
 tracking_system: file-system
@@ -118,3 +118,18 @@ development_status:
   9-5-enable-shortcut-editing: done
   9-6-enable-export-color-format-options: done
   epic-9-retrospective: done
+  epic-10: backlog
+  10-1-map-capture-targets-to-display-output-identity: backlog
+  10-2-probe-hdr-capability-for-the-active-capture-target: backlog
+  10-3-validate-mixed-hdr-sdr-and-multi-monitor-trust-states: backlog
+  epic-11: backlog
+  11-1-define-the-hdr-fidelity-contract: backlog
+  11-2-define-and-implement-the-first-supported-output-profile: backlog
+  11-3-validate-target-app-compatibility-for-supported-output: backlog
+  epic-12: backlog
+  12-1-establish-standard-hdr-sdr-validation-content-and-scenarios: backlog
+  12-2-expand-the-release-checklist-into-a-public-fidelity-gate: backlog
+  12-3-record-long-run-capture-and-output-resource-trends: backlog
+  epic-13: backlog
+  13-1-clarify-fidelity-state-copy-across-main-tray-overlay-and-output: backlog
+  13-2-harden-native-settings-and-accessibility-semantics: backlog

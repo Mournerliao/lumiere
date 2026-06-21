@@ -34,7 +34,7 @@ MVP interaction intent:
 - Main window keeps screenshot entry primary and avoids wrapped control labels.
 - Capture enters the direct monitor/region workflow without a picker-first interruption.
 - Releasing a valid crop completes capture/copy and shows lightweight feedback.
-- Onboarding, gallery, annotation-heavy overlays, and expanded output workflows remain post-MVP unless reintroduced by a story.
+- Onboarding, gallery, and annotation-heavy overlays remain post-MVP unless reintroduced by a story. Output workflows that are required for public Perfect HDR Fidelity belong to Epic 11+ and are public-release prerequisites, not optional polish.
 
 ## Implementation Guidance
 

@@ -8,6 +8,7 @@ Lumiere is a native Windows HDR screenshot tool built with WinUI 3, Windows App 
 
 - Target: `.NET 10` / `net10.0-windows10.0.19041.0` / `x64` only
 - Preserve HDR: FP16/scRGB format, never introduce SDR fallbacks
+- Public HDR-preserving claims require target-aware display evidence, output format/conversion/metadata policy, target-app compatibility, and Windows manual validation.
 - Windows-only: WGC, DXGI, D3D11, WinUI 3
 
 ## Architecture

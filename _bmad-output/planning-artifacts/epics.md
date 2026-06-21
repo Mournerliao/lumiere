@@ -19,6 +19,7 @@ inputDocuments:
 planningConstraints:
   - Preserve Epic 1-3 code implementation and validation documents as historical foundation work from the pre-MVP-rebaseline route.
   - When recreating epics for the updated MVP route, keep Epic 1-3 and begin rework or continued implementation from Epic 4.
+  - Public release is now gated by validated perfect HDR fidelity. Epic 1-9 remain the MVP foundation; Epic 10+ define the public-release fidelity work.
 ---
 
 # lumiere - Epic Breakdown
@@ -124,7 +125,7 @@ NFR33: Behavior that cannot be proven in non-hardware automation, including real
 - Keep production implementation Windows-only on .NET 10, net10.0-windows10.0.19041.0, x64, WinUI 3, Windows App SDK, WGC, D3D11, DXGI, Vortice, WinRT/COM, and Win32 interop where required.
 - Treat harness/design/v0-mvp-reference as UX reference only; do not introduce React, Tailwind, shadcn, Radix, Electron, Tauri, or web UI dependencies into production code.
 - Use direct monitor capture through monitor-targeted WGC interop as the default MVP path; picker behavior may remain fallback or debug only.
-- Treat current clipboard output as basic bitmap usability, not HDR-preserving output, until output semantics and Windows validation evidence prove otherwise.
+- Treat current clipboard output as basic bitmap usability, not HDR-preserving output, until target-aware HDR evidence, output semantics, compatibility checks, and Windows validation evidence prove otherwise.
 - Keep all WGC, D3D11, DXGI, WinRT, COM, HWND, HMONITOR, tray, hotkey, clipboard, and file/folder picker details inside narrow platform boundaries.
 - Keep one shared capture/session state model across main window, overlay, tray, hotkeys, settings, and output.
 - Use typed result objects, state enums, events, and immutable payloads instead of unstructured tuples, magic strings, or duplicated status vocabularies.
@@ -133,7 +134,7 @@ NFR33: Behavior that cannot be proven in non-hardware automation, including real
 - Map native interop failures to structured diagnostics with operation, stage, user-facing status, technical detail, and optional session/correlation identity; never include captured pixels or frame dumps.
 - Generation-scope capture callbacks, output completion handlers, diagnostics, and overlay updates so stale async work cannot mutate active UI or session state.
 - Automated gates include restore, build, graphics tests, overlay tests, and format verification; real WGC/DXGI/HDR/tray/hotkey/multi-monitor/DPI behavior requires Windows manual validation.
-- Packaging, signing, installer, auto-update, advanced diagnostics UI, advanced export profiles, gallery, history, annotation, onboarding, and editor-like workflows remain deferred unless explicitly pulled back into MVP scope.
+- Packaging, signing, installer, auto-update, advanced diagnostics UI, gallery, history, annotation, onboarding, and editor-like workflows remain deferred unless explicitly pulled back into MVP scope. Target-aware HDR detection, supported output profile contracts, color conversion/metadata policy, and public-release fidelity validation are not deferred when the release target is perfect HDR fidelity.
 
 ### UX Design Requirements
 
@@ -220,7 +221,7 @@ The following historical epics are retained for traceability and evidence only. 
 
 These records document existing implementation and validation evidence from the pre-MVP-rebaseline route. Active MVP implementation begins with Epic 4.
 
-## Active MVP Epic List
+## MVP Foundation Epic List
 
 ### Epic 4: MVP Rebaseline Transition and Foundation Cutover
 Users can rely on the existing Epic 1-3 capture foundation as the new MVP baseline rather than as a pre-rebaseline prototype path. This epic audits and cuts over the current implementation by preserving the HDR/capture/overlay assets that still match the MVP, demoting or removing stale picker/debug/dashboard/confirm-first/hardcoded-status assumptions from the default path, establishing app-facing seams for settings/output/tray/hotkeys, fixing overlay UX deviations discovered during Epic 3 validation, adding diagnostic observability for lifecycle verification, and validating direct monitor capture, overlay behavior, basic clipboard, and lifecycle behavior before UI and product claims build on them.
@@ -1476,3 +1477,221 @@ So that I understand which formats are available and which are pending validatio
 **Given** an export format becomes available in the future
 **When** implementation semantics and validation are complete
 **Then** the corresponding segment becomes enabled and selectable.
+
+## Public Perfect HDR Fidelity Epic List
+
+The following epics are required before Lumiere can publicly claim perfect HDR fidelity for supported paths. They do not invalidate Epic 1-9; they build on that MVP foundation and convert private-preview capability into public-release evidence.
+
+### Epic 10: Target-Aware HDR Detection and Trust Mapping
+
+Users can trust HDR readiness because Lumiere evaluates the actual capture target display/output instead of relying on a global or first-output probe.
+
+#### Story 10-1: Map Capture Targets to Display Output Identity
+
+As a Lumiere developer,
+I want capture targets to preserve display/output identity,
+So that HDR readiness can be evaluated for the active target.
+
+**Requirements Covered:** FR11, FR14, FR46, NFR10, NFR26, NFR27, NFR33.
+
+**Acceptance Criteria:**
+
+**Given** a display capture target is selected
+**When** the target is passed through capture and presentation services
+**Then** it carries enough stable display identity to resolve the relevant DXGI output or an explicit unvalidated state.
+
+**Given** monitor/native identity crosses module boundaries
+**When** app or UI code consumes it
+**Then** native handles remain behind infrastructure/capture boundaries and are exposed only through narrow typed contracts.
+
+#### Story 10-2: Probe HDR Capability for the Active Capture Target
+
+As a screenshot user,
+I want HDR status to describe the display I am capturing,
+So that mixed-monitor setups do not produce misleading readiness.
+
+**Requirements Covered:** FR11, FR14, NFR10, NFR27, NFR31, NFR33.
+
+**Acceptance Criteria:**
+
+**Given** a target-aware display identity exists
+**When** HDR capability is probed
+**Then** the probe evaluates the active target output rather than assuming adapter 0 / output 0.
+
+**Given** target-aware probing cannot be completed
+**When** status is projected
+**Then** UI reports an unvalidated/degraded state rather than `HDR Ready`.
+
+#### Story 10-3: Validate Mixed HDR/SDR and Multi-Monitor Trust States
+
+As a release owner,
+I want target-aware HDR states validated across display setups,
+So that public release claims match real hardware behavior.
+
+**Requirements Covered:** FR44, FR47, NFR27, NFR33.
+
+**Acceptance Criteria:**
+
+**Given** HDR-enabled, HDR-disabled, SDR-only, and mixed HDR/SDR display setups
+**When** region and fullscreen capture are run
+**Then** main window, tray, overlay, and output feedback show target-appropriate trust state.
+
+**Given** a scenario is not validated
+**When** release readiness is assessed
+**Then** the public release claim excludes that scenario or records it as a limitation.
+
+### Epic 11: HDR Output Semantics and Format Pipeline
+
+Users can understand and select output profiles only when Lumiere has implemented and validated their fidelity semantics.
+
+#### Story 11-1: Define the HDR Fidelity Contract
+
+As a release owner,
+I want a written fidelity contract,
+So that "perfect HDR fidelity" has a precise product meaning.
+
+**Requirements Covered:** FR29, FR44, NFR8, NFR9, NFR10, NFR33.
+
+**Acceptance Criteria:**
+
+**Given** the term perfect HDR fidelity is used
+**When** product, UI, or release copy references it
+**Then** the contract distinguishes data-preserving capture, HDR preview match, SDR-compatible conversion, and HDR file export.
+
+**Given** a fidelity mode is unsupported
+**When** UI or docs describe output
+**Then** the unsupported mode is excluded or labeled unvalidated.
+
+#### Story 11-2: Define and Implement the First Supported Output Profile
+
+As a screenshot user,
+I want enabled output profiles to be real product contracts,
+So that selecting a profile means Lumiere knows how it converts and validates the artifact.
+
+**Requirements Covered:** FR22, FR24, FR25, FR29, NFR8, NFR9, NFR18, NFR19.
+
+**Acceptance Criteria:**
+
+**Given** an output profile is enabled
+**When** a capture is exported
+**Then** the profile has source pixel format, destination format, transfer function, color primaries, conversion or tone-mapping policy, metadata policy, and target-app assumptions documented.
+
+**Given** HDR10, P3, sRGB, or another profile lacks this record
+**When** settings are displayed
+**Then** the profile remains disabled, hidden, or explicitly validation-scoped.
+
+#### Story 11-3: Validate Target-App Compatibility for Supported Output
+
+As a release owner,
+I want supported output checked in real target apps,
+So that output success does not imply unvalidated fidelity.
+
+**Requirements Covered:** FR48, NFR8, NFR19, NFR33.
+
+**Acceptance Criteria:**
+
+**Given** a supported clipboard or file output profile exists
+**When** validation runs
+**Then** named target apps/viewers record accepted/rejected behavior and observed fidelity limitations.
+
+**Given** an artifact is successfully written or copied
+**When** target-app fidelity is unvalidated
+**Then** feedback distinguishes artifact success from HDR preservation.
+
+### Epic 12: HDR Fidelity Validation Suite and Public Release Evidence
+
+The team can decide public release readiness from reproducible HDR fidelity evidence rather than memory or broad confidence.
+
+#### Story 12-1: Establish Standard HDR/SDR Validation Content and Scenarios
+
+As a release owner,
+I want standard test content and scenarios,
+So that HDR fidelity validation is repeatable across builds.
+
+**Requirements Covered:** FR44, FR45, FR47, FR48, NFR1, NFR2, NFR5, NFR27, NFR33.
+
+**Acceptance Criteria:**
+
+**Given** validation content is prepared
+**When** a release candidate is tested
+**Then** the suite covers bright highlights, dark scenes, SDR/HDR mixed content, browser/media/game scenarios, display mode changes, and output target apps.
+
+**Given** validation results are recorded
+**When** another agent continues work
+**Then** hardware, Windows version, GPU, displays, DPI, HDR mode, target app versions, and observed results are present.
+
+#### Story 12-2: Expand the Release Checklist into a Public Fidelity Gate
+
+As a release owner,
+I want the live release checklist to block unsupported claims,
+So that public release cannot outrun evidence.
+
+**Requirements Covered:** FR44, NFR27, NFR32, NFR33.
+
+**Acceptance Criteria:**
+
+**Given** `docs/validation/release-validation-checklist.md` is used
+**When** public release readiness is evaluated
+**Then** perfect-HDR-fidelity gates have PASS/PASS-with-limitation/FAIL/NOT RUN status and evidence.
+
+**Given** any public fidelity gate is NOT RUN or FAIL
+**When** release copy is drafted
+**Then** the unsupported claim is removed or the release is blocked.
+
+#### Story 12-3: Record Long-Run Capture and Output Resource Trends
+
+As a Lumiere developer,
+I want repeated lifecycle evidence beyond the smoke test level,
+So that public release is not undermined by resource leakage.
+
+**Requirements Covered:** FR45, NFR5, NFR11, NFR33.
+
+**Acceptance Criteria:**
+
+**Given** repeated capture/output validation runs
+**When** 50+ or 100+ cycles complete
+**Then** private bytes, handle count, and GPU resource trends are recorded with pass/fail/limitation notes.
+
+**Given** resource growth is observed
+**When** release readiness is assessed
+**Then** it is classified as blocker, limitation, or accepted risk with rationale.
+
+### Epic 13: Fidelity Confidence UX and Accessibility Hardening
+
+Users can understand Lumiere's stricter fidelity model through native, accessible UI that does not overclaim.
+
+#### Story 13-1: Clarify Fidelity State Copy Across Main, Tray, Overlay, and Output
+
+As a screenshot user,
+I want status copy to distinguish capture, preview, conversion, export, and validation,
+So that I know exactly what can be trusted.
+
+**Requirements Covered:** FR9, FR10, FR11, FR12, FR24, FR25, NFR10, NFR21, NFR22, NFR24.
+
+**Acceptance Criteria:**
+
+**Given** a capture or output path is complete
+**When** feedback is shown
+**Then** the copy distinguishes artifact completion from HDR preservation.
+
+**Given** a state is unvalidated or degraded
+**When** UI text is reviewed
+**Then** it does not use public-release fidelity language.
+
+#### Story 13-2: Harden Native Settings and Accessibility Semantics
+
+As a Windows user,
+I want settings and status controls to behave like native accessible controls,
+So that trust and configuration are clear under keyboard, screen reader, high contrast, and text scaling.
+
+**Requirements Covered:** NFR21, NFR22, NFR24, UX-DR18, UX-DR19.
+
+**Acceptance Criteria:**
+
+**Given** settings controls are reviewed
+**When** native WinUI controls can represent the behavior
+**Then** prefer native semantics over custom button-shaped toggles or segments unless a custom control is justified.
+
+**Given** public release accessibility validation runs
+**When** keyboard, screen reader, high contrast, text scaling, and DPI checks are performed
+**Then** failures are fixed or documented before public release.

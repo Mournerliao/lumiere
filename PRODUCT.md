@@ -18,10 +18,13 @@ product
 
 Lumiere should make screenshot capture feel native, precise, and trustworthy on Windows. The main product promise is not decoration or cloud sharing; it is accurate capture, accurate preview, clear export behavior, and a low-interruption workflow.
 
+The current public release target is a validated perfect-HDR-fidelity release for supported paths. The MVP capture loop may be used as an internal/private preview foundation, but public release claims require target-aware HDR detection, documented output fidelity semantics, target-app compatibility evidence, and Windows manual validation.
+
 ## Strategic Principles
 
 - Native Windows first: preserve WinUI 3, Windows App SDK, WGC, D3D11, DXGI, and Vortice boundaries.
 - HDR trust first: avoid claims of HDR correctness unless the pipeline has the matching validation level.
+- Public fidelity requires evidence: "perfect HDR fidelity" means supported capture/preview/output paths have explicit fidelity contracts and recorded Windows validation, not a universal guarantee for every device, app, or format.
 - Fast capture first: the overlay and capture flow must not slow the user's original task.
 - Local tool first: no cloud upload, telemetry, Electron, Tauri, WPF bitmap-first, WinForms, GDI, web UI, or SDR screenshot-library foundations.
 - Expert power, calm surface: advanced HDR and output controls should exist without overwhelming first-time capture.

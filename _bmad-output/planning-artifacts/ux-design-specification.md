@@ -39,6 +39,15 @@ Lumiere is a native Windows HDR screenshot utility designed to make high-fidelit
 
 The product's UX promise is trust. Lumiere should preserve HDR-first capture and preview semantics where the platform supports them, and it should avoid claiming HDR fidelity when the capture, preview, clipboard, file, or display path is degraded, unsupported, or unvalidated.
 
+For public release, trust copy must be stricter than MVP/private-preview copy. The UI must distinguish four fidelity concepts:
+
+1. Captured through the HDR-first FP16/scRGB path.
+2. Previewed on a validated target display.
+3. Converted for basic SDR-compatible output.
+4. Exported through a validated HDR-preserving output profile.
+
+Completion feedback must describe the artifact result first, then only mention HDR preservation when the active path has target-aware evidence and validation records.
+
 ### Target Users
 
 The primary users are Windows users who work with HDR content and need screenshots they can trust: creators reviewing HDR video or visual references, QA and engineering users documenting rendering issues, and technically aware users comparing HDR game, media, or display output.
@@ -47,7 +56,7 @@ These users are likely comfortable with desktop utilities, shortcuts, tray contr
 
 ### Key Design Challenges
 
-The UX must keep the capture flow low-interruption while still communicating fidelity and readiness accurately. Status language needs to distinguish HDR ready, enable HDR, HDR unavailable, degraded preview, unsupported capture, preview failed, output complete, output failed, and partial output success without relying on color alone.
+The UX must keep the capture flow low-interruption while still communicating fidelity and readiness accurately. Status language needs to distinguish HDR ready, enable HDR, HDR unavailable, degraded preview, unsupported capture, preview failed, output complete, output failed, partial output success, unvalidated output, converted output, and HDR-preserving output without relying on color alone.
 
 The settings and output surfaces must avoid unsupported promises. Clipboard image output can be useful, but it must not imply HDR preservation unless the implementation has defined format, conversion, metadata, target-app, and Windows manual validation evidence.
 
@@ -199,7 +208,7 @@ To avoid anxiety, do not guess the target display when confidence is low, do not
 
 **Utility-style settings:** Settings should be organized around user jobs: shortcuts, output, HDR alerts/status, background/tray behavior, and about/version. Avoid exposing implementation concepts such as WGC, DXGI, scRGB, or encoder internals unless needed for diagnostics.
 
-**Brief completion feedback:** Completion should answer "what happened?" with target-specific status: copied, saved, copied and saved, partial success, or failed. Feedback should be visible enough to build trust but short enough not to become a workflow step.
+**Brief completion feedback:** Completion should answer "what happened?" with target-specific status: copied, saved, copied and saved, partial success, or failed. Public-release feedback must not imply HDR preservation unless the active output profile is validated. Feedback should be visible enough to build trust but short enough not to become a workflow step.
 
 **Evidence-based trust status:** Unlike generic screenshot tools, Lumiere should surface HDR readiness and output fidelity states as first-class UX signals. This is a differentiating pattern rather than a borrowed one.
 
@@ -213,7 +222,7 @@ To avoid anxiety, do not guess the target display when confidence is low, do not
 
 **Color-only status communication:** HDR ready, degraded, failed, unsupported, and completed states must not rely only on green/yellow/red. Text and icon/glyph cues are required.
 
-**Optimistic fidelity copy:** The UI must not use terms such as HDR-preserving, HDR10, P3, or validated output unless the implementation semantics and Windows manual validation evidence exist for that path.
+**Optimistic fidelity copy:** The UI must not use terms such as HDR-preserving, HDR10, P3, perfect fidelity, or validated output unless target-aware detection, implementation semantics, and Windows manual validation evidence exist for that path.
 
 **Wrong-display automation:** Automatically showing the overlay on the wrong display is worse than asking for a minimal correction. Trust requires conservative target inference.
 
@@ -616,11 +625,11 @@ Native controls should be styled through WinUI/Fluent resources and Lumiere-spec
 
 **Anatomy:** Icon/glyph, text label, optional detail text, semantic color cue, optional dot indicator.
 
-**States:** HDR ready, enable HDR, HDR unavailable, degraded preview, unsupported capture, preview failed, output complete, output failed, partial output success, unvalidated output.
+**States:** HDR ready, enable HDR, HDR unavailable, degraded preview, unsupported capture, preview failed, output complete, output failed, partial output success, unvalidated output, converted output, HDR-preserving output.
 
 **Accessibility:** Every state requires text plus icon/glyph. Color cannot be the only discriminator. Status changes after capture or output should be announced where platform conventions support it without becoming noisy.
 
-**Content Guidelines:** Be concise and evidence-scoped. Do not use HDR-preserving, HDR10, P3, or validated language unless the path is implemented and manually validated.
+**Content Guidelines:** Be concise and evidence-scoped. Do not use HDR-preserving, HDR10, P3, perfect fidelity, or validated language unless the path is target-aware, implemented, and manually validated.
 
 #### Overlay Lens
 
@@ -644,11 +653,11 @@ Native controls should be styled through WinUI/Fluent resources and Lumiere-spec
 
 **Anatomy:** Outcome icon, concise title, per-target result line, optional recovery action.
 
-**States:** Copied, saved, copied and saved, partial success, clipboard failed, file failed, unvalidated output, degraded output.
+**States:** Copied, saved, copied and saved, partial success, clipboard failed, file failed, unvalidated output, converted output, degraded output, HDR-preserving output.
 
 **Accessibility:** Feedback must be readable and available long enough to perceive. Important failures should not disappear before the user can act.
 
-**Content Guidelines:** Completion and HDR preservation are separate claims. Prefer "Copied to clipboard" over "HDR copied" unless validated.
+**Content Guidelines:** Completion, conversion, and HDR preservation are separate claims. Prefer "Copied to clipboard" over "HDR copied" unless the selected output profile has validation evidence.
 
 #### Settings Section / Setting Row Pattern
 
@@ -696,7 +705,7 @@ Accessibility and validation should be designed with the component, not added la
 
 **Phase 3 - Tray and Background Components:** Tray Status Menu, active-session tray command states, background/minimize affordance, and quit/release-state feedback. These support low-interruption background operation.
 
-**Phase 4 - Enhancement Components:** Advanced diagnostics disclosure, richer validation evidence view, light-theme variant, and future export/profile controls. These should not block MVP unless product scope changes.
+**Phase 4 - Public Fidelity Components:** Fidelity contract disclosure, target-aware trust detail, supported output profile status, richer validation evidence view, and public-release copy hardening. These do not block the private MVP foundation, but they do block a public perfect-HDR-fidelity release.
 
 ## UX Consistency Patterns
 
@@ -718,9 +727,9 @@ Accessibility and validation should be designed with the component, not added la
 
 ### Feedback Patterns
 
-**HDR and Trust Feedback:** Use Trust Status Badge patterns for HDR ready, enable HDR, HDR unavailable, degraded preview, unsupported capture, preview failed, output complete, output failed, partial output success, and unvalidated output.
+**HDR and Trust Feedback:** Use Trust Status Badge patterns for HDR ready, enable HDR, HDR unavailable, degraded preview, unsupported capture, preview failed, output complete, output failed, partial output success, unvalidated output, converted output, and HDR-preserving output.
 
-**Output Feedback:** Completion feedback should identify per-target results. Use "Copied to clipboard", "Saved to folder", "Copied and saved", "Clipboard failed", "File save failed", or "Partial output" rather than generic success or failure.
+**Output Feedback:** Completion feedback should identify per-target results. Use "Copied to clipboard", "Saved to folder", "Copied and saved", "Clipboard failed", "File save failed", or "Partial output" rather than generic success or failure. Use HDR preservation language only when the selected output profile has target-aware validation evidence.
 
 **Invalid Crop Feedback:** Invalid or too-small regions should be indicated during selection when possible. They must not produce output and must not show success feedback.
 
@@ -764,7 +773,7 @@ Accessibility and validation should be designed with the component, not added la
 
 **Recovery Pattern:** Every failed capture/output path should end in a recoverable idle or originating-task state. The user should know whether anything was captured or saved.
 
-**Validation Language Pattern:** UI copy should distinguish implemented, degraded, unsupported, unvalidated, and manually validated behavior. Do not collapse them into generic success language.
+**Validation Language Pattern:** UI copy should distinguish implemented, degraded, unsupported, unvalidated, converted, and manually validated behavior. Do not collapse them into generic success language.
 
 ## Responsive Design & Accessibility
 

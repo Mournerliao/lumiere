@@ -133,14 +133,14 @@ The following capabilities require Windows manual validation but currently only 
 
 ### Validation Gap Summary
 
-| Category | Gap Count | Blocker for Release? |
-|----------|-----------|---------------------|
-| Hardware/platform behavior (Epic 4) | 5 | No — all gaps classified as limitation or deferred risk |
-| Settings/accessibility (Epic 5) | 5 | No — accessibility gaps are limitations for early release |
-| Output behavior (Epic 6) | 4 | No — clipboard/folder behavior classified as limitation |
-| HDR display (Epic 8) | 4 | No — HDR trust gaps classified as deferred risk |
-| Performance/stability (NFR1, NFR5) | 3 | No — responsiveness and resource gaps classified as limitation |
-| **Total** | **21** | **No blockers — see release validation matrix for authoritative assessment** |
+| Category | Gap Count | MVP foundation blocker? | Public perfect-HDR-fidelity blocker? |
+|----------|-----------|-------------------------|----------------------------------|
+| Hardware/platform behavior (Epic 4) | 5 | No — classified as limitation or deferred risk for private preview | Yes where target-aware HDR, multi-monitor, or DPI claims are public |
+| Settings/accessibility (Epic 5) | 5 | No — accessibility gaps are limitations for private preview | Yes for public accessibility or broad Windows compatibility claims |
+| Output behavior (Epic 6) | 4 | No — clipboard/folder behavior classified as limitation for private preview | Yes for HDR-preserving output or target-app compatibility claims |
+| HDR display (Epic 8) | 4 | No — HDR trust gaps classified as deferred risk for private preview | Yes for public HDR fidelity claims |
+| Performance/stability (NFR1, NFR5) | 3 | No — responsiveness and resource gaps classified as limitation for private preview | Yes for public reliability claims until long-run evidence exists |
+| **Total** | **21** | **No MVP foundation blockers in this snapshot** | **Public release governed by `release-validation-checklist.md` Perfect HDR Fidelity gates** |
 
 ## Story-Level Validation Evidence Map
 
@@ -162,14 +162,15 @@ The following capabilities require Windows manual validation but currently only 
 
 | Document | Path | Coverage | Validation Level |
 |----------|------|----------|-----------------|
-| **MVP Release Validation Matrix** | `docs/validation/mvp-release-validation-matrix.md` | All FR/NFR — **authoritative release-readiness document** | Automated gates executed; 43 manual scenarios catalogued (not-run pending human tester) |
+| **Release Validation Checklist** | `docs/validation/release-validation-checklist.md` | Active release-gate checklist for private preview and public fidelity | Live working document; records manual evidence, status, and retest triggers |
+| **MVP Release Validation Matrix** | `docs/validation/mvp-release-validation-matrix.md` | All FR/NFR — point-in-time validation snapshot | Automated gates executed; 43 manual scenarios catalogued (not-run pending human tester) |
 | Lifecycle Validation | `docs/validation/lifecycle-validation.md` | FR45, NFR5, NFR11 | Checklist defined; partial manual execution from Story 4.5 |
 | Overlay Validation | `docs/validation/overlay-validation.md` | FR47, NFR3, NFR27 | Checklist defined; partial manual execution from Story 4.5 |
 | Output Validation | `docs/validation/output-validation.md` | FR48, NFR8, NFR19 | Scope table defined; manual validation required but not executed |
 
 ## How to Use This Registry
 
-1. **Before release claims**: Check that any capability mentioned in release copy has at least the required validation level. Consult `docs/validation/mvp-release-validation-matrix.md` for the authoritative release-readiness assessment.
+1. **Before release claims**: Check that any capability mentioned in release copy has at least the required validation level. Use `docs/validation/release-validation-checklist.md` as the live release-gate checklist, then consult `docs/validation/mvp-release-validation-matrix.md` for the latest recorded validation snapshot.
 2. **Before new stories**: Reference the gap list to identify validation work that should accompany implementation.
 3. **After Windows manual validation**: Update the relevant row with evidence, date, tester, and device/display configuration. Also update the release validation matrix.
-4. **For release readiness**: The release validation matrix (`docs/validation/mvp-release-validation-matrix.md`) is the authoritative document. This registry feeds into it.
+4. **For release readiness**: The Release Validation Checklist (`docs/validation/release-validation-checklist.md`) is the active working document. This registry feeds the checklist, and the release validation matrix records point-in-time validation snapshots.

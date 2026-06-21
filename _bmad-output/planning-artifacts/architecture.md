@@ -88,7 +88,7 @@ The dominant NFRs are architectural rather than cosmetic:
 - Ensure deterministic disposal and teardown ordering for WGC sessions, frame pools, frames, WinRT Direct3D devices, swap chains, overlays, tray icons, hotkeys, and native resources.
 - Use generation-scoped callbacks or equivalent session tokens so stale async work cannot update UI or capture state after restart.
 - Keep all operation local and offline, with no cloud upload, account dependency, telemetry endpoint, or remote processing in MVP.
-- Separate basic clipboard usability from HDR-preserving output claims until encoder, metadata, color conversion, target-app compatibility, and Windows manual validation exist.
+- Separate basic clipboard usability from HDR-preserving output claims until target-aware HDR evidence, encoder behavior, metadata, color conversion, target-app compatibility, and Windows manual validation exist.
 - Treat Windows manual validation as required evidence for HDR displays, WGC timing, DXGI/scRGB presentation, tray, hotkeys, multi-monitor behavior, DPI scaling, clipboard/file output, and GPU/resource trends.
 
 **Scale & Complexity:**
@@ -109,7 +109,7 @@ Clipboard output currently exists as a narrow basic bitmap path. It must not be 
 
 ### Cross-Cutting Concerns Identified
 
-- HDR fidelity and claim discipline across capture, preview, output, UI copy, validation records, and release language.
+- HDR fidelity and claim discipline across target-aware detection, capture, preview, output, UI copy, validation records, and release language.
 - Native resource lifecycle and deterministic disposal across capture, graphics, overlay, output, tray, and hotkey boundaries.
 - Single capture/session state shared across main window, overlay, tray, hotkeys, settings, and output.
 - UI-thread marshalling for WinUI state, `SwapChainPanel` attachment/detachment, overlay updates, and native callbacks.
@@ -246,6 +246,7 @@ Historical greenfield initialization would be equivalent to creating a WinUI 3 b
 - Use direct monitor capture as the default MVP path; picker remains fallback/debug only.
 - Keep one capture/session state contract shared across app, overlay, tray, hotkeys, settings, and output.
 - Treat clipboard output as basic bitmap usability, not HDR-preserving output.
+- Treat public perfect-HDR-fidelity release as blocked until target-aware HDR detection, output profile contracts, compatibility evidence, and hardware validation gates pass.
 
 **Important Decisions:**
 
@@ -258,8 +259,8 @@ Historical greenfield initialization would be equivalent to creating a WinUI 3 b
 **Deferred Decisions:**
 
 - Installer/signing/update channel.
-- HDR-preserving file formats and metadata policy.
-- Advanced tone mapping and color profile controls.
+- Additional HDR-preserving file formats beyond the first validated public-release profile.
+- Additional tone mapping and color profile controls beyond the first supported public-release policy.
 - Rich diagnostics UI.
 - Startup/minimize policy beyond MVP tray behavior.
 - Gallery, history, annotation, onboarding, and editor-like workflows.
@@ -335,15 +336,16 @@ Packaging, signing, installer, update channel, and distribution remain post-MVP 
 
 1. Preserve Epic 1-3 as historical foundation.
 2. Start updated MVP implementation from Epic 4.
-3. Use Epic 4+ to harden output semantics, settings persistence, tray/hotkeys, and status language around the existing capture/overlay foundation.
-4. Run Windows manual validation before making HDR or direct monitor behavior claims.
-5. Defer advanced export, installer, diagnostics UI, gallery, history, and annotation until after MVP loop is coherent.
+3. Use Epic 4-9 to harden output usability, settings persistence, tray/hotkeys, and status language around the existing capture/overlay foundation.
+4. Use Epic 10+ to complete target-aware HDR detection, output fidelity contracts, compatibility evidence, and public-release validation.
+5. Run Windows manual validation before making HDR, direct monitor, output fidelity, or multi-monitor behavior claims.
+6. Defer installer, diagnostics UI, gallery, history, and annotation until after the public HDR fidelity release path is coherent.
 
 **Cross-Component Dependencies:**
 
-- Output depends on capture frame/crop payloads, graphics conversion policy, settings target, and validation language.
+- Output depends on capture frame/crop payloads, graphics conversion policy, settings target, output profile contracts, and validation language.
 - Tray and hotkeys depend on shared session state and settings.
-- HDR status depends on graphics readiness, display capability evidence, capture support, and output semantics.
+- HDR status depends on target-aware display capability evidence, graphics readiness, capture support, and output semantics.
 - Overlay correctness depends on capture target geometry, graphics preview stability, input routing, and lifecycle teardown.
 - Settings persistence affects main window, tray, hotkeys, output, and HDR alerts.
 
@@ -599,7 +601,8 @@ Future Epic 4+ services should be added to the owning module, not to `MainWindow
 - Epic 1 historical foundation: `Lumiere.Graphics`, `Lumiere.Infrastructure`, `Lumiere.Capture`, `Lumiere.App`.
 - Epic 2 historical lifecycle/direct capture: `Lumiere.Capture`, `Lumiere.Infrastructure.Interop`, `Lumiere.App`, lifecycle validation docs.
 - Epic 3 historical overlay/crop/release-to-capture: `Lumiere.Overlay`, `Lumiere.Graphics.Clipboard`, `Lumiere.App`, overlay validation docs.
-- Epic 4+ output semantics: extend `Lumiere.Graphics`, `Lumiere.Infrastructure`, and introduce/complete output-facing abstractions without claiming HDR preservation prematurely.
+- Epic 4-9 MVP foundation: extend settings/output/tray/hotkey/status behavior without claiming HDR preservation prematurely.
+- Epic 10+ public fidelity work: connect capture targets to display output identity, make HDR probing target-aware, define output profile contracts, validate compatibility, and record public-release evidence.
 - Epic 4+ settings: implement under `Lumiere.Settings`; app, tray, hotkeys, output consume settings through interfaces.
 - Epic 4+ tray/hotkeys: native Win32 details in `Lumiere.Infrastructure`; command/session routing in `Lumiere.App`.
 
@@ -741,10 +744,9 @@ None.
 
 **Important Gaps:**
 
-- Output semantics still need Epic 4+ design before HDR-preserving clipboard/file claims can be made.
-- `Lumiere.Settings` exists as a boundary but still needs concrete persistence, defaults, validation, and migration rules.
-- Tray and global hotkey behavior need dedicated infrastructure boundaries and Windows manual validation.
-- Windows manual validation remains required for real WGC/DXGI/D3D11/HDR, direct monitor capture, multi-monitor, DPI, overlay input, tray, hotkeys, and resource trend claims.
+- Target-aware HDR detection remains required before public HDR readiness claims can be made on mixed-monitor systems.
+- Output profile contracts remain required before HDR-preserving clipboard/file claims can be made.
+- Windows manual validation remains required for real WGC/DXGI/D3D11/HDR, direct monitor capture, multi-monitor, DPI, overlay input, tray, hotkeys, output compatibility, and resource trend claims.
 
 **Nice-to-Have Gaps:**
 
@@ -790,7 +792,7 @@ The second issue was risk of overclaiming clipboard/HDR output. The architecture
 
 ### Architecture Readiness Assessment
 
-**Overall Status:** READY FOR IMPLEMENTATION
+**Overall Status:** READY FOR MVP FOUNDATION IMPLEMENTATION; PUBLIC HDR FIDELITY RELEASE REQUIRES EPIC 10+ WORK
 
 **Confidence Level:** High
 
@@ -804,10 +806,10 @@ The second issue was risk of overclaiming clipboard/HDR output. The architecture
 
 **Areas for Future Enhancement:**
 
-- Define full output semantics for clipboard and file paths.
-- Implement concrete local settings persistence.
-- Add tray and hotkey infrastructure boundaries.
-- Promote COM ownership rules into durable interop guidance.
+- Complete target-aware HDR detection for active capture targets.
+- Define full output profile contracts for supported clipboard and file paths.
+- Validate target-app compatibility and public release fidelity evidence.
+- Promote COM/display identity ownership rules into durable interop guidance.
 - Add packaging/signing/update architecture when distribution enters scope.
 
 ### Implementation Handoff
@@ -822,6 +824,6 @@ The second issue was risk of overclaiming clipboard/HDR output. The architecture
 
 **First Implementation Priority:**
 
-Create updated Epic 4+ implementation planning from this architecture, focused on output semantics, settings persistence, tray/hotkeys, and validation hardening around the existing capture/overlay foundation.
+For the current public release target, start with Epic 10 target-aware HDR detection. Do not implement or enable advanced HDR output profiles until the HDR fidelity contract and output profile contract are approved. Epic 4-9 remain the MVP foundation and should not be rolled back.
 
 Before UI-heavy implementation stories begin, use the MVP UX specification/state inventory as the source of truth for main panel, settings, tray, overlay, HDR status, completion/failure feedback, disabled controls, and non-color-only state discrimination.

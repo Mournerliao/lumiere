@@ -51,6 +51,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 ### Framework-Specific Rules
 
 - Preserve the HDR-first capture and preview path: WGC `R16G16B16A16Float`, DXGI `R16G16B16A16_Float`, scRGB `RgbFullG10NoneP709`, and GPU-resident preview.
+- Treat public perfect-HDR-fidelity release as stricter than MVP feature completion: public claims require target-aware HDR detection, output profile contracts, compatibility evidence, and Windows manual validation.
 - Never introduce `BitmapImage`, `SoftwareBitmap`, GDI, WIC, CPU bitmap readback, SDR texture fallback, or ordinary XAML `Image` presentation as the authoritative live preview path.
 - Keep platform APIs in their owning modules: WGC/session lifecycle in `Lumiere.Capture`, D3D11/DXGI/HDR constants in `Lumiere.Graphics`, WinRT/COM/Win32 interop in `Lumiere.Infrastructure`, overlay/crop UI in `Lumiere.Overlay`, local preferences in `Lumiere.Settings`.
 - `Lumiere.App` may orchestrate windows and workflows, but it must not own COM pointers, HMONITOR/HWND semantics, frame pools, D3D devices, DXGI swap chains, or low-level output conversion policy.
@@ -58,6 +59,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Capture callbacks, output completions, overlay updates, and diagnostics that can arrive late must be generation-scoped or session-token-scoped before mutating app-visible state.
 - Direct monitor capture is the default MVP path. Picker-first behavior is fallback/debug only unless product requirements change.
 - Clipboard output may be basic usability, but it must not be described as HDR-preserving without encoder, metadata, conversion policy, target-app compatibility, and Windows manual validation evidence.
+- "Copied", "saved", "converted", and "HDR-preserved" are separate claims. Do not collapse artifact success into fidelity success.
 
 ### Testing Rules
 
@@ -83,6 +85,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 - Validation levels are distinct: Mac edit, Windows CI-pass, and Windows manual-pass. Never collapse them into a generic "done" claim.
 - Before claiming readiness, use the repository gates where applicable: restore, build, tests, and format verification from `AGENTS.md`.
+- Before claiming public release readiness, use `docs/validation/release-validation-checklist.md` and require the Perfect HDR Fidelity gates to pass or be explicitly excluded from release copy.
 - Windows manual validation is required for WGC timing, D3D11/DXGI/scRGB presentation, HDR displays, overlay topmost/input behavior, tray, global hotkeys, multi-monitor behavior, DPI scaling, clipboard/file output, and resource trends.
 - Generated planning, story, sprint, and readiness artifacts belong in `_bmad-output/`; durable reusable guidance belongs in `harness/`.
 - Preserve Epic 1-3 implementation and validation artifacts as historical foundation. Rebaselined MVP implementation planning continues from Epic 4.

@@ -3,7 +3,7 @@
 Generated: 2026-06-03
 Story: 8.5 Run MVP Release Validation Matrix
 
-This document is the authoritative release-readiness artifact for Lumiere MVP. It consolidates automated gate results, Windows manual validation scenarios, validation gap inventory, and release readiness assessment.
+This document captures the MVP release validation snapshot created for Story 8.5. For ongoing private-preview or public-release decisions, use `docs/validation/release-validation-checklist.md` as the live release-gate checklist, then update this matrix when a new validation snapshot is recorded.
 
 ## Section 1: Automated Gates
 
@@ -162,9 +162,9 @@ No manual validation scenarios were executed in this validation run. 10 scenario
 
 The remaining 33 scenarios have no manual validation evidence.
 
-### Capabilities Validated for Early User Release
+### Capabilities Validated for Private Preview / Early Validation
 
-The following capabilities have sufficient evidence for early user release:
+The following capabilities had sufficient evidence for private preview or early validation under the 2026-06-03 MVP foundation bar. This section does not approve public perfect-HDR-fidelity release.
 
 1. **Capture lifecycle management** (Epic 4): command routing, session state machine, direct monitor capture path — Windows CI-pass + partial manual
 2. **Overlay and crop interaction** (Epic 4): crop creation, adjustment, release-to-capture — Windows CI-pass + partial manual at 150% DPI
@@ -173,7 +173,7 @@ The following capabilities have sufficient evidence for early user release:
 5. **Tray, hotkeys, and background** (Epic 7): all tray/hotkey/quit capabilities — Windows manual-pass
 6. **HDR trust model** (Epic 8): state mapping, alerts, diagnostics — Windows CI-pass
 
-### Known Limitations for Early Users
+### Known Limitations for Private Preview / Early Validation Users
 
 1. **Multi-monitor**: overlay placement and capture targeting on multi-monitor setups not validated. May work but is unconfirmed.
 2. **DPI scaling**: only 150% DPI was tested. Users at 100%, 125%, or 200% may encounter visual issues.
@@ -184,13 +184,13 @@ The following capabilities have sufficient evidence for early user release:
 7. **Resource trends**: no long-running resource stability data. Code manages disposal deterministically but 10+ cycle resource monitoring not performed.
 8. **Settings persistence in packaged context**: settings JSON persistence works in development; packaged app relaunch not verified.
 
-### Blockers
+### MVP Foundation Blockers
 
-**No blockers identified.** All 21 validation gaps are classified as limitations (11) or deferred risks (10). None meet the blocker threshold (core functionality non-operational). The automated capture loop, overlay, output, tray, hotkey, and settings code all pass automated gates, and the subset with manual evidence confirms basic functionality.
+**No MVP foundation blockers identified in this 2026-06-03 snapshot.** All 21 validation gaps were classified as limitations (11) or deferred risks (10) for the MVP foundation/private-preview bar. This does not mean public perfect-HDR-fidelity release is unblocked; that release target is governed by `docs/validation/release-validation-checklist.md`.
 
 ### Recommendation
 
-Lumiere is ready for early user release with documented limitations. The 21 known gaps should be communicated to early users as known constraints. Priority follow-up validation should target:
+Lumiere was considered usable for private preview / early validation with documented limitations under this snapshot. Public perfect-HDR-fidelity release requires the stricter gates in `docs/validation/release-validation-checklist.md`. Priority follow-up validation should target:
 1. Multi-monitor behavior (deferred risk — NFR27)
 2. DPI scaling at 100%/125%/200% (deferred risk — NFR27)
 3. HDR display rendering (deferred risk — HDR trust model)
