@@ -1,6 +1,6 @@
 # Lumiere UI Review Checklist
 
-Use this checklist for the current MVP surfaces: main panel, settings panel, tray context menu, direct screenshot entry, HDR status language, and capture overlay behavior. Onboarding, gallery, and annotation-heavy overlays are post-MVP unless a story explicitly brings them back. Export controls needed for public Perfect HDR Fidelity are governed by Epic 11+ and must not be treated as optional polish once the public release target is in scope.
+Use this checklist for the current MVP surfaces: main panel, settings panel, tray context menu, direct screenshot entry, HDR status language, and capture overlay behavior. Onboarding, gallery, and annotation-heavy overlays are post-MVP unless a story explicitly brings them back. Export controls needed for Perfect HDR Fidelity Public Release are governed by Epic 11+ and must not be treated as optional polish once the public release target is in scope.
 
 ## Native Windows Fit
 

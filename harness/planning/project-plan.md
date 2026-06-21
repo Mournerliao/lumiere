@@ -13,7 +13,7 @@
 
 **当前权威 MVP 交互与界面范围** 以 [`harness/design/v0-mvp-reference/`](../design/v0-mvp-reference/) 及 [`harness/design/index.md`](../design/index.md) 中的说明为准。该原型为 **UX 参考**（Next/React），**不得**将 Web 技术栈或组件实现迁入生产代码；WinUI 3 与原生图形管线仍是行为与正确性的唯一来源。
 
-**当前公开发布目标** 已调整为 **Perfect HDR Fidelity Public Release**：MVP 闭环可作为内部/私有预览基础，但公开发布必须通过目标显示器级 HDR 检测、输出语义、色彩转换/元数据策略、目标应用兼容性与 Windows 真机验证门槛。详见 [`docs/validation/release-validation-checklist.md`](../../docs/validation/release-validation-checklist.md) 中的 Perfect HDR Fidelity gates。
+**当前公开发布目标固定为 Perfect HDR Fidelity Public Release，不再降格或改名**：MVP 闭环可作为内部/私有预览基础，但首次公开发布必须通过目标显示器级 HDR 检测、输出语义、色彩转换/元数据策略、目标应用兼容性、Windows 真机验证、visual-match output 证据，并至少具备一个 HDR-preserved supported output path。详见 [`docs/validation/release-validation-checklist.md`](../../docs/validation/release-validation-checklist.md) 中的 Perfect HDR Fidelity gates。
 
 ---
 

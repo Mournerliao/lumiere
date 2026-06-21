@@ -10,9 +10,9 @@ Resolved review history belongs in story files or review artifacts. Historical m
 
 None currently known.
 
-## Public Perfect HDR Fidelity Release Blockers
+## Perfect HDR Fidelity Public Release Blockers
 
-These items do not block the existing MVP foundation or private validation builds. They do block public release claims of perfect HDR fidelity for supported paths.
+These items do not block the existing MVP foundation or private validation builds. They do block Perfect HDR Fidelity Public Release.
 
 ### Target-aware HDR detection
 
@@ -100,7 +100,7 @@ None currently unresolved.
 - Source: Story 8-2 review.
 - `HdrDisplayCapability.Probe(IDXGIFactory2)` always queries adapter 0, output 0.
 - On multi-monitor setups with different HDR states per display, probe result may not match capture target.
-- Status: no longer acceptable as a public-release limitation for perfect HDR fidelity. Tracked as Epic 10 work.
+- Status: no longer acceptable as a public-release limitation for Perfect HDR Fidelity. Tracked as Epic 10 work.
 - Correct fix requires passing the capture target's display adapter/output.
 
 ## Accepted Decisions / No Current Action

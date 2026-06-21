@@ -246,7 +246,7 @@ Historical greenfield initialization would be equivalent to creating a WinUI 3 b
 - Use direct monitor capture as the default MVP path; picker remains fallback/debug only.
 - Keep one capture/session state contract shared across app, overlay, tray, hotkeys, settings, and output.
 - Treat clipboard output as basic bitmap usability, not HDR-preserving output.
-- Treat public perfect-HDR-fidelity release as blocked until target-aware HDR detection, output profile contracts, compatibility evidence, and hardware validation gates pass.
+- Treat Perfect HDR Fidelity Public Release as blocked until target-aware HDR detection, output profile contracts, visual-match evidence, at least one HDR-preserved supported output path, compatibility evidence, and hardware validation gates pass.
 
 **Important Decisions:**
 

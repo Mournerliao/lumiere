@@ -1,13 +1,17 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowLeft, Clipboard, FolderOpen, Info, Keyboard, Monitor } from "lucide-react"
+import { ArrowLeft, Clipboard, FileCheck2, FolderOpen, Info, Keyboard, Monitor, ShieldCheck } from "lucide-react"
 import {
+  FIDELITY_CLAIM_UI,
+  OUTPUT_PROFILES,
   type CaptureMode,
   type ColorFormat,
+  type FidelityClaim,
   type OutputTarget,
   type PrototypeSettings,
 } from "./prototype-state"
+import { ValidationPanel } from "./validation-panel"
 
 interface SettingsPanelProps {
   settings: PrototypeSettings
@@ -16,12 +20,23 @@ interface SettingsPanelProps {
   onShortcutChange: (mode: CaptureMode, shortcut: string) => void
 }
 
-function Toggle({ checked, onChange, id }: { checked: boolean; onChange: (v: boolean) => void; id: string }) {
+function Toggle({
+  checked,
+  onChange,
+  id,
+  label,
+}: {
+  checked: boolean
+  onChange: (v: boolean) => void
+  id: string
+  label: string
+}) {
   return (
     <button
       id={id}
       role="switch"
       aria-checked={checked}
+      aria-label={label}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex w-9 h-5 rounded-full flex-shrink-0 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${checked ? "bg-primary" : "bg-muted border border-border"}`}
     >
@@ -67,10 +82,12 @@ export function SettingsPanel({
   onSettingsChange,
   onShortcutChange,
 }: SettingsPanelProps) {
-  const colorFormatOptions: { value: ColorFormat; label: string }[] = [
-    { value: "hdr10", label: "HDR10" },
-    { value: "wide", label: "P3" },
-    { value: "srgb", label: "sRGB" },
+  const colorFormatOptions = Object.values(OUTPUT_PROFILES)
+  const fidelityOptions: { value: FidelityClaim; label: string }[] = [
+    { value: "converted", label: "Converted" },
+    { value: "visual-match", label: "Visual" },
+    { value: "hdr-preserved", label: "HDR" },
+    { value: "unvalidated", label: "None" },
   ]
 
   return (
@@ -105,27 +122,74 @@ export function SettingsPanel({
             <SettingRow label="HDR alerts" description="When HDR is unavailable">
               <Toggle
                 id="hdr-warnings"
+                label="HDR alerts"
                 checked={settings.hdrWarnings}
                 onChange={(hdrWarnings) => onSettingsChange({ hdrWarnings })}
               />
             </SettingRow>
 
-            <SettingRow label="Export">
-              <div className="w-44 grid grid-cols-3 gap-1 rounded-lg bg-secondary/35 border border-border/70 p-1">
+            <SettingRow label="Target-aware state" description="Public release cannot use a global HDR guess">
+              <span className="rounded-md border border-border bg-secondary px-2 py-1 text-[10px] font-semibold text-secondary-foreground">
+                Required
+              </span>
+            </SettingRow>
+          </div>
+        </section>
+
+        <section>
+          <SectionHeader icon={ShieldCheck} title="Fidelity" />
+          <div className="rounded-xl bg-card border border-border px-4">
+            <div className="py-3 border-b border-border">
+              <span className="text-[13px] text-foreground font-medium block mb-1.5">Output profile</span>
+              <div className="grid grid-cols-3 gap-1 rounded-lg bg-secondary/35 border border-border/70 p-1">
                 {colorFormatOptions.map((opt) => (
                   <button
-                    key={opt.value}
-                    onClick={() => onSettingsChange({ colorFormat: opt.value })}
-                    className={`h-8 rounded-md px-2 text-center text-[10px] font-semibold transition-colors ${
-                      settings.colorFormat === opt.value
-                        ? "bg-primary/14 text-foreground shadow-sm shadow-black/20"
+                    key={opt.id}
+                    onClick={() => onSettingsChange({ colorFormat: opt.id, fidelityClaim: opt.claim })}
+                    className={`min-h-10 rounded-md px-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
+                      settings.colorFormat === opt.id
+                        ? "bg-primary/14 text-foreground"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    {opt.label}
+                    <span className="block text-[10px] font-semibold">{opt.label}</span>
+                    <span className="block text-[8px] uppercase text-muted-foreground">{opt.statusLabel}</span>
                   </button>
                 ))}
               </div>
+              <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
+                HDR-preserved options stay scoped until profile contract, metadata policy, viewer matrix, and Windows validation exist.
+              </p>
+            </div>
+
+            <div className="py-3 border-b border-border">
+              <span className="text-[13px] text-foreground font-medium block mb-1.5">Feedback claim</span>
+              <div className="grid grid-cols-4 gap-1 rounded-lg bg-secondary/35 border border-border/70 p-1">
+                {fidelityOptions.map((opt) => {
+                  const ui = FIDELITY_CLAIM_UI[opt.value]
+                  const Icon = ui.icon
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => onSettingsChange({ fidelityClaim: opt.value })}
+                      className={`min-h-10 rounded-md px-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
+                        settings.fidelityClaim === opt.value
+                          ? "bg-primary/14 text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Icon className={`mx-auto h-3.5 w-3.5 ${settings.fidelityClaim === opt.value ? ui.color : ""}`} />
+                      <span className="mt-0.5 block text-[9px] font-medium">{opt.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <SettingRow label="QQ benchmark" description="Gray, white, and highlight behavior must not regress">
+              <span className="rounded-md border border-border bg-secondary px-2 py-1 text-[10px] font-semibold text-secondary-foreground">
+                Visual match
+              </span>
             </SettingRow>
           </div>
         </section>
@@ -162,6 +226,7 @@ export function SettingsPanel({
             <SettingRow label="Open after capture">
               <Toggle
                 id="auto-open"
+                label="Open after capture"
                 checked={settings.autoOpen}
                 onChange={(autoOpen) => onSettingsChange({ autoOpen })}
               />
@@ -169,6 +234,7 @@ export function SettingsPanel({
             <SettingRow label="Timestamp">
               <Toggle
                 id="include-metadata"
+                label="Timestamp"
                 checked={settings.includeMetadata}
                 onChange={(includeMetadata) => onSettingsChange({ includeMetadata })}
               />
@@ -180,9 +246,10 @@ export function SettingsPanel({
           <section>
             <SectionHeader icon={Clipboard} title="Clipboard" />
             <div className="rounded-xl bg-card border border-border px-4">
-              <SettingRow label="Copy as Image">
+              <SettingRow label="Copy as Image" description="Compatibility output; not an HDR-preserved claim">
                 <Toggle
                   id="copy-image"
+                  label="Copy as Image"
                   checked={settings.copyImage}
                   onChange={(copyImage) => onSettingsChange({ copyImage })}
                 />
@@ -190,6 +257,11 @@ export function SettingsPanel({
             </div>
           </section>
         )}
+
+        <section>
+          <SectionHeader icon={FileCheck2} title="Validation" />
+          <ValidationPanel />
+        </section>
 
         <section>
           <SectionHeader icon={Info} title="About" />
@@ -229,7 +301,7 @@ function SegmentedOutput({
         <button
           key={target}
           onClick={() => onChange(target)}
-          className={`h-8 rounded-md text-[11px] font-medium transition-colors ${
+          className={`h-8 rounded-md text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
             value === target
               ? "bg-primary/14 text-foreground shadow-sm shadow-black/20"
               : "text-muted-foreground hover:text-foreground"
@@ -277,7 +349,7 @@ function ShortcutInput({ value, onChange }: { value: string; onChange: (v: strin
   return (
     <button
       onClick={() => setEditing(true)}
-      className="w-24 px-2 py-1 rounded-lg bg-secondary border border-border text-[11px] font-mono text-center text-secondary-foreground hover:border-primary/40 hover:text-foreground transition-colors"
+      className="w-24 px-2 py-1 rounded-lg bg-secondary border border-border text-[11px] font-mono text-center text-secondary-foreground hover:border-primary/40 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
     >
       {value}
     </button>

@@ -87,7 +87,7 @@ This PRD rebaselines the MVP around the v0 MVP reference and `harness/planning/m
 Lumiere has two release bars:
 
 1. **Internal Alpha / Private Preview:** the coherent MVP capture loop can be used for validation and trusted testers when limitations are documented.
-2. **Public Perfect HDR Fidelity Release:** public release requires target-aware HDR detection, documented output fidelity semantics, compatibility validation, multi-display/DPI evidence, and release copy that only claims supported validated paths.
+2. **Perfect HDR Fidelity Public Release:** the first public release requires target-aware HDR detection, documented output fidelity semantics, compatibility validation, multi-display/DPI evidence, visual-match output evidence, at least one HDR-preserved supported output path, and release copy that only claims supported validated paths.
 
 "Perfect HDR fidelity" does not mean every possible device, app, format, and viewing condition is guaranteed. It means every public claim and enabled output path has a written fidelity contract and Windows hardware validation evidence for the supported scope.
 
@@ -123,7 +123,7 @@ MVP success means Lumiere proves a distinct product reason to exist: a native Wi
 
 Private preview success should be judged by product trust and workflow completion rather than broad feature count. Success is reached when early testers can complete the primary HDR screenshot loop repeatedly, understand when HDR readiness is degraded or unavailable, and prefer Lumiere for HDR content over built-in screenshot tools.
 
-A 3-month success target is a stable MVP foundation that supports the core capture surfaces from the v0 reference: main window capture, global shortcut entry, tray entry, direct region selection, clipboard/file output settings, and credible HDR status. The public release target is a refined Windows utility with target-aware HDR detection, validated HDR output semantics, reliable tray/hotkey behavior, configurable output workflows, and enough manual validation evidence to support public perfect-HDR-fidelity claims.
+A 3-month success target is a stable MVP foundation that supports the core capture surfaces from the v0 reference: main window capture, global shortcut entry, tray entry, direct region selection, clipboard/file output settings, and credible HDR status. The public release target is a refined Windows utility with target-aware HDR detection, validated output semantics, reliable tray/hotkey behavior, configurable output workflows, visual-match output evidence, at least one HDR-preserved supported output path, and enough manual validation evidence to support Perfect HDR Fidelity claims.
 
 ### Technical Success
 
@@ -151,9 +151,9 @@ Public HDR fidelity requires target-aware evidence. HDR readiness must be tied t
 The MVP foundation and the public release are deliberately separate scope gates.
 
 - **MVP Foundation / Internal Alpha:** proves the low-interruption native capture loop, shared settings, tray/hotkeys, configured output usability, honest HDR status, and validation workflow.
-- **Public Perfect HDR Fidelity Release:** requires target-aware HDR detection, supported output profile contracts, validated conversion/metadata policy, compatibility evidence, and release notes that match the validated scope.
+- **Perfect HDR Fidelity Public Release:** requires target-aware HDR detection, supported output profile contracts, validated conversion/metadata policy, visual-match evidence, at least one HDR-preserved supported output path, compatibility evidence, and release notes that match the validated scope.
 
-Do not treat "MVP done" as equivalent to "public release ready." Public release readiness is controlled by the perfect-HDR-fidelity gates in `docs/validation/release-validation-checklist.md`.
+Do not treat "MVP done" as equivalent to "public release ready." First public release readiness is controlled by the Perfect HDR Fidelity gates in `docs/validation/release-validation-checklist.md`.
 
 ### MVP - Minimum Viable Product
 
@@ -171,7 +171,7 @@ Before UI-heavy implementation begins, the MVP UX state inventory must define ma
 
 ### Growth Features (Post-MVP)
 
-Growth scope includes richer error recovery, more robust diagnostics UI, broader shortcut conflict handling, startup/minimize behavior, installer/update flow, and additional productivity workflows. Target-aware HDR detection, supported output semantics, validated file formats, metadata policy, explicit tone-mapping policy, compatibility evidence, and refined multi-monitor targeting are no longer optional growth work when the goal is public perfect-HDR-fidelity release; they are public-release prerequisites.
+Growth scope includes richer error recovery, more robust diagnostics UI, broader shortcut conflict handling, startup/minimize behavior, installer/update flow, and additional productivity workflows. Target-aware HDR detection, supported output semantics, validated file format, metadata policy, explicit tone-mapping policy, visual-match evidence, HDR-preserved output, compatibility evidence, and refined multi-monitor targeting are no longer optional growth work when the goal is Perfect HDR Fidelity Public Release; they are public-release prerequisites.
 
 Growth features may also include more polished notification behavior, configurable filename templates, better output destination management, and targeted compatibility validation against common paste targets and image viewers.
 
@@ -309,7 +309,7 @@ The innovative claim must be validated at three levels:
 
 ### Risk Mitigation
 
-The main risk is overclaiming HDR correctness before target-aware detection and output semantics are proven. Mitigation: keep HDR claims tied to validation level, separate basic clipboard usability from HDR-preserving output, and block public release until perfect-HDR-fidelity gates pass.
+The main risk is overclaiming HDR correctness before target-aware detection and output semantics are proven. Mitigation: keep HDR claims tied to validation level, separate basic clipboard usability from HDR-preserving output, and block public release until the Perfect HDR Fidelity gates pass.
 
 The second risk is workflow complexity. Mitigation: defer gallery, annotation, onboarding, advanced export flows, and history until after the MVP proves the quiet capture loop.
 

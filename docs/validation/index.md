@@ -6,7 +6,7 @@ This folder contains Lumiere's validation records and release-gate checklists. T
 
 ## Live Gate
 
-- [Release Validation Checklist](./release-validation-checklist.md) - Active checklist for Private Preview / Early Validation and Public Perfect HDR Fidelity Release.
+- [Release Validation Checklist](./release-validation-checklist.md) - Active checklist for Private Preview / Early Validation and Perfect HDR Fidelity Public Release.
 
 ## Point-In-Time Records
 

@@ -3,6 +3,7 @@
 import { AppWindow, Camera, Layers, Power, Settings } from "lucide-react"
 import {
   CAPTURE_LABELS,
+  FIDELITY_CLAIM_UI,
   HDR_STATUS_UI,
   type CaptureMode,
   type HdrStatus,
@@ -39,6 +40,8 @@ export function TrayContextMenu({
 }: TrayContextMenuProps) {
   const status = HDR_STATUS_UI[hdrStatus]
   const StatusIcon = status.icon
+  const fidelity = FIDELITY_CLAIM_UI[settings.fidelityClaim]
+  const FidelityIcon = fidelity.icon
 
   const captureItems: MenuItem[] = [
     {
@@ -80,6 +83,10 @@ export function TrayContextMenu({
               <StatusIcon className={`w-3 h-3 flex-shrink-0 ${status.color}`} strokeWidth={2.5} />
               <span className={`text-[10px] truncate ${status.color}`}>{status.label}</span>
             </div>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <FidelityIcon className={`w-3 h-3 flex-shrink-0 ${fidelity.color}`} strokeWidth={2.5} />
+              <span className={`text-[10px] truncate ${fidelity.color}`}>{fidelity.label}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -105,7 +112,7 @@ function MenuRow({ item }: { item: MenuItem }) {
     <button
       onClick={item.onClick}
       disabled={item.disabled}
-      className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-left transition-colors duration-75 disabled:opacity-50 ${
+      className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-left transition-colors duration-75 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60 ${
         item.active
           ? "bg-primary/12"
           : isDestructive

@@ -51,7 +51,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 ### Framework-Specific Rules
 
 - Preserve the HDR-first capture and preview path: WGC `R16G16B16A16Float`, DXGI `R16G16B16A16_Float`, scRGB `RgbFullG10NoneP709`, and GPU-resident preview.
-- Treat public perfect-HDR-fidelity release as stricter than MVP feature completion: public claims require target-aware HDR detection, output profile contracts, compatibility evidence, and Windows manual validation.
+- Treat Perfect HDR Fidelity Public Release as the fixed public release target, stricter than MVP feature completion: public claims require target-aware HDR detection, output profile contracts, compatibility evidence, Windows manual validation, visual-match output evidence, and at least one HDR-preserved supported output path.
 - Never introduce `BitmapImage`, `SoftwareBitmap`, GDI, WIC, CPU bitmap readback, SDR texture fallback, or ordinary XAML `Image` presentation as the authoritative live preview path.
 - Keep platform APIs in their owning modules: WGC/session lifecycle in `Lumiere.Capture`, D3D11/DXGI/HDR constants in `Lumiere.Graphics`, WinRT/COM/Win32 interop in `Lumiere.Infrastructure`, overlay/crop UI in `Lumiere.Overlay`, local preferences in `Lumiere.Settings`.
 - `Lumiere.App` may orchestrate windows and workflows, but it must not own COM pointers, HMONITOR/HWND semantics, frame pools, D3D devices, DXGI swap chains, or low-level output conversion policy.

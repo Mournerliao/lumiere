@@ -705,7 +705,7 @@ Accessibility and validation should be designed with the component, not added la
 
 **Phase 3 - Tray and Background Components:** Tray Status Menu, active-session tray command states, background/minimize affordance, and quit/release-state feedback. These support low-interruption background operation.
 
-**Phase 4 - Public Fidelity Components:** Fidelity contract disclosure, target-aware trust detail, supported output profile status, richer validation evidence view, and public-release copy hardening. These do not block the private MVP foundation, but they do block a public perfect-HDR-fidelity release.
+**Phase 4 - Public Fidelity Components:** Fidelity contract disclosure, target-aware trust detail, supported output profile status, richer validation evidence view, and public-release copy hardening. These do not block the private MVP foundation, but they do block Perfect HDR Fidelity Public Release. Detailed UI/UX direction for this phase lives in `harness/design/perfect-hdr-fidelity-extension.md`.
 
 ## UX Consistency Patterns
 

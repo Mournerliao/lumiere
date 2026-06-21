@@ -11,12 +11,12 @@ This is the primary project-knowledge entry point for BMAD and agent-assisted de
 - **Runtime:** .NET 10 / WinUI 3 / Windows App SDK
 - **Graphics stack:** Windows Graphics Capture, Direct3D 11, DXGI, Vortice
 - **Release model:** staged release
-- **Current public target:** validated Perfect HDR Fidelity Public Release
+- **Current public target:** Perfect HDR Fidelity Public Release
 
 ## Release Gates
 
 - **MVP Foundation / Private Preview:** Epic 1-9 provide the capture and workflow foundation. Private preview still requires recorded Windows validation and documented limitations.
-- **Public Perfect HDR Fidelity Release:** Epic 10+ must provide target-aware HDR detection, output fidelity contracts, target-app compatibility evidence, HDR/SDR validation content, multi-monitor/DPI coverage, long-run lifecycle evidence, and release copy review.
+- **Perfect HDR Fidelity Public Release:** Epic 10+ must provide target-aware HDR detection, output fidelity contracts, target-app compatibility evidence, HDR/SDR validation content, multi-monitor/DPI coverage, long-run lifecycle evidence, visual-match output evidence, at least one HDR-preserved supported output path, and release copy review.
 
 ## Validation Documentation
 
@@ -34,7 +34,7 @@ This is the primary project-knowledge entry point for BMAD and agent-assisted de
 - [`_bmad-output/planning-artifacts/epics.md`](../_bmad-output/planning-artifacts/epics.md) - MVP foundation epics and public fidelity epics.
 - [`_bmad-output/planning-artifacts/architecture.md`](../_bmad-output/planning-artifacts/architecture.md) - Architecture boundaries and implementation priorities.
 - [`_bmad-output/planning-artifacts/ux-design-specification.md`](../_bmad-output/planning-artifacts/ux-design-specification.md) - UX state, copy, and validation rules.
-- [`_bmad-output/planning-artifacts/sprint-change-proposal-2026-06-21-perfect-hdr-fidelity-release-target.md`](../_bmad-output/planning-artifacts/sprint-change-proposal-2026-06-21-perfect-hdr-fidelity-release-target.md) - Approved course correction to public Perfect HDR Fidelity.
+- [`_bmad-output/planning-artifacts/sprint-change-proposal-2026-06-21-perfect-hdr-fidelity-release-target.md`](../_bmad-output/planning-artifacts/sprint-change-proposal-2026-06-21-perfect-hdr-fidelity-release-target.md) - Prior course correction that established fidelity evidence gates.
 
 ## Harness References
 

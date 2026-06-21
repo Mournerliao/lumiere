@@ -164,7 +164,7 @@ The remaining 33 scenarios have no manual validation evidence.
 
 ### Capabilities Validated for Private Preview / Early Validation
 
-The following capabilities had sufficient evidence for private preview or early validation under the 2026-06-03 MVP foundation bar. This section does not approve public perfect-HDR-fidelity release.
+The following capabilities had sufficient evidence for private preview or early validation under the 2026-06-03 MVP foundation bar. This section does not approve Perfect HDR Fidelity Public Release.
 
 1. **Capture lifecycle management** (Epic 4): command routing, session state machine, direct monitor capture path — Windows CI-pass + partial manual
 2. **Overlay and crop interaction** (Epic 4): crop creation, adjustment, release-to-capture — Windows CI-pass + partial manual at 150% DPI
@@ -186,11 +186,11 @@ The following capabilities had sufficient evidence for private preview or early 
 
 ### MVP Foundation Blockers
 
-**No MVP foundation blockers identified in this 2026-06-03 snapshot.** All 21 validation gaps were classified as limitations (11) or deferred risks (10) for the MVP foundation/private-preview bar. This does not mean public perfect-HDR-fidelity release is unblocked; that release target is governed by `docs/validation/release-validation-checklist.md`.
+**No MVP foundation blockers identified in this 2026-06-03 snapshot.** All 21 validation gaps were classified as limitations (11) or deferred risks (10) for the MVP foundation/private-preview bar. This does not mean Perfect HDR Fidelity Public Release is unblocked; that release target is governed by `docs/validation/release-validation-checklist.md`.
 
 ### Recommendation
 
-Lumiere was considered usable for private preview / early validation with documented limitations under this snapshot. Public perfect-HDR-fidelity release requires the stricter gates in `docs/validation/release-validation-checklist.md`. Priority follow-up validation should target:
+Lumiere was considered usable for private preview / early validation with documented limitations under this snapshot. Perfect HDR Fidelity Public Release requires the stricter gates in `docs/validation/release-validation-checklist.md`. Priority follow-up validation should target:
 1. Multi-monitor behavior (deferred risk — NFR27)
 2. DPI scaling at 100%/125%/200% (deferred risk — NFR27)
 3. HDR display rendering (deferred risk — HDR trust model)

@@ -1480,7 +1480,7 @@ So that I understand which formats are available and which are pending validatio
 
 ## Public Perfect HDR Fidelity Epic List
 
-The following epics are required before Lumiere can publicly claim perfect HDR fidelity for supported paths. They do not invalidate Epic 1-9; they build on that MVP foundation and convert private-preview capability into public-release evidence.
+The following epics are required before Lumiere can publicly claim Perfect HDR Fidelity for supported paths. They do not invalidate Epic 1-9; they build on that MVP foundation and convert private-preview capability into public-release evidence. SDR-compatible output may exist as a fallback or auxiliary path, but it cannot replace visual-match output and at least one HDR-preserved supported output path.
 
 ### Epic 10: Target-Aware HDR Detection and Trust Mapping
 
@@ -1632,7 +1632,7 @@ So that public release cannot outrun evidence.
 
 **Given** `docs/validation/release-validation-checklist.md` is used
 **When** public release readiness is evaluated
-**Then** perfect-HDR-fidelity gates have PASS/PASS-with-limitation/FAIL/NOT RUN status and evidence.
+**Then** Perfect HDR Fidelity gates have PASS/PASS-with-limitation/FAIL/NOT RUN status and evidence.
 
 **Given** any public fidelity gate is NOT RUN or FAIL
 **When** release copy is drafted
