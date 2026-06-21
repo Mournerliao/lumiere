@@ -14,7 +14,13 @@ This folder contains Lumiere's current validation records, release-gate checklis
 - [Lifecycle Validation](lifecycle-validation.md) - Capture cycles, teardown, and resource trend validation.
 - [Overlay Validation](overlay-validation.md) - Overlay placement, crop interaction, cancel, DPI, and display validation.
 - [Output Validation](output-validation.md) - Clipboard/file output checks and future output profile acceptance records.
+- [Resource Trend Validation](resource-trend-validation.md) - Long-run 50+ / 100+ cycle sampling workflow for private bytes, handles, threads, and GPU memory trends.
 - [Settings Accessibility Validation](settings-accessibility-validation.md) - Keyboard, screen reader, high contrast, export-profile honesty, and DPI checks for the settings shell.
+
+## Reusable Templates
+
+- [HDR / SDR Validation Session Template](templates/hdr-sdr-validation-session-template.md) - Standard session record for HDR/SDR, output, DPI, and accessibility evidence.
+- [Resource Trend Session Template](templates/resource-trend-session-template.md) - Standard session record for Story `12-3` and long-run lifecycle evidence.
 
 ## Historical Snapshots
 

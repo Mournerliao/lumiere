@@ -102,11 +102,19 @@ Evidence:
 - `docs/validation/release-validation-checklist.md` separates Private Preview / Early Validation from Perfect HDR Fidelity Public Release gates.
 - Output validation docs and schema template explain how manual evidence is recorded and why invalid artifacts are surfaced.
 
-### 12-3 Record Long-Run Capture and Output Resource Trends - backlog
+### 12-3 Record Long-Run Capture and Output Resource Trends - in-progress
 
 Evidence:
 
-- No focused 50+ or 100+ cycle resource trend evidence has been recorded yet.
+- `harness/validation/scripts/collect-resource-trend-samples.ps1` now provides repeatable CSV and summary-JSON sampling for process and GPU memory metrics.
+- `harness/validation/resource-trend-validation.md` now defines the public-release long-run workflow and classification rules.
+- `harness/validation/templates/resource-trend-session-template.md` now defines the reusable record shape for Story 12-3 sessions.
+- `harness/validation/lifecycle-validation.md`, `harness/validation/release-validation-checklist.md`, and `harness/validation/index.md` now route long-run resource evidence through the new workflow.
+
+Remaining blockers:
+
+- No focused real Windows `50+` or `100+` cycle evidence has been recorded yet.
+- Release readiness still depends on actual sampler artifacts plus pass/fail/limitation judgement from a live run.
 
 ## Epic 13: Fidelity Confidence UX and Accessibility Hardening
 
@@ -142,4 +150,4 @@ After this alignment:
 - Epic 12: `in-progress`
 - Epic 13: `in-progress`
 
-The project has moved beyond backlog for the new public-fidelity direction, but public release remains blocked by Windows manual validation evidence, supported HDR-preserved output validation, target-app compatibility, long-run resource trends, and accessibility hardening.
+The project has moved beyond backlog for the new public-fidelity direction, but public release remains blocked by Windows manual validation evidence, supported HDR-preserved output validation, target-app compatibility, executed long-run resource trend evidence, and accessibility hardening.

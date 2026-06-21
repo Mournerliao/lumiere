@@ -33,7 +33,7 @@ These are the minimum baseline checks that should be recorded before treating th
 | Output usability | Clipboard and folder output work for the current baseline scope. | NOT RUN | Include target app paste/open/reveal observations. |
 | HDR status honesty | HDR state shown in UI matches observed display configuration and does not overclaim preservation. | NOT RUN | Must cover at least one HDR-active and one non-HDR/degraded condition if available. |
 | Tray/background workflow | Minimize/close-to-tray, tray capture commands, open settings/main window, and quit work. | NOT RUN | Epic 7 recorded manual evidence on 2026-05-26; confirm still valid for current build before counting it. |
-| Repeated lifecycle stability | 10+ capture/cancel/output cycles show no stuck state or obvious resource growth. | NOT RUN | Use `lifecycle-validation.md` for detailed checks. |
+| Repeated lifecycle stability | 10+ capture/cancel/output cycles show no stuck state or obvious resource growth. | NOT RUN | Use `lifecycle-validation.md` for detailed checks and `resource-trend-validation.md` when recording sampler artifacts. |
 | DPI/layout sanity | Main panel, settings, overlay, and InfoBar remain usable at tested DPI scales. | NOT RUN | Minimum: current tester DPI. Preferred: 100%, 125%, 150%, 200%. |
 | Known limitations reviewed | Remaining NOT RUN or PASS-with-limitation items are listed in release notes. | NOT RUN | Must happen after this checklist is filled. |
 
@@ -49,7 +49,7 @@ These gates apply to the fixed public release target. They are stricter than the
 | Supported output compatibility matrix | Visual-match output and HDR-preserved output are validated against named target apps and viewers. | NOT RUN | Viewer evidence is modeled and can be loaded from validation artifacts, but real named target-app/viewer evidence has not been recorded. Must separate "artifact written", "visual match", and "HDR preserved". |
 | HDR/SDR visual validation set | Standard test content covers bright highlights, SDR/HDR mixed content, browser/media/game scenarios, and display mode changes. | NOT RUN | Standard scenario guidance now lives in `hdr-sdr-validation-scenarios.md` with a reusable session template, but executed validation sessions are still missing. |
 | Multi-monitor and DPI validation | HDR/SDR mixed displays and common DPI scales are recorded with pass/fail/limitation status. | NOT RUN | Target-aware code support exists, but public claims cannot imply untested display topologies or DPI configurations. |
-| Long-run lifecycle evidence | Repeated capture/output cycles record private bytes, handles, and GPU resource trends. | NOT RUN | No focused 50+ or 100+ cycle resource trend evidence has been recorded yet. |
+| Long-run lifecycle evidence | Repeated capture/output cycles record private bytes, handles, and GPU resource trends. | NOT RUN | Use `resource-trend-validation.md` plus `templates/resource-trend-session-template.md`. No focused 50+ or 100+ cycle evidence has been committed yet. |
 | Public release copy review | Release notes and UI copy only claim fidelity modes that passed validation. | NOT RUN | Planned as final release gate. Limitations and unsupported modes must be explicit. |
 
 ## Functional Validation Matrix
@@ -127,7 +127,7 @@ These gates apply to the fixed public release target. They are stricter than the
 | ID | Scenario | Expected result | Status | Evidence / notes | Retest trigger |
 |---|---|---|---|---|---|
 | REL-STAB-01 | 10+ start/cancel/capture/output cycles. | No stuck state, crash, or stale overlay. | NOT RUN |  | Capture, overlay, output, or teardown change. |
-| REL-STAB-02 | Observe private bytes and handle count during repeated cycles. | No obvious unbounded growth. | NOT RUN |  | D3D, WGC, swap-chain, output snapshot change. |
+| REL-STAB-02 | Observe private bytes and handle count during repeated cycles. | No obvious unbounded growth. | NOT RUN | Run `resource-trend-validation.md` and attach the sampler CSV/summary artifacts. | D3D, WGC, swap-chain, output snapshot change. |
 | REL-STAB-03 | Trigger capture while another capture is active. | Duplicate command is rejected or queued according to UI state. | NOT RUN |  | Command coordinator/session state change. |
 | REL-STAB-04 | Slow or failing clipboard/file target. | App recovers and reports failure without leaving capture resources active. | NOT RUN |  | Output timeout/failure handling change. |
 

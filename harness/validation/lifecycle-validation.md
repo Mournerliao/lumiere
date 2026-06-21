@@ -2,6 +2,8 @@
 
 Use this checklist before claiming `Windows manual-pass` for repeated capture lifecycle stability. Automated tests can verify state transitions and disposal sequencing, but real WGC frame pools, DXGI swap chains, D3D11 resources, HDR display behavior, and GPU memory trends require Windows hardware validation.
 
+This workflow is the smoke-to-mid-depth lifecycle pass. For the public-release `50+` / `100+` resource trend runs, pair it with `resource-trend-validation.md`.
+
 ## Required scenarios
 
 Run each scenario at least once, then run the repeated sequence loop.
@@ -27,6 +29,7 @@ Run each scenario at least once, then run the repeated sequence loop.
 - Ordinary stop or restart does not dispose shared `GraphicsDeviceResources`.
 - Recreated previews keep the FP16/scRGB path: WGC `R16G16B16A16Float`, DXGI `R16G16B16A16_FLOAT`, and scRGB color-space evidence.
 - GPU memory and handle counts do not show unbounded growth across repeated sessions.
+- When the run is intended to count toward Story `12-3`, sampler artifacts are recorded through `resource-trend-validation.md`.
 
 ## Repeated sequence loop
 
@@ -40,6 +43,8 @@ Run this sequence several times without restarting the app:
 6. Press Escape before completing a crop and confirm capture/preview resources are torn down.
 7. Trigger resize/recreate if available, then confirm the mismatched frame is skipped and replacement resources are created.
 8. Close the window from an active or initializing session and confirm no post-close UI updates occur.
+
+For Public perfect-HDR-fidelity release evidence, extend this repeated loop into the longer cycle plans in `resource-trend-validation.md` so the session also records CSV/JSON trend artifacts.
 
 ## Validation level notes
 
