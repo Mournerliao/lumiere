@@ -2195,19 +2195,36 @@ public sealed partial class MainWindow : Window
         var message = sessionState.UserFacingReason ?? string.Empty;
         var detail = sessionState.TechnicalDetail ?? string.Empty;
         var hdrAlertsEnabled = settingsProvider.HdrAlertsEnabled;
+        var fidelityCue = CreateOverlayFidelityCue(settingsProvider.ExportColorFormat);
         return sessionState.Status switch
         {
-            CaptureSessionStatus.Capturing => OverlayState.HdrReady(string.Empty, detail),
+            CaptureSessionStatus.Capturing => OverlayState.HdrReady(string.Empty, detail, fidelityCue),
             CaptureSessionStatus.Degraded => OverlayState.DegradedPreview(
                 hdrAlertsEnabled ? "Enable HDR in Windows for best capture quality" : string.Empty,
-                detail),
+                detail,
+                fidelityCue),
             CaptureSessionStatus.Unsupported => OverlayState.UnsupportedCapture(
                 hdrAlertsEnabled ? "HDR capture is not supported on this display" : string.Empty,
-                detail),
-            CaptureSessionStatus.Failed => OverlayState.PreviewFailed(message, detail),
-            CaptureSessionStatus.Disposed => OverlayState.Disposed(message, detail),
-            _ => OverlayState.Initializing(message, detail),
+                detail,
+                fidelityCue),
+            CaptureSessionStatus.Failed => OverlayState.PreviewFailed(message, detail, fidelityCue: fidelityCue),
+            CaptureSessionStatus.Disposed => OverlayState.Disposed(message, detail, fidelityCue),
+            _ => OverlayState.Initializing(message, detail, fidelityCue),
         };
+    }
+
+    private static OverlayFidelityCue CreateOverlayFidelityCue(string? exportColorFormat)
+    {
+        var claim = PerfectHdrFidelityProjection.ProjectOutputProfile(exportColorFormat).FidelityClaim.Kind;
+        var overlayClaim = claim switch
+        {
+            FidelityClaimKind.Converted => OverlayFidelityClaimKind.Converted,
+            FidelityClaimKind.VisualMatch => OverlayFidelityClaimKind.VisualMatch,
+            FidelityClaimKind.HdrPreserved => OverlayFidelityClaimKind.HdrPreserved,
+            _ => OverlayFidelityClaimKind.Unvalidated,
+        };
+
+        return OverlayFidelityCue.FromClaim(overlayClaim);
     }
 
     private void OnWindowClosed(object sender, WindowEventArgs args)

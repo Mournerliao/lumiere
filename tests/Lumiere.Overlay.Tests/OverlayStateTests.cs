@@ -26,6 +26,19 @@ public sealed class OverlayStateTests
     }
 
     [Fact]
+    public void HdrReady_CanMirrorSelectedOutputFidelityCue()
+    {
+        var overlayState = OverlayState.HdrReady(
+            "HDR preview is ready.",
+            "FP16 scRGB swap chain is attached.",
+            OverlayFidelityCue.Converted);
+
+        Assert.Equal(OverlayDisplayStatus.HdrReady, overlayState.Status);
+        Assert.Equal(OverlayFidelityClaimKind.Converted, overlayState.FidelityCue.Kind);
+        Assert.Equal("Converted output", overlayState.FidelityCue.Label);
+    }
+
+    [Fact]
     public void PreviewFailed_RequiresFailureTeardown()
     {
         var overlayState = OverlayState.PreviewFailed(
