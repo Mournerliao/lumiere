@@ -30,7 +30,7 @@ public sealed record OutputResult(
 
     public OutputProfileContract EffectiveProfile => EffectiveProfileEvidence ?? RequestedProfile.EffectiveExecutableProfile;
 
-    public bool UsesCompatibilityProfileFallback => RequestedProfile != EffectiveProfile;
+    public bool UsesCompatibilityProfileFallback => RequestedProfile.Kind != EffectiveProfile.Kind;
 
     /// <summary>
     /// Creates a successful clipboard output result.
@@ -133,10 +133,26 @@ public sealed record OutputResult(
     public OutputResult WithRequestedProfile(OutputProfileContract requestedProfile)
     {
         ArgumentNullException.ThrowIfNull(requestedProfile);
+        return WithOutputProfiles(requestedProfile, requestedProfile.EffectiveExecutableProfile);
+    }
+
+    /// <summary>
+    /// Creates a copy with output profile evidence resolved from the runtime output policy.
+    /// </summary>
+    public OutputResult WithOutputPolicy(OutputPolicy policy)
+    {
+        ArgumentNullException.ThrowIfNull(policy);
+        return WithOutputProfiles(policy.RequestedProfile, policy.EffectiveProfile);
+    }
+
+    private OutputResult WithOutputProfiles(
+        OutputProfileContract requestedProfile,
+        OutputProfileContract effectiveProfile)
+    {
         return this with
         {
             RequestedProfileEvidence = requestedProfile,
-            EffectiveProfileEvidence = requestedProfile.EffectiveExecutableProfile,
+            EffectiveProfileEvidence = effectiveProfile,
         };
     }
 }

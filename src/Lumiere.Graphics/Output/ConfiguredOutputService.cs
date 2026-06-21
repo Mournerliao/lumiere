@@ -41,7 +41,7 @@ public sealed class ConfiguredOutputService : IOutputService
         }
 
         return OutputResult.FromTargets(results)
-            .WithRequestedProfile(request.Policy.RequestedProfile);
+            .WithOutputPolicy(request.Policy);
     }
 
     private async Task<IReadOnlyList<OutputTargetResult>> ExecuteTargetAsync(

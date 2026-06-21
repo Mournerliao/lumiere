@@ -146,4 +146,111 @@ public sealed class OutputPolicyTests
         Assert.Equal(OutputProfileKind.SrgbCompatibilityPng, policy.EffectiveProfile.Kind);
         Assert.True(policy.UsesCompatibilityProfileFallback);
     }
+
+    [Fact]
+    public void FromSettings_AppliesValidationArtifactsToRequestedProfileWithoutEnablingUnsupportedRuntimeProfile()
+    {
+        var policy = OutputPolicy.FromSettings(
+            OutputTarget.Folder,
+            copyAsImage: true,
+            savePath: "C:\\Captures",
+            timestampNaming: true,
+            afterCaptureBehavior: null,
+            exportColorFormat: "HDR10",
+            validationArtifacts: [CompleteHdr10Artifact()]);
+
+        Assert.Equal(OutputProfileKind.Hdr10Pq, policy.RequestedProfile.Kind);
+        Assert.True(policy.RequestedProfile.HasCompleteFormatContract);
+        Assert.False(policy.RequestedProfile.IsExecutable);
+        Assert.Equal(OutputProfileKind.SrgbCompatibilityPng, policy.EffectiveProfile.Kind);
+        Assert.True(policy.UsesCompatibilityProfileFallback);
+    }
+
+    [Fact]
+    public void FromSettings_UsesValidatedHdrProfileOnlyWhenRuntimeCapabilityIsPresent()
+    {
+        var policy = OutputPolicy.FromSettings(
+            OutputTarget.Folder,
+            copyAsImage: true,
+            savePath: "C:\\Captures",
+            timestampNaming: true,
+            afterCaptureBehavior: null,
+            exportColorFormat: "HDR10",
+            validationArtifacts: [CompleteHdr10Artifact()],
+            executionCapabilities: OutputProfileExecutionCapabilities.Create(
+                OutputProfileExecutionCapability.SrgbCompatibility,
+                OutputProfileExecutionCapability.Hdr10Preserved));
+
+        Assert.Equal(OutputProfileKind.Hdr10Pq, policy.EffectiveProfile.Kind);
+        Assert.True(policy.EffectiveProfile.IsExecutable);
+        Assert.Equal(OutputFidelityMode.HdrPreserved, policy.EffectiveProfile.FidelityMode);
+        Assert.Equal(OutputTransferFunction.PqSt2084, policy.EffectiveProfile.FormatContract.TransferFunction);
+        Assert.False(policy.UsesCompatibilityProfileFallback);
+    }
+
+    private static OutputValidationSessionArtifact CompleteHdr10Artifact() =>
+        new(
+            Date: "2026-06-21",
+            Tester: "QA",
+            BuildCommit: "485bc31",
+            WindowsVersion: "Windows 11 24H2",
+            Device: "HDR workstation",
+            Gpu: "Test GPU",
+            DisplaySetup: "HDR primary",
+            HdrState: "HDR enabled",
+            DpiScales: ["150%"],
+            EntryPointsTested: ["Main panel"],
+            OutputTargetsTested: ["Folder"],
+            TargetAppsTested: ["Windows Photos"],
+            ChecklistIdsCovered: ["REL-OUT-04"],
+            ResultSummary: "HDR10 output profile validation passed.",
+            EvidencePaths: ["docs/validation/evidence/hdr10-output.md"],
+            KnownLimitations: [],
+            FollowUpIssuesOrStories: [],
+            OutputProfileRecords:
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer("Microsoft Paint"),
+                        PassingHdrViewer("Windows Photos"),
+                        PassingHdrViewer("Chromium browsers"),
+                    ])
+                {
+                    FormatContract = CompleteHdr10Contract,
+                },
+            ])
+        {
+            TargetHdrEvidence = CompleteTargetHdrEvidence,
+        };
+
+    private static OutputViewerCompatibilityEvidence PassingHdrViewer(string name) =>
+        new(
+            name,
+            OutputCompatibilityEvidenceStatus.Pass,
+            OutputCompatibilityEvidenceStatus.Pass,
+            OutputCompatibilityEvidenceStatus.Pass,
+            "Validated HDR viewer.");
+
+    private static OutputFormatContract CompleteHdr10Contract { get; } =
+        new(
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputTransferFunction.PqSt2084,
+            OutputColorPrimaries.Bt2020,
+            OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
+            OutputMetadataPolicy.AttachHdr10StaticMetadata,
+            OutputTargetAppAssumption.RequiresHdrViewerValidation);
+
+    private static TargetAwareHdrValidationEvidence CompleteTargetHdrEvidence { get; } =
+        new(
+            TargetDisplayName: "HDR primary",
+            Left: 0,
+            Top: 0,
+            Width: 3840,
+            Height: 2160,
+            MatchKind: "DesktopBounds",
+            HdrState: "Active",
+            ColorSpace: "RgbFullG2084NoneP2020",
+            Detail: "Validated target-aware HDR match evidence.");
 }

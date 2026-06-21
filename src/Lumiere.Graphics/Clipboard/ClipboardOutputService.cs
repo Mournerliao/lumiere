@@ -84,13 +84,13 @@ public sealed class ClipboardOutputService : IOutputService, IOutputPngEncoder, 
                 request.Policy.Target,
                 request.Policy.CopyAsImage);
             return OutputResult.ClipboardSkipped("Clipboard output skipped by settings")
-                .WithRequestedProfile(request.Policy.RequestedProfile);
+                .WithOutputPolicy(request.Policy);
         }
 
         try
         {
             return (await executeCoreAsync(request, cancellationToken))
-                .WithRequestedProfile(request.Policy.RequestedProfile);
+                .WithOutputPolicy(request.Policy);
         }
         catch (OperationCanceledException)
         {
@@ -109,7 +109,7 @@ public sealed class ClipboardOutputService : IOutputService, IOutputPngEncoder, 
             diagnostic.LogTo(Logger);
 
             return OutputResult.ClipboardFailed(ex.Message)
-                .WithRequestedProfile(request.Policy.RequestedProfile);
+                .WithOutputPolicy(request.Policy);
         }
     }
 
@@ -120,7 +120,7 @@ public sealed class ClipboardOutputService : IOutputService, IOutputPngEncoder, 
         {
             Logger.LogWarning("ExecuteOutputAsync FAILED: operation=ClipboardOutput, stage=ValidateInput, detail=texture is null");
             return OutputResult.Skipped("No captured frame texture available")
-                .WithRequestedProfile(request.Policy.RequestedProfile);
+                .WithOutputPolicy(request.Policy);
         }
 
         // Determine crop region: use provided crop region or full frame
@@ -136,7 +136,7 @@ public sealed class ClipboardOutputService : IOutputService, IOutputPngEncoder, 
             {
                 Logger.LogWarning("ExecuteOutputAsync region INVALID: operation=ClipboardOutput, stage=ValidateRegion, crop=({Width}x{Height}) in {SourceWidth}x{SourceHeight}", pixelWidth, pixelHeight, texture.Width, texture.Height);
                 return OutputResult.Skipped("Invalid crop region")
-                    .WithRequestedProfile(request.Policy.RequestedProfile);
+                    .WithOutputPolicy(request.Policy);
             }
 
             cancellationToken.ThrowIfCancellationRequested();
@@ -149,7 +149,7 @@ public sealed class ClipboardOutputService : IOutputService, IOutputPngEncoder, 
 
             Logger.LogInformation("ExecuteOutputAsync success: operation=ClipboardOutput, stage=Complete, bytes={Bytes}, crop=({Width}x{Height})", pngBytes.Length, pixelWidth, pixelHeight);
             return OutputResult.ClipboardSuccess(pngBytes.Length)
-                .WithRequestedProfile(request.Policy.RequestedProfile);
+                .WithOutputPolicy(request.Policy);
         }
         catch (OperationCanceledException)
         {
@@ -166,7 +166,7 @@ public sealed class ClipboardOutputService : IOutputService, IOutputPngEncoder, 
             diagnostic.LogTo(Logger);
 
             return OutputResult.ClipboardFailed(ex.Message)
-                .WithRequestedProfile(request.Policy.RequestedProfile);
+                .WithOutputPolicy(request.Policy);
         }
     }
 

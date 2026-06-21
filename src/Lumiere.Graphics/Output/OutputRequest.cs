@@ -33,7 +33,8 @@ public sealed record OutputPolicy(
     string? SavePath,
     bool TimestampNaming,
     string? AfterCaptureBehavior,
-    OutputProfileContract RequestedProfile)
+    OutputProfileContract RequestedProfile,
+    OutputProfileExecutionCapabilities ExecutionCapabilities)
 {
     /// <summary>
     /// Gets the default output policy.
@@ -44,7 +45,8 @@ public sealed record OutputPolicy(
         SavePath: null,
         TimestampNaming: true,
         AfterCaptureBehavior: null,
-        OutputProfileContract.SrgbCompatibilityPng);
+        OutputProfileContract.SrgbCompatibilityPng,
+        OutputProfileExecutionCapabilities.CompatibilityOnly);
 
     /// <summary>
     /// Gets whether clipboard image output should be attempted.
@@ -64,12 +66,12 @@ public sealed record OutputPolicy(
     /// <summary>
     /// Gets the executable output profile currently used by the output pipeline.
     /// </summary>
-    public OutputProfileContract EffectiveProfile => RequestedProfile.EffectiveExecutableProfile;
+    public OutputProfileContract EffectiveProfile => ExecutionCapabilities.SelectEffectiveProfile(RequestedProfile);
 
     /// <summary>
     /// Gets whether a requested non-executable profile falls back to the compatibility profile.
     /// </summary>
-    public bool UsesCompatibilityProfileFallback => RequestedProfile != EffectiveProfile;
+    public bool UsesCompatibilityProfileFallback => RequestedProfile.Kind != EffectiveProfile.Kind;
 
     /// <summary>
     /// Creates a policy from raw settings values without taking a dependency on the settings module.
@@ -80,14 +82,25 @@ public sealed record OutputPolicy(
         string? savePath,
         bool timestampNaming,
         string? afterCaptureBehavior,
-        string? exportColorFormat = null) =>
-        new(
+        string? exportColorFormat = null,
+        IEnumerable<OutputValidationSessionArtifact>? validationArtifacts = null,
+        OutputProfileExecutionCapabilities? executionCapabilities = null)
+    {
+        var requestedProfile = OutputProfileContract.FromSettingsValue(exportColorFormat);
+        if (validationArtifacts is not null)
+        {
+            requestedProfile = OutputValidationSessionArtifact.ApplyAllTo(requestedProfile, validationArtifacts);
+        }
+
+        return new(
             target,
             copyAsImage,
             string.IsNullOrWhiteSpace(savePath) ? null : savePath.Trim(),
             timestampNaming,
             string.IsNullOrWhiteSpace(afterCaptureBehavior) ? null : afterCaptureBehavior.Trim(),
-            OutputProfileContract.FromSettingsValue(exportColorFormat));
+            requestedProfile,
+            executionCapabilities ?? OutputProfileExecutionCapabilities.CompatibilityOnly);
+    }
 }
 
 /// <summary>

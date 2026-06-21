@@ -69,4 +69,39 @@ public sealed class OutputResultTests
         Assert.False(result.EffectiveProfile.AllowsHdrPreservedClaim);
         Assert.DoesNotContain("HDR-preserved", result.UserMessage, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void WithOutputPolicy_RecordsRuntimeEffectiveProfile()
+    {
+        var requested = OutputProfileContract.Hdr10Pq with
+        {
+            FormatContract = CompleteHdr10Contract,
+        };
+        var policy = OutputPolicy.Default with
+        {
+            RequestedProfile = requested,
+            ExecutionCapabilities = OutputProfileExecutionCapabilities.Create(
+                OutputProfileExecutionCapability.SrgbCompatibility,
+                OutputProfileExecutionCapability.Hdr10Preserved),
+        };
+
+        var result = OutputResult.ClipboardSuccess(1024)
+            .WithOutputPolicy(policy);
+
+        Assert.Equal(OutputProfileKind.Hdr10Pq, result.RequestedProfile.Kind);
+        Assert.Equal(OutputProfileKind.Hdr10Pq, result.EffectiveProfile.Kind);
+        Assert.True(result.EffectiveProfile.IsExecutable);
+        Assert.Equal(OutputFidelityMode.HdrPreserved, result.EffectiveProfile.FidelityMode);
+        Assert.False(result.UsesCompatibilityProfileFallback);
+    }
+
+    private static OutputFormatContract CompleteHdr10Contract { get; } =
+        new(
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputTransferFunction.PqSt2084,
+            OutputColorPrimaries.Bt2020,
+            OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
+            OutputMetadataPolicy.AttachHdr10StaticMetadata,
+            OutputTargetAppAssumption.RequiresHdrViewerValidation);
 }

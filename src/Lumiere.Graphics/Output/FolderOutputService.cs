@@ -48,7 +48,7 @@ public sealed class FolderOutputService : IOutputService
                 OutputTarget.Folder,
                 "Folder output skipped by settings",
                 "Folder target is not configured."))
-                .WithRequestedProfile(request.Policy.RequestedProfile);
+                .WithOutputPolicy(request.Policy);
         }
 
         if (request.Texture is null)
@@ -82,7 +82,7 @@ public sealed class FolderOutputService : IOutputService
                 "Saved to folder",
                 $"Folder output success: {pngBytes.Length} bytes",
                 artifactPath))
-                .WithRequestedProfile(request.Policy.RequestedProfile);
+                .WithOutputPolicy(request.Policy);
         }
         catch (OperationCanceledException)
         {
@@ -106,5 +106,5 @@ public sealed class FolderOutputService : IOutputService
             OutputTarget.Folder,
             userMessage,
             technicalDetail ?? userMessage))
-            .WithRequestedProfile(request.Policy.RequestedProfile);
+            .WithOutputPolicy(request.Policy);
 }

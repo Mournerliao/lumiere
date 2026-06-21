@@ -286,6 +286,54 @@ public sealed record OutputProfileEvidenceSummary(
     string VisualMatchGateDetail,
     string HdrPreservedGateDetail);
 
+public sealed record OutputProfileExecutionCapabilities(
+    IReadOnlyList<OutputProfileExecutionCapability> Profiles)
+{
+    public static OutputProfileExecutionCapabilities CompatibilityOnly { get; } =
+        new([OutputProfileExecutionCapability.SrgbCompatibility]);
+
+    public static OutputProfileExecutionCapabilities Create(
+        params OutputProfileExecutionCapability[] profiles)
+    {
+        ArgumentNullException.ThrowIfNull(profiles);
+        return profiles.Length == 0
+            ? CompatibilityOnly
+            : new(profiles);
+    }
+
+    public OutputProfileContract SelectEffectiveProfile(OutputProfileContract requestedProfile)
+    {
+        ArgumentNullException.ThrowIfNull(requestedProfile);
+
+        var capability = Profiles.FirstOrDefault(profile => profile.ProfileKind == requestedProfile.Kind);
+        if (capability is null)
+        {
+            return OutputProfileContract.SrgbCompatibilityPng;
+        }
+
+        var executableProfile = requestedProfile with
+        {
+            IsExecutable = true,
+            FidelityMode = capability.FidelityMode,
+        };
+
+        return executableProfile.HasCompleteFormatContract
+            ? executableProfile
+            : OutputProfileContract.SrgbCompatibilityPng;
+    }
+}
+
+public sealed record OutputProfileExecutionCapability(
+    OutputProfileKind ProfileKind,
+    OutputFidelityMode FidelityMode)
+{
+    public static OutputProfileExecutionCapability SrgbCompatibility { get; } =
+        new(OutputProfileKind.SrgbCompatibilityPng, OutputFidelityMode.SdrCompatible);
+
+    public static OutputProfileExecutionCapability Hdr10Preserved { get; } =
+        new(OutputProfileKind.Hdr10Pq, OutputFidelityMode.HdrPreserved);
+}
+
 public sealed record OutputFormatContract(
     OutputPixelFormat SourcePixelFormat,
     OutputPixelFormat DestinationPixelFormat,
