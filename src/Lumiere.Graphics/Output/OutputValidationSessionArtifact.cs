@@ -44,6 +44,7 @@ public sealed record OutputValidationSessionArtifact(
 
         return OutputProfileRecords
             .Where(record => record.ProfileKind == contract.Kind)
+            .Select(PrepareRecordForReleaseEvidence)
             .Aggregate(contract, (current, record) => current.ApplyValidationRecord(record));
     }
 
@@ -64,4 +65,103 @@ public sealed record OutputValidationSessionArtifact(
 
         return artifact;
     }
+
+    private OutputProfileValidationRecord PrepareRecordForReleaseEvidence(OutputProfileValidationRecord record)
+    {
+        var missingFields = GetMissingManualEvidenceFields().ToArray();
+        if (missingFields.Length == 0)
+        {
+            return record;
+        }
+
+        var detailSuffix = $"Validation session incomplete; missing {string.Join(", ", missingFields)}.";
+        return record with
+        {
+            EvidenceSource = OutputValidationEvidenceSource.IncompleteManualSession,
+            ViewerEvidence = record.ViewerEvidence
+                .Select(evidence => evidence with { Detail = $"{evidence.Detail} {detailSuffix}" })
+                .ToArray(),
+        };
+    }
+
+    private IEnumerable<string> GetMissingManualEvidenceFields()
+    {
+        if (string.IsNullOrWhiteSpace(Date))
+        {
+            yield return "date";
+        }
+
+        if (string.IsNullOrWhiteSpace(Tester))
+        {
+            yield return "tester";
+        }
+
+        if (string.IsNullOrWhiteSpace(BuildCommit))
+        {
+            yield return "build/commit";
+        }
+
+        if (string.IsNullOrWhiteSpace(WindowsVersion))
+        {
+            yield return "Windows version";
+        }
+
+        if (string.IsNullOrWhiteSpace(Device))
+        {
+            yield return "device";
+        }
+
+        if (string.IsNullOrWhiteSpace(Gpu))
+        {
+            yield return "GPU";
+        }
+
+        if (string.IsNullOrWhiteSpace(DisplaySetup))
+        {
+            yield return "display setup";
+        }
+
+        if (string.IsNullOrWhiteSpace(HdrState))
+        {
+            yield return "HDR state";
+        }
+
+        if (IsMissing(DpiScales))
+        {
+            yield return "DPI scales";
+        }
+
+        if (IsMissing(EntryPointsTested))
+        {
+            yield return "entry points tested";
+        }
+
+        if (IsMissing(OutputTargetsTested))
+        {
+            yield return "output targets tested";
+        }
+
+        if (IsMissing(TargetAppsTested))
+        {
+            yield return "target apps tested";
+        }
+
+        if (IsMissing(ChecklistIdsCovered))
+        {
+            yield return "checklist IDs covered";
+        }
+
+        if (string.IsNullOrWhiteSpace(ResultSummary))
+        {
+            yield return "result summary";
+        }
+
+        if (IsMissing(EvidencePaths))
+        {
+            yield return "evidence paths";
+        }
+    }
+
+    private static bool IsMissing(IEnumerable<string> values) =>
+        !values.Any(value => !string.IsNullOrWhiteSpace(value));
 }

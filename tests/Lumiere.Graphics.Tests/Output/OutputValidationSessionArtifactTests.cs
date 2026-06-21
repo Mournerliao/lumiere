@@ -105,6 +105,71 @@ public sealed class OutputValidationSessionArtifactTests
         Assert.Contains("schema", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void ApplyTo_TreatsIncompleteManualSessionAsLimitedEvidence()
+    {
+        var artifact = CreateArtifact(
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer("Microsoft Paint"),
+                        PassingHdrViewer("Windows Photos"),
+                        PassingHdrViewer("Chromium browsers"),
+                    ]),
+            ]) with
+        {
+            WindowsVersion = "",
+            EvidencePaths = [],
+        };
+        var contract = OutputProfileContract.Hdr10Pq with
+        {
+            IsExecutable = true,
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+        };
+
+        var updated = artifact.ApplyTo(contract);
+        var summary = updated.EvaluateEvidence();
+
+        Assert.All(
+            updated.ViewerEvidence,
+            viewer =>
+            {
+                Assert.Equal(OutputCompatibilityEvidenceStatus.Limited, viewer.ArtifactHandlingStatus);
+                Assert.Equal(OutputCompatibilityEvidenceStatus.Limited, viewer.VisualMatchStatus);
+                Assert.Equal(OutputCompatibilityEvidenceStatus.Limited, viewer.HdrPreservationStatus);
+                Assert.Contains("Validation session incomplete", viewer.Detail, StringComparison.OrdinalIgnoreCase);
+            });
+        Assert.False(summary.AllowsVisualMatchClaim);
+        Assert.False(summary.AllowsHdrPreservedClaim);
+    }
+
+    [Fact]
+    public void ApplyTo_AllowsCompleteManualSessionToSatisfyEvidenceGate()
+    {
+        var artifact = CreateArtifact(
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer("Microsoft Paint"),
+                        PassingHdrViewer("Windows Photos"),
+                        PassingHdrViewer("Chromium browsers"),
+                    ]),
+            ]);
+        var contract = OutputProfileContract.Hdr10Pq with
+        {
+            IsExecutable = true,
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+        };
+
+        var updated = artifact.ApplyTo(contract);
+        var summary = updated.EvaluateEvidence();
+
+        Assert.True(summary.AllowsVisualMatchClaim);
+        Assert.True(summary.AllowsHdrPreservedClaim);
+    }
+
     private static OutputValidationSessionArtifact CreateArtifact(
         IReadOnlyList<OutputProfileValidationRecord> records) =>
         new(
@@ -126,4 +191,12 @@ public sealed class OutputValidationSessionArtifactTests
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
             OutputProfileRecords: records);
+
+    private static OutputViewerCompatibilityEvidence PassingHdrViewer(string name) =>
+        new(
+            name,
+            OutputCompatibilityEvidenceStatus.Pass,
+            OutputCompatibilityEvidenceStatus.Pass,
+            OutputCompatibilityEvidenceStatus.Pass,
+            $"Manual HDR validation passed in {name}.");
 }

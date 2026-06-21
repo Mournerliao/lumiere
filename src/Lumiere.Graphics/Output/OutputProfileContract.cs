@@ -256,6 +256,7 @@ public enum OutputValidationEvidenceSource
 {
     WindowsManual = 0,
     Automated = 1,
+    IncompleteManualSession = 2,
 }
 
 public enum OutputProfileKind
