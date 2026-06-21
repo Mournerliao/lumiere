@@ -1125,6 +1125,10 @@ public sealed record ValidationRecordProjection(
 
     public string? ValidationTemplatePath { get; init; }
 
+    public bool CanOpenValidationWorkspace => !string.IsNullOrWhiteSpace(ValidationWorkspacePath);
+
+    public bool CanOpenValidationTemplate => !string.IsNullOrWhiteSpace(ValidationTemplatePath);
+
     public string WorkspaceSummary =>
         string.IsNullOrWhiteSpace(ValidationWorkspacePath)
             ? EvidenceDocumentPath

@@ -79,6 +79,8 @@ On startup, Lumiere now also prepares the local validation workspace under `%LOC
 
 The settings validation record now reports that workspace path and the seeded sample path for the current machine. Workspace readiness is not evidence by itself; it only reduces setup friction for real Windows manual validation.
 
+The settings validation section also exposes native `Open workspace`, `Open template`, and `Reload evidence` actions so a Windows validator can jump directly into the local evidence flow, edit local evidence, and refresh the current session without restarting Lumiere.
+
 Use `templates/output-validation-session.schema-v4.sample.json` as the starting point for a local validation artifact. Copy it to `%LOCALAPPDATA%\Lumiere\validation\output\`, rename it for the session, replace every `REPLACE_WITH_*` value, and change each viewer status only after observing that viewer on the tested Windows machine. The sample intentionally keeps viewer statuses at `NotRun`; do not commit or share it as passing release evidence until the target-aware HDR evidence, evidence paths, visual-match result, HDR preservation result, and HDR10 metadata recognition result have all been replaced with real observations. If the same validation session covers different output targets for different profiles, keep `outputTargetsTested` as the session summary and use per-record `outputTargetsCovered` to declare the narrower profile-specific scope.
 
 ## Manual Validation Scenarios

@@ -1207,6 +1207,79 @@
                       Foreground="{StaticResource SubtleTextBrush}"
                       Text="harness/validation/release-validation-checklist.md"
                       TextWrapping="WrapWholeWords" />
+                  <Button
+                      x:Name="ValidationReloadArtifactsButton"
+                      MinWidth="0"
+                      HorizontalAlignment="Stretch"
+                      AutomationProperties.Name="Reload validation evidence"
+                      AutomationProperties.HelpText="Reload local output validation artifacts for this session."
+                      Click="OnValidationReloadArtifactsClick"
+                      Padding="10,7">
+                    <StackPanel
+                        HorizontalAlignment="Center"
+                        Orientation="Horizontal"
+                        Spacing="6">
+                      <FontIcon
+                          FontFamily="Segoe Fluent Icons"
+                          FontSize="11"
+                          Glyph="&#xE72C;" />
+                      <TextBlock
+                          FontSize="11"
+                          FontWeight="SemiBold"
+                          Text="Reload evidence" />
+                    </StackPanel>
+                  </Button>
+                  <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Button
+                        x:Name="ValidationOpenWorkspaceButton"
+                        MinWidth="0"
+                        HorizontalAlignment="Stretch"
+                        AutomationProperties.Name="Open validation workspace"
+                        AutomationProperties.HelpText="Open the local output validation workspace for this machine."
+                        Click="OnValidationOpenWorkspaceClick"
+                        Padding="10,7">
+                      <StackPanel
+                          HorizontalAlignment="Center"
+                          Orientation="Horizontal"
+                          Spacing="6">
+                        <FontIcon
+                            FontFamily="Segoe Fluent Icons"
+                            FontSize="11"
+                            Glyph="&#xE838;" />
+                        <TextBlock
+                            FontSize="11"
+                            FontWeight="SemiBold"
+                            Text="Open workspace" />
+                      </StackPanel>
+                    </Button>
+                    <Button
+                        x:Name="ValidationOpenTemplateButton"
+                        Grid.Column="1"
+                        MinWidth="0"
+                        HorizontalAlignment="Stretch"
+                        AutomationProperties.Name="Open validation template"
+                        AutomationProperties.HelpText="Open the seeded validation session template for this machine."
+                        Click="OnValidationOpenTemplateClick"
+                        Padding="10,7">
+                      <StackPanel
+                          HorizontalAlignment="Center"
+                          Orientation="Horizontal"
+                          Spacing="6">
+                        <FontIcon
+                            FontFamily="Segoe Fluent Icons"
+                            FontSize="11"
+                            Glyph="&#xE7C3;" />
+                        <TextBlock
+                            FontSize="11"
+                            FontWeight="SemiBold"
+                            Text="Open template" />
+                      </StackPanel>
+                    </Button>
+                  </Grid>
                 </StackPanel>
               </StackPanel>
             </Border>

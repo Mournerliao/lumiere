@@ -45,6 +45,7 @@ public sealed partial class MainWindow : Window
     private readonly ISettingsProvider settingsProvider;
     private readonly ISettingsWriterAggregator settingsWriter;
     private readonly IAboutInfoProvider aboutInfoProvider;
+    private readonly IArtifactShellAction artifactShellAction;
     private readonly GraphicsDeviceResources deviceResources;
     private readonly Hdr10JxrCodecReadiness hdr10JxrCodecReadiness;
     private readonly IOutputValidationArtifactSource outputValidationArtifactSource;
@@ -97,13 +98,15 @@ public sealed partial class MainWindow : Window
         CaptureService captureService,
         GraphicsDeviceResources deviceResources,
         Hdr10JxrCodecReadiness? hdr10JxrCodecReadiness = null,
-        IOutputValidationArtifactSource? outputValidationArtifactSource = null)
+        IOutputValidationArtifactSource? outputValidationArtifactSource = null,
+        IArtifactShellAction? artifactShellAction = null)
     {
         this.captureCommandCoordinator = captureCommandCoordinator ?? throw new ArgumentNullException(nameof(captureCommandCoordinator));
         this.outputService = outputService ?? throw new ArgumentNullException(nameof(outputService));
         this.settingsProvider = settingsProvider ?? throw new ArgumentNullException(nameof(settingsProvider));
         this.settingsWriter = settingsWriter ?? throw new ArgumentNullException(nameof(settingsWriter));
         this.aboutInfoProvider = aboutInfoProvider ?? throw new ArgumentNullException(nameof(aboutInfoProvider));
+        this.artifactShellAction = artifactShellAction ?? throw new ArgumentNullException(nameof(artifactShellAction));
         this.captureService = captureService ?? throw new ArgumentNullException(nameof(captureService));
         this.deviceResources = deviceResources ?? throw new ArgumentNullException(nameof(deviceResources));
         this.hdr10JxrCodecReadiness = hdr10JxrCodecReadiness ?? Hdr10JxrCodecReadiness.PendingNativeWicImplementation;
@@ -1846,6 +1849,32 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private async void OnValidationOpenWorkspaceClick(object sender, RoutedEventArgs e)
+    {
+        var snapshot = LoadOutputValidationArtifacts();
+        var path = snapshot.Workspace.IsConfigured
+            ? snapshot.Workspace.DirectoryPath
+            : PerfectHdrFidelityProjection.ProjectValidationRecord(
+                aboutInfoProvider.Version,
+                snapshot).ValidationWorkspacePath;
+        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "validation workspace");
+    }
+
+    private async void OnValidationOpenTemplateClick(object sender, RoutedEventArgs e)
+    {
+        var snapshot = LoadOutputValidationArtifacts();
+        var path = snapshot.Workspace.SampleTemplatePath
+            ?? PerfectHdrFidelityProjection.ProjectValidationRecord(
+                aboutInfoProvider.Version,
+                snapshot).ValidationTemplatePath;
+        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "validation template");
+    }
+
+    private void OnValidationReloadArtifactsClick(object sender, RoutedEventArgs e)
+    {
+        ReloadOutputValidationArtifacts();
+    }
+
     private void ApplyOutputProfileContractProjection(OutputProfileContractProjection contract)
     {
         SettingsOutputContractSourceText.Text = contract.SourcePolicy;
@@ -1966,9 +1995,77 @@ public sealed partial class MainWindow : Window
         ValidationRecordManualStatus.Text = FormatValidationStatus(record.WindowsManualValidationStatus);
         ValidationRecordManualStatus.Foreground = GetValidationStatusBrush(record.WindowsManualValidationStatus);
         ValidationRecordEvidencePathText.Text = record.EvidenceDocumentPath;
+        ValidationOpenWorkspaceButton.IsEnabled = record.CanOpenValidationWorkspace;
+        ValidationOpenTemplateButton.IsEnabled = record.CanOpenValidationTemplate;
+        ToolTipService.SetToolTip(
+            ValidationOpenWorkspaceButton,
+            record.CanOpenValidationWorkspace
+                ? $"Open local validation workspace: {record.ValidationWorkspacePath}"
+                : "Local validation workspace is not available for this session.");
+        ToolTipService.SetToolTip(
+            ValidationOpenTemplateButton,
+            record.CanOpenValidationTemplate
+                ? $"Open seeded validation template: {record.ValidationTemplatePath}"
+                : "Seeded validation template is not available for this session.");
+        AutomationProperties.SetHelpText(
+            ValidationOpenWorkspaceButton,
+            record.CanOpenValidationWorkspace
+                ? $"Open the local validation workspace at {record.ValidationWorkspacePath}."
+                : "Local validation workspace is not available for this session.");
+        AutomationProperties.SetHelpText(
+            ValidationOpenTemplateButton,
+            record.CanOpenValidationTemplate
+                ? $"Open the seeded validation template at {record.ValidationTemplatePath}."
+                : "Seeded validation template is not available for this session.");
         AutomationProperties.SetHelpText(
             ValidationRecordBuildText,
-            $"{record.BuildLabel}. {record.AutomatedEvidenceDetail} {record.WindowsManualValidationDetail} Evidence document: {record.EvidenceDocumentPath}");
+            $"{record.BuildLabel}. {record.AutomatedEvidenceDetail} {record.WindowsManualValidationDetail} Evidence document: {record.EvidenceDocumentPath}. {record.WorkspaceSummary}");
+    }
+
+    private async Task OpenValidationPathAsync(
+        string? path,
+        ArtifactShellActionKind action,
+        string description)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            Logger.LogWarning(
+                "operation=ValidationWorkspace, stage=OpenSkipped, target={Target}, detail=Path is unavailable.",
+                description);
+            return;
+        }
+
+        var result = await artifactShellAction.ExecuteAsync(path, action);
+        if (!result.IsSuccess)
+        {
+            Logger.LogWarning(
+                "operation=ValidationWorkspace, stage=OpenFailed, target={Target}, path={Path}, detail={Detail}",
+                description,
+                path,
+                result.TechnicalDetail);
+        }
+        else
+        {
+            Logger.LogInformation(
+                "operation=ValidationWorkspace, stage=Opened, target={Target}, path={Path}",
+                description,
+                path);
+        }
+    }
+
+    private void ReloadOutputValidationArtifacts()
+    {
+        outputValidationArtifacts = null;
+        var snapshot = LoadOutputValidationArtifacts();
+        var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
+        UpdateMainPanelProjection(currentState, lastOutputResult);
+        ApplySettingsProjection(currentState);
+        UpdateTrayMenu(currentState);
+        overlayWindow?.ApplyState(CreateOverlayState(currentState));
+        Logger.LogInformation(
+            "operation=OutputValidationArtifacts, stage=Reload, artifacts={ArtifactCount}, issues={IssueCount}",
+            snapshot.Artifacts.Count,
+            snapshot.LoadIssues.Count);
     }
 
     private static string FormatValidationStatus(ValidationEvidenceStatus status) =>
