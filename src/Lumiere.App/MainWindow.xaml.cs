@@ -49,6 +49,7 @@ public sealed partial class MainWindow : Window
     private readonly ISettingsWriterAggregator settingsWriter;
     private readonly IAboutInfoProvider aboutInfoProvider;
     private readonly GraphicsDeviceResources deviceResources;
+    private readonly OutputProfileExecutionCapabilities outputCapabilities;
     private readonly GraphicsEngine graphicsEngine;
     private ITrayMenu? trayMenu;
     private TrayMenuWindow? trayMenuWindow;
@@ -90,7 +91,8 @@ public sealed partial class MainWindow : Window
         ISettingsWriterAggregator settingsWriter,
         IAboutInfoProvider aboutInfoProvider,
         CaptureService captureService,
-        GraphicsDeviceResources deviceResources)
+        GraphicsDeviceResources deviceResources,
+        OutputProfileExecutionCapabilities? outputCapabilities = null)
     {
         this.captureCommandCoordinator = captureCommandCoordinator ?? throw new ArgumentNullException(nameof(captureCommandCoordinator));
         this.outputService = outputService ?? throw new ArgumentNullException(nameof(outputService));
@@ -99,6 +101,7 @@ public sealed partial class MainWindow : Window
         this.aboutInfoProvider = aboutInfoProvider ?? throw new ArgumentNullException(nameof(aboutInfoProvider));
         this.captureService = captureService ?? throw new ArgumentNullException(nameof(captureService));
         this.deviceResources = deviceResources ?? throw new ArgumentNullException(nameof(deviceResources));
+        this.outputCapabilities = outputCapabilities ?? OutputProfileExecutionCapabilities.CompatibilityOnly;
         this.graphicsEngine = new GraphicsEngine(deviceResources);
         InitializeComponent();
         Title = "Lumiere";
@@ -2135,7 +2138,8 @@ public sealed partial class MainWindow : Window
                     settingsProvider.SavePath,
                     settingsProvider.TimestampNaming,
                     settingsProvider.AfterCaptureBehavior.ToString(),
-                    settingsProvider.ExportColorFormat)
+                    settingsProvider.ExportColorFormat,
+                    executionCapabilities: outputCapabilities)
             };
 
             var result = await outputService.ExecuteOutputAsync(request);

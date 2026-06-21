@@ -41,22 +41,25 @@ public partial class App : Application
             captureService = new CaptureService(deviceResources, borderOptions);
             var captureCommandCoordinator = new CaptureCommandCoordinator(captureService);
             clipboardOutputService = new ClipboardOutputService(deviceResources);
+            var hdr10JxrCodec = new PendingHdr10JxrCodec();
             var folderArtifactEncoder = new CompositeOutputArtifactEncoder(
                 clipboardOutputService,
                 new Hdr10JxrOutputEncoder(
                     new CapturedFrameTextureReadback(deviceResources),
-                    new PendingHdr10JxrCodec()));
+                    hdr10JxrCodec));
             configuredOutputService = new ConfiguredOutputService(
                 clipboardOutputService,
                 new FolderOutputService(folderArtifactEncoder));
             outputService = new AfterCaptureOutputService(
                 configuredOutputService,
                 new WindowsArtifactShellAction());
+            var outputCapabilities = OutputProfileExecutionCapabilities.FromHdr10JxrCodecReadiness(
+                hdr10JxrCodec.Readiness);
             var settingsProvider = new DefaultSettingsProvider(
                 LocalSettingsStore.CreateDefault(LumiereLoggerFactory.CreateLogger(LogCategories.Settings)));
             var aboutInfoProvider = new AssemblyAboutInfoProvider(typeof(App).Assembly);
 
-            var mainWindow = new MainWindow(captureCommandCoordinator, outputService, settingsProvider, settingsProvider, aboutInfoProvider, captureService, deviceResources);
+            var mainWindow = new MainWindow(captureCommandCoordinator, outputService, settingsProvider, settingsProvider, aboutInfoProvider, captureService, deviceResources, outputCapabilities);
             _window = mainWindow;
             _window.Activate();
 
