@@ -473,7 +473,7 @@ public sealed class SettingsPanelProjectionTests
             PreviewReadinessStatus.Degraded(
                 PreviewReadinessStage.Presentation,
                 "HDR readiness is unvalidated for the selected capture target.",
-                "Target-aware display capability could not be matched to a DXGI output.",
+                "Target-aware display capability could not be matched to a DXGI output (match=NotMatched).",
                 PreviewReadinessReason.TargetDisplayUnresolved));
 
         var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), state);
@@ -484,8 +484,30 @@ public sealed class SettingsPanelProjectionTests
         Assert.Equal(ValidationEvidenceStatus.NotRun, targetAwareRow.Status);
         Assert.Contains("selected capture target", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("DXGI output", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("NotMatched", targetAwareRow.Detail, StringComparison.Ordinal);
         Assert.Contains("mixed HDR/SDR", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Enable HDR", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Project_ValidationTargetAwareRowSurfacesMatchedOutputEvidenceAsLimited()
+    {
+        var state = CaptureSessionState.Capturing(
+            CreateTarget(),
+            PreviewReadinessStatus.Initializing(
+                PreviewReadinessStage.Presentation,
+                "Preview presentation is configured for HDR; live capture still needs validation.",
+                "IDXGISwapChain3.CheckColorSpaceSupport returned Present; IDXGISwapChain3.SetColorSpace1 set RgbFullG10NoneP709; display match=DesktopBounds."));
+
+        var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), state);
+        var targetAwareRow = Assert.Single(
+            projection.Validation.Rows,
+            row => row.Label == "Target-aware HDR");
+
+        Assert.Equal(ValidationEvidenceStatus.Limited, targetAwareRow.Status);
+        Assert.Contains("DesktopBounds", targetAwareRow.Detail, StringComparison.Ordinal);
+        Assert.Contains("Windows manual validation", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR Ready", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

@@ -206,16 +206,64 @@ public static class PerfectHdrFidelityProjection
     {
         if (readiness?.Reason is PreviewReadinessReason.TargetDisplayUnresolved)
         {
+            var matchEvidence = ExtractDisplayMatchEvidence(readiness.TechnicalDetail);
+            var detail = string.IsNullOrEmpty(matchEvidence)
+                ? "HDR readiness is unvalidated for the selected capture target because display capability could not be matched to a DXGI output; mixed HDR/SDR monitor evidence is still required."
+                : $"HDR readiness is unvalidated for the selected capture target because display capability could not be matched to a DXGI output ({matchEvidence}); mixed HDR/SDR monitor evidence is still required.";
+
             return new ValidationEvidenceRowProjection(
                 "Target-aware HDR",
                 ValidationEvidenceStatus.NotRun,
-                "HDR readiness is unvalidated for the selected capture target because display capability could not be matched to a DXGI output; mixed HDR/SDR monitor evidence is still required.");
+                detail);
+        }
+
+        var resolvedMatchEvidence = ExtractDisplayMatchEvidence(readiness?.TechnicalDetail);
+        if (!string.IsNullOrEmpty(resolvedMatchEvidence))
+        {
+            return new ValidationEvidenceRowProjection(
+                "Target-aware HDR",
+                ValidationEvidenceStatus.Limited,
+                $"Target-aware display output evidence is present ({resolvedMatchEvidence}); Windows manual validation across mixed HDR/SDR monitor setups is still required.");
         }
 
         return new ValidationEvidenceRowProjection(
             "Target-aware HDR",
             ValidationEvidenceStatus.NotRun,
             "Mixed HDR/SDR monitor evidence is required.");
+    }
+
+    private static string ExtractDisplayMatchEvidence(string? technicalDetail)
+    {
+        if (string.IsNullOrWhiteSpace(technicalDetail))
+        {
+            return string.Empty;
+        }
+
+        const string displayMatchPrefix = "display match=";
+        var displayMatchIndex = technicalDetail.IndexOf(displayMatchPrefix, StringComparison.OrdinalIgnoreCase);
+        if (displayMatchIndex >= 0)
+        {
+            return FormatMatchEvidence(
+                technicalDetail[(displayMatchIndex + displayMatchPrefix.Length)..]);
+        }
+
+        const string matchPrefix = "match=";
+        var matchIndex = technicalDetail.IndexOf(matchPrefix, StringComparison.OrdinalIgnoreCase);
+        return matchIndex < 0
+            ? string.Empty
+            : FormatMatchEvidence(technicalDetail[(matchIndex + matchPrefix.Length)..]);
+    }
+
+    private static string FormatMatchEvidence(string value)
+    {
+        var matchKind = new string(
+            value
+                .TakeWhile(character => char.IsLetterOrDigit(character))
+                .ToArray());
+
+        return string.IsNullOrWhiteSpace(matchKind)
+            ? string.Empty
+            : $"match={matchKind}";
     }
 
     private static string FormatViewerNames(IEnumerable<OutputViewerCompatibilityEvidence> viewers)
