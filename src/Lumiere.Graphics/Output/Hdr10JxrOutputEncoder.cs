@@ -6,6 +6,13 @@ public sealed class Hdr10JxrOutputEncoder : IOutputPngEncoder
 {
     public const string FileExtension = "jxr";
 
+    private readonly ICapturedFrameTextureReadback readback;
+
+    public Hdr10JxrOutputEncoder(ICapturedFrameTextureReadback readback)
+    {
+        this.readback = readback ?? throw new ArgumentNullException(nameof(readback));
+    }
+
     public Task<byte[]> EncodePngAsync(
         CapturedFrameTexture texture,
         CropPixelRect? cropRegion,
@@ -27,6 +34,17 @@ public sealed class Hdr10JxrOutputEncoder : IOutputPngEncoder
             throw new OutputArtifactEncodingException(
                 $"HDR10 JXR encoder cannot create {outputProfile.Label} artifacts.");
         }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var source = readback.ReadRgba16Float(texture, cropRegion);
+        if (source.PixelFormat is not OutputPixelFormat.R16G16B16A16Float)
+        {
+            throw new OutputArtifactEncodingException(
+                "HDR10 JXR encoding requires R16G16B16A16 float source readback.");
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
 
         throw new OutputArtifactEncodingException(
             "HDR10 JXR encoding is not implemented yet; Windows codec, metadata, and viewer validation are required before this profile can be enabled.");

@@ -43,7 +43,7 @@ public partial class App : Application
             clipboardOutputService = new ClipboardOutputService(deviceResources);
             var folderArtifactEncoder = new CompositeOutputArtifactEncoder(
                 clipboardOutputService,
-                new Hdr10JxrOutputEncoder());
+                new Hdr10JxrOutputEncoder(new CapturedFrameTextureReadback(deviceResources)));
             configuredOutputService = new ConfiguredOutputService(
                 clipboardOutputService,
                 new FolderOutputService(folderArtifactEncoder));
