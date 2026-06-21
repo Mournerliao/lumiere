@@ -106,6 +106,24 @@ public sealed class PerfectHdrFidelityProjectionTests
     }
 
     [Fact]
+    public void ProjectValidation_ViewerMatrixSeparatesArtifactVisualAndHdrEvidence()
+    {
+        var validation = PerfectHdrFidelityProjection.ProjectValidation(OutputProfileContract.SrgbCompatibilityPng);
+
+        Assert.All(
+            validation.ViewerMatrix,
+            viewer =>
+            {
+                Assert.Equal(ValidationEvidenceStatus.NotRun, viewer.ArtifactHandlingStatus);
+                Assert.Equal(ValidationEvidenceStatus.NotRun, viewer.VisualMatchStatus);
+                Assert.Equal(ValidationEvidenceStatus.NotApplicable, viewer.HdrPreservationStatus);
+                Assert.Contains("Artifact", viewer.Detail, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("visual", viewer.Detail, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("HDR preservation: N/A", viewer.Detail, StringComparison.OrdinalIgnoreCase);
+            });
+    }
+
+    [Fact]
     public void ProjectValidationRecord_UsesBuildVersionAndKeepsManualValidationNotRun()
     {
         var record = PerfectHdrFidelityProjection.ProjectValidationRecord("v2.3.4");

@@ -54,6 +54,19 @@ public static class PerfectHdrFidelityProjection
     }
 
     public static ValidationPanelProjection ProjectValidation(ValidationRecordProjection? record = null) =>
+        ProjectValidation(OutputProfileContract.SrgbCompatibilityPng, record);
+
+    public static ValidationPanelProjection ProjectValidation(
+        OutputProfileContract outputProfile,
+        ValidationRecordProjection? record = null)
+    {
+        ArgumentNullException.ThrowIfNull(outputProfile);
+        return ProjectValidationCore(outputProfile, record);
+    }
+
+    private static ValidationPanelProjection ProjectValidationCore(
+        OutputProfileContract outputProfile,
+        ValidationRecordProjection? record) =>
         new(
             ReleaseTarget,
             "Public release waits for evidence; SDR compatibility remains fallback only.",
@@ -76,20 +89,7 @@ public static class PerfectHdrFidelityProjection
                     "Named viewers must separate artifact success from fidelity."),
             ],
             "Named viewers must prove artifact handling, visual match, and fidelity separately.",
-            [
-                new(
-                    "Microsoft Paint",
-                    ValidationEvidenceStatus.NotRun,
-                    "Paste/open artifact handling, visual match, and fidelity are not validated."),
-                new(
-                    "Windows Photos",
-                    ValidationEvidenceStatus.NotRun,
-                    "Open artifact handling, visual match, and fidelity are not validated."),
-                new(
-                    "Chromium browsers",
-                    ValidationEvidenceStatus.NotRun,
-                    "Paste/drop artifact handling, visual match, and fidelity are not validated."),
-            ],
+            outputProfile.ViewerEvidence.Select(ProjectViewerEvidence).ToArray(),
             record ?? ProjectValidationRecord(null));
 
     public static ValidationRecordProjection ProjectValidationRecord(string? buildVersion)
@@ -159,6 +159,38 @@ public static class PerfectHdrFidelityProjection
                 MainPanelTrustIcon.ErrorCircle,
                 MainPanelTrustSeverity.Error),
         };
+
+    private static ValidationViewerMatrixRowProjection ProjectViewerEvidence(OutputViewerCompatibilityEvidence evidence) =>
+        new(
+            evidence.Name,
+            MapEvidenceStatus(evidence.ArtifactHandlingStatus),
+            MapEvidenceStatus(evidence.VisualMatchStatus),
+            MapEvidenceStatus(evidence.HdrPreservationStatus),
+            $"Artifact: {FormatEvidenceStatus(evidence.ArtifactHandlingStatus)}. "
+                + $"Visual match: {FormatEvidenceStatus(evidence.VisualMatchStatus)}. "
+                + $"HDR preservation: {FormatEvidenceStatus(evidence.HdrPreservationStatus)}. "
+                + "Fidelity evidence is separated by category. "
+                + evidence.Detail);
+
+    private static ValidationEvidenceStatus MapEvidenceStatus(OutputCompatibilityEvidenceStatus status) =>
+        status switch
+        {
+            OutputCompatibilityEvidenceStatus.Pass => ValidationEvidenceStatus.Pass,
+            OutputCompatibilityEvidenceStatus.Limited => ValidationEvidenceStatus.Limited,
+            OutputCompatibilityEvidenceStatus.Fail => ValidationEvidenceStatus.Fail,
+            OutputCompatibilityEvidenceStatus.NotApplicable => ValidationEvidenceStatus.NotApplicable,
+            _ => ValidationEvidenceStatus.NotRun,
+        };
+
+    private static string FormatEvidenceStatus(OutputCompatibilityEvidenceStatus status) =>
+        status switch
+        {
+            OutputCompatibilityEvidenceStatus.Pass => "PASS",
+            OutputCompatibilityEvidenceStatus.Limited => "PASS with limitation",
+            OutputCompatibilityEvidenceStatus.Fail => "FAIL",
+            OutputCompatibilityEvidenceStatus.NotApplicable => "N/A",
+            _ => "NOT RUN",
+        };
 }
 
 public sealed record OutputProfileProjection(
@@ -206,8 +238,39 @@ public sealed record ValidationEvidenceRowProjection(
 
 public sealed record ValidationViewerMatrixRowProjection(
     string Name,
-    ValidationEvidenceStatus Status,
-    string Detail);
+    ValidationEvidenceStatus ArtifactHandlingStatus,
+    ValidationEvidenceStatus VisualMatchStatus,
+    ValidationEvidenceStatus HdrPreservationStatus,
+    string Detail)
+{
+    public ValidationEvidenceStatus Status =>
+        CombineStatus(ArtifactHandlingStatus, VisualMatchStatus, HdrPreservationStatus);
+
+    private static ValidationEvidenceStatus CombineStatus(params ValidationEvidenceStatus[] statuses)
+    {
+        if (statuses.Any(status => status is ValidationEvidenceStatus.Fail))
+        {
+            return ValidationEvidenceStatus.Fail;
+        }
+
+        var applicable = statuses
+            .Where(status => status is not ValidationEvidenceStatus.NotApplicable)
+            .ToArray();
+        if (applicable.Length == 0)
+        {
+            return ValidationEvidenceStatus.NotApplicable;
+        }
+
+        if (applicable.Any(status => status is ValidationEvidenceStatus.NotRun))
+        {
+            return ValidationEvidenceStatus.NotRun;
+        }
+
+        return applicable.Any(status => status is ValidationEvidenceStatus.Limited)
+            ? ValidationEvidenceStatus.Limited
+            : ValidationEvidenceStatus.Pass;
+    }
+}
 
 public sealed record ValidationRecordProjection(
     string BuildLabel,

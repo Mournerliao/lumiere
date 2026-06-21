@@ -55,6 +55,22 @@ public sealed class OutputResultProjectionTests
     }
 
     [Fact]
+    public void Project_FidelityDetailIncludesViewerEvidenceGap()
+    {
+        var output = OutputResult.ClipboardSuccess(1024)
+            .WithRequestedProfile(OutputProfileContract.FromSettingsValue("sRGB"));
+
+        var projection = OutputResultProjection.Project(output);
+
+        Assert.Contains("viewer evidence", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("NOT RUN", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("Microsoft Paint", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("Windows Photos", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("Chromium", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.DoesNotContain("HDR-preserved", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Project_FolderSuccessShowsSavedArtifact()
     {
         var output = OutputResult.FromTargets(

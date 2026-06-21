@@ -95,9 +95,27 @@ public sealed record OutputResultProjection(
             : outputResult?.UsesCompatibilityProfileFallback is true
                 ? $"Output profile: requested {outputResult.RequestedProfile.Label}; using {outputResult.EffectiveProfile.Label} compatibility fallback."
                 : $"Output profile: {profile.Label}.";
+        var viewerEvidence = outputResult is null
+            ? string.Empty
+            : $" Viewer evidence: {FormatViewerEvidence(outputResult.EffectiveProfile)}.";
 
-        return $"{profilePrefix} Fidelity claim: {fidelityClaim.Label}. {fidelityClaim.Detail}";
+        return $"{profilePrefix} Fidelity claim: {fidelityClaim.Label}. {fidelityClaim.Detail}{viewerEvidence}";
     }
+
+    private static string FormatViewerEvidence(OutputProfileContract profile) =>
+        string.Join(
+            ", ",
+            profile.ViewerEvidence.Select(viewer => $"{viewer.Name} {FormatEvidenceStatus(viewer.ArtifactHandlingStatus)}"));
+
+    private static string FormatEvidenceStatus(OutputCompatibilityEvidenceStatus status) =>
+        status switch
+        {
+            OutputCompatibilityEvidenceStatus.Pass => "PASS",
+            OutputCompatibilityEvidenceStatus.Limited => "PASS with limitation",
+            OutputCompatibilityEvidenceStatus.Fail => "FAIL",
+            OutputCompatibilityEvidenceStatus.NotApplicable => "N/A",
+            _ => "NOT RUN",
+        };
 }
 
 public enum OutputResultProjectionSeverity
