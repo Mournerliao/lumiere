@@ -11,12 +11,31 @@ public enum HdrDisplayState
     Inactive,
 }
 
+public enum HdrDisplayMatchKind
+{
+    Unspecified = 0,
+    DeviceName,
+    DesktopBounds,
+    Size,
+    FirstOutput,
+    NotMatched,
+}
+
 public sealed record HdrDisplayCapability(
     HdrDisplayState State,
     ColorSpaceType? DisplayColorSpace,
-    string? DeviceName)
+    string? DeviceName,
+    HdrDisplayMatchKind MatchKind)
 {
     private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Graphics);
+
+    public HdrDisplayCapability(
+        HdrDisplayState state,
+        ColorSpaceType? displayColorSpace,
+        string? deviceName)
+        : this(state, displayColorSpace, deviceName, HdrDisplayMatchKind.Unspecified)
+    {
+    }
 
     public bool IsHdrActive => State == HdrDisplayState.Active;
 
@@ -30,7 +49,7 @@ public sealed record HdrDisplayCapability(
         var outputs = ProbeOutputs(factory);
         return outputs.Count == 0
             ? Unknown()
-            : FromOutputSnapshot(outputs[0]);
+            : FromOutputSnapshot(outputs[0], HdrDisplayMatchKind.FirstOutput);
     }
 
     public static HdrDisplayCapability Probe(
@@ -128,7 +147,7 @@ public sealed record HdrDisplayCapability(
                     desc.DesktopCoordinates.Right - desc.DesktopCoordinates.Left,
                     desc.DesktopCoordinates.Bottom - desc.DesktopCoordinates.Top,
                     colorSpace);
-                var capability = FromOutputSnapshot(snapshot);
+                var capability = FromOutputSnapshot(snapshot, HdrDisplayMatchKind.Unspecified);
 
                 Logger.LogDebug(
                     "HDR display probe: outputIndex={OutputIndex}, deviceName={DeviceName}, colorSpace={ColorSpace}, isHdrActive={IsHdrActive}",
@@ -147,7 +166,7 @@ public sealed record HdrDisplayCapability(
     }
 
     public static HdrDisplayCapability Unknown() =>
-        new(HdrDisplayState.Unknown, null, null);
+        new(HdrDisplayState.Unknown, null, null, HdrDisplayMatchKind.NotMatched);
 
     public static HdrDisplayCapability SelectForTarget(
         IReadOnlyList<HdrDisplayOutputSnapshot> outputs,
@@ -178,10 +197,10 @@ public sealed record HdrDisplayCapability(
 
         return matchingOutput is null
             ? Unknown()
-            : FromOutputSnapshot(matchingOutput);
+            : FromOutputSnapshot(matchingOutput.Output, matchingOutput.MatchKind);
     }
 
-    private static HdrDisplayOutputSnapshot? FindByDisplayName(
+    private static HdrDisplayOutputMatch? FindByDisplayName(
         IReadOnlyList<HdrDisplayOutputSnapshot> outputs,
         string? targetDisplayName)
     {
@@ -190,11 +209,15 @@ public sealed record HdrDisplayCapability(
             return null;
         }
 
-        return outputs.FirstOrDefault(output =>
+        var output = outputs.FirstOrDefault(output =>
             string.Equals(output.DeviceName, targetDisplayName.Trim(), StringComparison.OrdinalIgnoreCase));
+
+        return output is null
+            ? null
+            : new HdrDisplayOutputMatch(output, HdrDisplayMatchKind.DeviceName);
     }
 
-    private static HdrDisplayOutputSnapshot? FindByBounds(
+    private static HdrDisplayOutputMatch? FindByBounds(
         IReadOnlyList<HdrDisplayOutputSnapshot> outputs,
         int? targetLeft,
         int? targetTop,
@@ -206,14 +229,18 @@ public sealed record HdrDisplayCapability(
             return null;
         }
 
-        return outputs.FirstOrDefault(output =>
+        var output = outputs.FirstOrDefault(output =>
             output.Left == targetLeft
             && output.Top == targetTop
             && output.Width == targetWidth
             && output.Height == targetHeight);
+
+        return output is null
+            ? null
+            : new HdrDisplayOutputMatch(output, HdrDisplayMatchKind.DesktopBounds);
     }
 
-    private static HdrDisplayOutputSnapshot? FindBySize(
+    private static HdrDisplayOutputMatch? FindBySize(
         IReadOnlyList<HdrDisplayOutputSnapshot> outputs,
         int targetWidth,
         int targetHeight)
@@ -229,17 +256,20 @@ public sealed record HdrDisplayCapability(
             .ToArray();
 
         return matchingOutputs.Length == 1
-            ? matchingOutputs[0]
+            ? new HdrDisplayOutputMatch(matchingOutputs[0], HdrDisplayMatchKind.Size)
             : null;
     }
 
-    private static HdrDisplayCapability FromOutputSnapshot(HdrDisplayOutputSnapshot output)
+    private static HdrDisplayCapability FromOutputSnapshot(
+        HdrDisplayOutputSnapshot output,
+        HdrDisplayMatchKind matchKind)
     {
         var isHdr = IsHdrColorSpace(output.ColorSpace);
         return new HdrDisplayCapability(
             isHdr ? HdrDisplayState.Active : HdrDisplayState.Inactive,
             output.ColorSpace,
-            output.DeviceName);
+            output.DeviceName,
+            matchKind);
     }
 
     private static bool IsHdrColorSpace(ColorSpaceType colorSpace) =>
@@ -259,3 +289,7 @@ public sealed record HdrDisplayOutputSnapshot(
     int Width,
     int Height,
     ColorSpaceType ColorSpace);
+
+internal sealed record HdrDisplayOutputMatch(
+    HdrDisplayOutputSnapshot Output,
+    HdrDisplayMatchKind MatchKind);

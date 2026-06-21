@@ -40,7 +40,7 @@ public static class SwapChainColorSpaceConfigurator
                 return PreviewReadinessStatus.Degraded(
                     PreviewReadinessStage.Presentation,
                     "Enable HDR in Windows Display settings for best capture quality.",
-                    $"Display color space is {displayCapability.DisplayColorSpace} (device: {displayCapability.DeviceName}); HDR is not active.");
+                    $"Display color space is {displayCapability.DisplayColorSpace} (device: {displayCapability.DeviceName}, match={displayCapability.MatchKind}); HDR is not active.");
             }
 
             if (requireTargetedDisplayCapability && displayCapability is { State: HdrDisplayState.Unknown })
@@ -50,7 +50,7 @@ public static class SwapChainColorSpaceConfigurator
                 return PreviewReadinessStatus.Degraded(
                     PreviewReadinessStage.Presentation,
                     "HDR readiness is unvalidated for the selected capture target.",
-                    "Target-aware display capability could not be matched to a DXGI output.",
+                    $"Target-aware display capability could not be matched to a DXGI output (match={displayCapability.MatchKind}).",
                     PreviewReadinessReason.TargetDisplayUnresolved);
             }
 
@@ -61,7 +61,9 @@ public static class SwapChainColorSpaceConfigurator
             return PreviewReadinessStatus.Initializing(
                 PreviewReadinessStage.Presentation,
                 "Preview presentation is configured for HDR; live capture still needs validation.",
-                $"{CheckOperationName} returned {support}; {SetOperationName} set {colorSpace}.");
+                displayCapability is null
+                    ? $"{CheckOperationName} returned {support}; {SetOperationName} set {colorSpace}."
+                    : $"{CheckOperationName} returned {support}; {SetOperationName} set {colorSpace}; display match={displayCapability.MatchKind}.");
         }
         catch (SwapChainPresentationException exception)
         {

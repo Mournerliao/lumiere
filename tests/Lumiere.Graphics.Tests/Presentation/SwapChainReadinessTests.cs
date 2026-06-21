@@ -60,7 +60,30 @@ public sealed class SwapChainReadinessTests
         Assert.Equal(PreviewReadinessStage.Presentation, status.Stage);
         Assert.True(status.RequiresUserAttention);
         Assert.Contains("target", status.TechnicalDetail ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("NotMatched", status.TechnicalDetail ?? string.Empty, StringComparison.Ordinal);
         Assert.Null(controller.SetColorSpace);
+    }
+
+    [Fact]
+    public void TargetAwareDisplayCapabilityReportsMatchEvidenceInPresentationStatus()
+    {
+        var controller = new FakeColorSpaceController(
+            SwapChainColorSpaceSupportFlags.Present,
+            setSucceeds: true);
+        var displayCapability = new HdrDisplayCapability(
+            HdrDisplayState.Active,
+            ColorSpaceType.RgbFullG2084NoneP2020,
+            "HDR Display",
+            HdrDisplayMatchKind.DesktopBounds);
+
+        var status = SwapChainColorSpaceConfigurator.Configure(
+            controller,
+            HdrConstants.DxgiColorSpace,
+            displayCapability,
+            requireTargetedDisplayCapability: true);
+
+        Assert.Equal(PreviewReadinessState.Initializing, status.State);
+        Assert.Contains("match=DesktopBounds", status.TechnicalDetail ?? string.Empty, StringComparison.Ordinal);
     }
 
     [Fact]

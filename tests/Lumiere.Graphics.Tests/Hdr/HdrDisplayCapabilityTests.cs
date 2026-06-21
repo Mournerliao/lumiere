@@ -15,6 +15,7 @@ public sealed class HdrDisplayCapabilityTests
         Assert.Equal(HdrDisplayState.Unknown, capability.State);
         Assert.Null(capability.DisplayColorSpace);
         Assert.Null(capability.DeviceName);
+        Assert.Equal(HdrDisplayMatchKind.NotMatched, capability.MatchKind);
         Assert.False(capability.IsHdrActive);
     }
 
@@ -53,6 +54,7 @@ public sealed class HdrDisplayCapabilityTests
         var capability = new HdrDisplayCapability(state, colorSpace, "Display");
 
         Assert.Equal(expectedHdr, capability.IsHdrActive);
+        Assert.Equal(HdrDisplayMatchKind.Unspecified, capability.MatchKind);
     }
 
     [Fact]
@@ -81,6 +83,7 @@ public sealed class HdrDisplayCapabilityTests
 
         Assert.Equal(HdrDisplayState.Active, capability.State);
         Assert.Equal("HDR Display", capability.DeviceName);
+        Assert.Equal(HdrDisplayMatchKind.DeviceName, capability.MatchKind);
     }
 
     [Fact]
@@ -109,6 +112,7 @@ public sealed class HdrDisplayCapabilityTests
 
         Assert.Equal(HdrDisplayState.Active, capability.State);
         Assert.Equal("Reference HDR", capability.DeviceName);
+        Assert.Equal(HdrDisplayMatchKind.Size, capability.MatchKind);
     }
 
     [Fact]
@@ -131,6 +135,7 @@ public sealed class HdrDisplayCapabilityTests
         Assert.Equal(HdrDisplayState.Unknown, capability.State);
         Assert.Null(capability.DisplayColorSpace);
         Assert.Null(capability.DeviceName);
+        Assert.Equal(HdrDisplayMatchKind.NotMatched, capability.MatchKind);
     }
 
     [Fact]
@@ -160,6 +165,7 @@ public sealed class HdrDisplayCapabilityTests
         Assert.Equal(HdrDisplayState.Unknown, capability.State);
         Assert.Null(capability.DisplayColorSpace);
         Assert.Null(capability.DeviceName);
+        Assert.Equal(HdrDisplayMatchKind.NotMatched, capability.MatchKind);
     }
 
     [Fact]
@@ -190,6 +196,7 @@ public sealed class HdrDisplayCapabilityTests
 
         Assert.Equal(HdrDisplayState.Active, capability.State);
         Assert.Equal("HDR Display", capability.DeviceName);
+        Assert.Equal(HdrDisplayMatchKind.DesktopBounds, capability.MatchKind);
     }
 
     [Fact]
