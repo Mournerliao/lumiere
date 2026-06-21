@@ -119,10 +119,11 @@ These checks matter because export profile semantics are validation-scoped and e
 1. With default `sRGB`, confirm `sRGB` is selectable and presented as the compatibility path.
 2. If persisted profile is `HDR10` or `P3`, reopen settings and confirm:
    - the selected option is still visible
+   - the selected option still receives focus and announces as the current choice
    - the option is not falsely presented as fully supported
    - the user can move back to `sRGB`
 3. Confirm helper text still states that HDR10/P3 require encoder metadata, conversion policy, target-app assumptions, and Windows validation.
-4. Confirm selected-disabled radio-button behavior is understandable in keyboard and screen-reader flows.
+4. Confirm locked-for-session radio-button behavior is understandable in keyboard and screen-reader flows.
 
 Expected result:
 

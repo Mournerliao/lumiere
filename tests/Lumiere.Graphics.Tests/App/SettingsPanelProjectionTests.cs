@@ -314,10 +314,14 @@ public sealed class SettingsPanelProjectionTests
         Assert.False(projection.Output.ExportColorOptions[0].IsSelected);
         Assert.False(projection.Output.ExportColorOptions[1].IsSelected);
         Assert.True(projection.Output.ExportColorOptions[2].IsSelected);
+        Assert.False(projection.Output.ExportColorOptions[0].IsInteractive);
+        Assert.False(projection.Output.ExportColorOptions[1].IsInteractive);
+        Assert.True(projection.Output.ExportColorOptions[2].IsInteractive);
         Assert.Contains("profile contract", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Windows validation", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("visible as intent", projection.Output.ExportColorOptions[1].HelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Compatibility output", projection.Output.ExportColorOptions[2].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("not selected and unavailable", projection.Output.ExportColorOptions[0].AccessibilityHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserving", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR preserving", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserving", projection.Output.ExportColorOptions[2].HelpText, StringComparison.OrdinalIgnoreCase);
@@ -337,6 +341,8 @@ public sealed class SettingsPanelProjectionTests
         Assert.Equal("HDR10", projection.Output.ExportColorDisplayValue);
         Assert.True(projection.Output.ExportColorOptions[0].IsSelected);
         Assert.True(projection.Output.ExportColorOptions[0].IsReadOnly);
+        Assert.True(projection.Output.ExportColorOptions[0].IsInteractive);
+        Assert.Contains("selected and locked for this session", projection.Output.ExportColorOptions[0].AccessibilityHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("Build", projection.MainPanel.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
         Assert.Equal("Converted", projection.MainPanel.FidelityClaim.Label);
@@ -421,6 +427,7 @@ public sealed class SettingsPanelProjectionTests
         Assert.Equal("Ready", projection.Output.ExportColorOptions[0].StatusLabel);
         Assert.False(projection.Output.ExportColorOptions[0].IsReadOnly);
         Assert.True(projection.Output.ExportColorOptions[0].IsSelected);
+        Assert.True(projection.Output.ExportColorOptions[0].IsInteractive);
         Assert.Equal("Ready", projection.MainPanel.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.HdrPreserved, projection.MainPanel.FidelityClaim.Kind);
     }

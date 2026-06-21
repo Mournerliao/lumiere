@@ -1855,7 +1855,7 @@ public sealed partial class MainWindow : Window
         label.Text = option.Label;
         statusLabel.Text = option.StatusLabel;
         button.IsChecked = option.IsSelected;
-        button.IsEnabled = !option.IsReadOnly;
+        button.IsEnabled = option.IsInteractive;
         label.Foreground = option.IsSelected
             ? (Brush)Application.Current.Resources["TextBrush"]
             : (Brush)Application.Current.Resources["MutedTextBrush"];
@@ -1863,8 +1863,8 @@ public sealed partial class MainWindow : Window
             ? (Brush)Application.Current.Resources["TextBrush"]
             : (Brush)Application.Current.Resources["MutedTextBrush"];
         AutomationProperties.SetName(button, $"Export option: {option.Label}");
-        AutomationProperties.SetHelpText(button, GetExportColorOptionHelpText(option));
-        ToolTipService.SetToolTip(button, GetExportColorOptionHelpText(option));
+        AutomationProperties.SetHelpText(button, option.AccessibilityHelpText);
+        ToolTipService.SetToolTip(button, option.AccessibilityHelpText);
     }
 
     private void ApplyValidationProjection(ValidationPanelProjection validation)
@@ -1969,13 +1969,6 @@ public sealed partial class MainWindow : Window
             ValidationEvidenceStatus.Fail => (Brush)Application.Current.Resources["ErrorBrush"],
             _ => (Brush)Application.Current.Resources["MutedTextBrush"],
         };
-
-    private static string GetExportColorOptionHelpText(ExportColorOptionProjection option)
-    {
-        var state = option.IsSelected ? "selected" : "not selected";
-        var availability = option.IsReadOnly ? "read-only" : "available";
-        return $"{option.Label} is {state} and {availability}. {option.HelpText}";
-    }
 
     private void UpdateMainPanelProjection(CaptureSessionState state, OutputResult? outputResult = null)
     {

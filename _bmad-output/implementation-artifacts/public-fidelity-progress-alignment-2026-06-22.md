@@ -137,6 +137,7 @@ Evidence:
 - Output destination now uses a native single-choice control path instead of custom segmented buttons.
 - Export profile selection now uses native radio-button semantics, and the supported `sRGB` compatibility profile can be re-selected through the settings UI.
 - Export profile projection now keeps radio-button availability and gate-state copy aligned with real runtime capability rather than a static design-only projection.
+- Persisted validation-scoped export profiles now remain keyboard-focusable and screen-reader-readable as locked current-session choices instead of disappearing into a generic disabled state.
 - Shortcut capture and save-path browsing rows now use standard `Button` activation rather than `Tapped`-only surfaces.
 - A focused implementation record exists at `_bmad-output/implementation-artifacts/13-2-harden-native-settings-and-accessibility-semantics.md`.
 

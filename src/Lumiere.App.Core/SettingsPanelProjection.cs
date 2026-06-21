@@ -379,7 +379,22 @@ public sealed record ExportColorOptionProjection(
     string StatusLabel,
     bool IsSelected,
     bool IsReadOnly,
-    string HelpText);
+    string HelpText)
+{
+    public bool IsInteractive => IsSelected || !IsReadOnly;
+
+    public string AccessibilityHelpText
+    {
+        get
+        {
+            var selectionState = IsSelected ? "selected" : "not selected";
+            var availabilityState = IsReadOnly
+                ? (IsSelected ? "locked for this session" : "unavailable")
+                : "available";
+            return $"{Label} is {selectionState} and {availabilityState}. {HelpText}";
+        }
+    }
+}
 
 public sealed record ShortcutSettingProjection(
     string Label,
