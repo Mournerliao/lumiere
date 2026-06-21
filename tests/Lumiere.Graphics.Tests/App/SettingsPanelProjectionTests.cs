@@ -511,6 +511,28 @@ public sealed class SettingsPanelProjectionTests
     }
 
     [Fact]
+    public void Project_ValidationTargetAwareRowSurfacesArtifactTargetHdrEvidence()
+    {
+        var projection = SettingsPanelProjection.Project(
+            new TestSettingsProvider(),
+            CreateState(),
+            [
+                SdrArtifactFor("Microsoft Paint") with
+                {
+                    TargetHdrEvidence = CompleteTargetHdrEvidence,
+                },
+            ]);
+        var targetAwareRow = Assert.Single(
+            projection.Validation.Rows,
+            row => row.Label == "Target-aware HDR");
+
+        Assert.Equal(ValidationEvidenceStatus.Limited, targetAwareRow.Status);
+        Assert.Contains("DesktopBounds", targetAwareRow.Detail, StringComparison.Ordinal);
+        Assert.Contains("artifact", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Windows manual validation", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Project_ValidationRecordUsesAboutVersionAndReleaseChecklist()
     {
         var aboutInfo = new TestAboutInfoProvider
@@ -657,7 +679,10 @@ public sealed class SettingsPanelProjectionTests
                     [
                         PassingHdrViewer(viewerName),
                     ]),
-            ]);
+            ])
+        {
+            TargetHdrEvidence = CompleteTargetHdrEvidence,
+        };
 
     private static OutputValidationSessionArtifact ArtifactWithFormatContract(string viewerName) =>
         new(
@@ -688,7 +713,10 @@ public sealed class SettingsPanelProjectionTests
                 {
                     FormatContract = CompleteHdr10Contract,
                 },
-            ]);
+            ])
+        {
+            TargetHdrEvidence = CompleteTargetHdrEvidence,
+        };
 
     private static OutputValidationSessionArtifact SdrArtifactFor(string viewerName) =>
         new(
@@ -721,7 +749,10 @@ public sealed class SettingsPanelProjectionTests
                             OutputCompatibilityEvidenceStatus.NotApplicable,
                             "Validated SDR visual-match viewer."),
                     ]),
-            ]);
+            ])
+        {
+            TargetHdrEvidence = CompleteTargetHdrEvidence,
+        };
 
     private static OutputFormatContract CompleteHdr10Contract { get; } =
         new(
@@ -732,6 +763,18 @@ public sealed class SettingsPanelProjectionTests
             OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
             OutputMetadataPolicy.AttachHdr10StaticMetadata,
             OutputTargetAppAssumption.RequiresHdrViewerValidation);
+
+    private static TargetAwareHdrValidationEvidence CompleteTargetHdrEvidence { get; } =
+        new(
+            TargetDisplayName: "HDR primary",
+            Left: 0,
+            Top: 0,
+            Width: 3840,
+            Height: 2160,
+            MatchKind: "DesktopBounds",
+            HdrState: "Active",
+            ColorSpace: "RgbFullG2084NoneP2020",
+            Detail: "Validated target-aware HDR match evidence.");
 
     private sealed class TestSettingsProvider : ISettingsProvider
     {

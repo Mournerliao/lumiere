@@ -38,19 +38,44 @@ public sealed class OutputValidationSessionArtifactTests
                             OutputCompatibilityEvidenceStatus.Pass,
                             "Manual HDR validation passed in Windows Photos."),
                     ]),
-            ]);
+            ])
+        {
+            TargetHdrEvidence = CompleteTargetHdrEvidence,
+        };
 
         var roundTripped = OutputValidationSessionArtifact.FromJson(artifact.ToJson());
 
         Assert.Equal("2026-06-21", roundTripped.Date);
-        Assert.Equal(2, roundTripped.SchemaVersion);
+        Assert.Equal(3, roundTripped.SchemaVersion);
         Assert.Equal("04a8dd6", roundTripped.BuildCommit);
         Assert.Equal(["REL-OUT-01"], roundTripped.ChecklistIdsCovered);
         Assert.Equal(["docs/validation/evidence/photos-hdr10.md"], roundTripped.EvidencePaths);
+        Assert.NotNull(roundTripped.TargetHdrEvidence);
+        Assert.Equal("HDR primary", roundTripped.TargetHdrEvidence.TargetDisplayName);
+        Assert.Equal("DesktopBounds", roundTripped.TargetHdrEvidence.MatchKind);
+        Assert.Equal("Active", roundTripped.TargetHdrEvidence.HdrState);
         Assert.Equal(OutputValidationEvidenceSource.WindowsManual, roundTripped.OutputProfileRecords[0].EvidenceSource);
         var viewer = Assert.Single(roundTripped.OutputProfileRecords[0].ViewerEvidence);
         Assert.Equal("Windows Photos", viewer.Name);
         Assert.Equal(OutputCompatibilityEvidenceStatus.Pass, viewer.HdrPreservationStatus);
+    }
+
+    [Fact]
+    public void JsonRoundTrip_PreservesTargetAwareHdrEvidence()
+    {
+        var artifact = CreateArtifact([]);
+
+        var roundTripped = OutputValidationSessionArtifact.FromJson(artifact.ToJson());
+
+        Assert.NotNull(roundTripped.TargetHdrEvidence);
+        Assert.Equal("HDR primary", roundTripped.TargetHdrEvidence.TargetDisplayName);
+        Assert.Equal(0, roundTripped.TargetHdrEvidence.Left);
+        Assert.Equal(0, roundTripped.TargetHdrEvidence.Top);
+        Assert.Equal(3840, roundTripped.TargetHdrEvidence.Width);
+        Assert.Equal(2160, roundTripped.TargetHdrEvidence.Height);
+        Assert.Equal("DesktopBounds", roundTripped.TargetHdrEvidence.MatchKind);
+        Assert.Equal("RgbFullG2084NoneP2020", roundTripped.TargetHdrEvidence.ColorSpace);
+        Assert.Contains("target-aware", roundTripped.TargetHdrEvidence.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -174,7 +199,7 @@ public sealed class OutputValidationSessionArtifactTests
     [Fact]
     public void FromJson_RejectsUnsupportedSchemaVersion()
     {
-        var json = CreateArtifact([]).ToJson().Replace("\"schemaVersion\": 2", "\"schemaVersion\": 99", StringComparison.Ordinal);
+        var json = CreateArtifact([]).ToJson().Replace("\"schemaVersion\": 3", "\"schemaVersion\": 99", StringComparison.Ordinal);
 
         var exception = Assert.Throws<InvalidOperationException>(() => OutputValidationSessionArtifact.FromJson(json));
 
@@ -186,7 +211,7 @@ public sealed class OutputValidationSessionArtifactTests
     {
         var json = CreateArtifact([])
             .ToJson()
-            .Replace("\"schemaVersion\": 2", "\"schemaVersion\": 1", StringComparison.Ordinal);
+            .Replace("\"schemaVersion\": 3", "\"schemaVersion\": 1", StringComparison.Ordinal);
 
         var artifact = OutputValidationSessionArtifact.FromJson(json);
 
@@ -232,6 +257,43 @@ public sealed class OutputValidationSessionArtifactTests
             });
         Assert.False(summary.AllowsVisualMatchClaim);
         Assert.False(summary.AllowsHdrPreservedClaim);
+    }
+
+    [Fact]
+    public void ApplyTo_TreatsMissingTargetAwareHdrEvidenceAsIncompleteManualSession()
+    {
+        var artifact = CreateArtifact(
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer("Microsoft Paint"),
+                        PassingHdrViewer("Windows Photos"),
+                        PassingHdrViewer("Chromium browsers"),
+                    ])
+                {
+                    FormatContract = CompleteHdr10Contract,
+                },
+            ]) with
+        {
+            TargetHdrEvidence = null,
+        };
+        var contract = OutputProfileContract.Hdr10Pq with
+        {
+            IsExecutable = true,
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+        };
+
+        var updated = artifact.ApplyTo(contract);
+
+        Assert.False(updated.HasCompleteFormatContract);
+        Assert.All(
+            updated.ViewerEvidence,
+            viewer =>
+            {
+                Assert.Equal(OutputCompatibilityEvidenceStatus.Limited, viewer.ArtifactHandlingStatus);
+                Assert.Contains("target-aware HDR evidence", viewer.Detail, StringComparison.OrdinalIgnoreCase);
+            });
     }
 
     [Fact]
@@ -364,7 +426,10 @@ public sealed class OutputValidationSessionArtifactTests
             EvidencePaths: ["docs/validation/evidence/session.md"],
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
-            OutputProfileRecords: records);
+            OutputProfileRecords: records)
+        {
+            TargetHdrEvidence = CompleteTargetHdrEvidence,
+        };
 
     private static OutputViewerCompatibilityEvidence PassingHdrViewer(string name) =>
         new(
@@ -383,4 +448,16 @@ public sealed class OutputValidationSessionArtifactTests
             OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
             OutputMetadataPolicy.AttachHdr10StaticMetadata,
             OutputTargetAppAssumption.RequiresHdrViewerValidation);
+
+    private static TargetAwareHdrValidationEvidence CompleteTargetHdrEvidence { get; } =
+        new(
+            TargetDisplayName: "HDR primary",
+            Left: 0,
+            Top: 0,
+            Width: 3840,
+            Height: 2160,
+            MatchKind: "DesktopBounds",
+            HdrState: "Active",
+            ColorSpace: "RgbFullG2084NoneP2020",
+            Detail: "Validated target-aware HDR match evidence.");
 }

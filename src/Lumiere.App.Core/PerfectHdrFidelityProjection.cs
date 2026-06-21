@@ -101,7 +101,7 @@ public static class PerfectHdrFidelityProjection
         PreviewReadinessStatus? readiness = null)
     {
         ArgumentNullException.ThrowIfNull(outputProfile);
-        return ProjectValidationCore(outputProfile, readiness, record);
+        return ProjectValidationCore(outputProfile, readiness, targetHdrEvidence: null, record);
     }
 
     public static ValidationPanelProjection ProjectValidation(
@@ -112,7 +112,11 @@ public static class PerfectHdrFidelityProjection
     {
         ArgumentNullException.ThrowIfNull(outputProfile);
         ArgumentNullException.ThrowIfNull(artifact);
-        return ProjectValidationCore(artifact.ApplyTo(outputProfile), readiness, record);
+        return ProjectValidationCore(
+            artifact.ApplyTo(outputProfile),
+            readiness,
+            SelectCompleteTargetHdrEvidence([artifact]),
+            record);
     }
 
     public static ValidationPanelProjection ProjectValidation(
@@ -123,18 +127,24 @@ public static class PerfectHdrFidelityProjection
     {
         ArgumentNullException.ThrowIfNull(outputProfile);
         ArgumentNullException.ThrowIfNull(artifacts);
-        return ProjectValidationCore(OutputValidationSessionArtifact.ApplyAllTo(outputProfile, artifacts), readiness, record);
+        var artifactArray = artifacts.ToArray();
+        return ProjectValidationCore(
+            OutputValidationSessionArtifact.ApplyAllTo(outputProfile, artifactArray),
+            readiness,
+            SelectCompleteTargetHdrEvidence(artifactArray),
+            record);
     }
 
     private static ValidationPanelProjection ProjectValidationCore(
         OutputProfileContract outputProfile,
         PreviewReadinessStatus? readiness,
+        TargetAwareHdrValidationEvidence? targetHdrEvidence,
         ValidationRecordProjection? record) =>
         new(
             ReleaseTarget,
             "Public release waits for evidence; SDR compatibility remains fallback only.",
             [
-                ProjectTargetAwareHdrRow(readiness),
+                ProjectTargetAwareHdrRow(readiness, targetHdrEvidence),
                 ProjectVisualMatchRow(outputProfile),
                 ProjectHdrPreservedProfileRow(outputProfile),
                 new(
@@ -202,8 +212,25 @@ public static class PerfectHdrFidelityProjection
             "At least one supported profile must pass before public release.");
     }
 
-    private static ValidationEvidenceRowProjection ProjectTargetAwareHdrRow(PreviewReadinessStatus? readiness)
+    private static TargetAwareHdrValidationEvidence? SelectCompleteTargetHdrEvidence(
+        IEnumerable<OutputValidationSessionArtifact> artifacts) =>
+        artifacts
+            .Select(artifact => artifact.TargetHdrEvidence)
+            .FirstOrDefault(evidence => evidence is not null
+                && !evidence.GetMissingFields().Any());
+
+    private static ValidationEvidenceRowProjection ProjectTargetAwareHdrRow(
+        PreviewReadinessStatus? readiness,
+        TargetAwareHdrValidationEvidence? targetHdrEvidence)
     {
+        if (targetHdrEvidence is not null)
+        {
+            return new ValidationEvidenceRowProjection(
+                "Target-aware HDR",
+                ValidationEvidenceStatus.Limited,
+                $"Target-aware HDR artifact evidence is present (match={targetHdrEvidence.MatchKind}, state={targetHdrEvidence.HdrState}); Windows manual validation across mixed HDR/SDR monitor setups is still required.");
+        }
+
         if (readiness?.Reason is PreviewReadinessReason.TargetDisplayUnresolved)
         {
             var matchEvidence = ExtractDisplayMatchEvidence(readiness.TechnicalDetail);

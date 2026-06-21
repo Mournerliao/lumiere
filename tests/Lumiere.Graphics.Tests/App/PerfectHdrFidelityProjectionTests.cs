@@ -268,7 +268,10 @@ public sealed class PerfectHdrFidelityProjectionTests
                     [
                         PassingHdrViewer("Windows Photos"),
                     ]),
-            ]);
+            ])
+        {
+            TargetHdrEvidence = CompleteTargetHdrEvidence,
+        };
 
         var validation = PerfectHdrFidelityProjection.ProjectValidation(contract, artifact);
         var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(artifact.ApplyTo(contract));
@@ -449,7 +452,10 @@ public sealed class PerfectHdrFidelityProjectionTests
                     [
                         PassingHdrViewer(viewerName),
                     ]),
-            ]);
+            ])
+        {
+            TargetHdrEvidence = CompleteTargetHdrEvidence,
+        };
 
     private static OutputValidationSessionArtifact ArtifactWithFormatContract(string viewerName) =>
         new(
@@ -480,7 +486,10 @@ public sealed class PerfectHdrFidelityProjectionTests
                 {
                     FormatContract = CompleteHdr10Contract,
                 },
-            ]);
+            ])
+        {
+            TargetHdrEvidence = CompleteTargetHdrEvidence,
+        };
 
     private static OutputValidationSessionArtifact SdrArtifactFor(string viewerName) =>
         new(
@@ -513,7 +522,10 @@ public sealed class PerfectHdrFidelityProjectionTests
                             OutputCompatibilityEvidenceStatus.NotApplicable,
                             "Validated SDR visual-match viewer."),
                     ]),
-            ]);
+            ])
+        {
+            TargetHdrEvidence = CompleteTargetHdrEvidence,
+        };
 
     private static OutputFormatContract CompleteHdr10Contract { get; } =
         new(
@@ -524,4 +536,16 @@ public sealed class PerfectHdrFidelityProjectionTests
             OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
             OutputMetadataPolicy.AttachHdr10StaticMetadata,
             OutputTargetAppAssumption.RequiresHdrViewerValidation);
+
+    private static TargetAwareHdrValidationEvidence CompleteTargetHdrEvidence { get; } =
+        new(
+            TargetDisplayName: "HDR primary",
+            Left: 0,
+            Top: 0,
+            Width: 3840,
+            Height: 2160,
+            MatchKind: "DesktopBounds",
+            HdrState: "Active",
+            ColorSpace: "RgbFullG2084NoneP2020",
+            Detail: "Validated target-aware HDR match evidence.");
 }

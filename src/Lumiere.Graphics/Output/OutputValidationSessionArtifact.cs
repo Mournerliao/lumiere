@@ -25,7 +25,7 @@ public sealed record OutputValidationSessionArtifact(
     IReadOnlyList<string> FollowUpIssuesOrStories,
     IReadOnlyList<OutputProfileValidationRecord> OutputProfileRecords)
 {
-    private const int CurrentSchemaVersion = 2;
+    private const int CurrentSchemaVersion = 3;
     private const int MinimumSupportedSchemaVersion = 1;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -36,6 +36,8 @@ public sealed record OutputValidationSessionArtifact(
     };
 
     public int SchemaVersion { get; init; } = CurrentSchemaVersion;
+
+    public TargetAwareHdrValidationEvidence? TargetHdrEvidence { get; init; }
 
     public string ToJson() => JsonSerializer.Serialize(this, JsonOptions);
 
@@ -178,8 +180,60 @@ public sealed record OutputValidationSessionArtifact(
         {
             yield return "evidence paths";
         }
+
+        if (TargetHdrEvidence is null)
+        {
+            yield return "target-aware HDR evidence";
+        }
+        else
+        {
+            foreach (var field in TargetHdrEvidence.GetMissingFields())
+            {
+                yield return $"target-aware HDR evidence {field}";
+            }
+        }
     }
 
     private static bool IsMissing(IEnumerable<string> values) =>
         !values.Any(value => !string.IsNullOrWhiteSpace(value));
+}
+
+public sealed record TargetAwareHdrValidationEvidence(
+    string TargetDisplayName,
+    int? Left,
+    int? Top,
+    int Width,
+    int Height,
+    string MatchKind,
+    string HdrState,
+    string? ColorSpace,
+    string Detail)
+{
+    public IEnumerable<string> GetMissingFields()
+    {
+        if (string.IsNullOrWhiteSpace(TargetDisplayName))
+        {
+            yield return "target display";
+        }
+
+        if (Width <= 0 || Height <= 0)
+        {
+            yield return "target bounds";
+        }
+
+        if (string.IsNullOrWhiteSpace(MatchKind))
+        {
+            yield return "match kind";
+        }
+
+        if (string.IsNullOrWhiteSpace(HdrState))
+        {
+            yield return "HDR state";
+        }
+
+        if (string.IsNullOrWhiteSpace(Detail))
+        {
+            yield return "detail";
+        }
+    }
 }
