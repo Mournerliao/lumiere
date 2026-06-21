@@ -10,9 +10,11 @@ This folder contains Lumiere's current validation records, release-gate checklis
 
 ## Active Supporting Workflows
 
+- [HDR / SDR Validation Scenarios](hdr-sdr-validation-scenarios.md) - Standard content set, topology matrix, and repeatable fidelity session flow.
 - [Lifecycle Validation](lifecycle-validation.md) - Capture cycles, teardown, and resource trend validation.
 - [Overlay Validation](overlay-validation.md) - Overlay placement, crop interaction, cancel, DPI, and display validation.
 - [Output Validation](output-validation.md) - Clipboard/file output checks and future output profile acceptance records.
+- [Settings Accessibility Validation](settings-accessibility-validation.md) - Keyboard, screen reader, high contrast, export-profile honesty, and DPI checks for the settings shell.
 
 ## Historical Snapshots
 

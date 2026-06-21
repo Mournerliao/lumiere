@@ -87,10 +87,13 @@ Evidence:
 
 - Public release checklist defines the required HDR/SDR, mixed-display, target-app, DPI, and output evidence categories.
 - Output validation artifact schema/template defines required session evidence fields.
+- `harness/validation/hdr-sdr-validation-scenarios.md` now defines the standard content families, topology matrix, and session execution flow.
+- `harness/validation/settings-accessibility-validation.md` now gives Story 13-2 a focused Windows validation workflow tied back to the release checklist.
+- `harness/validation/templates/hdr-sdr-validation-session-template.md` now gives future sessions a consistent metadata/result record shape.
 
 Remaining blockers:
 
-- Actual standard test content and executed validation sessions are still missing.
+- Actual executed Windows validation sessions and evidence files are still missing.
 
 ### 12-2 Expand the Release Checklist into a Public Fidelity Gate - done
 

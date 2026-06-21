@@ -47,7 +47,7 @@ These gates apply to the fixed public release target. They are stricter than the
 | Target-aware HDR detection | HDR readiness is tied to the active capture target display/output, including mixed HDR/SDR multi-monitor setups. | PASS with limitation | Code now carries display identity and probes by target evidence where available; mixed HDR/SDR multi-monitor Windows manual validation is still required before this can count as an unrestricted public claim. |
 | HDR-preserved output profile contract | At least one enabled output profile has source format, destination format, transfer function, primaries, conversion/tone-mapping policy, metadata policy, and named viewer assumptions for HDR preservation. | NOT RUN | HDR10 JXR codec/readback/audit metadata seams exist, but runtime HDR10 export remains gated until viewer-recognized HDR10 metadata and Windows manual viewer validation pass. SDR-compatible output can supplement this but cannot replace it. |
 | Supported output compatibility matrix | Visual-match output and HDR-preserved output are validated against named target apps and viewers. | NOT RUN | Viewer evidence is modeled and can be loaded from validation artifacts, but real named target-app/viewer evidence has not been recorded. Must separate "artifact written", "visual match", and "HDR preserved". |
-| HDR/SDR visual validation set | Standard test content covers bright highlights, SDR/HDR mixed content, browser/media/game scenarios, and display mode changes. | NOT RUN | Checklist categories and output validation artifact template exist; actual standard content and executed validation sessions still need to be recorded. |
+| HDR/SDR visual validation set | Standard test content covers bright highlights, SDR/HDR mixed content, browser/media/game scenarios, and display mode changes. | NOT RUN | Standard scenario guidance now lives in `hdr-sdr-validation-scenarios.md` with a reusable session template, but executed validation sessions are still missing. |
 | Multi-monitor and DPI validation | HDR/SDR mixed displays and common DPI scales are recorded with pass/fail/limitation status. | NOT RUN | Target-aware code support exists, but public claims cannot imply untested display topologies or DPI configurations. |
 | Long-run lifecycle evidence | Repeated capture/output cycles record private bytes, handles, and GPU resource trends. | NOT RUN | No focused 50+ or 100+ cycle resource trend evidence has been recorded yet. |
 | Public release copy review | Release notes and UI copy only claim fidelity modes that passed validation. | NOT RUN | Planned as final release gate. Limitations and unsupported modes must be explicit. |
@@ -99,7 +99,7 @@ These gates apply to the fixed public release target. They are stricter than the
 | REL-HDR-03 | SDR-only display or SDR target. | UI reports unavailable/degraded honestly and capture behavior remains recoverable. | NOT RUN |  | HDR probe, fallback messaging, capture state change. |
 | REL-HDR-04 | Multi-monitor mixed HDR/SDR setup. | Status reflects the capture target, or limitation is explicitly recorded. | NOT RUN |  | Multi-monitor target selection or HDR probe change. |
 | REL-HDR-05 | Bright, dark, and high-contrast content under overlay. | Crop border, mask, and status panel remain legible. | NOT RUN |  | Overlay styling or status panel change. |
-| REL-HDR-06 | Export profile settings. | UI does not imply HDR10/P3 are functional until encoder and validation exist. | NOT RUN |  | Export format UI/copy change. |
+| REL-HDR-06 | Export profile settings. | UI does not imply HDR10/P3 are functional until encoder and validation exist. | NOT RUN | Run `settings-accessibility-validation.md` export-profile checks and record selected-disabled behavior separately from artifact/output fidelity. | Export format UI/copy change. |
 
 ### 5. Settings And Preferences
 
@@ -116,11 +116,11 @@ These gates apply to the fixed public release target. They are stricter than the
 
 | ID | Scenario | Expected result | Status | Evidence / notes | Retest trigger |
 |---|---|---|---|---|---|
-| REL-A11Y-01 | DPI at tester's normal scale. | Main, settings, tray, and overlay are usable with no clipping. | NOT RUN |  | Any UI layout change. |
-| REL-A11Y-02 | DPI 100%, 125%, 150%, 200% where available. | Controls remain visible and clickable; overlay geometry remains correct. | NOT RUN |  | Window sizing, overlay, crop mapping change. |
-| REL-A11Y-03 | Keyboard-only settings navigation. | Focus order is logical; controls are operable. | NOT RUN |  | Settings controls or styles change. |
-| REL-A11Y-04 | High contrast or theme variation. | Text and critical controls remain readable. | NOT RUN |  | Brush/style/theme change. |
-| REL-A11Y-05 | Screen reader smoke check. | Primary controls have usable names and states. | NOT RUN |  | Control template or AutomationProperties change. |
+| REL-A11Y-01 | DPI at tester's normal scale. | Main, settings, tray, and overlay are usable with no clipping. | NOT RUN | Run the DPI workflow in `settings-accessibility-validation.md` and record the tested scales. | Any UI layout change. |
+| REL-A11Y-02 | DPI 100%, 125%, 150%, 200% where available. | Controls remain visible and clickable; overlay geometry remains correct. | NOT RUN | Run the DPI workflow in `settings-accessibility-validation.md` and record unavailable scales explicitly. | Window sizing, overlay, crop mapping change. |
+| REL-A11Y-03 | Keyboard-only settings navigation. | Focus order is logical; controls are operable. | NOT RUN | Run the keyboard workflow in `settings-accessibility-validation.md`. | Settings controls or styles change. |
+| REL-A11Y-04 | High contrast or theme variation. | Text and critical controls remain readable. | NOT RUN | Run the high contrast workflow in `settings-accessibility-validation.md`. | Brush/style/theme change. |
+| REL-A11Y-05 | Screen reader smoke check. | Primary controls have usable names and states. | NOT RUN | Run the screen-reader workflow in `settings-accessibility-validation.md`. | Control template or AutomationProperties change. |
 
 ### 7. Stability And Performance
 
@@ -162,6 +162,6 @@ When a feature changes or a new feature is added:
 1. Add at least one checklist row for the user-visible behavior.
 2. Add retest triggers so future changes know when the row becomes stale.
 3. If the feature touches WGC, DXGI, D3D11, HDR, multi-monitor behavior, clipboard, filesystem, tray, hotkeys, or packaging, require Windows manual validation.
-4. Link detailed workflows to focused documents such as `overlay-validation.md`, `output-validation.md`, and `lifecycle-validation.md` instead of duplicating every step here.
+4. Link detailed workflows to focused documents such as `overlay-validation.md`, `output-validation.md`, `lifecycle-validation.md`, `hdr-sdr-validation-scenarios.md`, and `settings-accessibility-validation.md` instead of duplicating every step here.
 5. Update `history/foundation-validation-snapshot-2026-06-03.md` only when a new point-in-time snapshot is intentionally recorded.
 
