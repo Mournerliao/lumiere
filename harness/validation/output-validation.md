@@ -49,6 +49,12 @@ In the current UI, these gate states appear as:
 
 The validation panel now surfaces the current output-profile gate directly so testers can see whether the selected session is blocked at `Build`, waiting at `Validate`, or truly `Ready` before interpreting the lower evidence rows.
 
+Where the selected output profile also exposes a detailed contract surface, that contract text should mirror the same distinction:
+
+- `Build` - the HDR10 contract may already be partially modeled, but executable HDR10 output is still blocked by build/runtime prerequisites
+- `Validate` - the HDR10 format contract is defined, but Windows manual viewer evidence is still incomplete
+- `Ready` - the validated HDR10-preserved contract is active for the current session
+
 ## Validation Artifact Loading
 
 During a local Windows validation run, Lumiere reads output validation session JSON files from `%LOCALAPPDATA%\Lumiere\validation\output\*.json`. Each file must use the `OutputValidationSessionArtifact` schema and include the manual evidence fields listed above, target-aware HDR evidence, per-viewer artifact handling, visual match, HDR preservation, and HDR10 metadata recognition status. Invalid JSON files are ignored for the session, logged as validation artifact load issues, and surfaced in the settings validation record so the tester can fix ignored evidence files; valid files are applied to the settings, main panel, tray, and output policy projections. Runtime HDR10 output still requires codec implementation readiness as well, so loading artifacts alone cannot enable HDR-preserved output.

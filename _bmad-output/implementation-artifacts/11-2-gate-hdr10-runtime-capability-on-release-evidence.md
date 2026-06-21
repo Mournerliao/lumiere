@@ -37,13 +37,18 @@ before HDR10 becomes executable for the current session.
    - ready codec without manual artifacts still falls back to `sRGB`
    - incomplete viewer/manual evidence still falls back to `sRGB`
    - HDR10 becomes executable only when implementation readiness and manual evidence are both complete
+6. Tightened the selected output-contract projection so a complete HDR10 format contract no longer keeps saying `pending implementation` after build prerequisites are satisfied. The contract surface now distinguishes:
+   - `Build`: executable HDR10 output is still blocked by build/runtime prerequisites
+   - `Validate`: the HDR10 contract is defined, but Windows manual viewer evidence is still incomplete
+   - `Ready`: the validated HDR10-preserved contract is active for the current session
 
 ## Suggested Review Order
 
 1. [Output capability resolution](../../src/Lumiere.Graphics/Output/OutputProfileContract.cs)
-2. [App wiring](../../src/Lumiere.App/App.xaml.cs)
-3. [Main window runtime capability resolution](../../src/Lumiere.App/MainWindow.xaml.cs)
-4. [Output policy tests](../../tests/Lumiere.Graphics.Tests/Output/OutputPolicyTests.cs)
+2. [Fidelity projection contract mapping](../../src/Lumiere.App.Core/PerfectHdrFidelityProjection.cs)
+3. [App wiring](../../src/Lumiere.App/App.xaml.cs)
+4. [Main window runtime capability resolution](../../src/Lumiere.App/MainWindow.xaml.cs)
+5. [Output policy and projection tests](../../tests/Lumiere.Graphics.Tests/Output/OutputPolicyTests.cs)
 
 ## Validation
 

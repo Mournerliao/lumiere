@@ -64,6 +64,7 @@ public static class PerfectHdrFidelityProjection
                 StatusLabel = gatePresentation.StatusLabel,
                 Detail = gatePresentation.Detail,
                 IsReadOnly = gatePresentation.IsReadOnly,
+                Contract = CreateContractProjection(requestedContract, gatePresentation.StatusLabel),
             };
         }
 
@@ -73,6 +74,7 @@ public static class PerfectHdrFidelityProjection
             StatusLabel = gatePresentation.StatusLabel,
             Detail = $"{gatePresentation.Detail} Runtime output uses {effectiveContract.Label} compatibility fallback because the selected profile is not executable in this session.",
             IsReadOnly = gatePresentation.IsReadOnly,
+            Contract = CreateContractProjection(requestedContract, gatePresentation.StatusLabel),
             FidelityClaim = effectiveProjection.FidelityClaim,
         };
     }
@@ -558,20 +560,77 @@ public static class PerfectHdrFidelityProjection
             statusLabel,
             detail,
             isReadOnly,
-            new OutputProfileContractProjection(
-                FormatPixelFormat(contract.FormatContract.SourcePixelFormat, isDestination: false),
-                FormatPixelFormat(contract.FormatContract.DestinationPixelFormat, isDestination: true),
-                FormatTransferFunction(contract.FormatContract.TransferFunction),
-                FormatColorPrimaries(contract.FormatContract.ColorPrimaries),
-                FormatConversionPolicy(contract.FormatContract.ConversionPolicy),
-                FormatMetadataPolicy(contract.FormatContract.MetadataPolicy),
-                FormatTargetAppAssumption(contract.FormatContract.TargetAppAssumption),
+            CreateContractProjection(contract, statusLabel),
+            CreateFidelityClaim(contract, readiness));
+
+    private static OutputProfileContractProjection CreateContractProjection(
+        OutputProfileContract contract,
+        string statusLabel)
+    {
+        var (sourcePolicy, destinationPolicy, conversionPolicy, metadataPolicy, viewerCompatibilityPolicy) =
+            DescribeContractPolicies(contract, statusLabel);
+        return new OutputProfileContractProjection(
+            FormatPixelFormat(contract.FormatContract.SourcePixelFormat, isDestination: false),
+            FormatPixelFormat(contract.FormatContract.DestinationPixelFormat, isDestination: true),
+            FormatTransferFunction(contract.FormatContract.TransferFunction),
+            FormatColorPrimaries(contract.FormatContract.ColorPrimaries),
+            FormatConversionPolicy(contract.FormatContract.ConversionPolicy),
+            FormatMetadataPolicy(contract.FormatContract.MetadataPolicy),
+            FormatTargetAppAssumption(contract.FormatContract.TargetAppAssumption),
+            sourcePolicy,
+            destinationPolicy,
+            conversionPolicy,
+            metadataPolicy,
+            viewerCompatibilityPolicy);
+    }
+
+    private static (
+        string SourcePolicy,
+        string DestinationPolicy,
+        string ConversionPolicy,
+        string MetadataPolicy,
+        string ViewerCompatibilityPolicy) DescribeContractPolicies(
+            OutputProfileContract contract,
+            string statusLabel)
+    {
+        if (contract.Kind is not OutputProfileKind.Hdr10Pq || !contract.HasCompleteFormatContract)
+        {
+            return (
+                contract.SourceFormatPolicy,
+                contract.DestinationFormatPolicy,
+                contract.ConversionPolicy,
+                contract.MetadataPolicy,
+                contract.ViewerCompatibilityPolicy);
+        }
+
+        return statusLabel switch
+        {
+            "Ready" => (
+                contract.SourceFormatPolicy,
+                "Validated HDR10-preserved artifact contract is active for this session.",
+                "scRGB-to-HDR10 transfer, tone mapping, and gamut mapping policy are defined for the validated HDR-preserved path.",
+                "HDR10 static metadata attachment is defined and validated for the active HDR-preserved path.",
+                "Named target-app compatibility evidence passed for the active HDR10 path."),
+            "Validate" => (
+                contract.SourceFormatPolicy,
+                "HDR10 output contract is defined, but this session is still waiting for Windows manual viewer evidence.",
+                "scRGB-to-HDR10 transfer, tone mapping, and gamut mapping policy are defined for the HDR10 path; Windows manual viewer evidence is still incomplete.",
+                "HDR10 static metadata attachment is defined for the HDR10 path; Windows manual viewer evidence is still incomplete before HDR-preserved claims can pass.",
+                "Named target-app compatibility still depends on complete Windows manual viewer evidence for this session."),
+            "Build" => (
+                contract.SourceFormatPolicy,
+                "HDR10 output contract is defined, but executable HDR10 output is still blocked by build or runtime prerequisites.",
+                "scRGB-to-HDR10 transfer, tone mapping, and gamut mapping policy are defined for the HDR10 path, but executable output is still blocked by build or runtime prerequisites.",
+                "HDR10 static metadata attachment is defined for the HDR10 path, but executable output is still blocked by build or runtime prerequisites.",
+                "Named target-app compatibility still depends on executable HDR10 output plus Windows manual viewer evidence."),
+            _ => (
                 contract.SourceFormatPolicy,
                 contract.DestinationFormatPolicy,
                 contract.ConversionPolicy,
                 contract.MetadataPolicy,
                 contract.ViewerCompatibilityPolicy),
-            CreateFidelityClaim(contract, readiness));
+        };
+    }
 
     private static FidelityClaimProjection CreateFidelityClaim(
         OutputProfileContract contract,

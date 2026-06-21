@@ -376,7 +376,50 @@ public sealed class SettingsPanelProjectionTests
     }
 
     [Fact]
-    public void Project_AppliesValidationArtifactsToSelectedHdr10Profile()
+    public void Project_AppliesCompleteFormatContractBeforeExecutableHdr10()
+    {
+        var settings = new TestSettingsProvider
+        {
+            ExportColorFormat = "HDR10",
+        };
+
+        var projection = SettingsPanelProjection.Project(
+            settings,
+            CreateState(),
+            [
+                ArtifactWithIncompleteViewerEvidence("Microsoft Paint"),
+                ArtifactWithIncompleteViewerEvidence("Windows Photos"),
+                ArtifactWithIncompleteViewerEvidence("Chromium browsers"),
+            ],
+            executionCapabilities: ValidateOnlyHdr10Capabilities(
+                [
+                    ArtifactWithIncompleteViewerEvidence("Microsoft Paint"),
+                    ArtifactWithIncompleteViewerEvidence("Windows Photos"),
+                    ArtifactWithIncompleteViewerEvidence("Chromium browsers"),
+                ]));
+
+        Assert.All(projection.Validation.ViewerMatrix, viewer => Assert.Equal(ValidationEvidenceStatus.NotRun, viewer.Status));
+        Assert.All(projection.Validation.ViewerMatrix, viewer => Assert.Equal(ValidationEvidenceStatus.Pass, viewer.ArtifactHandlingStatus));
+        Assert.All(projection.Validation.ViewerMatrix, viewer => Assert.Equal(ValidationEvidenceStatus.Pass, viewer.VisualMatchStatus));
+        Assert.All(projection.Validation.ViewerMatrix, viewer => Assert.Equal(ValidationEvidenceStatus.Pass, viewer.HdrPreservationStatus));
+        Assert.All(projection.Validation.ViewerMatrix, viewer => Assert.Equal(ValidationEvidenceStatus.NotRun, viewer.Hdr10MetadataStatus));
+        Assert.Equal("HDR10", projection.Validation.OutputProfileGate.ProfileLabel);
+        Assert.Equal("Validate", projection.Validation.OutputProfileGate.StatusLabel);
+        Assert.Equal("HDR10", projection.MainPanel.OutputProfile.Label);
+        Assert.Equal("Validate", projection.MainPanel.OutputProfile.StatusLabel);
+        Assert.Equal("HDR10 output contract is defined, but this session is still waiting for Windows manual viewer evidence.", projection.Output.SelectedProfileContract.DestinationPolicy);
+        Assert.Contains("defined for the HDR10 path", projection.Output.SelectedProfileContract.ConversionPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("viewer evidence is still incomplete", projection.Output.SelectedProfileContract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Windows manual viewer evidence", projection.Output.SelectedProfileContract.ViewerCompatibilityPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
+        Assert.Contains("compatibility", projection.MainPanel.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("compatibility fallback", projection.MainPanel.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("viewer evidence", projection.MainPanel.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR-preserved", projection.MainPanel.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Project_KeepsPendingImplementationContractWhenFormatContractEvidenceIsMissing()
     {
         var settings = new TestSettingsProvider
         {
@@ -390,24 +433,13 @@ public sealed class SettingsPanelProjectionTests
                 ArtifactFor("Microsoft Paint"),
                 ArtifactFor("Windows Photos"),
                 ArtifactFor("Chromium browsers"),
-            ],
-            executionCapabilities: ValidateOnlyHdr10Capabilities(
-                [
-                    ArtifactFor("Microsoft Paint"),
-                    ArtifactFor("Windows Photos"),
-                    ArtifactFor("Chromium browsers"),
-                ]));
+            ]);
 
-        Assert.All(projection.Validation.ViewerMatrix, viewer => Assert.Equal(ValidationEvidenceStatus.Pass, viewer.Status));
-        Assert.Equal("HDR10", projection.Validation.OutputProfileGate.ProfileLabel);
-        Assert.Equal("Validate", projection.Validation.OutputProfileGate.StatusLabel);
-        Assert.Equal("HDR10", projection.MainPanel.OutputProfile.Label);
-        Assert.Equal("Validate", projection.MainPanel.OutputProfile.StatusLabel);
-        Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
-        Assert.Contains("compatibility", projection.MainPanel.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("compatibility fallback", projection.MainPanel.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("viewer evidence", projection.MainPanel.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("HDR-preserved", projection.MainPanel.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Build", projection.Validation.OutputProfileGate.StatusLabel);
+        Assert.Equal("HDR10 output contract pending implementation", projection.Output.SelectedProfileContract.DestinationPolicy);
+        Assert.Contains("tone", projection.Output.SelectedProfileContract.ConversionPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("metadata", projection.Output.SelectedProfileContract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("target-app", projection.Output.SelectedProfileContract.ViewerCompatibilityPolicy, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -438,6 +470,10 @@ public sealed class SettingsPanelProjectionTests
         Assert.Equal("HDR10", projection.Validation.OutputProfileGate.ProfileLabel);
         Assert.Equal("Ready", projection.Validation.OutputProfileGate.StatusLabel);
         Assert.Equal("Ready", projection.MainPanel.OutputProfile.StatusLabel);
+        Assert.Equal("Validated HDR10-preserved artifact contract is active for this session.", projection.Output.SelectedProfileContract.DestinationPolicy);
+        Assert.Contains("validated HDR-preserved path", projection.Output.SelectedProfileContract.ConversionPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("validated for the active HDR-preserved path", projection.Output.SelectedProfileContract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("compatibility evidence passed", projection.Output.SelectedProfileContract.ViewerCompatibilityPolicy, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(FidelityClaimKind.HdrPreserved, projection.MainPanel.FidelityClaim.Kind);
     }
 
@@ -770,6 +806,43 @@ public sealed class SettingsPanelProjectionTests
                     OutputProfileKind.Hdr10Pq,
                     [
                         PassingHdrViewer(viewerName),
+                    ])
+                {
+                    FormatContract = CompleteHdr10Contract,
+                },
+            ])
+        {
+            TargetHdrEvidence = CompleteTargetHdrEvidence,
+        };
+
+    private static OutputValidationSessionArtifact ArtifactWithIncompleteViewerEvidence(string viewerName) =>
+        new(
+            Date: "2026-06-21",
+            Tester: "QA",
+            BuildCommit: "72c3be7",
+            WindowsVersion: "Windows 11 24H2",
+            Device: "HDR workstation",
+            Gpu: "Test GPU",
+            DisplaySetup: "HDR primary",
+            HdrState: "HDR enabled",
+            DpiScales: ["150%"],
+            EntryPointsTested: ["Settings panel"],
+            OutputTargetsTested: ["Clipboard"],
+            TargetAppsTested: [viewerName],
+            ChecklistIdsCovered: ["REL-OUT-01"],
+            ResultSummary: $"{viewerName} HDR validation is incomplete.",
+            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            KnownLimitations: ["Viewer evidence still incomplete."],
+            FollowUpIssuesOrStories: ["11-3"],
+            OutputProfileRecords:
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer(viewerName) with
+                        {
+                            Hdr10MetadataStatus = OutputCompatibilityEvidenceStatus.NotRun,
+                        },
                     ])
                 {
                     FormatContract = CompleteHdr10Contract,

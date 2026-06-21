@@ -35,13 +35,15 @@ This slice clarifies those states without weakening the gate itself.
 5. Added/updated tests across main-panel, settings, output-validation-source, and fidelity-projection coverage to lock the three-state behavior.
 6. Extended tray projections so tray surfaces now carry explicit output-profile gate labels instead of relying only on fidelity-claim wording to imply runtime executability.
 7. Extended the validation surface so the current output-profile gate is shown directly alongside release evidence, instead of forcing testers to infer it from lower-level validation rows.
+8. Extended the selected output-contract projection so once HDR10 has a complete manual format contract, the contract text also follows the same `Build` / `Validate` / `Ready` split instead of staying stuck on generic `pending implementation` wording.
 
 ## Suggested Review Order
 
 1. [Output gate model](../../src/Lumiere.Graphics/Output/OutputProfileContract.cs)
 2. [Fidelity projection state mapping](../../src/Lumiere.App.Core/PerfectHdrFidelityProjection.cs)
 3. [Settings export option projection](../../src/Lumiere.App.Core/SettingsPanelProjection.cs)
-4. [Projection tests](../../tests/Lumiere.Graphics.Tests/App/SettingsPanelProjectionTests.cs)
+4. [Fidelity projection tests](../../tests/Lumiere.Graphics.Tests/App/PerfectHdrFidelityProjectionTests.cs)
+5. [Settings projection tests](../../tests/Lumiere.Graphics.Tests/App/SettingsPanelProjectionTests.cs)
 
 ## Validation
 

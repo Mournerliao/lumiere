@@ -64,6 +64,7 @@ Evidence:
 - `OutputProfileExecutionCapabilities.ResolveHdr10JxrReleaseCapabilities(...)` now keeps HDR10 on `sRGB` fallback unless both implementation readiness and complete manual output evidence pass.
 - Output-profile UI now distinguishes `Build`, `Validate`, and `Ready` states instead of collapsing every non-executable HDR10 path into one generic fallback label.
 - Validation surfaces now expose the current output-profile gate directly, so testers do not need to infer `Build` / `Validate` / `Ready` only from the lower evidence rows.
+- Selected output-contract surfaces now follow the same runtime distinction, so a complete HDR10 format contract no longer keeps saying `pending implementation` once the app has moved into `Validate` or `Ready`.
 
 Remaining blockers:
 
@@ -78,6 +79,7 @@ Evidence:
 - Output validation artifacts can apply named viewer evidence to output contracts.
 - `Hdr10JxrViewerValidationEvidence` now participates in the runtime gate that decides whether HDR10 can become executable for the current validated session.
 - Settings and main-panel export-profile projection now surface whether HDR10 is blocked by implementation work or by missing Windows manual evidence.
+- Settings and main-panel selected-contract text now mirrors that same split, so testers can tell whether HDR10 is still blocked by build/runtime prerequisites or only by missing Windows manual viewer evidence.
 
 Remaining blockers:
 
