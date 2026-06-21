@@ -1,3 +1,4 @@
+using Lumiere.Graphics.Output;
 using Xunit;
 
 namespace Lumiere.Graphics.Tests.Output;
@@ -20,6 +21,38 @@ public sealed class OutputValidationDocumentationTests
         Assert.Contains("P3", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("sRGB", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Visible design-reference controls", document, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void OutputValidationSessionTemplate_ParsesAsSchemaVersionFourAndDoesNotPassClaims()
+    {
+        var repoRoot = LocateRepositoryRoot();
+        var templatePath = Path.Combine(
+            repoRoot,
+            "docs",
+            "validation",
+            "templates",
+            "output-validation-session.schema-v4.sample.json");
+        var artifact = OutputValidationSessionArtifact.FromJson(File.ReadAllText(templatePath));
+
+        Assert.Equal(4, artifact.SchemaVersion);
+        Assert.NotNull(artifact.TargetHdrEvidence);
+        Assert.Contains("REPLACE_WITH_TARGET_DISPLAY_NAME", artifact.TargetHdrEvidence.TargetDisplayName);
+        Assert.Equal(
+            ["Microsoft Paint", "Windows Photos", "Chromium browsers"],
+            artifact.OutputProfileRecords.Single().ViewerEvidence.Select(viewer => viewer.Name).ToArray());
+
+        var updated = artifact.ApplyTo(OutputProfileContract.Hdr10Pq with
+        {
+            IsExecutable = true,
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+        });
+        var summary = updated.EvaluateEvidence();
+
+        Assert.False(updated.HasCompleteFormatContract);
+        Assert.Contains("Validation session incomplete", updated.ViewerEvidence[0].Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.False(summary.AllowsVisualMatchClaim);
+        Assert.False(summary.AllowsHdrPreservedClaim);
     }
 
     private static string LocateRepositoryRoot()

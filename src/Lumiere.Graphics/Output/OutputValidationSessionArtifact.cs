@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Lumiere.Graphics.Output;
 
@@ -33,6 +34,7 @@ public sealed record OutputValidationSessionArtifact(
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
         WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() },
     };
 
     public int SchemaVersion { get; init; } = CurrentSchemaVersion;
@@ -99,49 +101,62 @@ public sealed record OutputValidationSessionArtifact(
             EvidenceSource = OutputValidationEvidenceSource.IncompleteManualSession,
             FormatContract = null,
             ViewerEvidence = record.ViewerEvidence
-                .Select(evidence => evidence with { Detail = $"{evidence.Detail} {detailSuffix}" })
+                .Select(evidence => evidence with
+                {
+                    ArtifactHandlingStatus = DowngradeIncompleteManualStatus(evidence.ArtifactHandlingStatus),
+                    VisualMatchStatus = DowngradeIncompleteManualStatus(evidence.VisualMatchStatus),
+                    HdrPreservationStatus = DowngradeIncompleteManualStatus(evidence.HdrPreservationStatus),
+                    Hdr10MetadataStatus = DowngradeIncompleteManualStatus(evidence.Hdr10MetadataStatus),
+                    Detail = $"{evidence.Detail} {detailSuffix}",
+                })
                 .ToArray(),
         };
     }
 
+    private static OutputCompatibilityEvidenceStatus DowngradeIncompleteManualStatus(
+        OutputCompatibilityEvidenceStatus status) =>
+        status is OutputCompatibilityEvidenceStatus.Fail or OutputCompatibilityEvidenceStatus.NotApplicable
+            ? status
+            : OutputCompatibilityEvidenceStatus.Limited;
+
     private IEnumerable<string> GetMissingManualEvidenceFields()
     {
-        if (string.IsNullOrWhiteSpace(Date))
+        if (OutputValidationManualEvidenceFields.IsMissing(Date))
         {
             yield return "date";
         }
 
-        if (string.IsNullOrWhiteSpace(Tester))
+        if (OutputValidationManualEvidenceFields.IsMissing(Tester))
         {
             yield return "tester";
         }
 
-        if (string.IsNullOrWhiteSpace(BuildCommit))
+        if (OutputValidationManualEvidenceFields.IsMissing(BuildCommit))
         {
             yield return "build/commit";
         }
 
-        if (string.IsNullOrWhiteSpace(WindowsVersion))
+        if (OutputValidationManualEvidenceFields.IsMissing(WindowsVersion))
         {
             yield return "Windows version";
         }
 
-        if (string.IsNullOrWhiteSpace(Device))
+        if (OutputValidationManualEvidenceFields.IsMissing(Device))
         {
             yield return "device";
         }
 
-        if (string.IsNullOrWhiteSpace(Gpu))
+        if (OutputValidationManualEvidenceFields.IsMissing(Gpu))
         {
             yield return "GPU";
         }
 
-        if (string.IsNullOrWhiteSpace(DisplaySetup))
+        if (OutputValidationManualEvidenceFields.IsMissing(DisplaySetup))
         {
             yield return "display setup";
         }
 
-        if (string.IsNullOrWhiteSpace(HdrState))
+        if (OutputValidationManualEvidenceFields.IsMissing(HdrState))
         {
             yield return "HDR state";
         }
@@ -171,7 +186,7 @@ public sealed record OutputValidationSessionArtifact(
             yield return "checklist IDs covered";
         }
 
-        if (string.IsNullOrWhiteSpace(ResultSummary))
+        if (OutputValidationManualEvidenceFields.IsMissing(ResultSummary))
         {
             yield return "result summary";
         }
@@ -195,7 +210,7 @@ public sealed record OutputValidationSessionArtifact(
     }
 
     private static bool IsMissing(IEnumerable<string> values) =>
-        !values.Any(value => !string.IsNullOrWhiteSpace(value));
+        !values.Any(value => !OutputValidationManualEvidenceFields.IsMissing(value));
 }
 
 public sealed record TargetAwareHdrValidationEvidence(
@@ -211,7 +226,7 @@ public sealed record TargetAwareHdrValidationEvidence(
 {
     public IEnumerable<string> GetMissingFields()
     {
-        if (string.IsNullOrWhiteSpace(TargetDisplayName))
+        if (OutputValidationManualEvidenceFields.IsMissing(TargetDisplayName))
         {
             yield return "target display";
         }
@@ -221,19 +236,31 @@ public sealed record TargetAwareHdrValidationEvidence(
             yield return "target bounds";
         }
 
-        if (string.IsNullOrWhiteSpace(MatchKind))
+        if (OutputValidationManualEvidenceFields.IsMissing(MatchKind))
         {
             yield return "match kind";
         }
 
-        if (string.IsNullOrWhiteSpace(HdrState))
+        if (OutputValidationManualEvidenceFields.IsMissing(HdrState))
         {
             yield return "HDR state";
         }
 
-        if (string.IsNullOrWhiteSpace(Detail))
+        if (OutputValidationManualEvidenceFields.IsMissing(Detail))
         {
             yield return "detail";
         }
+    }
+
+}
+
+internal static class OutputValidationManualEvidenceFields
+{
+    public static bool IsMissing(string? value)
+    {
+        var trimmed = value?.Trim();
+        return string.IsNullOrEmpty(trimmed)
+            || trimmed.Contains("REPLACE_WITH_", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("Template only", StringComparison.OrdinalIgnoreCase);
     }
 }
