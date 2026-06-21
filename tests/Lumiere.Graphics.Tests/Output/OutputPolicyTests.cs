@@ -129,4 +129,21 @@ public sealed class OutputPolicyTests
         Assert.True(policy.UsesCompatibilityProfileFallback);
         Assert.True(policy.ShouldAttemptClipboard);
     }
+
+    [Fact]
+    public void UsesCompatibilityProfileFallback_WhenRequestedProfileIsExecutableButFormatContractIsIncomplete()
+    {
+        var policy = OutputPolicy.Default with
+        {
+            RequestedProfile = OutputProfileContract.Hdr10Pq with
+            {
+                IsExecutable = true,
+                FidelityMode = OutputFidelityMode.HdrPreserved,
+            },
+        };
+
+        Assert.False(policy.RequestedProfile.HasCompleteFormatContract);
+        Assert.Equal(OutputProfileKind.SrgbCompatibilityPng, policy.EffectiveProfile.Kind);
+        Assert.True(policy.UsesCompatibilityProfileFallback);
+    }
 }

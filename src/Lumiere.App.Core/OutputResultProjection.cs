@@ -98,9 +98,16 @@ public sealed record OutputResultProjection(
         var viewerEvidence = outputResult is null
             ? string.Empty
             : $" Viewer evidence: {FormatViewerEvidence(outputResult.EffectiveProfile)}.";
+        var formatContract = profile is null
+            ? string.Empty
+            : $" Effective format: {FormatFormatContract(profile.Contract)}.";
 
-        return $"{profilePrefix} Fidelity claim: {fidelityClaim.Label}. {fidelityClaim.Detail}{viewerEvidence}";
+        return $"{profilePrefix} Fidelity claim: {fidelityClaim.Label}. {fidelityClaim.Detail}{formatContract}{viewerEvidence}";
     }
+
+    private static string FormatFormatContract(OutputProfileContractProjection contract) =>
+        $"{contract.DestinationPixelFormatLabel}; Transfer: {contract.TransferFunctionLabel}; "
+        + $"Primaries: {contract.ColorPrimariesLabel}; Metadata: {contract.MetadataPolicyLabel}";
 
     private static string FormatViewerEvidence(OutputProfileContract profile) =>
         string.Join(

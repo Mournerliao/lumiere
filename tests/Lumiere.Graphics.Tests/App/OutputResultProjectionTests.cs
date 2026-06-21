@@ -71,6 +71,22 @@ public sealed class OutputResultProjectionTests
     }
 
     [Fact]
+    public void Project_FidelityDetailIncludesEffectiveTypedFormatContract()
+    {
+        var output = OutputResult.ClipboardSuccess(1024)
+            .WithRequestedProfile(OutputProfileContract.FromSettingsValue("HDR10"));
+
+        var projection = OutputResultProjection.Project(output);
+
+        Assert.Contains("requested HDR10", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("using sRGB", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("RGBA8 sRGB", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("Transfer: sRGB", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("Primaries: BT.709", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("No HDR metadata", projection.FidelityDetail, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Project_FolderSuccessShowsSavedArtifact()
     {
         var output = OutputResult.FromTargets(

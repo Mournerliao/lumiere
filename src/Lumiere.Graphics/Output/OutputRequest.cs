@@ -69,7 +69,7 @@ public sealed record OutputPolicy(
     /// <summary>
     /// Gets whether a requested non-executable profile falls back to the compatibility profile.
     /// </summary>
-    public bool UsesCompatibilityProfileFallback => !RequestedProfile.IsExecutable;
+    public bool UsesCompatibilityProfileFallback => RequestedProfile != EffectiveProfile;
 
     /// <summary>
     /// Creates a policy from raw settings values without taking a dependency on the settings module.
