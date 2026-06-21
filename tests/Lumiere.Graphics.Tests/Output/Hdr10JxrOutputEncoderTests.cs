@@ -39,7 +39,7 @@ public sealed class Hdr10JxrOutputEncoderTests
     public async Task EncodeArtifactAsync_FailsUntilWindowsHdrJxrEncodingIsImplemented()
     {
         var readback = new TestReadback();
-        var encoder = new Hdr10JxrOutputEncoder(readback);
+        var encoder = new Hdr10JxrOutputEncoder(readback, new PendingHdr10JxrCodec());
         var profile = OutputProfileContract.Hdr10Pq with
         {
             FidelityMode = OutputFidelityMode.HdrPreserved,
@@ -58,10 +58,36 @@ public sealed class Hdr10JxrOutputEncoderTests
     }
 
     [Fact]
+    public async Task EncodeArtifactAsync_ReturnsJxrArtifactWhenCodecSucceeds()
+    {
+        var readback = new TestReadback();
+        var codec = new TestCodec([4, 5, 6]);
+        var encoder = new Hdr10JxrOutputEncoder(readback, codec);
+        var profile = OutputProfileContract.Hdr10Pq with
+        {
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract,
+        };
+        using var texture = new CapturedFrameTexture(null, 16, 16, "Test frame");
+        var cropRegion = new CropPixelRect(2, 4, 8, 6);
+
+        var artifact = await encoder.EncodeArtifactAsync(texture, cropRegion, profile);
+
+        Assert.Equal([4, 5, 6], artifact.Bytes);
+        Assert.Equal("jxr", artifact.NormalizedFileExtension);
+        Assert.Equal(OutputProfileKind.Hdr10Pq, artifact.Profile.Kind);
+        Assert.Equal(1, readback.Calls);
+        Assert.Equal(cropRegion, readback.CropRegion);
+        Assert.NotNull(codec.Input);
+        Assert.Equal(OutputProfileKind.Hdr10Pq, codec.Input.OutputProfile.Kind);
+        Assert.Equal(OutputPixelFormat.R16G16B16A16Float, codec.Input.Source.PixelFormat);
+    }
+
+    [Fact]
     public async Task EncodeArtifactAsync_RejectsSrgbCompatibilityProfile()
     {
         var readback = new TestReadback();
-        var encoder = new Hdr10JxrOutputEncoder(readback);
+        var encoder = new Hdr10JxrOutputEncoder(readback, new PendingHdr10JxrCodec());
         using var texture = new CapturedFrameTexture(null, 16, 16, "Test frame");
 
         var exception = await Assert.ThrowsAsync<OutputArtifactEncodingException>(() =>
@@ -74,7 +100,7 @@ public sealed class Hdr10JxrOutputEncoderTests
     [Fact]
     public async Task EncodePngAsync_RejectsCompatibilityPngPath()
     {
-        var encoder = new Hdr10JxrOutputEncoder(new TestReadback());
+        var encoder = new Hdr10JxrOutputEncoder(new TestReadback(), new PendingHdr10JxrCodec());
         using var texture = new CapturedFrameTexture(null, 16, 16, "Test frame");
 
         var exception = await Assert.ThrowsAsync<OutputArtifactEncodingException>(() =>
@@ -92,6 +118,21 @@ public sealed class Hdr10JxrOutputEncoderTests
         Assert.Contains("32 bytes", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void Hdr10JxrCodecInput_RejectsIncompleteProfile()
+    {
+        var source = new CapturedFrameReadback(
+            1,
+            1,
+            OutputPixelFormat.R16G16B16A16Float,
+            new byte[CapturedFrameReadback.BytesPerPixel]);
+
+        var exception = Assert.Throws<ArgumentException>(() =>
+            new Hdr10JxrCodecInput(source, OutputProfileContract.Hdr10Pq));
+
+        Assert.Contains("complete HDR10-preserved", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static OutputFormatContract CompleteHdr10Contract { get; } =
         new(
             OutputPixelFormat.R16G16B16A16Float,
@@ -101,6 +142,26 @@ public sealed class Hdr10JxrOutputEncoderTests
             OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
             OutputMetadataPolicy.AttachHdr10StaticMetadata,
             OutputTargetAppAssumption.RequiresHdrViewerValidation);
+
+    private sealed class TestCodec : IHdr10JxrCodec
+    {
+        private readonly byte[] bytes;
+
+        public TestCodec(byte[] bytes)
+        {
+            this.bytes = bytes;
+        }
+
+        public Hdr10JxrCodecInput? Input { get; private set; }
+
+        public Task<byte[]> EncodeAsync(
+            Hdr10JxrCodecInput input,
+            CancellationToken cancellationToken = default)
+        {
+            Input = input;
+            return Task.FromResult(bytes);
+        }
+    }
 
     private sealed class TestReadback : ICapturedFrameTextureReadback
     {

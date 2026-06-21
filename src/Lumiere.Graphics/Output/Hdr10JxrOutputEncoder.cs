@@ -7,10 +7,14 @@ public sealed class Hdr10JxrOutputEncoder : IOutputPngEncoder
     public const string FileExtension = "jxr";
 
     private readonly ICapturedFrameTextureReadback readback;
+    private readonly IHdr10JxrCodec codec;
 
-    public Hdr10JxrOutputEncoder(ICapturedFrameTextureReadback readback)
+    public Hdr10JxrOutputEncoder(
+        ICapturedFrameTextureReadback readback,
+        IHdr10JxrCodec codec)
     {
         this.readback = readback ?? throw new ArgumentNullException(nameof(readback));
+        this.codec = codec ?? throw new ArgumentNullException(nameof(codec));
     }
 
     public Task<byte[]> EncodePngAsync(
@@ -20,7 +24,7 @@ public sealed class Hdr10JxrOutputEncoder : IOutputPngEncoder
         throw new OutputArtifactEncodingException(
             "HDR10 JXR encoder cannot produce sRGB PNG compatibility artifacts.");
 
-    public Task<OutputEncodedArtifact> EncodeArtifactAsync(
+    public async Task<OutputEncodedArtifact> EncodeArtifactAsync(
         CapturedFrameTexture texture,
         CropPixelRect? cropRegion,
         OutputProfileContract outputProfile,
@@ -46,8 +50,14 @@ public sealed class Hdr10JxrOutputEncoder : IOutputPngEncoder
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        throw new OutputArtifactEncodingException(
-            "HDR10 JXR encoding is not implemented yet; Windows codec, metadata, and viewer validation are required before this profile can be enabled.");
+        var encodedBytes = await codec.EncodeAsync(
+            new Hdr10JxrCodecInput(source, outputProfile),
+            cancellationToken);
+
+        return new OutputEncodedArtifact(
+            encodedBytes,
+            FileExtension,
+            outputProfile);
     }
 
     public static bool CanEncode(OutputProfileContract outputProfile)
