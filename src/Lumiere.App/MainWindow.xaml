@@ -887,6 +887,35 @@
                   </StackPanel>
                 </Grid>
 
+                <Grid
+                    MinHeight="42"
+                    ColumnSpacing="10">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel Spacing="1">
+                    <TextBlock
+                        x:Name="ValidationGateLabel"
+                        FontSize="11"
+                        FontWeight="SemiBold"
+                        Foreground="{StaticResource TextBrush}"
+                        Text="Current output gate" />
+                    <TextBlock
+                        x:Name="ValidationGateDetail"
+                        FontSize="10"
+                        Foreground="{StaticResource MutedTextBrush}"
+                        TextWrapping="WrapWholeWords" />
+                  </StackPanel>
+                  <TextBlock
+                      x:Name="ValidationGateStatus"
+                      Grid.Column="1"
+                      VerticalAlignment="Top"
+                      FontSize="9"
+                      FontWeight="Bold"
+                      Foreground="{StaticResource MutedTextBrush}" />
+                </Grid>
+
                 <StackPanel Spacing="6">
                   <Grid
                       MinHeight="42"

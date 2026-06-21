@@ -1875,6 +1875,13 @@ public sealed partial class MainWindow : Window
     {
         ValidationReleaseTargetText.Text = validation.ReleaseTarget;
         ValidationSummaryText.Text = validation.Summary;
+        ValidationGateLabel.Text = $"Current output gate: {validation.OutputProfileGate.ProfileLabel}";
+        ValidationGateDetail.Text = validation.OutputProfileGate.Detail;
+        ValidationGateStatus.Text = validation.OutputProfileGate.StatusLabel.ToUpperInvariant();
+        ValidationGateStatus.Foreground = GetValidationStatusBrush(validation.OutputProfileGate.Status);
+        AutomationProperties.SetHelpText(
+            ValidationGateLabel,
+            $"{validation.OutputProfileGate.ProfileLabel}. {validation.OutputProfileGate.StatusLabel}. {validation.OutputProfileGate.Detail}");
         ApplyValidationRow(validation.Rows.ElementAtOrDefault(0), ValidationRow1Label, ValidationRow1Detail, ValidationRow1Status);
         ApplyValidationRow(validation.Rows.ElementAtOrDefault(1), ValidationRow2Label, ValidationRow2Detail, ValidationRow2Status);
         ApplyValidationRow(validation.Rows.ElementAtOrDefault(2), ValidationRow3Label, ValidationRow3Detail, ValidationRow3Status);

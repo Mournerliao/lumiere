@@ -63,6 +63,7 @@ Evidence:
 - `Hdr10JxrCodecReadiness` now covers implementation-level HDR10 JXR readiness, while runtime HDR10 execution is additionally gated on loaded manual validation artifacts.
 - `OutputProfileExecutionCapabilities.ResolveHdr10JxrReleaseCapabilities(...)` now keeps HDR10 on `sRGB` fallback unless both implementation readiness and complete manual output evidence pass.
 - Output-profile UI now distinguishes `Build`, `Validate`, and `Ready` states instead of collapsing every non-executable HDR10 path into one generic fallback label.
+- Validation surfaces now expose the current output-profile gate directly, so testers do not need to infer `Build` / `Validate` / `Ready` only from the lower evidence rows.
 
 Remaining blockers:
 

@@ -149,7 +149,12 @@ public static class PerfectHdrFidelityProjection
         PreviewReadinessStatus? readiness = null)
     {
         ArgumentNullException.ThrowIfNull(outputProfile);
-        return ProjectValidationCore(outputProfile, readiness, targetHdrEvidence: null, record);
+        return ProjectValidationCore(
+            outputProfile,
+            ProjectOutputProfile(outputProfile, readiness),
+            readiness,
+            targetHdrEvidence: null,
+            record);
     }
 
     public static ValidationPanelProjection ProjectValidation(
@@ -161,8 +166,10 @@ public static class PerfectHdrFidelityProjection
         ArgumentNullException.ThrowIfNull(outputProfile);
         ArgumentNullException.ThrowIfNull(executionCapabilities);
         var effectiveProfile = executionCapabilities.SelectEffectiveProfile(outputProfile);
+        var outputProfileProjection = ProjectOutputProfile(outputProfile, readiness, executionCapabilities);
         return ProjectValidationCore(
             SelectRuntimeClaimContract(outputProfile, effectiveProfile),
+            outputProfileProjection,
             readiness,
             targetHdrEvidence: null,
             record);
@@ -176,8 +183,10 @@ public static class PerfectHdrFidelityProjection
     {
         ArgumentNullException.ThrowIfNull(outputProfile);
         ArgumentNullException.ThrowIfNull(artifact);
+        var projectedProfile = ProjectOutputProfile(outputProfile, [artifact], readiness);
         return ProjectValidationCore(
             artifact.ApplyTo(outputProfile),
+            projectedProfile,
             readiness,
             SelectCompleteTargetHdrEvidence([artifact]),
             record);
@@ -195,8 +204,10 @@ public static class PerfectHdrFidelityProjection
         ArgumentNullException.ThrowIfNull(executionCapabilities);
         var requestedProfile = artifact.ApplyTo(outputProfile);
         var effectiveProfile = executionCapabilities.SelectEffectiveProfile(requestedProfile);
+        var projectedProfile = ProjectOutputProfile(outputProfile, [artifact], readiness, executionCapabilities);
         return ProjectValidationCore(
             SelectRuntimeClaimContract(requestedProfile, effectiveProfile),
+            projectedProfile,
             readiness,
             SelectCompleteTargetHdrEvidence([artifact]),
             record);
@@ -211,8 +222,10 @@ public static class PerfectHdrFidelityProjection
         ArgumentNullException.ThrowIfNull(outputProfile);
         ArgumentNullException.ThrowIfNull(artifacts);
         var artifactArray = artifacts.ToArray();
+        var projectedProfile = ProjectOutputProfile(outputProfile, artifactArray, readiness);
         return ProjectValidationCore(
             OutputValidationSessionArtifact.ApplyAllTo(outputProfile, artifactArray),
+            projectedProfile,
             readiness,
             SelectCompleteTargetHdrEvidence(artifactArray),
             record);
@@ -231,8 +244,10 @@ public static class PerfectHdrFidelityProjection
         var artifactArray = artifacts.ToArray();
         var requestedProfile = OutputValidationSessionArtifact.ApplyAllTo(outputProfile, artifactArray);
         var effectiveProfile = executionCapabilities.SelectEffectiveProfile(requestedProfile);
+        var projectedProfile = ProjectOutputProfile(outputProfile, artifactArray, readiness, executionCapabilities);
         return ProjectValidationCore(
             SelectRuntimeClaimContract(requestedProfile, effectiveProfile),
+            projectedProfile,
             readiness,
             SelectCompleteTargetHdrEvidence(artifactArray),
             record);
@@ -251,6 +266,7 @@ public static class PerfectHdrFidelityProjection
 
     private static ValidationPanelProjection ProjectValidationCore(
         OutputProfileContract outputProfile,
+        OutputProfileProjection outputProfileProjection,
         PreviewReadinessStatus? readiness,
         TargetAwareHdrValidationEvidence? targetHdrEvidence,
         ValidationRecordProjection? record)
@@ -259,6 +275,7 @@ public static class PerfectHdrFidelityProjection
         return new(
             ReleaseTarget,
             "Public release waits for evidence; SDR compatibility remains fallback only.",
+            ProjectValidationGate(outputProfileProjection),
             [
                 ProjectTargetAwareHdrRow(readiness, targetHdrEvidence),
                 ProjectVisualMatchRow(outputProfile),
@@ -269,6 +286,17 @@ public static class PerfectHdrFidelityProjection
             viewerMatrix,
             record ?? ProjectValidationRecord(null));
     }
+
+    private static ValidationGateProjection ProjectValidationGate(OutputProfileProjection outputProfileProjection) =>
+        new(
+            outputProfileProjection.Label,
+            outputProfileProjection.StatusLabel,
+            outputProfileProjection.Detail,
+            outputProfileProjection.StatusLabel switch
+            {
+                "Ready" => ValidationEvidenceStatus.Pass,
+                _ => ValidationEvidenceStatus.Limited,
+            });
 
     private static ValidationEvidenceRowProjection ProjectVisualMatchRow(OutputProfileContract outputProfile)
     {
@@ -790,10 +818,17 @@ public enum FidelityClaimKind
 public sealed record ValidationPanelProjection(
     string ReleaseTarget,
     string Summary,
+    ValidationGateProjection OutputProfileGate,
     IReadOnlyList<ValidationEvidenceRowProjection> Rows,
     string ViewerMatrixSummary,
     IReadOnlyList<ValidationViewerMatrixRowProjection> ViewerMatrix,
     ValidationRecordProjection Record);
+
+public sealed record ValidationGateProjection(
+    string ProfileLabel,
+    string StatusLabel,
+    string Detail,
+    ValidationEvidenceStatus Status);
 
 public sealed record ValidationEvidenceRowProjection(
     string Label,

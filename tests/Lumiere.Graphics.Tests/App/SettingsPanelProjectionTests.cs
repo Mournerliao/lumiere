@@ -394,6 +394,8 @@ public sealed class SettingsPanelProjectionTests
                 ]));
 
         Assert.All(projection.Validation.ViewerMatrix, viewer => Assert.Equal(ValidationEvidenceStatus.Pass, viewer.Status));
+        Assert.Equal("HDR10", projection.Validation.OutputProfileGate.ProfileLabel);
+        Assert.Equal("Validate", projection.Validation.OutputProfileGate.StatusLabel);
         Assert.Equal("HDR10", projection.MainPanel.OutputProfile.Label);
         Assert.Equal("Validate", projection.MainPanel.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
@@ -428,6 +430,8 @@ public sealed class SettingsPanelProjectionTests
         Assert.False(projection.Output.ExportColorOptions[0].IsReadOnly);
         Assert.True(projection.Output.ExportColorOptions[0].IsSelected);
         Assert.True(projection.Output.ExportColorOptions[0].IsInteractive);
+        Assert.Equal("HDR10", projection.Validation.OutputProfileGate.ProfileLabel);
+        Assert.Equal("Ready", projection.Validation.OutputProfileGate.StatusLabel);
         Assert.Equal("Ready", projection.MainPanel.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.HdrPreserved, projection.MainPanel.FidelityClaim.Kind);
     }
@@ -503,6 +507,8 @@ public sealed class SettingsPanelProjectionTests
         var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
 
         Assert.Equal(PerfectHdrFidelityProjection.ReleaseTarget, projection.Validation.ReleaseTarget);
+        Assert.Equal("sRGB", projection.Validation.OutputProfileGate.ProfileLabel);
+        Assert.Equal("Compat", projection.Validation.OutputProfileGate.StatusLabel);
         Assert.Contains(projection.Validation.Rows, row => row.Label == "Target-aware HDR");
         Assert.Contains(projection.Validation.Rows, row => row.Label == "Visual-match output" && row.Status == ValidationEvidenceStatus.NotRun);
         Assert.Contains(projection.Validation.Rows, row => row.Label == "HDR-preserved profile");

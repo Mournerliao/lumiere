@@ -163,6 +163,9 @@ public sealed class PerfectHdrFidelityProjectionTests
 
         Assert.Equal(PerfectHdrFidelityProjection.ReleaseTarget, validation.ReleaseTarget);
         Assert.Contains("evidence", validation.Summary, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("sRGB", validation.OutputProfileGate.ProfileLabel);
+        Assert.Equal("Compat", validation.OutputProfileGate.StatusLabel);
+        Assert.Equal(ValidationEvidenceStatus.Limited, validation.OutputProfileGate.Status);
         Assert.Contains(validation.Rows, row => row.Label == "Target-aware HDR" && row.Status == ValidationEvidenceStatus.NotRun);
         Assert.Contains(validation.Rows, row => row.Label == "Visual-match output" && row.Status == ValidationEvidenceStatus.NotRun);
         Assert.Contains(validation.Rows, row => row.Label == "HDR-preserved profile" && row.Status == ValidationEvidenceStatus.NotRun);
@@ -550,9 +553,53 @@ public sealed class PerfectHdrFidelityProjectionTests
             validation.Rows,
             row => row.Label == "Target app matrix");
 
+        Assert.Equal("HDR10", validation.OutputProfileGate.ProfileLabel);
+        Assert.Equal("Build", validation.OutputProfileGate.StatusLabel);
+        Assert.Contains("implementation prerequisites", validation.OutputProfileGate.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(ValidationEvidenceStatus.Limited, profileRow.Status);
         Assert.Contains("executable output", profileRow.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(ValidationEvidenceStatus.Pass, matrixRow.Status);
+    }
+
+    [Fact]
+    public void ProjectValidation_RuntimeCapabilitiesSurfaceValidateGateBeforeExecutableHdr10()
+    {
+        OutputValidationSessionArtifact[] artifacts =
+        [
+            ArtifactFor("Microsoft Paint"),
+            ArtifactFor("Windows Photos"),
+            ArtifactFor("Chromium browsers"),
+        ];
+
+        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+            OutputProfileContract.Hdr10Pq,
+            artifacts,
+            ValidateOnlyHdr10Capabilities(artifacts));
+
+        Assert.Equal("HDR10", validation.OutputProfileGate.ProfileLabel);
+        Assert.Equal("Validate", validation.OutputProfileGate.StatusLabel);
+        Assert.Equal(ValidationEvidenceStatus.Limited, validation.OutputProfileGate.Status);
+        Assert.Contains("viewer evidence", validation.OutputProfileGate.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectValidation_RuntimeCapabilitiesSurfaceReadyGateWhenExecutableHdr10Passes()
+    {
+        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+            OutputProfileContract.Hdr10Pq,
+            [
+                ArtifactWithFormatContract("Microsoft Paint"),
+                ArtifactWithFormatContract("Windows Photos"),
+                ArtifactWithFormatContract("Chromium browsers"),
+            ],
+            OutputProfileExecutionCapabilities.Create(
+                OutputProfileExecutionCapability.SrgbCompatibility,
+                OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder));
+
+        Assert.Equal("HDR10", validation.OutputProfileGate.ProfileLabel);
+        Assert.Equal("Ready", validation.OutputProfileGate.StatusLabel);
+        Assert.Equal(ValidationEvidenceStatus.Pass, validation.OutputProfileGate.Status);
+        Assert.Contains("validated session", validation.OutputProfileGate.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

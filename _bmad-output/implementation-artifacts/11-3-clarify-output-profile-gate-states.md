@@ -34,6 +34,7 @@ This slice clarifies those states without weakening the gate itself.
 4. Updated settings export-option projection so the `HDR10` radio option now follows the same runtime gate as the main panel instead of always rendering from the static design-only projection.
 5. Added/updated tests across main-panel, settings, output-validation-source, and fidelity-projection coverage to lock the three-state behavior.
 6. Extended tray projections so tray surfaces now carry explicit output-profile gate labels instead of relying only on fidelity-claim wording to imply runtime executability.
+7. Extended the validation surface so the current output-profile gate is shown directly alongside release evidence, instead of forcing testers to infer it from lower-level validation rows.
 
 ## Suggested Review Order
 
