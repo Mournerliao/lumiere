@@ -139,22 +139,22 @@ public static class PerfectHdrFidelityProjection
         OutputProfileContract outputProfile,
         PreviewReadinessStatus? readiness,
         TargetAwareHdrValidationEvidence? targetHdrEvidence,
-        ValidationRecordProjection? record) =>
-        new(
+        ValidationRecordProjection? record)
+    {
+        var viewerMatrix = outputProfile.ViewerEvidence.Select(ProjectViewerEvidence).ToArray();
+        return new(
             ReleaseTarget,
             "Public release waits for evidence; SDR compatibility remains fallback only.",
             [
                 ProjectTargetAwareHdrRow(readiness, targetHdrEvidence),
                 ProjectVisualMatchRow(outputProfile),
                 ProjectHdrPreservedProfileRow(outputProfile),
-                new(
-                    "Target app matrix",
-                    ValidationEvidenceStatus.NotRun,
-                    "Named viewers must separate artifact success from fidelity."),
+                ProjectTargetAppMatrixRow(viewerMatrix),
             ],
             "Named viewers must prove artifact handling, visual match, and fidelity separately.",
-            outputProfile.ViewerEvidence.Select(ProjectViewerEvidence).ToArray(),
+            viewerMatrix,
             record ?? ProjectValidationRecord(null));
+    }
 
     private static ValidationEvidenceRowProjection ProjectVisualMatchRow(OutputProfileContract outputProfile)
     {
@@ -184,9 +184,9 @@ public static class PerfectHdrFidelityProjection
             ValidationEvidenceStatus.NotRun =>
                 "Visual-match validation is not run for the selected profile. QQ-style gray, white, and highlight checks are the benchmark.",
             ValidationEvidenceStatus.Fail =>
-                $"Visual-match evidence failed for {FormatViewerNames(blockers)}. QQ-style gray, white, and highlight checks are the benchmark.",
+                $"Visual-match evidence failed for {FormatViewerNames(blockers.Select(viewer => viewer.Name))}. QQ-style gray, white, and highlight checks are the benchmark.",
             _ =>
-                $"Visual-match evidence is missing for {FormatViewerNames(blockers)}. QQ-style gray, white, and highlight checks are the benchmark.",
+                $"Visual-match evidence is missing for {FormatViewerNames(blockers.Select(viewer => viewer.Name))}. QQ-style gray, white, and highlight checks are the benchmark.",
         };
 
         return new ValidationEvidenceRowProjection(
@@ -197,19 +197,71 @@ public static class PerfectHdrFidelityProjection
 
     private static ValidationEvidenceRowProjection ProjectHdrPreservedProfileRow(OutputProfileContract outputProfile)
     {
-        if (outputProfile.FormatContract.TargetAppAssumption is OutputTargetAppAssumption.RequiresHdrViewerValidation
-            && outputProfile.HasCompleteFormatContract)
+        var evidence = outputProfile.EvaluateEvidence();
+        if (evidence.AllowsHdrPreservedClaim)
         {
             return new ValidationEvidenceRowProjection(
                 "HDR-preserved profile",
-                ValidationEvidenceStatus.Limited,
-                "Windows manual format contract evidence is recorded for this profile; executable output, target-aware readiness, and named viewer HDR preservation gates must still pass before any HDR-preserved claim.");
+                ValidationEvidenceStatus.Pass,
+                "HDR-preserved profile evidence passed for the supported path, including format contract, named viewer HDR preservation, and HDR10 metadata recognition.");
+        }
+
+        if (outputProfile.FormatContract.TargetAppAssumption is OutputTargetAppAssumption.RequiresHdrViewerValidation
+            && outputProfile.HasCompleteFormatContract)
+        {
+            var hasFailedViewer = outputProfile.ViewerEvidence.Any(viewer =>
+                viewer.ArtifactHandlingStatus is OutputCompatibilityEvidenceStatus.Fail
+                || viewer.VisualMatchStatus is OutputCompatibilityEvidenceStatus.Fail
+                || viewer.HdrPreservationStatus is OutputCompatibilityEvidenceStatus.Fail
+                || viewer.Hdr10MetadataStatus is OutputCompatibilityEvidenceStatus.Fail);
+            return new ValidationEvidenceRowProjection(
+                "HDR-preserved profile",
+                hasFailedViewer ? ValidationEvidenceStatus.Fail : ValidationEvidenceStatus.Limited,
+                hasFailedViewer
+                    ? $"{evidence.HdrPreservedGateDetail} HDR-preserved profile cannot pass while any named viewer evidence has failed."
+                    : "Windows manual format contract evidence is recorded for this profile; executable output, target-aware readiness, named viewer HDR preservation, and HDR10 metadata recognition gates must still pass before any HDR-preserved claim.");
         }
 
         return new ValidationEvidenceRowProjection(
             "HDR-preserved profile",
             ValidationEvidenceStatus.NotRun,
             "At least one supported profile must pass before public release.");
+    }
+
+    private static ValidationEvidenceRowProjection ProjectTargetAppMatrixRow(
+        IReadOnlyList<ValidationViewerMatrixRowProjection> viewerMatrix)
+    {
+        if (viewerMatrix.Count == 0
+            || viewerMatrix.All(viewer => viewer.Status is ValidationEvidenceStatus.NotRun))
+        {
+            return new ValidationEvidenceRowProjection(
+                "Target app matrix",
+                ValidationEvidenceStatus.NotRun,
+                "Named viewers must separate artifact success from fidelity.");
+        }
+
+        if (viewerMatrix.Any(viewer => viewer.Status is ValidationEvidenceStatus.Fail))
+        {
+            return new ValidationEvidenceRowProjection(
+                "Target app matrix",
+                ValidationEvidenceStatus.Fail,
+                $"Target app matrix failed for {FormatViewerNames(viewerMatrix.Where(viewer => viewer.Status is ValidationEvidenceStatus.Fail).Select(viewer => viewer.Name))}.");
+        }
+
+        if (viewerMatrix.All(viewer =>
+            viewer.Status is ValidationEvidenceStatus.Pass
+            || viewer.Status is ValidationEvidenceStatus.NotApplicable))
+        {
+            return new ValidationEvidenceRowProjection(
+                "Target app matrix",
+                ValidationEvidenceStatus.Pass,
+                "All named target apps have complete viewer evidence for the selected profile.");
+        }
+
+        return new ValidationEvidenceRowProjection(
+            "Target app matrix",
+            ValidationEvidenceStatus.Limited,
+            $"Target app matrix is missing complete evidence for {FormatViewerNames(viewerMatrix.Where(viewer => viewer.Status is not ValidationEvidenceStatus.Pass and not ValidationEvidenceStatus.NotApplicable).Select(viewer => viewer.Name))}.");
     }
 
     private static TargetAwareHdrValidationEvidence? SelectCompleteTargetHdrEvidence(
@@ -293,9 +345,9 @@ public static class PerfectHdrFidelityProjection
             : $"match={matchKind}";
     }
 
-    private static string FormatViewerNames(IEnumerable<OutputViewerCompatibilityEvidence> viewers)
+    private static string FormatViewerNames(IEnumerable<string> viewerNames)
     {
-        var names = viewers.Select(viewer => viewer.Name).ToArray();
+        var names = viewerNames.ToArray();
         return names.Length == 0 ? "named viewers" : string.Join(", ", names);
     }
 

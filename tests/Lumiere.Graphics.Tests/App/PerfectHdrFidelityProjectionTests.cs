@@ -310,6 +310,87 @@ public sealed class PerfectHdrFidelityProjectionTests
     }
 
     [Fact]
+    public void ProjectValidation_ReportsTargetAppMatrixAndHdrProfilePassedWhenAllHdrViewerEvidencePasses()
+    {
+        var contract = OutputProfileContract.Hdr10Pq with
+        {
+            IsExecutable = true,
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract,
+        };
+
+        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+            contract,
+            [
+                ArtifactFor("Microsoft Paint"),
+                ArtifactFor("Windows Photos"),
+                ArtifactFor("Chromium browsers"),
+            ]);
+
+        var profileRow = Assert.Single(
+            validation.Rows,
+            row => row.Label == "HDR-preserved profile");
+        var matrixRow = Assert.Single(
+            validation.Rows,
+            row => row.Label == "Target app matrix");
+
+        Assert.Equal(ValidationEvidenceStatus.Pass, profileRow.Status);
+        Assert.Contains("HDR10 metadata", profileRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(ValidationEvidenceStatus.Pass, matrixRow.Status);
+        Assert.Contains("All named target apps", matrixRow.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectValidation_ReportsTargetAppMatrixLimitedWhenNamedViewerEvidenceIsIncomplete()
+    {
+        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+            OutputProfileContract.SrgbCompatibilityPng,
+            [
+                SdrArtifactFor("Microsoft Paint"),
+            ]);
+        var matrixRow = Assert.Single(
+            validation.Rows,
+            row => row.Label == "Target app matrix");
+
+        Assert.Equal(ValidationEvidenceStatus.Limited, matrixRow.Status);
+        Assert.Contains("Windows Photos", matrixRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Chromium browsers", matrixRow.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectValidation_ReportsFailedRowsWhenAnyNamedHdrViewerFails()
+    {
+        var contract = OutputProfileContract.Hdr10Pq with
+        {
+            IsExecutable = true,
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract,
+            ViewerEvidence =
+            [
+                PassingHdrViewer("Microsoft Paint"),
+                PassingHdrViewer("Windows Photos") with
+                {
+                    Hdr10MetadataStatus = OutputCompatibilityEvidenceStatus.Fail,
+                },
+                PassingHdrViewer("Chromium browsers"),
+            ],
+        };
+
+        var validation = PerfectHdrFidelityProjection.ProjectValidation(contract);
+        var profileRow = Assert.Single(
+            validation.Rows,
+            row => row.Label == "HDR-preserved profile");
+        var matrixRow = Assert.Single(
+            validation.Rows,
+            row => row.Label == "Target app matrix");
+
+        Assert.Equal(ValidationEvidenceStatus.Fail, profileRow.Status);
+        Assert.Contains("failed", profileRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(ValidationEvidenceStatus.Fail, matrixRow.Status);
+        Assert.Contains("Windows Photos", matrixRow.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void ProjectValidation_ReportsVisualMatchPassedWhenAllNamedViewerEvidencePasses()
     {
         var validation = PerfectHdrFidelityProjection.ProjectValidation(
