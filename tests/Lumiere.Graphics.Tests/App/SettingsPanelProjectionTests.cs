@@ -101,6 +101,30 @@ public sealed class SettingsPanelProjectionTests
     }
 
     [Fact]
+    public void Project_TargetEvidenceNamesDesktopBoundsWhenDisplayIdentityCarriesThem()
+    {
+        var target = CaptureTarget.CreateForTest(
+            new SizeInt32
+            {
+                Width = 3840,
+                Height = 2160,
+            },
+            "HDR Display",
+            CaptureTargetKind.Display,
+            new DisplayOutputIdentity("\\\\.\\DISPLAY2", left: 3840, top: 0, width: 3840, height: 2160));
+        var state = CaptureSessionState.Capturing(
+            target,
+            PreviewReadinessStatus.Ready("HDR-ready", "Test readiness."));
+
+        var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), state);
+
+        Assert.Equal("Display target", projection.TargetEvidence.ScopeLabel);
+        Assert.Contains("desktop bounds", projection.TargetEvidence.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("3840,0", projection.TargetEvidence.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("global HDR guess", projection.TargetEvidence.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Project_TargetEvidenceMarksWindowTargetAsNeedsDisplayMapping()
     {
         var state = CaptureSessionState.Capturing(

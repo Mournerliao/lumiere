@@ -944,6 +944,8 @@ public sealed partial class MainWindow : Window
                 overlayWindow!.PreviewSurface,
                 new SwapChainTargetHint(
                     target.DisplayIdentity?.DeviceName ?? target.DisplayName,
+                    target.DisplayIdentity?.Left,
+                    target.DisplayIdentity?.Top,
                     target.DisplayIdentity?.Width ?? target.Size.Width,
                     target.DisplayIdentity?.Height ?? target.Size.Height));
             previewFramePresenter = new PreviewFramePresenter(deviceResources!, swapChainResources);

@@ -250,9 +250,21 @@ public sealed class DirectMonitorCaptureTargetSelectionService
             return target;
         }
 
-        return target.WithDisplayIdentity(DisplayOutputIdentity.FromMonitorDisplayName(
-            monitor.DisplayName,
-            target.Size.Width,
-            target.Size.Height));
+        var identity = monitor.Left is { } left
+            && monitor.Top is { } top
+            && monitor.Width is > 0
+            && monitor.Height is > 0
+                ? DisplayOutputIdentity.FromMonitorDisplayName(
+                    monitor.DisplayName,
+                    left,
+                    top,
+                    monitor.Width.Value,
+                    monitor.Height.Value)
+                : DisplayOutputIdentity.FromMonitorDisplayName(
+                    monitor.DisplayName,
+                    target.Size.Width,
+                    target.Size.Height);
+
+        return target.WithDisplayIdentity(identity);
     }
 }

@@ -16,7 +16,7 @@ public static class MonitorSelectionInterop
         }
 
         var monitor = MonitorFromPoint(point, MonitorFromPointFlags.MONITOR_DEFAULTTONEAREST);
-        return new MonitorHandle(monitor, GetMonitorDisplayName(monitor));
+        return GetMonitorHandleInfo(monitor);
     }
 
     public static MonitorHandle GetMonitorFromWindow(IntPtr windowHandle)
@@ -29,18 +29,24 @@ public static class MonitorSelectionInterop
                 $"MonitorFromWindow returned NULL for window handle 0x{windowHandle:X}.");
         }
 
-        return new MonitorHandle(monitor, GetMonitorDisplayName(monitor));
+        return GetMonitorHandleInfo(monitor);
     }
 
-    private static string GetMonitorDisplayName(IntPtr monitorHandle)
+    private static MonitorHandle GetMonitorHandleInfo(IntPtr monitorHandle)
     {
         var monitorInfo = new MonitorInfoEx { Size = Marshal.SizeOf<MonitorInfoEx>() };
         if (!GetMonitorInfo(monitorHandle, ref monitorInfo))
         {
-            return "Display";
+            return new MonitorHandle(monitorHandle, "Display");
         }
 
-        return monitorInfo.DeviceName;
+        return new MonitorHandle(
+            monitorHandle,
+            monitorInfo.DeviceName,
+            monitorInfo.Monitor.Left,
+            monitorInfo.Monitor.Top,
+            monitorInfo.Monitor.Right - monitorInfo.Monitor.Left,
+            monitorInfo.Monitor.Bottom - monitorInfo.Monitor.Top);
     }
 
     private static NativeInteropException MonitorSelectionFailure(

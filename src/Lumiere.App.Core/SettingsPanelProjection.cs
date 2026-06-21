@@ -106,13 +106,17 @@ public sealed record TargetEvidenceProjection(
             ? "Capture target"
             : state.Target.DisplayName;
 
+        var displayDetail = state.Target.DisplayIdentity is { Left: { } left, Top: { } top } identity
+            ? $"HDR readiness is scoped to the selected display target, desktop bounds {left},{top} {identity.Width}x{identity.Height}, and its preview path."
+            : "HDR readiness is scoped to the selected display target and its preview path.";
+
         return state.Target.Kind switch
         {
             CaptureTargetKind.Display => new TargetEvidenceProjection(
                 "Display target",
                 targetLabel,
                 stageLabel,
-                "HDR readiness is scoped to the selected display target and its preview path."),
+                displayDetail),
             CaptureTargetKind.Window => new TargetEvidenceProjection(
                 "Window target",
                 targetLabel,

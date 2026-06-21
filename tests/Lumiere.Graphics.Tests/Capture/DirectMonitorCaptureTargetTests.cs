@@ -106,6 +106,32 @@ public sealed class DirectMonitorCaptureTargetSelectionServiceTests
     }
 
     [Fact]
+    public async Task DirectSelectionCarriesMonitorBoundsInDisplayIdentity()
+    {
+        var fakeMonitor = new MonitorHandle(
+            new IntPtr(12345),
+            "DISPLAY2",
+            Left: 3840,
+            Top: 0,
+            Width: 3840,
+            Height: 2160);
+        var service = new DirectMonitorCaptureTargetSelectionService(
+            () => fakeMonitor,
+            monitor => CreateFakeDisplayTarget(monitor, 3840, 2160),
+            () => true);
+
+        var result = await service.SelectDirectMonitorTargetAsync();
+
+        Assert.Equal(SelectionOutcome.Selected, result.Outcome);
+        Assert.NotNull(result.Target);
+        Assert.Equal("DISPLAY2", result.Target.DisplayIdentity?.DeviceName);
+        Assert.Equal(3840, result.Target.DisplayIdentity?.Left);
+        Assert.Equal(0, result.Target.DisplayIdentity?.Top);
+        Assert.Equal(3840, result.Target.DisplayIdentity?.Width);
+        Assert.Equal(2160, result.Target.DisplayIdentity?.Height);
+    }
+
+    [Fact]
     public async Task DirectSelectionReturnsUnsupportedWhenCaptureNotSupported()
     {
         var fakeMonitor = new MonitorHandle(new IntPtr(12345), "DISPLAY1");

@@ -106,6 +106,8 @@ public sealed class SwapChainManager
             capability = HdrDisplayCapability.Probe(
                 factory,
                 normalizedHint.DisplayName,
+                normalizedHint.Left,
+                normalizedHint.Top,
                 normalizedHint.Width,
                 normalizedHint.Height);
             CachedHdrCapabilities[normalizedHint] = capability;
@@ -142,12 +144,21 @@ public sealed class SwapChainManager
 
 public sealed record SwapChainTargetHint(
     string? DisplayName,
+    int? Left,
+    int? Top,
     int Width,
     int Height)
 {
+    public SwapChainTargetHint(string? displayName, int width, int height)
+        : this(displayName, null, null, width, height)
+    {
+    }
+
     public SwapChainTargetHint Normalize() =>
         new(
             string.IsNullOrWhiteSpace(DisplayName) ? null : DisplayName.Trim(),
+            Left,
+            Top,
             Math.Max(0, Width),
             Math.Max(0, Height));
 }

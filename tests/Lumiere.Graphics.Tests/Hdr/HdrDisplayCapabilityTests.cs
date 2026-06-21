@@ -61,15 +61,19 @@ public sealed class HdrDisplayCapabilityTests
         var capability = HdrDisplayCapability.SelectForTarget(
             [
                 new HdrDisplayOutputSnapshot(
-                    "SDR Display",
+                    DeviceName: "SDR Display",
+                    Left: 0,
+                    Top: 0,
                     Width: 3840,
                     Height: 2160,
-                    ColorSpaceType.RgbFullG22NoneP709),
+                    ColorSpace: ColorSpaceType.RgbFullG22NoneP709),
                 new HdrDisplayOutputSnapshot(
-                    "HDR Display",
+                    DeviceName: "HDR Display",
+                    Left: 3840,
+                    Top: 0,
                     Width: 3840,
                     Height: 2160,
-                    ColorSpaceType.RgbFullG2084NoneP2020),
+                    ColorSpace: ColorSpaceType.RgbFullG2084NoneP2020),
             ],
             targetDisplayName: "HDR Display",
             targetWidth: 3840,
@@ -85,15 +89,19 @@ public sealed class HdrDisplayCapabilityTests
         var capability = HdrDisplayCapability.SelectForTarget(
             [
                 new HdrDisplayOutputSnapshot(
-                    "Primary",
+                    DeviceName: "Primary",
+                    Left: 0,
+                    Top: 0,
                     Width: 1920,
                     Height: 1080,
-                    ColorSpaceType.RgbFullG22NoneP709),
+                    ColorSpace: ColorSpaceType.RgbFullG22NoneP709),
                 new HdrDisplayOutputSnapshot(
-                    "Reference HDR",
+                    DeviceName: "Reference HDR",
+                    Left: 1920,
+                    Top: 0,
                     Width: 2560,
                     Height: 1440,
-                    ColorSpaceType.RgbFullG2084NoneP2020),
+                    ColorSpace: ColorSpaceType.RgbFullG2084NoneP2020),
             ],
             targetDisplayName: null,
             targetWidth: 2560,
@@ -109,10 +117,12 @@ public sealed class HdrDisplayCapabilityTests
         var capability = HdrDisplayCapability.SelectForTarget(
             [
                 new HdrDisplayOutputSnapshot(
-                    "Primary",
+                    DeviceName: "Primary",
+                    Left: 0,
+                    Top: 0,
                     Width: 1920,
                     Height: 1080,
-                    ColorSpaceType.RgbFullG22NoneP709),
+                    ColorSpace: ColorSpaceType.RgbFullG22NoneP709),
             ],
             targetDisplayName: "Missing Display",
             targetWidth: 2560,
@@ -129,15 +139,19 @@ public sealed class HdrDisplayCapabilityTests
         var capability = HdrDisplayCapability.SelectForTarget(
             [
                 new HdrDisplayOutputSnapshot(
-                    "SDR Display",
+                    DeviceName: "SDR Display",
+                    Left: 0,
+                    Top: 0,
                     Width: 3840,
                     Height: 2160,
-                    ColorSpaceType.RgbFullG22NoneP709),
+                    ColorSpace: ColorSpaceType.RgbFullG22NoneP709),
                 new HdrDisplayOutputSnapshot(
-                    "HDR Display",
+                    DeviceName: "HDR Display",
+                    Left: 3840,
+                    Top: 0,
                     Width: 3840,
                     Height: 2160,
-                    ColorSpaceType.RgbFullG2084NoneP2020),
+                    ColorSpace: ColorSpaceType.RgbFullG2084NoneP2020),
             ],
             targetDisplayName: null,
             targetWidth: 3840,
@@ -146,6 +160,36 @@ public sealed class HdrDisplayCapabilityTests
         Assert.Equal(HdrDisplayState.Unknown, capability.State);
         Assert.Null(capability.DisplayColorSpace);
         Assert.Null(capability.DeviceName);
+    }
+
+    [Fact]
+    public void SelectForTarget_UsesDesktopBoundsWhenDisplayNameIsUnavailableAndSizeIsAmbiguous()
+    {
+        var capability = HdrDisplayCapability.SelectForTarget(
+            [
+                new HdrDisplayOutputSnapshot(
+                    DeviceName: "SDR Display",
+                    Left: 0,
+                    Top: 0,
+                    Width: 3840,
+                    Height: 2160,
+                    ColorSpace: ColorSpaceType.RgbFullG22NoneP709),
+                new HdrDisplayOutputSnapshot(
+                    DeviceName: "HDR Display",
+                    Left: 3840,
+                    Top: 0,
+                    Width: 3840,
+                    Height: 2160,
+                    ColorSpace: ColorSpaceType.RgbFullG2084NoneP2020),
+            ],
+            targetDisplayName: null,
+            targetLeft: 3840,
+            targetTop: 0,
+            targetWidth: 3840,
+            targetHeight: 2160);
+
+        Assert.Equal(HdrDisplayState.Active, capability.State);
+        Assert.Equal("HDR Display", capability.DeviceName);
     }
 
     [Fact]

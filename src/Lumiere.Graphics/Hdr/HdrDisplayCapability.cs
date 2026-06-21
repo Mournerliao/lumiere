@@ -43,6 +43,18 @@ public sealed record HdrDisplayCapability(
         return SelectForTarget(outputs, targetDisplayName, targetWidth, targetHeight);
     }
 
+    public static HdrDisplayCapability Probe(
+        IDXGIFactory2 factory,
+        string? targetDisplayName,
+        int? targetLeft,
+        int? targetTop,
+        int targetWidth,
+        int targetHeight)
+    {
+        var outputs = ProbeOutputs(factory);
+        return SelectForTarget(outputs, targetDisplayName, targetLeft, targetTop, targetWidth, targetHeight);
+    }
+
     private static IReadOnlyList<HdrDisplayOutputSnapshot> ProbeOutputs(IDXGIFactory2 factory)
     {
         ArgumentNullException.ThrowIfNull(factory);
@@ -111,6 +123,8 @@ public sealed record HdrDisplayCapability(
                 var deviceName = desc.DeviceName;
                 var snapshot = new HdrDisplayOutputSnapshot(
                     deviceName,
+                    desc.DesktopCoordinates.Left,
+                    desc.DesktopCoordinates.Top,
                     desc.DesktopCoordinates.Right - desc.DesktopCoordinates.Left,
                     desc.DesktopCoordinates.Bottom - desc.DesktopCoordinates.Top,
                     colorSpace);
@@ -139,11 +153,27 @@ public sealed record HdrDisplayCapability(
         IReadOnlyList<HdrDisplayOutputSnapshot> outputs,
         string? targetDisplayName,
         int targetWidth,
+        int targetHeight) =>
+        SelectForTarget(
+            outputs,
+            targetDisplayName,
+            targetLeft: null,
+            targetTop: null,
+            targetWidth,
+            targetHeight);
+
+    public static HdrDisplayCapability SelectForTarget(
+        IReadOnlyList<HdrDisplayOutputSnapshot> outputs,
+        string? targetDisplayName,
+        int? targetLeft,
+        int? targetTop,
+        int targetWidth,
         int targetHeight)
     {
         ArgumentNullException.ThrowIfNull(outputs);
 
         var matchingOutput = FindByDisplayName(outputs, targetDisplayName)
+            ?? FindByBounds(outputs, targetLeft, targetTop, targetWidth, targetHeight)
             ?? FindBySize(outputs, targetWidth, targetHeight);
 
         return matchingOutput is null
@@ -162,6 +192,25 @@ public sealed record HdrDisplayCapability(
 
         return outputs.FirstOrDefault(output =>
             string.Equals(output.DeviceName, targetDisplayName.Trim(), StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static HdrDisplayOutputSnapshot? FindByBounds(
+        IReadOnlyList<HdrDisplayOutputSnapshot> outputs,
+        int? targetLeft,
+        int? targetTop,
+        int targetWidth,
+        int targetHeight)
+    {
+        if (targetLeft is null || targetTop is null || targetWidth <= 0 || targetHeight <= 0)
+        {
+            return null;
+        }
+
+        return outputs.FirstOrDefault(output =>
+            output.Left == targetLeft
+            && output.Top == targetTop
+            && output.Width == targetWidth
+            && output.Height == targetHeight);
     }
 
     private static HdrDisplayOutputSnapshot? FindBySize(
@@ -205,6 +254,8 @@ public sealed record HdrDisplayCapability(
 
 public sealed record HdrDisplayOutputSnapshot(
     string DeviceName,
+    int Left,
+    int Top,
     int Width,
     int Height,
     ColorSpaceType ColorSpace);

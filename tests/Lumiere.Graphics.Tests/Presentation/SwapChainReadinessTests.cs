@@ -97,6 +97,25 @@ public sealed class SwapChainReadinessTests
         Assert.Contains("0x8001010E", status.TechnicalDetail ?? string.Empty, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void TargetHintNormalizePreservesDesktopBounds()
+    {
+        var hint = new SwapChainTargetHint(
+            "  \\\\.\\DISPLAY2  ",
+            Left: 3840,
+            Top: 0,
+            Width: 3840,
+            Height: 2160);
+
+        var normalized = hint.Normalize();
+
+        Assert.Equal("\\\\.\\DISPLAY2", normalized.DisplayName);
+        Assert.Equal(3840, normalized.Left);
+        Assert.Equal(0, normalized.Top);
+        Assert.Equal(3840, normalized.Width);
+        Assert.Equal(2160, normalized.Height);
+    }
+
     private sealed class FakeColorSpaceController : ISwapChainColorSpaceController
     {
         private readonly SwapChainColorSpaceSupportFlags supportFlags;

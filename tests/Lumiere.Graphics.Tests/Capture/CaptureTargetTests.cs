@@ -170,4 +170,33 @@ public sealed class CaptureTargetTests
         Assert.Equal(2560, resized.DisplayIdentity?.Width);
         Assert.Equal(1440, resized.DisplayIdentity?.Height);
     }
+
+    [Fact]
+    public void DisplayIdentityCanCarryDesktopBoundsWithoutNativeHandle()
+    {
+        var identity = new DisplayOutputIdentity("\\\\.\\DISPLAY2", left: 3840, top: 0, width: 3840, height: 2160);
+
+        Assert.Equal("\\\\.\\DISPLAY2", identity.DeviceName);
+        Assert.Equal(3840, identity.Left);
+        Assert.Equal(0, identity.Top);
+        Assert.Equal(3840, identity.Width);
+        Assert.Equal(2160, identity.Height);
+    }
+
+    [Fact]
+    public void WithSizePreservesDisplayIdentityBoundsAndUpdatesIdentitySize()
+    {
+        var target = CaptureTarget.CreateForTest(
+            new SizeInt32 { Width = 3840, Height = 2160 },
+            "HDR Display",
+            CaptureTargetKind.Display,
+            new DisplayOutputIdentity("\\\\.\\DISPLAY2", left: 3840, top: 0, width: 3840, height: 2160));
+
+        var resized = target.WithSize(new SizeInt32 { Width = 2560, Height = 1440 });
+
+        Assert.Equal(3840, resized.DisplayIdentity?.Left);
+        Assert.Equal(0, resized.DisplayIdentity?.Top);
+        Assert.Equal(2560, resized.DisplayIdentity?.Width);
+        Assert.Equal(1440, resized.DisplayIdentity?.Height);
+    }
 }
