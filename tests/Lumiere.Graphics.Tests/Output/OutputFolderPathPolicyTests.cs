@@ -40,6 +40,25 @@ public sealed class OutputFolderPathPolicyTests
         Assert.Equal("C:\\Captures\\Lumiere-20260523-090807-123-02.png", path);
     }
 
+    [Theory]
+    [InlineData("jxr", "C:\\Captures\\Lumiere-20260523-090807-123.jxr")]
+    [InlineData(".jxr", "C:\\Captures\\Lumiere-20260523-090807-123.jxr")]
+    [InlineData("  HDR  ", "C:\\Captures\\Lumiere-20260523-090807-123.hdr")]
+    public void CreateCandidatePath_UsesEncodedArtifactExtension(string extension, string expectedPath)
+    {
+        var policy = new OutputFolderPathPolicy(() => new DateTimeOffset(2026, 5, 23, 9, 8, 7, 123, TimeSpan.Zero));
+        var outputPolicy = OutputPolicy.FromSettings(
+            OutputTarget.Folder,
+            copyAsImage: true,
+            "C:\\Captures",
+            timestampNaming: true,
+            afterCaptureBehavior: null);
+
+        var path = policy.CreateCandidatePath(outputPolicy, extension, _ => false);
+
+        Assert.Equal(expectedPath, path);
+    }
+
     [Fact]
     public void CreateCandidatePath_ThrowsForMissingSavePath()
     {

@@ -68,19 +68,27 @@ public sealed class FolderOutputService : IOutputService
 
         try
         {
-            var artifactPath = pathPolicy.CreateCandidatePath(request.Policy, fileExists);
-            var pngBytes = await encoder.EncodePngAsync(request.Texture, request.CropRegion, cancellationToken);
-            await writeAllBytesAsync(artifactPath, pngBytes, cancellationToken);
+            var artifact = await encoder.EncodeArtifactAsync(
+                request.Texture,
+                request.CropRegion,
+                request.Policy.EffectiveProfile,
+                cancellationToken);
+            var artifactPath = pathPolicy.CreateCandidatePath(
+                request.Policy,
+                artifact.NormalizedFileExtension,
+                fileExists);
+            await writeAllBytesAsync(artifactPath, artifact.Bytes, cancellationToken);
 
             Logger.LogInformation(
-                "operation=FolderOutput, stage=Complete, path={Path}, bytes={Bytes}",
+                "operation=FolderOutput, stage=Complete, path={Path}, bytes={Bytes}, profile={Profile}",
                 artifactPath,
-                pngBytes.Length);
+                artifact.Bytes.Length,
+                artifact.Profile.Kind);
 
             return OutputResult.FromTargets(OutputTargetResult.Success(
                 OutputTarget.Folder,
                 "Saved to folder",
-                $"Folder output success: {pngBytes.Length} bytes",
+                $"Folder output success: {artifact.Bytes.Length} bytes",
                 artifactPath))
                 .WithOutputPolicy(request.Policy);
         }

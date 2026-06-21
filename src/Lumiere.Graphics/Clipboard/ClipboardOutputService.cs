@@ -201,6 +201,26 @@ public sealed class ClipboardOutputService : IOutputService, IOutputPngEncoder, 
         return await EncodeAsPngAsync(bgra8Texture, pixelWidth, pixelHeight);
     }
 
+    public async Task<OutputEncodedArtifact> EncodeArtifactAsync(
+        CapturedFrameTexture texture,
+        CropPixelRect? cropRegion,
+        OutputProfileContract outputProfile,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(outputProfile);
+        if (outputProfile.Kind is not OutputProfileKind.SrgbCompatibilityPng)
+        {
+            throw new InvalidOperationException(
+                $"The clipboard PNG encoder cannot create {outputProfile.Label} artifacts.");
+        }
+
+        var pngBytes = await EncodePngAsync(texture, cropRegion, cancellationToken);
+        return new OutputEncodedArtifact(
+            pngBytes,
+            "png",
+            outputProfile);
+    }
+
     private static bool ValidateRegion(
         int x,
         int y,

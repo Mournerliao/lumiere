@@ -12,7 +12,15 @@ public sealed class OutputFolderPathPolicy
         this.nowProvider = nowProvider ?? (() => DateTimeOffset.Now);
     }
 
-    public string CreateCandidatePath(OutputPolicy policy, Func<string, bool>? exists = null)
+    public string CreateCandidatePath(
+        OutputPolicy policy,
+        Func<string, bool>? exists) =>
+        CreateCandidatePath(policy, fileExtension: "png", exists);
+
+    public string CreateCandidatePath(
+        OutputPolicy policy,
+        string fileExtension = "png",
+        Func<string, bool>? exists = null)
     {
         ArgumentNullException.ThrowIfNull(policy);
         if (string.IsNullOrWhiteSpace(policy.SavePath))
@@ -22,20 +30,26 @@ public sealed class OutputFolderPathPolicy
 
         exists ??= File.Exists;
         var directory = policy.SavePath.Trim();
+        var extension = NormalizeExtension(fileExtension);
         var baseName = policy.TimestampNaming
             ? $"{FilePrefix}-{nowProvider():yyyyMMdd-HHmmss-fff}"
             : FilePrefix;
 
-        var candidate = Path.Combine(directory, $"{baseName}.png");
+        var candidate = Path.Combine(directory, $"{baseName}.{extension}");
         var suffix = 1;
         while (exists(candidate))
         {
             candidate = Path.Combine(directory, string.Create(
                 CultureInfo.InvariantCulture,
-                $"{baseName}-{suffix:00}.png"));
+                $"{baseName}-{suffix:00}.{extension}"));
             suffix++;
         }
 
         return candidate;
     }
+
+    private static string NormalizeExtension(string? fileExtension) =>
+        string.IsNullOrWhiteSpace(fileExtension)
+            ? "bin"
+            : fileExtension.Trim().TrimStart('.').ToLowerInvariant();
 }

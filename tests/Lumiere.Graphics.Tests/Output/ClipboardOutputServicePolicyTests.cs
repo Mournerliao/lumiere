@@ -86,4 +86,33 @@ public sealed class ClipboardOutputServicePolicyTests
         Assert.Equal("Failed to copy to clipboard", result.UserMessage);
         Assert.Contains("Clipboard unavailable", result.TechnicalDetail);
     }
+
+    [Fact]
+    public async Task EncodeArtifactAsync_RejectsHdrProfileBecausePngEncoderIsCompatibilityOnly()
+    {
+        using var frame = new CapturedFrameTexture(null, 16, 16, "Test frame");
+        using var service = new ClipboardOutputService((_, _) =>
+            Task.FromResult(OutputResult.ClipboardSuccess(128)));
+        var hdrProfile = OutputProfileContract.Hdr10Pq with
+        {
+            IsExecutable = true,
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract,
+        };
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.EncodeArtifactAsync(frame, cropRegion: null, hdrProfile));
+
+        Assert.Contains("cannot create HDR10", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static OutputFormatContract CompleteHdr10Contract { get; } =
+        new(
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputTransferFunction.PqSt2084,
+            OutputColorPrimaries.Bt2020,
+            OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
+            OutputMetadataPolicy.AttachHdr10StaticMetadata,
+            OutputTargetAppAssumption.RequiresHdrViewerValidation);
 }

@@ -9,7 +9,7 @@ public sealed class FolderOutputServiceTests
     [Fact]
     public async Task ExecuteOutputAsync_FolderDisabledSkipsWithoutWriting()
     {
-        var encoder = new TestPngEncoder();
+        var encoder = new TestArtifactEncoder();
         var writes = 0;
         var service = CreateService(encoder, directoryExists: _ => true, write: (_, _, _) =>
         {
@@ -30,7 +30,7 @@ public sealed class FolderOutputServiceTests
     [InlineData("   ", "Save path is not configured")]
     public async Task ExecuteOutputAsync_MissingSavePathFails(string? savePath, string expectedMessage)
     {
-        var service = CreateService(new TestPngEncoder(), directoryExists: _ => true);
+        var service = CreateService(new TestArtifactEncoder(), directoryExists: _ => true);
 
         var result = await service.ExecuteOutputAsync(CreateRequest(OutputTarget.Folder, savePath));
 
@@ -42,7 +42,7 @@ public sealed class FolderOutputServiceTests
     [Fact]
     public async Task ExecuteOutputAsync_MissingDirectoryFails()
     {
-        var service = CreateService(new TestPngEncoder(), directoryExists: _ => false);
+        var service = CreateService(new TestArtifactEncoder(), directoryExists: _ => false);
 
         var result = await service.ExecuteOutputAsync(CreateRequest(OutputTarget.Folder, "C:\\Missing"));
 
@@ -54,7 +54,7 @@ public sealed class FolderOutputServiceTests
     [Fact]
     public async Task ExecuteOutputAsync_SuccessWritesArtifactAndReportsPath()
     {
-        var encoder = new TestPngEncoder();
+        var encoder = new TestArtifactEncoder([1, 2, 3], "png");
         var writtenPaths = new List<string>();
         var service = CreateService(encoder, directoryExists: _ => true, write: (path, bytes, _) =>
         {
@@ -73,10 +73,41 @@ public sealed class FolderOutputServiceTests
     }
 
     [Fact]
+    public async Task ExecuteOutputAsync_UsesEncodedArtifactExtensionAndEffectiveProfile()
+    {
+        var requestedProfile = OutputProfileContract.Hdr10Pq with
+        {
+            FormatContract = CompleteHdr10Contract,
+        };
+        var encoder = new TestArtifactEncoder([7, 8, 9], "jxr");
+        var service = CreateService(encoder, directoryExists: _ => true);
+
+        var result = await service.ExecuteOutputAsync(new OutputRequest
+        {
+            Texture = new CapturedFrameTexture(null, 16, 16, "Test frame"),
+            Policy = OutputPolicy.Default with
+            {
+                Target = OutputTarget.Folder,
+                SavePath = "C:\\Captures",
+                RequestedProfile = requestedProfile,
+                ExecutionCapabilities = OutputProfileExecutionCapabilities.Create(
+                    OutputProfileExecutionCapability.SrgbCompatibility,
+                    OutputProfileExecutionCapability.Hdr10Preserved),
+            },
+        });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("C:\\Captures\\Lumiere-20260523-090807-123.jxr", result.Targets.Single().ArtifactPath);
+        Assert.Equal(OutputProfileKind.Hdr10Pq, encoder.Profile?.Kind);
+        Assert.Equal(OutputProfileKind.Hdr10Pq, result.EffectiveProfile.Kind);
+        Assert.False(result.UsesCompatibilityProfileFallback);
+    }
+
+    [Fact]
     public async Task ExecuteOutputAsync_WriteFailureReturnsRecoverableFailure()
     {
         var service = CreateService(
-            new TestPngEncoder(),
+            new TestArtifactEncoder(),
             directoryExists: _ => true,
             write: (_, _, _) => throw new UnauthorizedAccessException("Denied"));
 
@@ -89,7 +120,7 @@ public sealed class FolderOutputServiceTests
     }
 
     private static FolderOutputService CreateService(
-        TestPngEncoder encoder,
+        TestArtifactEncoder encoder,
         Func<string, bool> directoryExists,
         Func<string, byte[], CancellationToken, Task>? write = null)
     {
@@ -114,9 +145,25 @@ public sealed class FolderOutputServiceTests
                 afterCaptureBehavior: null),
         };
 
-    private sealed class TestPngEncoder : IOutputPngEncoder
+    private sealed class TestArtifactEncoder : IOutputPngEncoder
     {
+        private readonly byte[] bytes;
+        private readonly string extension;
+
+        public TestArtifactEncoder()
+            : this([1, 2, 3], "png")
+        {
+        }
+
+        public TestArtifactEncoder(byte[] bytes, string extension)
+        {
+            this.bytes = bytes;
+            this.extension = extension;
+        }
+
         public int Calls { get; private set; }
+
+        public OutputProfileContract? Profile { get; private set; }
 
         public Task<byte[]> EncodePngAsync(
             CapturedFrameTexture texture,
@@ -124,7 +171,28 @@ public sealed class FolderOutputServiceTests
             CancellationToken cancellationToken = default)
         {
             Calls++;
-            return Task.FromResult<byte[]>([1, 2, 3]);
+            return Task.FromResult(bytes);
+        }
+
+        public Task<OutputEncodedArtifact> EncodeArtifactAsync(
+            CapturedFrameTexture texture,
+            CropPixelRect? cropRegion,
+            OutputProfileContract outputProfile,
+            CancellationToken cancellationToken = default)
+        {
+            Calls++;
+            Profile = outputProfile;
+            return Task.FromResult(new OutputEncodedArtifact(bytes, extension, outputProfile));
         }
     }
+
+    private static OutputFormatContract CompleteHdr10Contract { get; } =
+        new(
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputTransferFunction.PqSt2084,
+            OutputColorPrimaries.Bt2020,
+            OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
+            OutputMetadataPolicy.AttachHdr10StaticMetadata,
+            OutputTargetAppAssumption.RequiresHdrViewerValidation);
 }
