@@ -49,7 +49,7 @@ public sealed partial class MainWindow : Window
     private readonly ISettingsWriterAggregator settingsWriter;
     private readonly IAboutInfoProvider aboutInfoProvider;
     private readonly GraphicsDeviceResources deviceResources;
-    private readonly OutputProfileExecutionCapabilities outputCapabilities;
+    private readonly Hdr10JxrCodecReadiness hdr10JxrCodecReadiness;
     private readonly IOutputValidationArtifactSource outputValidationArtifactSource;
     private readonly GraphicsEngine graphicsEngine;
     private OutputValidationArtifactSnapshot? outputValidationArtifacts;
@@ -95,7 +95,7 @@ public sealed partial class MainWindow : Window
         IAboutInfoProvider aboutInfoProvider,
         CaptureService captureService,
         GraphicsDeviceResources deviceResources,
-        OutputProfileExecutionCapabilities? outputCapabilities = null,
+        Hdr10JxrCodecReadiness? hdr10JxrCodecReadiness = null,
         IOutputValidationArtifactSource? outputValidationArtifactSource = null)
     {
         this.captureCommandCoordinator = captureCommandCoordinator ?? throw new ArgumentNullException(nameof(captureCommandCoordinator));
@@ -105,7 +105,7 @@ public sealed partial class MainWindow : Window
         this.aboutInfoProvider = aboutInfoProvider ?? throw new ArgumentNullException(nameof(aboutInfoProvider));
         this.captureService = captureService ?? throw new ArgumentNullException(nameof(captureService));
         this.deviceResources = deviceResources ?? throw new ArgumentNullException(nameof(deviceResources));
-        this.outputCapabilities = outputCapabilities ?? OutputProfileExecutionCapabilities.CompatibilityOnly;
+        this.hdr10JxrCodecReadiness = hdr10JxrCodecReadiness ?? Hdr10JxrCodecReadiness.PendingNativeWicImplementation;
         this.outputValidationArtifactSource = outputValidationArtifactSource ?? FileOutputValidationArtifactSource.CreateDefault();
         this.graphicsEngine = new GraphicsEngine(deviceResources);
         InitializeComponent();
@@ -319,6 +319,15 @@ public sealed partial class MainWindow : Window
         Logger.LogDebug(
             "Timestamp naming preference updated in settings: enabled={TimestampNaming}",
             settingsProvider.TimestampNaming);
+    }
+
+    private OutputProfileExecutionCapabilities ResolveOutputCapabilities(
+        OutputValidationArtifactSnapshot? validationSnapshot = null)
+    {
+        var snapshot = validationSnapshot ?? LoadOutputValidationArtifacts();
+        return OutputProfileExecutionCapabilities.ResolveHdr10JxrReleaseCapabilities(
+            hdr10JxrCodecReadiness,
+            snapshot.Artifacts);
     }
 
     private async void OnSettingsSavePathBrowseClick(object sender, RoutedEventArgs e)
@@ -1585,6 +1594,7 @@ public sealed partial class MainWindow : Window
     private TrayMenuSnapshot CreateTrayMenuSnapshot(CaptureSessionState state, OutputResult? outputResult = null)
     {
         var validation = LoadOutputValidationArtifacts();
+        var outputCapabilities = ResolveOutputCapabilities(validation);
         var projection = TrayMenuProjection.Project(
             state,
             settingsProvider,
@@ -1677,6 +1687,7 @@ public sealed partial class MainWindow : Window
     private void ApplySettingsProjection(CaptureSessionState state)
     {
         var validation = LoadOutputValidationArtifacts();
+        var outputCapabilities = ResolveOutputCapabilities(validation);
         var projection = SettingsPanelProjection.Project(
             settingsProvider,
             state,
@@ -1969,6 +1980,7 @@ public sealed partial class MainWindow : Window
     private void UpdateMainPanelProjection(CaptureSessionState state, OutputResult? outputResult = null)
     {
         var validation = LoadOutputValidationArtifacts();
+        var outputCapabilities = ResolveOutputCapabilities(validation);
         var projection = MainPanelProjection.Project(
             state,
             outputResult,
@@ -2256,6 +2268,7 @@ public sealed partial class MainWindow : Window
                 outputFrame.Width,
                 outputFrame.Height);
             var validation = LoadOutputValidationArtifacts();
+            var outputCapabilities = ResolveOutputCapabilities(validation);
 
             var request = new OutputRequest
             {
@@ -2372,6 +2385,7 @@ public sealed partial class MainWindow : Window
             if (!isClosed)
             {
                 var validation = LoadOutputValidationArtifacts();
+                var outputCapabilities = ResolveOutputCapabilities(validation);
                 var projection = MainPanelProjection.Project(
                     captureService?.CurrentSessionState ?? CaptureSessionState.Idle(),
                     hdrAlertsEnabled: settingsProvider.HdrAlertsEnabled,
@@ -2426,7 +2440,9 @@ public sealed partial class MainWindow : Window
             sessionState.TechnicalDetail ?? string.Empty,
             isFrozenPreview);
         var hdrAlertsEnabled = settingsProvider.HdrAlertsEnabled;
-        var fidelityCue = CreateOverlayFidelityCue(settingsProvider.ExportColorFormat, outputCapabilities);
+        var fidelityCue = CreateOverlayFidelityCue(
+            settingsProvider.ExportColorFormat,
+            ResolveOutputCapabilities());
         return sessionState.Status switch
         {
             CaptureSessionStatus.Capturing => OverlayState.HdrReady(

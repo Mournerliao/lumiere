@@ -317,6 +317,26 @@ public sealed record OutputProfileExecutionCapabilities(
             : CompatibilityOnly;
     }
 
+    public static OutputProfileExecutionCapabilities ResolveHdr10JxrReleaseCapabilities(
+        Hdr10JxrCodecReadiness readiness,
+        IEnumerable<OutputValidationSessionArtifact> validationArtifacts)
+    {
+        ArgumentNullException.ThrowIfNull(readiness);
+        ArgumentNullException.ThrowIfNull(validationArtifacts);
+
+        if (!HasHdr10JxrImplementationReadiness(readiness))
+        {
+            return CompatibilityOnly;
+        }
+
+        var viewerEvidence = Hdr10JxrViewerValidationEvidence.FromArtifacts(validationArtifacts);
+        return viewerEvidence.IsComplete
+            ? Create(
+                OutputProfileExecutionCapability.SrgbCompatibility,
+                OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder)
+            : CompatibilityOnly;
+    }
+
     public OutputProfileContract SelectEffectiveProfile(OutputProfileContract requestedProfile)
     {
         ArgumentNullException.ThrowIfNull(requestedProfile);
@@ -342,6 +362,13 @@ public sealed record OutputProfileExecutionCapabilities(
             ? executableProfile
             : OutputProfileContract.SrgbCompatibilityPng;
     }
+
+    private static bool HasHdr10JxrImplementationReadiness(Hdr10JxrCodecReadiness readiness) =>
+        readiness.HasNativeWicJpegXrEncoder
+        && readiness.AcceptsRgba16FloatSource
+        && readiness.WritesAuditMetadata
+        && readiness.HasArtifactAuditMetadataRoundTripEvidence
+        && readiness.Hdr10StaticMetadataPolicy.IsComplete;
 }
 
 public sealed record OutputProfileExecutionCapability(

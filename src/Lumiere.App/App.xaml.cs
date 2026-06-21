@@ -53,13 +53,12 @@ public partial class App : Application
             outputService = new AfterCaptureOutputService(
                 configuredOutputService,
                 new WindowsArtifactShellAction());
-            var outputCapabilities = OutputProfileExecutionCapabilities.FromHdr10JxrCodecReadiness(
-                hdr10JxrCodec.Readiness);
+            var hdr10JxrCodecReadiness = hdr10JxrCodec.Readiness;
             var settingsProvider = new DefaultSettingsProvider(
                 LocalSettingsStore.CreateDefault(LumiereLoggerFactory.CreateLogger(LogCategories.Settings)));
             var aboutInfoProvider = new AssemblyAboutInfoProvider(typeof(App).Assembly);
 
-            var mainWindow = new MainWindow(captureCommandCoordinator, outputService, settingsProvider, settingsProvider, aboutInfoProvider, captureService, deviceResources, outputCapabilities);
+            var mainWindow = new MainWindow(captureCommandCoordinator, outputService, settingsProvider, settingsProvider, aboutInfoProvider, captureService, deviceResources, hdr10JxrCodecReadiness);
             _window = mainWindow;
             _window.Activate();
 

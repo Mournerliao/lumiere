@@ -283,6 +283,40 @@ public sealed class OutputPolicyTests
         Assert.DoesNotContain(capabilities.Profiles, profile => profile.ProfileKind is OutputProfileKind.Hdr10Pq);
     }
 
+    [Fact]
+    public void ResolveHdr10JxrReleaseCapabilities_KeepsCompatibilityOnlyWithoutManualArtifacts()
+    {
+        var capabilities = OutputProfileExecutionCapabilities.ResolveHdr10JxrReleaseCapabilities(
+            ReadyHdr10JxrReadiness,
+            []);
+
+        Assert.DoesNotContain(capabilities.Profiles, profile => profile.ProfileKind is OutputProfileKind.Hdr10Pq);
+    }
+
+    [Fact]
+    public void ResolveHdr10JxrReleaseCapabilities_KeepsCompatibilityOnlyWhenViewerEvidenceIsIncomplete()
+    {
+        var capabilities = OutputProfileExecutionCapabilities.ResolveHdr10JxrReleaseCapabilities(
+            ReadyHdr10JxrReadiness,
+            [IncompleteHdr10Artifact()]);
+
+        Assert.DoesNotContain(capabilities.Profiles, profile => profile.ProfileKind is OutputProfileKind.Hdr10Pq);
+    }
+
+    [Fact]
+    public void ResolveHdr10JxrReleaseCapabilities_EnablesHdr10WhenImplementationAndManualEvidenceAreComplete()
+    {
+        var capabilities = OutputProfileExecutionCapabilities.ResolveHdr10JxrReleaseCapabilities(
+            ReadyHdr10JxrReadiness,
+            [CompleteHdr10Artifact()]);
+
+        var hdr10Capability = Assert.Single(
+            capabilities.Profiles,
+            profile => profile.ProfileKind is OutputProfileKind.Hdr10Pq);
+        Assert.Equal(OutputArtifactEncoderImplementation.Implemented, hdr10Capability.ArtifactEncoderImplementation);
+        Assert.Equal(OutputFidelityMode.HdrPreserved, hdr10Capability.FidelityMode);
+    }
+
     private static OutputValidationSessionArtifact CompleteHdr10Artifact() =>
         new(
             Date: "2026-06-21",
@@ -308,6 +342,45 @@ public sealed class OutputPolicyTests
                     OutputProfileKind.Hdr10Pq,
                     [
                         PassingHdrViewer("Microsoft Paint"),
+                        PassingHdrViewer("Windows Photos"),
+                        PassingHdrViewer("Chromium browsers"),
+                    ])
+                {
+                    FormatContract = CompleteHdr10Contract,
+                },
+            ])
+        {
+            TargetHdrEvidence = CompleteTargetHdrEvidence,
+        };
+
+    private static OutputValidationSessionArtifact IncompleteHdr10Artifact() =>
+        new(
+            Date: "2026-06-21",
+            Tester: "QA",
+            BuildCommit: "485bc31",
+            WindowsVersion: "Windows 11 24H2",
+            Device: "HDR workstation",
+            Gpu: "Test GPU",
+            DisplaySetup: "HDR primary",
+            HdrState: "HDR enabled",
+            DpiScales: ["150%"],
+            EntryPointsTested: ["Main panel"],
+            OutputTargetsTested: ["Folder"],
+            TargetAppsTested: ["Windows Photos"],
+            ChecklistIdsCovered: ["REL-OUT-04"],
+            ResultSummary: "HDR10 output profile validation is incomplete.",
+            EvidencePaths: ["docs/validation/evidence/hdr10-output-incomplete.md"],
+            KnownLimitations: ["Viewer metadata evidence still missing."],
+            FollowUpIssuesOrStories: ["11-3"],
+            OutputProfileRecords:
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer("Microsoft Paint") with
+                        {
+                            Hdr10MetadataStatus = OutputCompatibilityEvidenceStatus.NotRun,
+                        },
                         PassingHdrViewer("Windows Photos"),
                         PassingHdrViewer("Chromium browsers"),
                     ])

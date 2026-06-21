@@ -60,11 +60,12 @@ Evidence:
 - Runtime output profile capabilities gate unsupported profile claims.
 - Folder output routes through artifact encoders.
 - HDR10 JXR codec seams, WIC JPEG XR adapter, FP16 source readback, audit metadata write/read, and codec readiness blockers exist.
-- `Hdr10JxrCodecReadiness` prevents enabling HDR10 output unless metadata policy and codec gates are satisfied.
+- `Hdr10JxrCodecReadiness` now covers implementation-level HDR10 JXR readiness, while runtime HDR10 execution is additionally gated on loaded manual validation artifacts.
+- `OutputProfileExecutionCapabilities.ResolveHdr10JxrReleaseCapabilities(...)` now keeps HDR10 on `sRGB` fallback unless both implementation readiness and complete manual output evidence pass.
 
 Remaining blockers:
 
-- Runtime HDR10 export remains disabled until viewer-recognized HDR10 metadata and Windows manual viewer validation pass.
+- The repo still lacks real Windows manual HDR10 output validation artifacts, so HDR10 remains disabled in ordinary sessions.
 - A supported HDR-preserved output profile is not yet a public-release path.
 
 ### 11-3 Validate Target-App Compatibility for Supported Output - in-progress
@@ -73,7 +74,7 @@ Evidence:
 
 - Viewer compatibility evidence is modeled separately for artifact handling, visual match, HDR preservation, and HDR10 metadata recognition.
 - Output validation artifacts can apply named viewer evidence to output contracts.
-- `Hdr10JxrViewerValidationEvidence` evaluates whether loaded manual artifacts satisfy JXR viewer-facing gates.
+- `Hdr10JxrViewerValidationEvidence` now participates in the runtime gate that decides whether HDR10 can become executable for the current validated session.
 
 Remaining blockers:
 
