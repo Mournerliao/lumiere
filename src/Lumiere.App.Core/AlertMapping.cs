@@ -10,18 +10,27 @@ internal static class AlertMapping
     {
         None = 0,
         Degraded,
+        TargetDisplayUnresolved,
         Unsupported,
         Failed,
     }
 
-    internal static AlertSeverity Classify(PreviewReadinessState readinessState, OutputResult? outputResult, bool hdrAlertsEnabled)
+    internal static AlertSeverity Classify(
+        PreviewReadinessStatus readiness,
+        OutputResult? outputResult,
+        bool hdrAlertsEnabled)
     {
         if (!hdrAlertsEnabled || outputResult is not null)
         {
             return AlertSeverity.None;
         }
 
-        return readinessState switch
+        if (readiness.Reason is PreviewReadinessReason.TargetDisplayUnresolved)
+        {
+            return AlertSeverity.TargetDisplayUnresolved;
+        }
+
+        return readiness.State switch
         {
             PreviewReadinessState.Degraded => AlertSeverity.Degraded,
             PreviewReadinessState.Unsupported => AlertSeverity.Unsupported,

@@ -42,8 +42,8 @@ public sealed record MainPanelProjection(
             _ => "Ready to capture",
         };
 
-        var trust = MapTrust(state.Readiness.State, outputResult);
-        var alertMessage = MapAlertMessage(state.Readiness.State, outputResult, hdrAlertsEnabled);
+        var trust = MapTrust(state.Readiness, outputResult);
+        var alertMessage = MapAlertMessage(state.Readiness, outputResult, hdrAlertsEnabled);
         var selectedContract = OutputProfileContract.FromSettingsValue(exportColorFormat);
         var outputProfile = validationArtifacts is null
             ? PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract)
@@ -70,7 +70,7 @@ public sealed record MainPanelProjection(
     }
 
     private static (string Label, MainPanelTrustIcon Icon, MainPanelTrustSeverity Severity) MapTrust(
-        PreviewReadinessState readinessState,
+        PreviewReadinessStatus readiness,
         OutputResult? outputResult)
     {
         if (outputResult is not null)
@@ -86,7 +86,12 @@ public sealed record MainPanelProjection(
             return (label, MainPanelTrustIcon.WarningCircle, MainPanelTrustSeverity.Warning);
         }
 
-        return readinessState switch
+        if (readiness.Reason is PreviewReadinessReason.TargetDisplayUnresolved)
+        {
+            return ("HDR unvalidated", MainPanelTrustIcon.WarningCircle, MainPanelTrustSeverity.Warning);
+        }
+
+        return readiness.State switch
         {
             PreviewReadinessState.Ready => ("HDR Ready", MainPanelTrustIcon.CheckmarkCircle, MainPanelTrustSeverity.Success),
             PreviewReadinessState.Degraded => ("Enable HDR", MainPanelTrustIcon.Desktop, MainPanelTrustSeverity.Warning),
@@ -97,12 +102,13 @@ public sealed record MainPanelProjection(
     }
 
     private static string MapAlertMessage(
-        PreviewReadinessState readinessState,
+        PreviewReadinessStatus readiness,
         OutputResult? outputResult,
         bool hdrAlertsEnabled)
     {
-        return AlertMapping.Classify(readinessState, outputResult, hdrAlertsEnabled) switch
+        return AlertMapping.Classify(readiness, outputResult, hdrAlertsEnabled) switch
         {
+            AlertMapping.AlertSeverity.TargetDisplayUnresolved => "HDR readiness is unvalidated for the selected capture target.",
             AlertMapping.AlertSeverity.Degraded => "Enable HDR in Windows Display settings for best capture quality.",
             AlertMapping.AlertSeverity.Unsupported => "HDR capture is not supported on this display.",
             AlertMapping.AlertSeverity.Failed => "Preview failed. Capture may not produce HDR-quality output.",

@@ -126,6 +126,27 @@ public sealed class MainPanelProjectionTests
     }
 
     [Fact]
+    public void ProjectStatus_TargetAwareUnvalidatedDoesNotTellUserToEnableHdr()
+    {
+        var state = CaptureSessionState.Degraded(
+            CreateTarget(),
+            PreviewReadinessStatus.Degraded(
+                PreviewReadinessStage.Presentation,
+                "HDR readiness is unvalidated for the selected capture target.",
+                "Target-aware display capability could not be matched to a DXGI output.",
+                PreviewReadinessReason.TargetDisplayUnresolved));
+
+        var projection = MainPanelProjection.Project(state, hdrAlertsEnabled: true);
+
+        Assert.Equal("HDR unvalidated", projection.TrustLabel);
+        Assert.Equal(MainPanelTrustIcon.WarningCircle, projection.TrustIcon);
+        Assert.Equal(MainPanelTrustSeverity.Warning, projection.TrustSeverity);
+        Assert.Contains("selected capture target", projection.AlertMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Enable HDR", projection.TrustLabel, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Enable HDR", projection.AlertMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void ProjectStatus_AllDistinguishableStatesHaveDistinctLabels()
     {
         var target = CreateTarget();

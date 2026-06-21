@@ -6,12 +6,14 @@ public sealed record PreviewReadinessStatus
         PreviewReadinessState state,
         PreviewReadinessStage stage,
         string userMessage,
-        string? technicalDetail = null)
+        string? technicalDetail = null,
+        PreviewReadinessReason reason = PreviewReadinessReason.None)
     {
         State = state;
         Stage = stage;
         UserMessage = userMessage;
         TechnicalDetail = technicalDetail;
+        Reason = reason;
     }
 
     public PreviewReadinessState State { get; }
@@ -21,6 +23,8 @@ public sealed record PreviewReadinessStatus
     public string UserMessage { get; }
 
     public string? TechnicalDetail { get; }
+
+    public PreviewReadinessReason Reason { get; }
 
     public bool IsReady => State == PreviewReadinessState.Ready;
 
@@ -46,8 +50,9 @@ public sealed record PreviewReadinessStatus
     public static PreviewReadinessStatus Degraded(
         PreviewReadinessStage stage,
         string userMessage,
-        string? technicalDetail = null) =>
-        new(PreviewReadinessState.Degraded, stage, userMessage, technicalDetail);
+        string? technicalDetail = null,
+        PreviewReadinessReason reason = PreviewReadinessReason.None) =>
+        new(PreviewReadinessState.Degraded, stage, userMessage, technicalDetail, reason);
 
     public static PreviewReadinessStatus Unsupported(
         PreviewReadinessStage stage,
@@ -60,4 +65,10 @@ public sealed record PreviewReadinessStatus
         string userMessage,
         string? technicalDetail = null) =>
         new(PreviewReadinessState.Failed, stage, userMessage, technicalDetail);
+}
+
+public enum PreviewReadinessReason
+{
+    None = 0,
+    TargetDisplayUnresolved,
 }

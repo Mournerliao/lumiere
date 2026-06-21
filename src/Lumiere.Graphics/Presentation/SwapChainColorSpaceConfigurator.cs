@@ -50,7 +50,8 @@ public static class SwapChainColorSpaceConfigurator
                 return PreviewReadinessStatus.Degraded(
                     PreviewReadinessStage.Presentation,
                     "HDR readiness is unvalidated for the selected capture target.",
-                    "Target-aware display capability could not be matched to a DXGI output.");
+                    "Target-aware display capability could not be matched to a DXGI output.",
+                    PreviewReadinessReason.TargetDisplayUnresolved);
             }
 
             controller.SetColorSpace1(colorSpace);

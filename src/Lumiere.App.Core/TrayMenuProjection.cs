@@ -50,8 +50,8 @@ public sealed record TrayMenuProjection(
             _ => main.ActionTitle,
         };
 
-        var trayAlertMessage = MapTrayAlertMessage(state.Readiness.State, outputResult, hdrAlertsEnabled);
-        var alertSeverity = AlertMapping.Classify(state.Readiness.State, outputResult, hdrAlertsEnabled);
+        var trayAlertMessage = MapTrayAlertMessage(state.Readiness, outputResult, hdrAlertsEnabled);
+        var alertSeverity = AlertMapping.Classify(state.Readiness, outputResult, hdrAlertsEnabled);
 
         return new TrayMenuProjection(
             AppName: appName,
@@ -91,10 +91,14 @@ public sealed record TrayMenuProjection(
             _ => TrayMenuStatusSeverity.Neutral,
         };
 
-    private static string MapTrayAlertMessage(PreviewReadinessState readinessState, OutputResult? outputResult, bool hdrAlertsEnabled)
+    private static string MapTrayAlertMessage(
+        PreviewReadinessStatus readiness,
+        OutputResult? outputResult,
+        bool hdrAlertsEnabled)
     {
-        return AlertMapping.Classify(readinessState, outputResult, hdrAlertsEnabled) switch
+        return AlertMapping.Classify(readiness, outputResult, hdrAlertsEnabled) switch
         {
+            AlertMapping.AlertSeverity.TargetDisplayUnresolved => "HDR unvalidated for selected target",
             AlertMapping.AlertSeverity.Degraded => "Enable HDR for best quality",
             AlertMapping.AlertSeverity.Unsupported => "HDR unavailable on this display",
             AlertMapping.AlertSeverity.Failed => "Preview failed",

@@ -117,6 +117,27 @@ public sealed class TrayMenuProjectionTests
     }
 
     [Fact]
+    public void Project_TargetAwareUnvalidatedMirrorsSpecificHdrStatusAndTrayAlert()
+    {
+        var projection = TrayMenuProjection.Project(
+            CaptureSessionState.Degraded(
+                CreateTarget(),
+                PreviewReadinessStatus.Degraded(
+                    PreviewReadinessStage.Presentation,
+                    "HDR readiness is unvalidated for the selected capture target.",
+                    "Target-aware display capability could not be matched to a DXGI output.",
+                    PreviewReadinessReason.TargetDisplayUnresolved)),
+            new StubSettingsProvider(string.Empty, string.Empty),
+            new StubAboutInfoProvider("Lumiere"),
+            hdrAlertsEnabled: true);
+
+        Assert.Equal("HDR unvalidated", projection.HdrStatusLabel);
+        Assert.Contains("selected capture target", projection.HdrStatusDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("selected target", projection.TrayAlertMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Enable HDR", projection.TrayAlertMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void TrayAlertMessage_EmptyWhenAlertsDisabled()
     {
         var projection = TrayMenuProjection.Project(
