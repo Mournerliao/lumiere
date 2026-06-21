@@ -74,6 +74,43 @@ public sealed class PerfectHdrFidelityProjectionTests
     }
 
     [Fact]
+    public void ProjectOutputProfile_DoesNotClaimHdrPreservedWithoutViewerEvidence()
+    {
+        var contract = OutputProfileContract.Hdr10Pq with
+        {
+            IsExecutable = true,
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+        };
+
+        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(contract);
+
+        Assert.Equal(FidelityClaimKind.Unvalidated, profile.FidelityClaim.Kind);
+        Assert.Contains("blocked", profile.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("validated HDR-preserved", profile.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectOutputProfile_ClaimsHdrPreservedOnlyWhenEvidenceGatePasses()
+    {
+        var contract = OutputProfileContract.Hdr10Pq with
+        {
+            IsExecutable = true,
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+            ViewerEvidence =
+            [
+                PassingHdrViewer("Microsoft Paint"),
+                PassingHdrViewer("Windows Photos"),
+                PassingHdrViewer("Chromium browsers"),
+            ],
+        };
+
+        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(contract);
+
+        Assert.Equal(FidelityClaimKind.HdrPreserved, profile.FidelityClaim.Kind);
+        Assert.Contains("validated HDR-preserved", profile.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void ProjectValidation_RequiresPublicHdrFidelityEvidenceBeforeRelease()
     {
         var validation = PerfectHdrFidelityProjection.ProjectValidation();
@@ -137,4 +174,12 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.DoesNotContain("HDR-preserved", record.AutomatedEvidenceDetail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
     }
+
+    private static OutputViewerCompatibilityEvidence PassingHdrViewer(string name) =>
+        new(
+            name,
+            OutputCompatibilityEvidenceStatus.Pass,
+            OutputCompatibilityEvidenceStatus.Pass,
+            OutputCompatibilityEvidenceStatus.Pass,
+            "Validated HDR viewer.");
 }

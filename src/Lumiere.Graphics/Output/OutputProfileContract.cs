@@ -79,6 +79,40 @@ public sealed record OutputProfileContract(
     public OutputProfileContract EffectiveExecutableProfile =>
         IsExecutable ? this : SrgbCompatibilityPng;
 
+    public OutputProfileEvidenceSummary EvaluateEvidence()
+    {
+        var applicableViewers = ViewerEvidence.ToArray();
+        var allowsVisualMatch = applicableViewers.Length > 0
+            && applicableViewers.All(viewer =>
+                viewer.ArtifactHandlingStatus is OutputCompatibilityEvidenceStatus.Pass
+                && viewer.VisualMatchStatus is OutputCompatibilityEvidenceStatus.Pass);
+        var visualDetail = allowsVisualMatch
+            ? "All named viewers have artifact handling and visual-match evidence passed."
+            : "Visual-match claim blocked: at least one named viewer has artifact handling or visual-match evidence NOT RUN, limited, or failed.";
+
+        var hdrEvidenceRequired = FidelityMode is OutputFidelityMode.HdrPreserved;
+        var allowsHdrPreserved = IsExecutable
+            && hdrEvidenceRequired
+            && applicableViewers.Length > 0
+            && applicableViewers.All(viewer =>
+                viewer.ArtifactHandlingStatus is OutputCompatibilityEvidenceStatus.Pass
+                && viewer.VisualMatchStatus is OutputCompatibilityEvidenceStatus.Pass
+                && viewer.HdrPreservationStatus is OutputCompatibilityEvidenceStatus.Pass);
+        var hdrDetail = allowsHdrPreserved
+            ? "HDR preservation evidence passed for all named viewers."
+            : !IsExecutable
+                ? "HDR-preserved claim blocked: output profile is not executable, and HDR preservation evidence cannot be counted yet."
+                : !hdrEvidenceRequired
+                    ? "HDR-preserved claim blocked: this is not an HDR-preserved profile."
+                    : "HDR-preserved claim blocked: HDR preservation evidence is NOT RUN, limited, or failed for at least one named viewer.";
+
+        return new OutputProfileEvidenceSummary(
+            allowsVisualMatch,
+            allowsHdrPreserved,
+            visualDetail,
+            hdrDetail);
+    }
+
     private static IReadOnlyList<OutputViewerCompatibilityEvidence> CreateCompatibilityViewerEvidence() =>
     [
         OutputViewerCompatibilityEvidence.ForSdrCompatibility("Microsoft Paint"),
@@ -100,6 +134,12 @@ public sealed record OutputProfileContract(
         OutputViewerCompatibilityEvidence.ForWideGamutProfile("Chromium browsers"),
     ];
 }
+
+public sealed record OutputProfileEvidenceSummary(
+    bool AllowsVisualMatchClaim,
+    bool AllowsHdrPreservedClaim,
+    string VisualMatchGateDetail,
+    string HdrPreservedGateDetail);
 
 public sealed record OutputViewerCompatibilityEvidence(
     string Name,

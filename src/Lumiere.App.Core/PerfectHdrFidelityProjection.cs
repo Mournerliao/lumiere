@@ -140,18 +140,8 @@ public static class PerfectHdrFidelityProjection
                 "Output is optimized for compatibility, not HDR preservation.",
                 MainPanelTrustIcon.InfoCircle,
                 MainPanelTrustSeverity.Warning),
-            OutputFidelityMode.VisualMatch => new FidelityClaimProjection(
-                FidelityClaimKind.VisualMatch,
-                "Visual match",
-                "Output has visual-match validation for the supported path.",
-                MainPanelTrustIcon.CheckmarkCircle,
-                MainPanelTrustSeverity.Success),
-            OutputFidelityMode.HdrPreserved when contract.AllowsHdrPreservedClaim => new FidelityClaimProjection(
-                FidelityClaimKind.HdrPreserved,
-                "HDR-preserved",
-                "Output uses a validated HDR-preserved supported path.",
-                MainPanelTrustIcon.CheckmarkCircle,
-                MainPanelTrustSeverity.Success),
+            OutputFidelityMode.VisualMatch => CreateVisualMatchClaim(contract),
+            OutputFidelityMode.HdrPreserved => CreateHdrPreservedClaim(contract),
             _ => new FidelityClaimProjection(
                 FidelityClaimKind.Unvalidated,
                 "Unvalidated",
@@ -159,6 +149,42 @@ public static class PerfectHdrFidelityProjection
                 MainPanelTrustIcon.ErrorCircle,
                 MainPanelTrustSeverity.Error),
         };
+
+    private static FidelityClaimProjection CreateVisualMatchClaim(OutputProfileContract contract)
+    {
+        var evidence = contract.EvaluateEvidence();
+        return evidence.AllowsVisualMatchClaim
+            ? new FidelityClaimProjection(
+                FidelityClaimKind.VisualMatch,
+                "Visual match",
+                "Output has visual-match validation for the supported path.",
+                MainPanelTrustIcon.CheckmarkCircle,
+                MainPanelTrustSeverity.Success)
+            : new FidelityClaimProjection(
+                FidelityClaimKind.Unvalidated,
+                "Unvalidated",
+                evidence.VisualMatchGateDetail,
+                MainPanelTrustIcon.ErrorCircle,
+                MainPanelTrustSeverity.Error);
+    }
+
+    private static FidelityClaimProjection CreateHdrPreservedClaim(OutputProfileContract contract)
+    {
+        var evidence = contract.EvaluateEvidence();
+        return evidence.AllowsHdrPreservedClaim
+            ? new FidelityClaimProjection(
+                FidelityClaimKind.HdrPreserved,
+                "HDR-preserved",
+                "Output uses a validated HDR-preserved supported path.",
+                MainPanelTrustIcon.CheckmarkCircle,
+                MainPanelTrustSeverity.Success)
+            : new FidelityClaimProjection(
+                FidelityClaimKind.Unvalidated,
+                "Unvalidated",
+                evidence.HdrPreservedGateDetail,
+                MainPanelTrustIcon.ErrorCircle,
+                MainPanelTrustSeverity.Error);
+    }
 
     private static ValidationViewerMatrixRowProjection ProjectViewerEvidence(OutputViewerCompatibilityEvidence evidence) =>
         new(
