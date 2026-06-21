@@ -298,7 +298,7 @@ public sealed class SettingsPanelProjectionTests
         Assert.Equal("sRGB", projection.Output.ExportColorDisplayValue);
         Assert.Contains("no file artifact", projection.Output.AfterCaptureHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("skipped", projection.Output.AfterCaptureHelpText, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("design reference", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("planned HDR output paths", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("validation", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("metadata", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("target-app", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
@@ -319,9 +319,12 @@ public sealed class SettingsPanelProjectionTests
         Assert.True(projection.Output.ExportColorOptions[2].IsInteractive);
         Assert.Contains("profile contract", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Windows validation", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("visible as intent", projection.Output.ExportColorOptions[1].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("shown for planning", projection.Output.ExportColorOptions[1].HelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Compatibility output", projection.Output.ExportColorOptions[2].HelpText, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("not selected and unavailable", projection.Output.ExportColorOptions[0].AccessibilityHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("not selected and currently unavailable", projection.Output.ExportColorOptions[0].AccessibilityHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("design reference", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("validation-scoped", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("visible as intent", projection.Output.ExportColorOptions[1].HelpText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserving", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR preserving", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserving", projection.Output.ExportColorOptions[2].HelpText, StringComparison.OrdinalIgnoreCase);
@@ -342,12 +345,14 @@ public sealed class SettingsPanelProjectionTests
         Assert.True(projection.Output.ExportColorOptions[0].IsSelected);
         Assert.True(projection.Output.ExportColorOptions[0].IsReadOnly);
         Assert.True(projection.Output.ExportColorOptions[0].IsInteractive);
-        Assert.Contains("selected and locked for this session", projection.Output.ExportColorOptions[0].AccessibilityHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("selected and kept as the current choice for this session", projection.Output.ExportColorOptions[0].AccessibilityHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("validation-scoped", projection.Output.ExportColorOptions[0].AccessibilityHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("Build", projection.MainPanel.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
         Assert.Equal("Converted", projection.MainPanel.FidelityClaim.Label);
         Assert.Contains("compatibility fallback", projection.MainPanel.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("implementation prerequisites", projection.MainPanel.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("validation-scoped", projection.MainPanel.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", projection.MainPanel.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
     }
 

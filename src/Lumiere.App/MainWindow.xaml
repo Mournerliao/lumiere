@@ -649,7 +649,7 @@
                       x:Name="SettingsExportOptionsPanel"
                       Width="176"
                       Padding="10,8"
-                      AutomationProperties.HelpText="Export profile controls are validation-scoped until encoder metadata and Windows validation exist."
+                      AutomationProperties.HelpText="HDR10 and P3 stay unavailable until encoder metadata and Windows validation are complete."
                       AutomationProperties.Name="Export"
                       Background="#2217191C"
                       BorderBrush="{StaticResource BorderBrush}"
@@ -738,7 +738,7 @@
                     x:Name="SettingsExportProfileHelpText"
                     FontSize="10"
                     Foreground="{StaticResource MutedTextBrush}"
-                    Text="HDR-preserved options stay scoped until profile contract, metadata policy, viewer matrix, and Windows validation exist."
+                    Text=""
                     TextWrapping="WrapWholeWords" />
                 <StackPanel
                     Margin="0,0,0,14"

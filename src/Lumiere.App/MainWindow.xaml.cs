@@ -1846,7 +1846,7 @@ public sealed partial class MainWindow : Window
         SettingsOutputContractViewerText.Text = contract.ViewerCompatibilityPolicy;
         var contractSummary =
             $"Selected profile contract. Source format: {contract.SourcePixelFormatLabel}. Destination format: {contract.DestinationPixelFormatLabel}. Transfer: {contract.TransferFunctionLabel}. Primaries: {contract.ColorPrimariesLabel}. Conversion mode: {contract.ConversionPolicyLabel}. Metadata mode: {contract.MetadataPolicyLabel}. Target apps: {contract.TargetAppAssumptionLabel}. Source: {contract.SourcePolicy}. Destination: {contract.DestinationPolicy}. Viewer: {contract.ViewerCompatibilityPolicy}";
-        AutomationProperties.SetHelpText(SettingsExportOptionsPanel, contractSummary);
+        AutomationProperties.SetHelpText(SettingsExportProfileHelpText, contractSummary);
         ToolTipService.SetToolTip(SettingsExportProfileHelpText, contractSummary);
     }
 

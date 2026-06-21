@@ -244,7 +244,7 @@ public sealed record OutputSettingsProjection(
 {
     private const string OutputPolicyActiveReason = "Output target policy is active for clipboard, folder, and both targets";
     private const string ExportColorHelp =
-        "Export profiles are shown to match the design reference. HDR10 and P3 require encoder metadata, conversion policy, target-app assumptions, and Windows validation before they become real output behavior.";
+        "HDR10 and P3 stay visible so you can review planned HDR output paths. They need encoder metadata, conversion policy, target-app support, and Windows validation before they become available.";
 
     public static OutputSettingsProjection ReadOnly(
         Lumiere.Graphics.Output.OutputTarget outputTarget,
@@ -389,7 +389,7 @@ public sealed record ExportColorOptionProjection(
         {
             var selectionState = IsSelected ? "selected" : "not selected";
             var availabilityState = IsReadOnly
-                ? (IsSelected ? "locked for this session" : "unavailable")
+                ? (IsSelected ? "kept as the current choice for this session" : "currently unavailable")
                 : "available";
             return $"{Label} is {selectionState} and {availabilityState}. {HelpText}";
         }

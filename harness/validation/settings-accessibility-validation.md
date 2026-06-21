@@ -2,7 +2,7 @@
 
 Updated: 2026-06-22
 
-This document is the focused Windows manual validation workflow for Epic 13 / Story 13-2. It validates the native settings shell under keyboard, screen reader, high contrast, text scaling, DPI, and fidelity-scoped export messaging.
+This document is the focused Windows manual validation workflow for Epic 13 / Story 13-2. It validates the native settings shell under keyboard, screen reader, high contrast, text scaling, DPI, and export-profile messaging that stays honest without relying on internal release-process jargon.
 
 Use it together with:
 
@@ -65,7 +65,7 @@ Use Narrator or another available Windows screen reader.
 3. Confirm output destination announces as a single-choice group with current selection.
 4. Confirm export profile options announce as a single-choice group and expose selected / unavailable state honestly.
 5. Confirm the target-aware state and evidence rows expose meaningful text rather than unlabeled decorative content.
-6. Confirm helper copy does not imply HDR-preserved output where the path is only compatibility or validation-scoped.
+6. Confirm helper copy does not imply HDR-preserved output where the path is only compatibility or currently unavailable HDR output.
 
 Expected result:
 
@@ -78,7 +78,7 @@ Expected result:
 2. Reopen settings and inspect each section.
 3. Confirm text remains readable, especially:
    - helper text
-   - validation-scoped export copy
+   - export-profile helper copy for currently unavailable HDR paths
    - target-aware evidence detail
    - save path value text
 4. Confirm focus rings, selected radio buttons, and toggle states remain visible without relying on accent color alone.
@@ -114,7 +114,7 @@ Expected result:
 
 ## Export Profile Specific Checks
 
-These checks matter because export profile semantics are validation-scoped and easy to overclaim.
+These checks matter because export profile semantics are easy to overclaim and easy to describe poorly for assistive technology users.
 
 1. With default `sRGB`, confirm `sRGB` is selectable and presented as the compatibility path.
 2. If persisted profile is `HDR10` or `P3`, reopen settings and confirm:
@@ -123,11 +123,11 @@ These checks matter because export profile semantics are validation-scoped and e
    - the option is not falsely presented as fully supported
    - the user can move back to `sRGB`
 3. Confirm helper text still states that HDR10/P3 require encoder metadata, conversion policy, target-app assumptions, and Windows validation.
-4. Confirm locked-for-session radio-button behavior is understandable in keyboard and screen-reader flows.
+4. Confirm selected-but-currently-unavailable radio-button behavior is understandable in keyboard and screen-reader flows.
 
 Expected result:
 
-- Validation-scoped profiles are visible without pretending to be public-release-ready.
+- Blocked HDR profiles are visible without pretending to be public-release-ready.
 - `sRGB` remains the safe fallback path.
 
 ## Result Recording Notes

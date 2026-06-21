@@ -15,12 +15,12 @@ public static class PerfectHdrFidelityProjection
             OutputProfileKind.Hdr10Pq => CreateOutputProfile(
                 contract,
                 "Validate",
-                "Requires profile contract, metadata policy, supported viewer evidence, and Windows validation.",
+                "HDR10 stays unavailable until profile contract, metadata policy, supported viewer evidence, and Windows validation are complete.",
                 isReadOnly: true),
             OutputProfileKind.DisplayP3 => CreateOutputProfile(
                 contract,
                 "Build",
-                "Wide-gamut output is visible as intent, but not selectable as a fidelity claim yet.",
+                "Wide-gamut output is shown for planning, but not available as a fidelity claim yet.",
                 isReadOnly: true),
             _ => CreateOutputProfile(
                 contract,
@@ -86,13 +86,13 @@ public static class PerfectHdrFidelityProjection
             OutputProfileKind.Hdr10Pq => CreateOutputProfile(
                 contract,
                 "Validate",
-                "Requires profile contract, metadata policy, supported viewer evidence, and Windows validation.",
+                "HDR10 stays unavailable until profile contract, metadata policy, supported viewer evidence, and Windows validation are complete.",
                 isReadOnly: true,
                 readiness),
             OutputProfileKind.DisplayP3 => CreateOutputProfile(
                 contract,
                 "Build",
-                "Wide-gamut output is visible as intent, but not selectable as a fidelity claim yet.",
+                "Wide-gamut output is shown for planning, but not available as a fidelity claim yet.",
                 isReadOnly: true,
                 readiness),
             _ => CreateOutputProfile(
@@ -661,7 +661,7 @@ public static class PerfectHdrFidelityProjection
                 true),
             OutputProfileKind.Hdr10Pq => (
                 "Build",
-                $"HDR10 remains validation-scoped because implementation prerequisites, profile contract wiring, metadata policy work, or Windows validation are still incomplete. {gate.Detail}",
+                $"HDR10 is still blocked because implementation prerequisites, profile contract wiring, metadata policy work, or Windows validation are still incomplete. {gate.Detail}",
                 true),
             OutputProfileKind.DisplayP3 when isExecutableForSession => (
                 "Ready",
@@ -673,7 +673,7 @@ public static class PerfectHdrFidelityProjection
                 true),
             OutputProfileKind.DisplayP3 => (
                 "Build",
-                $"Wide-gamut output is visible as intent, but implementation is still incomplete. {gate.Detail}",
+                $"Wide-gamut output is shown for planning, but implementation is still incomplete. {gate.Detail}",
                 true),
             _ => (
                 "Compat",
