@@ -362,6 +362,31 @@ public sealed class SettingsPanelProjectionTests
     }
 
     [Fact]
+    public void Project_SurfacesManualFormatContractEvidenceInValidationPanel()
+    {
+        var settings = new TestSettingsProvider
+        {
+            ExportColorFormat = "HDR10",
+        };
+
+        var projection = SettingsPanelProjection.Project(
+            settings,
+            CreateState(),
+            [
+                ArtifactWithFormatContract("Windows Photos"),
+            ]);
+        var profileRow = Assert.Single(
+            projection.Validation.Rows,
+            row => row.Label == "HDR-preserved profile");
+
+        Assert.Equal(ValidationEvidenceStatus.Limited, profileRow.Status);
+        Assert.Contains("format contract evidence", profileRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("PQ ST.2084", projection.Output.SelectedProfileContract.TransferFunctionLabel);
+        Assert.Equal("Attach HDR10 static metadata", projection.Output.SelectedProfileContract.MetadataPolicyLabel);
+        Assert.Equal(FidelityClaimKind.Unvalidated, projection.MainPanel.FidelityClaim.Kind);
+    }
+
+    [Fact]
     public void Project_SelectedSrgbProfileSurfacesCompatibilityContractPolicy()
     {
         var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
@@ -560,6 +585,47 @@ public sealed class SettingsPanelProjectionTests
                         PassingHdrViewer(viewerName),
                     ]),
             ]);
+
+    private static OutputValidationSessionArtifact ArtifactWithFormatContract(string viewerName) =>
+        new(
+            Date: "2026-06-21",
+            Tester: "QA",
+            BuildCommit: "72c3be7",
+            WindowsVersion: "Windows 11 24H2",
+            Device: "HDR workstation",
+            Gpu: "Test GPU",
+            DisplaySetup: "HDR primary",
+            HdrState: "HDR enabled",
+            DpiScales: ["150%"],
+            EntryPointsTested: ["Settings panel"],
+            OutputTargetsTested: ["Clipboard"],
+            TargetAppsTested: [viewerName],
+            ChecklistIdsCovered: ["REL-OUT-01"],
+            ResultSummary: $"{viewerName} HDR validation passed.",
+            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            KnownLimitations: [],
+            FollowUpIssuesOrStories: [],
+            OutputProfileRecords:
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer(viewerName),
+                    ])
+                {
+                    FormatContract = CompleteHdr10Contract,
+                },
+            ]);
+
+    private static OutputFormatContract CompleteHdr10Contract { get; } =
+        new(
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputTransferFunction.PqSt2084,
+            OutputColorPrimaries.Bt2020,
+            OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
+            OutputMetadataPolicy.AttachHdr10StaticMetadata,
+            OutputTargetAppAssumption.RequiresHdrViewerValidation);
 
     private sealed class TestSettingsProvider : ISettingsProvider
     {

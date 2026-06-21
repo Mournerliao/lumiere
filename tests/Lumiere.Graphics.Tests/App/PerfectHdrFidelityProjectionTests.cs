@@ -304,6 +304,46 @@ public sealed class PerfectHdrFidelityProjectionTests
     }
 
     [Fact]
+    public void ProjectValidation_SurfacesManualFormatContractEvidenceWithoutClaimingHdrPreserved()
+    {
+        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+            OutputProfileContract.Hdr10Pq,
+            [
+                ArtifactWithFormatContract("Windows Photos"),
+            ]);
+        var profileRow = Assert.Single(
+            validation.Rows,
+            row => row.Label == "HDR-preserved profile");
+
+        Assert.Equal(ValidationEvidenceStatus.Limited, profileRow.Status);
+        Assert.Contains("format contract evidence", profileRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Windows manual", profileRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("viewer", profileRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("passed", profileRow.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectValidation_DoesNotSurfaceFormatContractEvidenceFromIncompleteManualSession()
+    {
+        var artifact = ArtifactWithFormatContract("Windows Photos") with
+        {
+            EvidencePaths = [],
+        };
+        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+            OutputProfileContract.Hdr10Pq,
+            [
+                artifact,
+            ]);
+        var profileRow = Assert.Single(
+            validation.Rows,
+            row => row.Label == "HDR-preserved profile");
+
+        Assert.Equal(ValidationEvidenceStatus.NotRun, profileRow.Status);
+        Assert.Contains("At least one supported profile", profileRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("format contract evidence", profileRow.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void ProjectOutputProfile_AppliesValidationSessionArtifactsBeforeClaimGate()
     {
         var contract = OutputProfileContract.Hdr10Pq with
@@ -373,6 +413,37 @@ public sealed class PerfectHdrFidelityProjectionTests
                     [
                         PassingHdrViewer(viewerName),
                     ]),
+            ]);
+
+    private static OutputValidationSessionArtifact ArtifactWithFormatContract(string viewerName) =>
+        new(
+            Date: "2026-06-21",
+            Tester: "QA",
+            BuildCommit: "485bc31",
+            WindowsVersion: "Windows 11 24H2",
+            Device: "HDR workstation",
+            Gpu: "Test GPU",
+            DisplaySetup: "HDR primary",
+            HdrState: "HDR enabled",
+            DpiScales: ["150%"],
+            EntryPointsTested: ["Main panel"],
+            OutputTargetsTested: ["Clipboard"],
+            TargetAppsTested: [viewerName],
+            ChecklistIdsCovered: ["REL-OUT-01"],
+            ResultSummary: $"{viewerName} HDR validation passed.",
+            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            KnownLimitations: [],
+            FollowUpIssuesOrStories: [],
+            OutputProfileRecords:
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer(viewerName),
+                    ])
+                {
+                    FormatContract = CompleteHdr10Contract,
+                },
             ]);
 
     private static OutputFormatContract CompleteHdr10Contract { get; } =

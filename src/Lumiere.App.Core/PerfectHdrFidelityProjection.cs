@@ -139,10 +139,7 @@ public static class PerfectHdrFidelityProjection
                     "Visual-match output",
                     ValidationEvidenceStatus.Limited,
                     "QQ-style gray, white, and highlight checks are the benchmark."),
-                new(
-                    "HDR-preserved profile",
-                    ValidationEvidenceStatus.NotRun,
-                    "At least one supported profile must pass before public release."),
+                ProjectHdrPreservedProfileRow(outputProfile),
                 new(
                     "Target app matrix",
                     ValidationEvidenceStatus.NotRun,
@@ -151,6 +148,23 @@ public static class PerfectHdrFidelityProjection
             "Named viewers must prove artifact handling, visual match, and fidelity separately.",
             outputProfile.ViewerEvidence.Select(ProjectViewerEvidence).ToArray(),
             record ?? ProjectValidationRecord(null));
+
+    private static ValidationEvidenceRowProjection ProjectHdrPreservedProfileRow(OutputProfileContract outputProfile)
+    {
+        if (outputProfile.FormatContract.TargetAppAssumption is OutputTargetAppAssumption.RequiresHdrViewerValidation
+            && outputProfile.HasCompleteFormatContract)
+        {
+            return new ValidationEvidenceRowProjection(
+                "HDR-preserved profile",
+                ValidationEvidenceStatus.Limited,
+                "Windows manual format contract evidence is recorded for this profile; executable output, target-aware readiness, and named viewer HDR preservation gates must still pass before any HDR-preserved claim.");
+        }
+
+        return new ValidationEvidenceRowProjection(
+            "HDR-preserved profile",
+            ValidationEvidenceStatus.NotRun,
+            "At least one supported profile must pass before public release.");
+    }
 
     private static ValidationEvidenceRowProjection ProjectTargetAwareHdrRow(PreviewReadinessStatus? readiness)
     {
