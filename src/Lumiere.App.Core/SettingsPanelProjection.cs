@@ -299,7 +299,7 @@ public sealed record OutputSettingsProjection(
             IsAfterCaptureReadOnly: false,
             selectedProfile.Label,
             ExportColorHelp,
-            IsExportColorReadOnly: true,
+            IsExportColorReadOnly: false,
             selectedProfile.Contract,
             exportColorOptions);
     }

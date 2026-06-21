@@ -507,6 +507,29 @@ public sealed partial class MainWindow : Window
             settingsProvider.CopyAsImage);
     }
 
+    private void OnSettingsExportProfileChecked(object sender, RoutedEventArgs e)
+    {
+        if (applyingSettingsProjection || sender is not RadioButton radioButton || radioButton.Tag is not string format)
+        {
+            return;
+        }
+
+        if (string.Equals(settingsProvider.ExportColorFormat, format, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        settingsWriter.SetExportColorFormat(format);
+        var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
+        ApplySettingsProjection(currentState);
+        UpdateMainPanelProjection(currentState, lastOutputResult);
+        UpdateTrayMenu(currentState);
+        overlayWindow?.ApplyState(CreateOverlayState(currentState));
+        Logger.LogDebug(
+            "Export color preference updated in settings: format={ExportColorFormat}",
+            settingsProvider.ExportColorFormat);
+    }
+
     private async Task ExecuteCaptureFromUiAsync(CaptureCommandMode mode)
     {
         var probeCommand = mode == CaptureCommandMode.Region
@@ -1767,9 +1790,9 @@ public sealed partial class MainWindow : Window
 
     private void ApplyExportColorProjection(OutputSettingsProjection output)
     {
-        AutomationProperties.SetName(SettingsExportSegmentsPanel, $"Export profile: {output.ExportColorDisplayValue}");
-        AutomationProperties.SetHelpText(SettingsExportSegmentsPanel, output.ExportColorHelpText);
-        ToolTipService.SetToolTip(SettingsExportSegmentsPanel, output.ExportColorHelpText);
+        AutomationProperties.SetName(SettingsExportOptionsPanel, $"Export profile: {output.ExportColorDisplayValue}");
+        AutomationProperties.SetHelpText(SettingsExportOptionsPanel, output.ExportColorHelpText);
+        ToolTipService.SetToolTip(SettingsExportOptionsPanel, output.ExportColorHelpText);
         SettingsExportProfileHelpText.Text = output.ExportColorHelpText;
         ApplyOutputProfileContractProjection(output.SelectedProfileContract);
 
@@ -1777,25 +1800,25 @@ public sealed partial class MainWindow : Window
         {
             ApplyExportColorOption(
                 output.ExportColorOptions[0],
-                SettingsExportHdr10Segment,
+                SettingsExportHdr10RadioButton,
                 SettingsExportHdr10Text,
                 SettingsExportHdr10StatusText);
             ApplyExportColorOption(
                 output.ExportColorOptions[1],
-                SettingsExportP3Segment,
+                SettingsExportP3RadioButton,
                 SettingsExportP3Text,
                 SettingsExportP3StatusText);
             ApplyExportColorOption(
                 output.ExportColorOptions[2],
-                SettingsExportSrgbSegment,
+                SettingsExportSrgbRadioButton,
                 SettingsExportSrgbText,
                 SettingsExportSrgbStatusText);
         }
         else
         {
-            SettingsExportHdr10Segment.IsEnabled = false;
-            SettingsExportP3Segment.IsEnabled = false;
-            SettingsExportSrgbSegment.IsEnabled = false;
+            SettingsExportHdr10RadioButton.IsEnabled = false;
+            SettingsExportP3RadioButton.IsEnabled = false;
+            SettingsExportSrgbRadioButton.IsEnabled = false;
         }
     }
 
@@ -1808,26 +1831,29 @@ public sealed partial class MainWindow : Window
         SettingsOutputContractViewerText.Text = contract.ViewerCompatibilityPolicy;
         var contractSummary =
             $"Selected profile contract. Source format: {contract.SourcePixelFormatLabel}. Destination format: {contract.DestinationPixelFormatLabel}. Transfer: {contract.TransferFunctionLabel}. Primaries: {contract.ColorPrimariesLabel}. Conversion mode: {contract.ConversionPolicyLabel}. Metadata mode: {contract.MetadataPolicyLabel}. Target apps: {contract.TargetAppAssumptionLabel}. Source: {contract.SourcePolicy}. Destination: {contract.DestinationPolicy}. Viewer: {contract.ViewerCompatibilityPolicy}";
-        AutomationProperties.SetHelpText(SettingsExportSegmentsPanel, contractSummary);
+        AutomationProperties.SetHelpText(SettingsExportOptionsPanel, contractSummary);
         ToolTipService.SetToolTip(SettingsExportProfileHelpText, contractSummary);
     }
 
     private void ApplyExportColorOption(
         ExportColorOptionProjection option,
-        Control segment,
+        RadioButton button,
         TextBlock label,
         TextBlock statusLabel)
     {
         label.Text = option.Label;
         statusLabel.Text = option.StatusLabel;
-        segment.IsEnabled = !option.IsReadOnly;
-        ApplySegmentState(segment, label, option.IsSelected);
+        button.IsChecked = option.IsSelected;
+        button.IsEnabled = !option.IsReadOnly;
+        label.Foreground = option.IsSelected
+            ? (Brush)Application.Current.Resources["TextBrush"]
+            : (Brush)Application.Current.Resources["MutedTextBrush"];
         statusLabel.Foreground = option.IsSelected
             ? (Brush)Application.Current.Resources["TextBrush"]
             : (Brush)Application.Current.Resources["MutedTextBrush"];
-        AutomationProperties.SetName(segment, $"Export option: {option.Label}");
-        AutomationProperties.SetHelpText(segment, GetExportColorOptionHelpText(option));
-        ToolTipService.SetToolTip(segment, GetExportColorOptionHelpText(option));
+        AutomationProperties.SetName(button, $"Export option: {option.Label}");
+        AutomationProperties.SetHelpText(button, GetExportColorOptionHelpText(option));
+        ToolTipService.SetToolTip(button, GetExportColorOptionHelpText(option));
     }
 
     private void ApplyValidationProjection(ValidationPanelProjection validation)
@@ -1938,18 +1964,6 @@ public sealed partial class MainWindow : Window
         var state = option.IsSelected ? "selected" : "not selected";
         var availability = option.IsReadOnly ? "read-only" : "available";
         return $"{option.Label} is {state} and {availability}. {option.HelpText}";
-    }
-
-    private void ApplySegmentState(Control segment, TextBlock label, bool isSelected)
-    {
-        segment.Background = isSelected
-            ? (Brush)Application.Current.Resources["SegmentSelectedBrush"]
-            : new SolidColorBrush(Windows.UI.Color.FromArgb(0x00, 0x00, 0x00, 0x00));
-        segment.BorderBrush = null;
-        segment.BorderThickness = new Thickness(0);
-        label.Foreground = isSelected
-            ? (Brush)Application.Current.Resources["TextBrush"]
-            : (Brush)Application.Current.Resources["MutedTextBrush"];
     }
 
     private void UpdateMainPanelProjection(CaptureSessionState state, OutputResult? outputResult = null)

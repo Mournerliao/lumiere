@@ -255,7 +255,7 @@ public sealed class SettingsPanelProjectionTests
         Assert.False(projection.Output.IsSavePathReadOnly);
         Assert.False(projection.Output.IsTimestampReadOnly);
         Assert.False(projection.Output.IsAfterCaptureReadOnly);
-        Assert.True(projection.Output.IsExportColorReadOnly);
+        Assert.False(projection.Output.IsExportColorReadOnly);
         Assert.Contains("Output target policy is active", projection.Output.PendingReason);
         Assert.Contains("clipboard", projection.Output.PendingReason);
         Assert.Contains("folder", projection.Output.PendingReason);
@@ -302,7 +302,7 @@ public sealed class SettingsPanelProjectionTests
         Assert.Contains("validation", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("metadata", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("target-app", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
-        Assert.True(projection.Output.IsExportColorReadOnly);
+        Assert.False(projection.Output.IsExportColorReadOnly);
 
         Assert.Equal(["HDR10", "P3", "sRGB"], projection.Output.ExportColorOptions.Select(option => option.Label).ToArray());
         Assert.Equal("Validate", projection.Output.ExportColorOptions[0].StatusLabel);
