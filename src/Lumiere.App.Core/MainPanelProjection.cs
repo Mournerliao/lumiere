@@ -11,13 +11,17 @@ public sealed record MainPanelProjection(
     string TrustMessage,
     MainPanelTrustIcon TrustIcon,
     MainPanelTrustSeverity TrustSeverity,
+    OutputProfileProjection OutputProfile,
+    FidelityClaimProjection FidelityClaim,
+    string ReleaseTarget,
     string AlertMessage,
     bool HasAlert)
 {
     public static MainPanelProjection Project(
         CaptureSessionState state,
         OutputResult? outputResult = null,
-        bool hdrAlertsEnabled = false)
+        bool hdrAlertsEnabled = false,
+        string? exportColorFormat = null)
     {
         ArgumentNullException.ThrowIfNull(state);
 
@@ -38,6 +42,7 @@ public sealed record MainPanelProjection(
 
         var trust = MapTrust(state.Readiness.State, outputResult);
         var alertMessage = MapAlertMessage(state.Readiness.State, outputResult, hdrAlertsEnabled);
+        var outputProfile = PerfectHdrFidelityProjection.ProjectOutputProfile(exportColorFormat);
 
         return new MainPanelProjection(
             canStartCapture,
@@ -48,6 +53,9 @@ public sealed record MainPanelProjection(
                 : state.UserFacingReason,
             trust.Icon,
             trust.Severity,
+            outputProfile,
+            outputProfile.FidelityClaim,
+            PerfectHdrFidelityProjection.ReleaseTarget,
             alertMessage,
             !string.IsNullOrEmpty(alertMessage));
     }

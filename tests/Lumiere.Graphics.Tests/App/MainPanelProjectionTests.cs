@@ -75,6 +75,39 @@ public sealed class MainPanelProjectionTests
     }
 
     [Fact]
+    public void ProjectStatus_SeparatesOutputSuccessFromFidelityClaim()
+    {
+        var state = CreateState(PreviewReadinessState.Ready);
+        var outputResult = OutputResult.ClipboardSuccess(1024);
+
+        var projection = MainPanelProjection.Project(
+            state,
+            outputResult,
+            exportColorFormat: "HDR10");
+
+        Assert.Equal("Output complete", projection.TrustLabel);
+        Assert.Equal("HDR10", projection.OutputProfile.Label);
+        Assert.Equal("Validate", projection.OutputProfile.StatusLabel);
+        Assert.Equal(FidelityClaimKind.Unvalidated, projection.FidelityClaim.Kind);
+        Assert.Equal("Unvalidated", projection.FidelityClaim.Label);
+        Assert.DoesNotContain("HDR-preserved", projection.TrustLabel, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR-preserved", projection.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectStatus_DefaultOutputProfileIsCompatibilityConvertedFallback()
+    {
+        var state = CreateState(PreviewReadinessState.Ready);
+
+        var projection = MainPanelProjection.Project(state);
+
+        Assert.Equal("sRGB", projection.OutputProfile.Label);
+        Assert.Equal("Compat", projection.OutputProfile.StatusLabel);
+        Assert.Equal(FidelityClaimKind.Converted, projection.FidelityClaim.Kind);
+        Assert.Equal(PerfectHdrFidelityProjection.ReleaseTarget, projection.ReleaseTarget);
+    }
+
+    [Fact]
     public void ProjectStatus_OutputFailedShowsDistinctTrustLabel()
     {
         var state = CreateState(PreviewReadinessState.Ready);

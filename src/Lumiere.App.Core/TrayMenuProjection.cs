@@ -1,6 +1,7 @@
 using Lumiere.Capture;
 using Lumiere.Graphics.Hdr;
 using Lumiere.Graphics.Output;
+using Lumiere.Infrastructure.Interop;
 using Lumiere.Settings;
 
 namespace Lumiere.App;
@@ -9,6 +10,9 @@ public sealed record TrayMenuProjection(
     string AppName,
     string HdrStatusLabel,
     string HdrStatusDetail,
+    string FidelityClaimLabel,
+    string FidelityClaimDetail,
+    TrayMenuStatusSeverity FidelityClaimSeverity,
     string TrayAlertMessage,
     int TrayAlertSeverity,
     TrayMenuCommandProjection FullscreenCapture,
@@ -29,7 +33,11 @@ public sealed record TrayMenuProjection(
         ArgumentNullException.ThrowIfNull(settingsProvider);
         ArgumentNullException.ThrowIfNull(aboutInfoProvider);
 
-        var main = MainPanelProjection.Project(state, outputResult, hdrAlertsEnabled);
+        var main = MainPanelProjection.Project(
+            state,
+            outputResult,
+            hdrAlertsEnabled,
+            settingsProvider.ExportColorFormat);
         var appName = string.IsNullOrWhiteSpace(aboutInfoProvider.AppName)
             ? "Lumiere"
             : aboutInfoProvider.AppName;
@@ -49,6 +57,9 @@ public sealed record TrayMenuProjection(
             AppName: appName,
             HdrStatusLabel: main.TrustLabel,
             HdrStatusDetail: main.TrustMessage,
+            FidelityClaimLabel: main.FidelityClaim.Label,
+            FidelityClaimDetail: main.FidelityClaim.Detail,
+            FidelityClaimSeverity: ToTrayStatusSeverity(main.FidelityClaim.Severity),
             TrayAlertMessage: trayAlertMessage,
             TrayAlertSeverity: (int)alertSeverity,
             FullscreenCapture: CreateCaptureCommand(
@@ -69,6 +80,16 @@ public sealed record TrayMenuProjection(
             OpenSettings: new TrayMenuCommandProjection("Settings", null, true, false),
             Quit: new TrayMenuCommandProjection("Quit", null, true, false));
     }
+
+    private static TrayMenuStatusSeverity ToTrayStatusSeverity(MainPanelTrustSeverity severity) =>
+        severity switch
+        {
+            MainPanelTrustSeverity.Success => TrayMenuStatusSeverity.Success,
+            MainPanelTrustSeverity.Warning => TrayMenuStatusSeverity.Warning,
+            MainPanelTrustSeverity.Error => TrayMenuStatusSeverity.Error,
+            MainPanelTrustSeverity.Info => TrayMenuStatusSeverity.Info,
+            _ => TrayMenuStatusSeverity.Neutral,
+        };
 
     private static string MapTrayAlertMessage(PreviewReadinessState readinessState, OutputResult? outputResult, bool hdrAlertsEnabled)
     {

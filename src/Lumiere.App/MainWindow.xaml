@@ -119,6 +119,186 @@
               ShortcutText="Not assigned"
               Title="Region" />
 
+          <Grid
+              Margin="0,8,0,0"
+              ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border
+                x:Name="TargetHdrStatusPill"
+                MinHeight="66"
+                Padding="12,10"
+                Background="{StaticResource SecondaryPanelBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="10">
+              <StackPanel Spacing="4">
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                  <FontIcon
+                      x:Name="TargetHdrStatusGlyph"
+                      VerticalAlignment="Center"
+                      FontFamily="Segoe Fluent Icons"
+                      FontSize="13"
+                      Foreground="{StaticResource MutedTextBrush}"
+                      Glyph="&#xE121;" />
+                  <Ellipse
+                      x:Name="TargetHdrStatusDotInline"
+                      Width="6"
+                      Height="6"
+                      VerticalAlignment="Center"
+                      Fill="{StaticResource MutedTextBrush}" />
+                  <TextBlock
+                      x:Name="TargetHdrStatusLabel"
+                      VerticalAlignment="Center"
+                      FontSize="11"
+                      FontWeight="SemiBold"
+                      Foreground="{StaticResource TextBrush}"
+                      Text="Checking HDR"
+                      TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <TextBlock
+                    x:Name="TargetHdrStatusDetail"
+                    FontSize="10"
+                    Foreground="{StaticResource MutedTextBrush}"
+                    Text="HDR preview status is being checked."
+                    TextWrapping="WrapWholeWords" />
+              </StackPanel>
+            </Border>
+            <Border
+                x:Name="FidelityClaimStatusPill"
+                Grid.Column="1"
+                MinHeight="66"
+                Padding="12,10"
+                Background="{StaticResource SecondaryPanelBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="10">
+              <StackPanel Spacing="4">
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                  <FontIcon
+                      x:Name="FidelityClaimStatusGlyph"
+                      VerticalAlignment="Center"
+                      FontFamily="Segoe Fluent Icons"
+                      FontSize="13"
+                      Foreground="{StaticResource MutedTextBrush}"
+                      Glyph="&#xEA39;" />
+                  <Ellipse
+                      x:Name="FidelityClaimStatusDot"
+                      Width="6"
+                      Height="6"
+                      VerticalAlignment="Center"
+                      Fill="{StaticResource MutedTextBrush}" />
+                  <TextBlock
+                      x:Name="FidelityClaimStatusLabel"
+                      VerticalAlignment="Center"
+                      FontSize="11"
+                      FontWeight="SemiBold"
+                      Foreground="{StaticResource TextBrush}"
+                      Text="Unvalidated"
+                      TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <TextBlock
+                    x:Name="FidelityClaimStatusDetail"
+                    FontSize="10"
+                    Foreground="{StaticResource MutedTextBrush}"
+                    Text="No fidelity claim is made for this path."
+                    TextWrapping="WrapWholeWords" />
+              </StackPanel>
+            </Border>
+          </Grid>
+
+          <Border
+              x:Name="OutputProfilePanel"
+              Margin="0,6,0,0"
+              Padding="12,10"
+              Background="{StaticResource SecondaryPanelBrush}"
+              BorderBrush="{StaticResource BorderBrush}"
+              BorderThickness="1"
+              CornerRadius="10">
+            <Grid ColumnSpacing="12">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <StackPanel Spacing="3">
+                <TextBlock
+                    x:Name="OutputProfileLabel"
+                    FontSize="11"
+                    FontWeight="SemiBold"
+                    Foreground="{StaticResource TextBrush}"
+                    Text="Output profile: sRGB" />
+                <TextBlock
+                    x:Name="OutputProfileDetail"
+                    FontSize="10"
+                    Foreground="{StaticResource MutedTextBrush}"
+                    Text="Compatibility output; useful fallback, not the public release target."
+                    TextWrapping="WrapWholeWords" />
+              </StackPanel>
+              <Border
+                  Grid.Column="1"
+                  Padding="8,4"
+                  VerticalAlignment="Top"
+                  Background="#241D2024"
+                  BorderBrush="{StaticResource BorderBrush}"
+                  BorderThickness="1"
+                  CornerRadius="6">
+                <TextBlock
+                    x:Name="OutputProfileStatusLabel"
+                    FontSize="9"
+                    FontWeight="Bold"
+                    Foreground="{StaticResource MutedTextBrush}"
+                    Text="Compat" />
+              </Border>
+            </Grid>
+          </Border>
+
+          <Border
+              x:Name="OutputResultPanel"
+              Margin="0,6,0,0"
+              Padding="12,10"
+              Background="{StaticResource SecondaryPanelBrush}"
+              BorderBrush="{StaticResource BorderBrush}"
+              BorderThickness="1"
+              CornerRadius="10">
+            <StackPanel Spacing="6">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <FontIcon
+                    x:Name="OutputResultGlyph"
+                    VerticalAlignment="Center"
+                    FontFamily="Segoe Fluent Icons"
+                    FontSize="14"
+                    Foreground="{StaticResource SuccessBrush}"
+                    Glyph="&#xE8C8;" />
+                <StackPanel Spacing="1">
+                  <TextBlock
+                      x:Name="OutputResultTitle"
+                      FontSize="12"
+                      FontWeight="SemiBold"
+                      Foreground="{StaticResource TextBrush}"
+                      Text="Ready" />
+                  <TextBlock
+                      FontSize="10"
+                      Foreground="{StaticResource MutedTextBrush}"
+                      Text="Artifact result first, fidelity claim second." />
+                </StackPanel>
+              </StackPanel>
+              <TextBlock
+                  x:Name="OutputResultDetail"
+                  FontSize="10"
+                  Foreground="{StaticResource MutedTextBrush}"
+                  Text="No capture output has completed yet."
+                  TextWrapping="WrapWholeWords" />
+              <TextBlock
+                  x:Name="OutputResultFidelityDetail"
+                  FontSize="10"
+                  Foreground="{StaticResource MutedTextBrush}"
+                  Text="Never implies HDR preservation unless the selected profile has target-aware evidence."
+                  TextWrapping="WrapWholeWords" />
+            </StackPanel>
+          </Border>
+
         </StackPanel>
       </Grid>
 
@@ -401,6 +581,43 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
+                  <StackPanel VerticalAlignment="Center" Spacing="2">
+                    <TextBlock
+                        FontSize="13"
+                        FontWeight="SemiBold"
+                        Foreground="{StaticResource TextBrush}"
+                        Text="Target-aware state" />
+                    <TextBlock
+                        x:Name="SettingsTargetAwareStateHelpText"
+                        FontSize="11"
+                        Foreground="{StaticResource MutedTextBrush}"
+                        Text="Public release cannot use a global HDR guess."
+                        TextWrapping="WrapWholeWords" />
+                  </StackPanel>
+                  <Border
+                      Grid.Column="1"
+                      Padding="9,5"
+                      VerticalAlignment="Center"
+                      Background="#241D2024"
+                      BorderBrush="{StaticResource BorderBrush}"
+                      BorderThickness="1"
+                      CornerRadius="7">
+                    <TextBlock
+                        x:Name="SettingsTargetAwareStateLabel"
+                        FontSize="10"
+                        FontWeight="SemiBold"
+                        Foreground="{StaticResource TextBrush}"
+                        Text="Required" />
+                  </Border>
+                </Grid>
+                <Border
+                    Height="1"
+                    Background="{StaticResource BorderBrush}" />
+                <Grid MinHeight="64" ColumnSpacing="14">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
                   <TextBlock
                       VerticalAlignment="Center"
                       FontSize="13"
@@ -429,41 +646,242 @@
                       <Button
                           x:Name="SettingsExportHdr10Segment"
                           Style="{StaticResource SegmentButtonStyle}">
-                        <TextBlock
-                            x:Name="SettingsExportHdr10Text"
+                        <StackPanel
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
-                            FontSize="12"
-                            FontWeight="SemiBold"
-                            Text="HDR10" />
+                            Spacing="0">
+                          <TextBlock
+                              x:Name="SettingsExportHdr10Text"
+                              HorizontalAlignment="Center"
+                              FontSize="10"
+                              FontWeight="SemiBold"
+                              Text="HDR10" />
+                          <TextBlock
+                              x:Name="SettingsExportHdr10StatusText"
+                              HorizontalAlignment="Center"
+                              FontSize="8"
+                              Foreground="{StaticResource MutedTextBrush}"
+                              Text="Validate" />
+                        </StackPanel>
                       </Button>
                       <Button
                           x:Name="SettingsExportP3Segment"
                           Grid.Column="1"
                           Style="{StaticResource SegmentButtonStyle}">
-                        <TextBlock
-                            x:Name="SettingsExportP3Text"
+                        <StackPanel
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
-                            FontSize="12"
-                            FontWeight="SemiBold"
-                            Text="P3" />
+                            Spacing="0">
+                          <TextBlock
+                              x:Name="SettingsExportP3Text"
+                              HorizontalAlignment="Center"
+                              FontSize="10"
+                              FontWeight="SemiBold"
+                              Text="P3" />
+                          <TextBlock
+                              x:Name="SettingsExportP3StatusText"
+                              HorizontalAlignment="Center"
+                              FontSize="8"
+                              Foreground="{StaticResource MutedTextBrush}"
+                              Text="Build" />
+                        </StackPanel>
                       </Button>
                       <Button
                           x:Name="SettingsExportSrgbSegment"
                           Grid.Column="2"
                           Style="{StaticResource SegmentButtonStyle}">
-                        <TextBlock
-                            x:Name="SettingsExportSrgbText"
+                        <StackPanel
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
-                            FontSize="12"
-                            FontWeight="SemiBold"
-                            Text="sRGB" />
+                            Spacing="0">
+                          <TextBlock
+                              x:Name="SettingsExportSrgbText"
+                              HorizontalAlignment="Center"
+                              FontSize="10"
+                              FontWeight="SemiBold"
+                              Text="sRGB" />
+                          <TextBlock
+                              x:Name="SettingsExportSrgbStatusText"
+                              HorizontalAlignment="Center"
+                              FontSize="8"
+                              Foreground="{StaticResource MutedTextBrush}"
+                              Text="Compat" />
+                        </StackPanel>
                       </Button>
                     </Grid>
                   </Border>
                 </Grid>
+                <TextBlock
+                    x:Name="SettingsExportProfileHelpText"
+                    Margin="0,0,0,14"
+                    FontSize="10"
+                    Foreground="{StaticResource MutedTextBrush}"
+                    Text="HDR-preserved options stay scoped until profile contract, metadata policy, viewer matrix, and Windows validation exist."
+                    TextWrapping="WrapWholeWords" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <StackPanel
+              AutomationProperties.Name="Validation settings section"
+              AutomationProperties.HelpText="Public HDR fidelity evidence required before release claims."
+              Spacing="9">
+            <local:SettingsSectionHeader
+                IconGlyph="&#xE9D9;"
+                Title="VALIDATION" />
+            <Border
+                Padding="16,14"
+                Background="{StaticResource SecondaryPanelBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="12">
+              <StackPanel Spacing="10">
+                <Grid ColumnSpacing="10">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <Border
+                      Width="30"
+                      Height="30"
+                      Background="{StaticResource AccentSoftBrush}"
+                      CornerRadius="8">
+                    <FontIcon
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontFamily="Segoe Fluent Icons"
+                        FontSize="15"
+                        Foreground="{StaticResource AccentBrush}"
+                        Glyph="&#xE9D9;" />
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="2">
+                    <TextBlock
+                        x:Name="ValidationReleaseTargetText"
+                        FontSize="12"
+                        FontWeight="SemiBold"
+                        Foreground="{StaticResource TextBrush}"
+                        Text="Perfect HDR Fidelity Public Release"
+                        TextWrapping="WrapWholeWords" />
+                    <TextBlock
+                        x:Name="ValidationSummaryText"
+                        FontSize="10"
+                        Foreground="{StaticResource MutedTextBrush}"
+                        Text="Public release waits for evidence; SDR compatibility remains fallback only."
+                        TextWrapping="WrapWholeWords" />
+                  </StackPanel>
+                </Grid>
+
+                <StackPanel Spacing="6">
+                  <Grid
+                      MinHeight="42"
+                      ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="1">
+                      <TextBlock
+                          x:Name="ValidationRow1Label"
+                          FontSize="11"
+                          FontWeight="SemiBold"
+                          Foreground="{StaticResource TextBrush}"
+                          Text="Target-aware HDR" />
+                      <TextBlock
+                          x:Name="ValidationRow1Detail"
+                          FontSize="10"
+                          Foreground="{StaticResource MutedTextBrush}"
+                          TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+                    <TextBlock
+                        x:Name="ValidationRow1Status"
+                        Grid.Column="1"
+                        VerticalAlignment="Top"
+                        FontSize="9"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource MutedTextBrush}" />
+                  </Grid>
+                  <Grid
+                      MinHeight="42"
+                      ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="1">
+                      <TextBlock
+                          x:Name="ValidationRow2Label"
+                          FontSize="11"
+                          FontWeight="SemiBold"
+                          Foreground="{StaticResource TextBrush}" />
+                      <TextBlock
+                          x:Name="ValidationRow2Detail"
+                          FontSize="10"
+                          Foreground="{StaticResource MutedTextBrush}"
+                          TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+                    <TextBlock
+                        x:Name="ValidationRow2Status"
+                        Grid.Column="1"
+                        VerticalAlignment="Top"
+                        FontSize="9"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource MutedTextBrush}" />
+                  </Grid>
+                  <Grid
+                      MinHeight="42"
+                      ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="1">
+                      <TextBlock
+                          x:Name="ValidationRow3Label"
+                          FontSize="11"
+                          FontWeight="SemiBold"
+                          Foreground="{StaticResource TextBrush}" />
+                      <TextBlock
+                          x:Name="ValidationRow3Detail"
+                          FontSize="10"
+                          Foreground="{StaticResource MutedTextBrush}"
+                          TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+                    <TextBlock
+                        x:Name="ValidationRow3Status"
+                        Grid.Column="1"
+                        VerticalAlignment="Top"
+                        FontSize="9"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource MutedTextBrush}" />
+                  </Grid>
+                  <Grid
+                      MinHeight="42"
+                      ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="1">
+                      <TextBlock
+                          x:Name="ValidationRow4Label"
+                          FontSize="11"
+                          FontWeight="SemiBold"
+                          Foreground="{StaticResource TextBrush}" />
+                      <TextBlock
+                          x:Name="ValidationRow4Detail"
+                          FontSize="10"
+                          Foreground="{StaticResource MutedTextBrush}"
+                          TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+                    <TextBlock
+                        x:Name="ValidationRow4Status"
+                        Grid.Column="1"
+                        VerticalAlignment="Top"
+                        FontSize="9"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource MutedTextBrush}" />
+                  </Grid>
+                </StackPanel>
               </StackPanel>
             </Border>
           </StackPanel>

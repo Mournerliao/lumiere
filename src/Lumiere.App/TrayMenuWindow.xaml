@@ -41,6 +41,11 @@
               Foreground="{StaticResource MutedTextBrush}"
               Text="" />
           <TextBlock
+              x:Name="FidelityClaimLabel"
+              FontSize="10"
+              Foreground="{StaticResource MutedTextBrush}"
+              Text="" />
+          <TextBlock
               x:Name="HdrAlertLabel"
               FontSize="10"
               Foreground="{StaticResource WarningBrush}"

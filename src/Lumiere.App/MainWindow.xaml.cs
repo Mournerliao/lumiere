@@ -38,8 +38,8 @@ public sealed partial class MainWindow : Window
     private const string StatusWarningGlyph = "\uE7BA";
     private const string StatusInfoGlyph = "\uE946";
     private const int MainPanelWidthDips = 360;
-    private const int MainPanelHeightDips = 310;
-    private const int SettingsPanelHeightDips = 640;
+    private const int MainPanelHeightDips = 680;
+    private const int SettingsPanelHeightDips = 680;
     private const int WorkAreaMarginPixels = 16;
 
     private readonly object previewSync = new();
@@ -1421,6 +1421,9 @@ public sealed partial class MainWindow : Window
             projection.AppName,
             projection.HdrStatusLabel,
             projection.HdrStatusDetail,
+            projection.FidelityClaimLabel,
+            projection.FidelityClaimDetail,
+            projection.FidelityClaimSeverity,
             projection.TrayAlertMessage,
             projection.TrayAlertSeverity,
             ToTrayItem(projection.FullscreenCapture),
@@ -1521,6 +1524,10 @@ public sealed partial class MainWindow : Window
                 SettingsHdrAlertsButton,
                 projection.HdrAlertsEnabled ? "HDR alerts: on" : "HDR alerts: off");
             AutomationProperties.SetHelpText(SettingsHdrAlertsButton, "Show warnings when HDR is unavailable, degraded, unsupported, or failed.");
+            SettingsTargetAwareStateLabel.Text = projection.TargetAwareStateLabel;
+            SettingsTargetAwareStateHelpText.Text = projection.TargetAwareStateHelpText;
+            AutomationProperties.SetName(SettingsTargetAwareStateLabel, $"Target-aware state: {projection.TargetAwareStateLabel}");
+            AutomationProperties.SetHelpText(SettingsTargetAwareStateLabel, projection.TargetAwareStateHelpText);
             ApplyDestinationSegmentProjection(projection.Output);
 
             var showSavePath = projection.Output.IsFolderSelected || projection.Output.IsBothSelected;
@@ -1565,6 +1572,7 @@ public sealed partial class MainWindow : Window
             AutomationProperties.SetHelpText(SettingsCopyAsImageButton, "Copy-as-image controls basic clipboard usability.");
 
             ApplyExportColorProjection(projection.Output);
+            ApplyValidationProjection(projection.Validation);
 
             SettingsAboutAppNameText.Text = projection.About.AppName;
             SettingsAboutVersionText.Text = projection.About.Version;
@@ -1611,21 +1619,25 @@ public sealed partial class MainWindow : Window
         AutomationProperties.SetName(SettingsExportSegmentsPanel, $"Export profile: {output.ExportColorDisplayValue}");
         AutomationProperties.SetHelpText(SettingsExportSegmentsPanel, output.ExportColorHelpText);
         ToolTipService.SetToolTip(SettingsExportSegmentsPanel, output.ExportColorHelpText);
+        SettingsExportProfileHelpText.Text = output.ExportColorHelpText;
 
         if (output.ExportColorOptions?.Count >= 3)
         {
             ApplyExportColorOption(
                 output.ExportColorOptions[0],
                 SettingsExportHdr10Segment,
-                SettingsExportHdr10Text);
+                SettingsExportHdr10Text,
+                SettingsExportHdr10StatusText);
             ApplyExportColorOption(
                 output.ExportColorOptions[1],
                 SettingsExportP3Segment,
-                SettingsExportP3Text);
+                SettingsExportP3Text,
+                SettingsExportP3StatusText);
             ApplyExportColorOption(
                 output.ExportColorOptions[2],
                 SettingsExportSrgbSegment,
-                SettingsExportSrgbText);
+                SettingsExportSrgbText,
+                SettingsExportSrgbStatusText);
         }
         else
         {
@@ -1635,15 +1647,73 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void ApplyExportColorOption(ExportColorOptionProjection option, Control segment, TextBlock label)
+    private void ApplyExportColorOption(
+        ExportColorOptionProjection option,
+        Control segment,
+        TextBlock label,
+        TextBlock statusLabel)
     {
         label.Text = option.Label;
+        statusLabel.Text = option.StatusLabel;
         segment.IsEnabled = !option.IsReadOnly;
         ApplySegmentState(segment, label, option.IsSelected);
+        statusLabel.Foreground = option.IsSelected
+            ? (Brush)Application.Current.Resources["TextBrush"]
+            : (Brush)Application.Current.Resources["MutedTextBrush"];
         AutomationProperties.SetName(segment, $"Export option: {option.Label}");
         AutomationProperties.SetHelpText(segment, GetExportColorOptionHelpText(option));
         ToolTipService.SetToolTip(segment, GetExportColorOptionHelpText(option));
     }
+
+    private void ApplyValidationProjection(ValidationPanelProjection validation)
+    {
+        ValidationReleaseTargetText.Text = validation.ReleaseTarget;
+        ValidationSummaryText.Text = validation.Summary;
+        ApplyValidationRow(validation.Rows.ElementAtOrDefault(0), ValidationRow1Label, ValidationRow1Detail, ValidationRow1Status);
+        ApplyValidationRow(validation.Rows.ElementAtOrDefault(1), ValidationRow2Label, ValidationRow2Detail, ValidationRow2Status);
+        ApplyValidationRow(validation.Rows.ElementAtOrDefault(2), ValidationRow3Label, ValidationRow3Detail, ValidationRow3Status);
+        ApplyValidationRow(validation.Rows.ElementAtOrDefault(3), ValidationRow4Label, ValidationRow4Detail, ValidationRow4Status);
+    }
+
+    private static void ApplyValidationRow(
+        ValidationEvidenceRowProjection? row,
+        TextBlock label,
+        TextBlock detail,
+        TextBlock status)
+    {
+        if (row is null)
+        {
+            label.Text = string.Empty;
+            detail.Text = string.Empty;
+            status.Text = string.Empty;
+            return;
+        }
+
+        label.Text = row.Label;
+        detail.Text = row.Detail;
+        status.Text = FormatValidationStatus(row.Status);
+        status.Foreground = GetValidationStatusBrush(row.Status);
+        AutomationProperties.SetHelpText(label, row.Detail);
+    }
+
+    private static string FormatValidationStatus(ValidationEvidenceStatus status) =>
+        status switch
+        {
+            ValidationEvidenceStatus.Pass => "PASS",
+            ValidationEvidenceStatus.Limited => "LIMITED",
+            ValidationEvidenceStatus.Fail => "FAIL",
+            ValidationEvidenceStatus.NotApplicable => "N/A",
+            _ => "NOT RUN",
+        };
+
+    private static Brush GetValidationStatusBrush(ValidationEvidenceStatus status) =>
+        status switch
+        {
+            ValidationEvidenceStatus.Pass => (Brush)Application.Current.Resources["SuccessBrush"],
+            ValidationEvidenceStatus.Limited => (Brush)Application.Current.Resources["WarningBrush"],
+            ValidationEvidenceStatus.Fail => (Brush)Application.Current.Resources["ErrorBrush"],
+            _ => (Brush)Application.Current.Resources["MutedTextBrush"],
+        };
 
     private static string GetExportColorOptionHelpText(ExportColorOptionProjection option)
     {
@@ -1684,9 +1754,14 @@ public sealed partial class MainWindow : Window
 
     private void UpdateMainPanelProjection(CaptureSessionState state, OutputResult? outputResult = null)
     {
-        var projection = MainPanelProjection.Project(state, outputResult, settingsProvider.HdrAlertsEnabled);
+        var projection = MainPanelProjection.Project(
+            state,
+            outputResult,
+            settingsProvider.HdrAlertsEnabled,
+            settingsProvider.ExportColorFormat);
         var isIdle = state.Status is CaptureSessionStatus.Idle;
         var statusBrush = GetTrustStatusBrush(projection.TrustSeverity);
+        var fidelityBrush = GetTrustStatusBrush(projection.FidelityClaim.Severity);
 
         SelectCaptureTargetButton.IsEnabled = projection.CanStartCapture;
         RegionSelectButton.IsEnabled = projection.CanStartCapture;
@@ -1706,8 +1781,75 @@ public sealed partial class MainWindow : Window
         ToolTipService.SetToolTip(TrustStatusLabel, projection.TrustMessage);
         AutomationProperties.SetHelpText(TrustStatusLabel, projection.TrustMessage);
 
+        TargetHdrStatusGlyph.Glyph = GetTrustStatusGlyph(projection.TrustIcon);
+        TargetHdrStatusGlyph.Foreground = statusBrush;
+        TargetHdrStatusDotInline.Fill = statusBrush;
+        TargetHdrStatusLabel.Text = projection.TrustLabel;
+        TargetHdrStatusLabel.Foreground = statusBrush;
+        TargetHdrStatusDetail.Text = projection.TrustMessage;
+        AutomationProperties.SetHelpText(TargetHdrStatusPill, projection.TrustMessage);
+
+        FidelityClaimStatusGlyph.Glyph = GetTrustStatusGlyph(projection.FidelityClaim.Icon);
+        FidelityClaimStatusGlyph.Foreground = fidelityBrush;
+        FidelityClaimStatusDot.Fill = fidelityBrush;
+        FidelityClaimStatusLabel.Text = projection.FidelityClaim.Label;
+        FidelityClaimStatusLabel.Foreground = fidelityBrush;
+        FidelityClaimStatusDetail.Text = projection.FidelityClaim.Detail;
+        AutomationProperties.SetHelpText(FidelityClaimStatusPill, projection.FidelityClaim.Detail);
+
+        OutputProfileLabel.Text = $"Output profile: {projection.OutputProfile.Label}";
+        OutputProfileDetail.Text = projection.OutputProfile.Detail;
+        OutputProfileStatusLabel.Text = projection.OutputProfile.StatusLabel;
+        ToolTipService.SetToolTip(OutputProfilePanel, projection.OutputProfile.Detail);
+        AutomationProperties.SetHelpText(OutputProfilePanel, projection.OutputProfile.Detail);
+
+        ApplyOutputResultProjection(outputResult, projection);
+
         ApplyHdrAlert(projection);
     }
+
+    private void ApplyOutputResultProjection(OutputResult? outputResult, MainPanelProjection projection)
+    {
+        OutputResultTitle.Text = outputResult is null
+            ? "Ready"
+            : outputResult.IsSuccess
+                ? FormatOutputSuccessTitle(outputResult)
+                : outputResult.UserMessage ?? "Output failed";
+        OutputResultDetail.Text = outputResult is null
+            ? "No capture output has completed yet."
+            : FormatOutputTargets(outputResult);
+        OutputResultFidelityDetail.Text =
+            $"Fidelity claim: {projection.FidelityClaim.Label}. {projection.FidelityClaim.Detail}";
+        var brush = outputResult is null
+            ? (Brush)Application.Current.Resources["MutedTextBrush"]
+            : outputResult.IsSuccess
+                ? (Brush)Application.Current.Resources["SuccessBrush"]
+                : (Brush)Application.Current.Resources["WarningBrush"];
+        OutputResultGlyph.Foreground = brush;
+        AutomationProperties.SetName(OutputResultPanel, OutputResultTitle.Text);
+        AutomationProperties.SetHelpText(OutputResultPanel, OutputResultDetail.Text);
+    }
+
+    private static string FormatOutputSuccessTitle(OutputResult outputResult)
+    {
+        var targets = outputResult.Targets.Select(target => target.Target).Distinct().ToArray();
+        return targets.Contains(OutputTarget.Clipboard) && targets.Contains(OutputTarget.Folder)
+            ? "Copied and saved"
+            : targets.Contains(OutputTarget.Folder)
+                ? "Saved"
+                : "Copied";
+    }
+
+    private static string FormatOutputTargets(OutputResult outputResult) =>
+        string.Join(
+            " · ",
+            outputResult.Targets.Select(target =>
+                target.Target switch
+                {
+                    OutputTarget.Folder => target.Outcome is OutputOutcome.Success ? "File saved" : target.UserMessage,
+                    OutputTarget.Clipboard => target.Outcome is OutputOutcome.Success ? "Clipboard copied" : target.UserMessage,
+                    _ => target.UserMessage,
+                }));
 
     private void ApplyHdrAlert(MainPanelProjection projection)
     {

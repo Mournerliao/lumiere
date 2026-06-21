@@ -101,6 +101,9 @@ public sealed partial class TrayMenuWindow : Window
     private void ApplySnapshot(TrayMenuSnapshot snapshot)
     {
         HdrStatusLabel.Text = snapshot.HdrStatusLabel;
+        FidelityClaimLabel.Text = snapshot.FidelityClaimLabel;
+        FidelityClaimLabel.Foreground = GetFidelityClaimBrush(snapshot.FidelityClaimSeverity);
+        ToolTipService.SetToolTip(FidelityClaimLabel, snapshot.FidelityClaimDetail);
         if (!string.IsNullOrEmpty(snapshot.TrayAlertMessage))
         {
             HdrAlertLabel.Text = snapshot.TrayAlertMessage;
@@ -124,6 +127,16 @@ public sealed partial class TrayMenuWindow : Window
         SettingsItem.IsEnabled = snapshot.OpenSettings.IsEnabled;
         QuitItem.IsEnabled = snapshot.Quit.IsEnabled;
     }
+
+    private static Brush GetFidelityClaimBrush(TrayMenuStatusSeverity severity) =>
+        severity switch
+        {
+            TrayMenuStatusSeverity.Error => (Brush)Application.Current.Resources["ErrorBrush"],
+            TrayMenuStatusSeverity.Warning => (Brush)Application.Current.Resources["WarningBrush"],
+            TrayMenuStatusSeverity.Success => (Brush)Application.Current.Resources["SuccessBrush"],
+            TrayMenuStatusSeverity.Info => (Brush)Application.Current.Resources["AccentBrush"],
+            _ => (Brush)Application.Current.Resources["MutedTextBrush"],
+        };
 
     private void ConfigureAsPopup(IntPtr ownerHwnd)
     {

@@ -78,6 +78,16 @@ public sealed class SettingsPanelProjectionTests
         Assert.False(projection.HdrAlertsEnabled);
     }
 
+    [Fact]
+    public void Project_ShowsTargetAwareStateAsRequiredForPublicRelease()
+    {
+        var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
+
+        Assert.Equal("Required", projection.TargetAwareStateLabel);
+        Assert.Contains("selected target", projection.TargetAwareStateHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("global HDR guess", projection.TargetAwareStateHelpText, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Theory]
     [InlineData(OutputTarget.Clipboard, "Clipboard", true, false, false)]
     [InlineData(OutputTarget.Folder, "Folder", false, true, false)]
@@ -226,19 +236,51 @@ public sealed class SettingsPanelProjectionTests
         Assert.True(projection.Output.IsExportColorReadOnly);
 
         Assert.Equal(["HDR10", "P3", "sRGB"], projection.Output.ExportColorOptions.Select(option => option.Label).ToArray());
+        Assert.Equal("Validate", projection.Output.ExportColorOptions[0].StatusLabel);
+        Assert.Equal("Build", projection.Output.ExportColorOptions[1].StatusLabel);
+        Assert.Equal("Compat", projection.Output.ExportColorOptions[2].StatusLabel);
         Assert.True(projection.Output.ExportColorOptions[0].IsReadOnly);
         Assert.True(projection.Output.ExportColorOptions[1].IsReadOnly);
         Assert.False(projection.Output.ExportColorOptions[2].IsReadOnly);
         Assert.False(projection.Output.ExportColorOptions[0].IsSelected);
         Assert.False(projection.Output.ExportColorOptions[1].IsSelected);
         Assert.True(projection.Output.ExportColorOptions[2].IsSelected);
-        Assert.Contains("pending", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("pending", projection.Output.ExportColorOptions[1].HelpText, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("basic PNG", projection.Output.ExportColorOptions[2].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("profile contract", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Windows validation", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("visible as intent", projection.Output.ExportColorOptions[1].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Compatibility output", projection.Output.ExportColorOptions[2].HelpText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserving", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR preserving", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserving", projection.Output.ExportColorOptions[2].HelpText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR preserving", projection.Output.ExportColorOptions[2].HelpText, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Project_SelectedHdr10ProfileIsVisibleButDoesNotEnableHdrPreservedClaim()
+    {
+        var settings = new TestSettingsProvider
+        {
+            ExportColorFormat = "HDR10",
+        };
+
+        var projection = SettingsPanelProjection.Project(settings, CreateState());
+
+        Assert.Equal("HDR10", projection.Output.ExportColorDisplayValue);
+        Assert.True(projection.Output.ExportColorOptions[0].IsSelected);
+        Assert.True(projection.Output.ExportColorOptions[0].IsReadOnly);
+        Assert.Equal(FidelityClaimKind.Unvalidated, projection.MainPanel.FidelityClaim.Kind);
+        Assert.Equal("Unvalidated", projection.MainPanel.FidelityClaim.Label);
+        Assert.DoesNotContain("HDR-preserved", projection.MainPanel.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Project_IncludesValidationEvidencePanel()
+    {
+        var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
+
+        Assert.Equal(PerfectHdrFidelityProjection.ReleaseTarget, projection.Validation.ReleaseTarget);
+        Assert.Contains(projection.Validation.Rows, row => row.Label == "Target-aware HDR");
+        Assert.Contains(projection.Validation.Rows, row => row.Label == "HDR-preserved profile");
     }
 
     [Fact]

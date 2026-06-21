@@ -2,6 +2,7 @@ using Lumiere.App;
 using Lumiere.Capture;
 using Lumiere.Graphics.Hdr;
 using Lumiere.Graphics.Output;
+using Lumiere.Infrastructure.Interop;
 using Lumiere.Settings;
 using Windows.Graphics;
 using Xunit;
@@ -21,6 +22,7 @@ public sealed class TrayMenuProjectionTests
         Assert.Equal("Lumiere", projection.AppName);
         Assert.Equal("HDR Ready", projection.HdrStatusLabel);
         Assert.Equal("Ready", projection.HdrStatusDetail);
+        Assert.Equal("Converted", projection.FidelityClaimLabel);
         Assert.Equal("Full Screen", projection.FullscreenCapture.Label);
         Assert.Equal("Ctrl+Shift+F", projection.FullscreenCapture.ShortcutText);
         Assert.True(projection.FullscreenCapture.IsEnabled);
@@ -64,8 +66,26 @@ public sealed class TrayMenuProjectionTests
             outputResult: OutputResult.ClipboardSuccess(2048));
 
         Assert.Equal("Output complete", projection.HdrStatusLabel);
+        Assert.Equal("Converted", projection.FidelityClaimLabel);
         Assert.True(projection.FullscreenCapture.IsEnabled);
         Assert.True(projection.RegionCapture.IsEnabled);
+    }
+
+    [Fact]
+    public void Project_Hdr10ProfileMirrorsUnvalidatedFidelityClaim()
+    {
+        var projection = TrayMenuProjection.Project(
+            CaptureSessionState.Idle(PreviewReadinessStatus.Ready("Ready", "HDR preview is ready.")),
+            new StubSettingsProvider("Ctrl+Shift+F", "Ctrl+Shift+R")
+            {
+                ExportColorFormat = "HDR10",
+            },
+            new StubAboutInfoProvider("Lumiere"));
+
+        Assert.Equal("HDR Ready", projection.HdrStatusLabel);
+        Assert.Equal("Unvalidated", projection.FidelityClaimLabel);
+        Assert.Contains("No fidelity claim", projection.FidelityClaimDetail);
+        Assert.Equal(TrayMenuStatusSeverity.Error, projection.FidelityClaimSeverity);
     }
 
     [Fact]
@@ -188,6 +208,6 @@ public sealed class TrayMenuProjectionTests
 
         public AfterCaptureBehavior AfterCaptureBehavior => AfterCaptureBehavior.None;
 
-        public string ExportColorFormat => "sRGB";
+        public string ExportColorFormat { get; init; } = "sRGB";
     }
 }

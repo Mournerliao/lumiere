@@ -10,7 +10,10 @@ public sealed record SettingsPanelProjection(
     bool HdrAlertsEnabled,
     bool IsHdrAlertsReadOnly,
     string HdrAlertsHelpText,
+    string TargetAwareStateLabel,
+    string TargetAwareStateHelpText,
     OutputSettingsProjection Output,
+    ValidationPanelProjection Validation,
     AboutInfoProjection About,
     bool TimestampNaming,
     bool CopyAsImage,
@@ -34,16 +37,23 @@ public sealed record SettingsPanelProjection(
             settingsProvider.HdrAlertsEnabled,
             IsHdrAlertsReadOnly: false,
             "Show warnings when HDR is unavailable, degraded, unsupported, or failed.",
+            "Required",
+            "Public release cannot use a global HDR guess; state must follow the selected target.",
             OutputSettingsProjection.ReadOnly(
                 settingsProvider.OutputTarget,
                 settingsProvider.SavePath,
                 settingsProvider.TimestampNaming,
                 settingsProvider.CopyAsImage,
-                settingsProvider.AfterCaptureBehavior),
+                settingsProvider.AfterCaptureBehavior,
+                settingsProvider.ExportColorFormat),
+            PerfectHdrFidelityProjection.ProjectValidation(),
             AboutInfoProjection.FromProvider(aboutInfoProvider),
             settingsProvider.TimestampNaming,
             settingsProvider.CopyAsImage,
-            MainPanelProjection.Project(sessionState, hdrAlertsEnabled: settingsProvider.HdrAlertsEnabled));
+            MainPanelProjection.Project(
+                sessionState,
+                hdrAlertsEnabled: settingsProvider.HdrAlertsEnabled,
+                exportColorFormat: settingsProvider.ExportColorFormat));
     }
 }
 
@@ -118,31 +128,13 @@ public sealed record OutputSettingsProjection(
     private const string ExportColorHelp =
         "Export profiles are shown to match the design reference. HDR10 and P3 require encoder metadata, conversion policy, target-app assumptions, and Windows validation before they become real output behavior.";
 
-    private static readonly IReadOnlyList<ExportColorOptionProjection> DefaultExportColorOptions =
-    [
-        new(
-            "HDR10",
-            IsSelected: false,
-            IsReadOnly: true,
-            "HDR10 export is pending encoder metadata, HDR metadata policy, target-app compatibility, and Windows validation."),
-        new(
-            "P3",
-            IsSelected: false,
-            IsReadOnly: true,
-            "P3 export is pending color metadata, conversion policy, target-app compatibility, and Windows validation."),
-        new(
-            "sRGB",
-            IsSelected: true,
-            IsReadOnly: false,
-            "sRGB reflects the current basic PNG output surface; advanced fidelity validation is pending."),
-    ];
-
     public static OutputSettingsProjection ReadOnly(
         Lumiere.Graphics.Output.OutputTarget outputTarget,
         string? savePath,
         bool timestampNaming,
         bool copyAsImage,
-        AfterCaptureBehavior afterCaptureBehavior)
+        AfterCaptureBehavior afterCaptureBehavior,
+        string? exportColorFormat = null)
     {
         var (displayValue, isClipboardSelected, isFolderSelected, isBothSelected) = outputTarget switch
         {
@@ -158,6 +150,8 @@ public sealed record OutputSettingsProjection(
         var (afterCaptureDisplayValue, afterCaptureHelpText, isAfterCaptureSelected) = ProjectAfterCapture(
             outputTarget,
             afterCaptureBehavior);
+        var selectedProfile = PerfectHdrFidelityProjection.ProjectOutputProfile(exportColorFormat);
+        var exportColorOptions = CreateExportColorOptions(selectedProfile.Label);
 
         return new OutputSettingsProjection(
             displayValue,
@@ -179,11 +173,34 @@ public sealed record OutputSettingsProjection(
             afterCaptureHelpText,
             isAfterCaptureSelected,
             IsAfterCaptureReadOnly: false,
-            DefaultExportColorOptions.FirstOrDefault(o => o.IsSelected)?.Label ?? "sRGB",
+            selectedProfile.Label,
             ExportColorHelp,
             IsExportColorReadOnly: true,
-            DefaultExportColorOptions);
+            exportColorOptions);
     }
+
+    private static IReadOnlyList<ExportColorOptionProjection> CreateExportColorOptions(string selectedLabel) =>
+    [
+        CreateExportColorOption(
+            PerfectHdrFidelityProjection.ProjectOutputProfile("HDR10"),
+            selectedLabel),
+        CreateExportColorOption(
+            PerfectHdrFidelityProjection.ProjectOutputProfile("P3"),
+            selectedLabel),
+        CreateExportColorOption(
+            PerfectHdrFidelityProjection.ProjectOutputProfile("sRGB"),
+            selectedLabel),
+    ];
+
+    private static ExportColorOptionProjection CreateExportColorOption(
+        OutputProfileProjection profile,
+        string selectedLabel) =>
+        new(
+            profile.Label,
+            profile.StatusLabel,
+            IsSelected: string.Equals(profile.Label, selectedLabel, StringComparison.OrdinalIgnoreCase),
+            profile.IsReadOnly,
+            profile.Detail);
 
     private static (string DisplayValue, string HelpText, bool IsSelected) ProjectAfterCapture(
         Lumiere.Graphics.Output.OutputTarget outputTarget,
@@ -217,6 +234,7 @@ public sealed record OutputSettingsProjection(
 
 public sealed record ExportColorOptionProjection(
     string Label,
+    string StatusLabel,
     bool IsSelected,
     bool IsReadOnly,
     string HelpText);

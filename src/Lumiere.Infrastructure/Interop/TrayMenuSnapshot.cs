@@ -4,6 +4,9 @@ public sealed record TrayMenuSnapshot(
     string AppName,
     string HdrStatusLabel,
     string HdrStatusDetail,
+    string FidelityClaimLabel,
+    string FidelityClaimDetail,
+    TrayMenuStatusSeverity FidelityClaimSeverity,
     string TrayAlertMessage,
     int TrayAlertSeverity,
     TrayMenuItemSnapshot FullscreenCapture,
@@ -17,3 +20,12 @@ public sealed record TrayMenuItemSnapshot(
     string? ShortcutText,
     bool IsEnabled,
     bool IsActive);
+
+public enum TrayMenuStatusSeverity
+{
+    Neutral = 0,
+    Success,
+    Warning,
+    Error,
+    Info,
+}
