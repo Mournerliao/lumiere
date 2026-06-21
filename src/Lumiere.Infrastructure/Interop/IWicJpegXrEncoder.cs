@@ -7,6 +7,13 @@ public interface IWicJpegXrEncoder
     byte[] EncodeRgbaHalf(WicJpegXrEncodeRequest request);
 }
 
+public interface IWicJpegXrMetadataReader
+{
+    IReadOnlyDictionary<string, string> ReadStringMetadata(
+        byte[] jpegXrBytes,
+        IReadOnlyList<string> queryPaths);
+}
+
 public sealed record WicJpegXrEncodeRequest
 {
     public const int RgbaHalfBytesPerPixel = 8;

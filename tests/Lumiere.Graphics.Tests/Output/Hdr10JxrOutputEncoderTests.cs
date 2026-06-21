@@ -227,15 +227,15 @@ public sealed class Hdr10JxrOutputEncoderTests
         Assert.Same(sourceBytes, nativeEncoder.Request.RgbaHalfPixels);
         Assert.Contains(
             nativeEncoder.Request.Metadata,
-            entry => entry.QueryPath == "/xmp/Lumiere:Hdr10MetadataSource"
+            entry => entry.QueryPath == WicHdr10JxrCodec.CreateAuditMetadataQueryPath("Hdr10MetadataSource")
                 && entry.Value == Hdr10StaticMetadataSource.Bt2020PqReference.ToString());
         Assert.Contains(
             nativeEncoder.Request.Metadata,
-            entry => entry.QueryPath == "/xmp/Lumiere:MaxContentLightLevelNits"
+            entry => entry.QueryPath == WicHdr10JxrCodec.CreateAuditMetadataQueryPath("MaxContentLightLevelNits")
                 && entry.Value == "1000");
         Assert.Contains(
             nativeEncoder.Request.Metadata,
-            entry => entry.QueryPath == "/xmp/Lumiere:MetadataPolicyDetail"
+            entry => entry.QueryPath == WicHdr10JxrCodec.CreateAuditMetadataQueryPath("MetadataPolicyDetail")
                 && entry.Value.Contains("policy input", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -243,7 +243,39 @@ public sealed class Hdr10JxrOutputEncoderTests
     public void WicJpegXrMetadataEntry_RequiresQueryPathAndValue()
     {
         Assert.Throws<ArgumentException>(() => new WicJpegXrMetadataEntry("", "value"));
-        Assert.Throws<ArgumentException>(() => new WicJpegXrMetadataEntry("/xmp/Lumiere:Test", ""));
+        Assert.Throws<ArgumentException>(() => new WicJpegXrMetadataEntry(WicHdr10JxrCodec.CreateAuditMetadataQueryPath("Test"), ""));
+    }
+
+    [Fact]
+    public void WindowsWicJpegXrMetadataReader_ReadsAuditMetadataFromEncodedArtifact()
+    {
+        var encoder = new WindowsWicJpegXrEncoder();
+        Assert.True(encoder.Readiness.IsReady, string.Join(" ", encoder.Readiness.Blockers));
+
+        var metadata = new[]
+        {
+            new WicJpegXrMetadataEntry(WicHdr10JxrCodec.CreateAuditMetadataQueryPath("Hdr10MetadataSource"), "Bt2020PqReference"),
+            new WicJpegXrMetadataEntry(WicHdr10JxrCodec.CreateAuditMetadataQueryPath("MaxContentLightLevelNits"), "1000"),
+            new WicJpegXrMetadataEntry(WicHdr10JxrCodec.CreateAuditMetadataQueryPath("MetadataPolicyDetail"), "Round-trip audit metadata from encoded artifact."),
+        };
+        var encoded = encoder.EncodeRgbaHalf(
+            new WicJpegXrEncodeRequest(
+                width: 2,
+                height: 1,
+                strideBytes: WicJpegXrEncodeRequest.RgbaHalfBytesPerPixel * 2,
+                rgbaHalfPixels: new byte[WicJpegXrEncodeRequest.RgbaHalfBytesPerPixel * 2],
+                metadata));
+        var reader = new WindowsWicJpegXrMetadataReader();
+
+        var values = reader.ReadStringMetadata(
+            encoded,
+            metadata.Select(entry => entry.QueryPath).ToArray());
+
+        Assert.Equal("Bt2020PqReference", values[WicHdr10JxrCodec.CreateAuditMetadataQueryPath("Hdr10MetadataSource")]);
+        Assert.Equal("1000", values[WicHdr10JxrCodec.CreateAuditMetadataQueryPath("MaxContentLightLevelNits")]);
+        Assert.Equal(
+            "Round-trip audit metadata from encoded artifact.",
+            values[WicHdr10JxrCodec.CreateAuditMetadataQueryPath("MetadataPolicyDetail")]);
     }
 
     private static OutputFormatContract CompleteHdr10Contract { get; } =

@@ -135,6 +135,8 @@ public sealed class PendingHdr10JxrCodec : IHdr10JxrCodec
 
 public sealed class WicHdr10JxrCodec : IHdr10JxrCodec
 {
+    public const string AuditMetadataSchema = "https://lumiere.app/ns/hdr10-audit/1.0/";
+
     private readonly IWicJpegXrEncoder encoder;
 
     public WicHdr10JxrCodec(IWicJpegXrEncoder encoder)
@@ -175,16 +177,19 @@ public sealed class WicHdr10JxrCodec : IHdr10JxrCodec
     private static IReadOnlyList<WicJpegXrMetadataEntry> CreateAuditMetadata(
         Hdr10StaticMetadataPolicy policy) =>
         [
-            new("/xmp/Lumiere:Hdr10MetadataSource", policy.Source.ToString()),
-            new("/xmp/Lumiere:RedPrimary", FormatChromaticity(policy.RedPrimary)),
-            new("/xmp/Lumiere:GreenPrimary", FormatChromaticity(policy.GreenPrimary)),
-            new("/xmp/Lumiere:BluePrimary", FormatChromaticity(policy.BluePrimary)),
-            new("/xmp/Lumiere:WhitePoint", FormatChromaticity(policy.WhitePoint)),
-            new("/xmp/Lumiere:MasteringLuminance", $"{policy.MasteringLuminance.MinNits:G17},{policy.MasteringLuminance.MaxNits:G17}"),
-            new("/xmp/Lumiere:MaxContentLightLevelNits", policy.MaxContentLightLevelNits.ToString(System.Globalization.CultureInfo.InvariantCulture)),
-            new("/xmp/Lumiere:MaxFrameAverageLightLevelNits", policy.MaxFrameAverageLightLevelNits.ToString(System.Globalization.CultureInfo.InvariantCulture)),
-            new("/xmp/Lumiere:MetadataPolicyDetail", policy.Detail),
+            new(CreateAuditMetadataQueryPath("Hdr10MetadataSource"), policy.Source.ToString()),
+            new(CreateAuditMetadataQueryPath("RedPrimary"), FormatChromaticity(policy.RedPrimary)),
+            new(CreateAuditMetadataQueryPath("GreenPrimary"), FormatChromaticity(policy.GreenPrimary)),
+            new(CreateAuditMetadataQueryPath("BluePrimary"), FormatChromaticity(policy.BluePrimary)),
+            new(CreateAuditMetadataQueryPath("WhitePoint"), FormatChromaticity(policy.WhitePoint)),
+            new(CreateAuditMetadataQueryPath("MasteringLuminance"), $"{policy.MasteringLuminance.MinNits:G17},{policy.MasteringLuminance.MaxNits:G17}"),
+            new(CreateAuditMetadataQueryPath("MaxContentLightLevelNits"), policy.MaxContentLightLevelNits.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            new(CreateAuditMetadataQueryPath("MaxFrameAverageLightLevelNits"), policy.MaxFrameAverageLightLevelNits.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            new(CreateAuditMetadataQueryPath("MetadataPolicyDetail"), policy.Detail),
         ];
+
+    public static string CreateAuditMetadataQueryPath(string name) =>
+        $"/ifd/xmp/{{wstr={AuditMetadataSchema}}}:{name}";
 
     private static string FormatChromaticity(Hdr10Chromaticity chromaticity) =>
         string.Create(
