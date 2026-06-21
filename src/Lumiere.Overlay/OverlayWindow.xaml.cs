@@ -97,6 +97,8 @@ public sealed partial class OverlayWindow : Window
         StatusMessageTextBlock.Visibility = string.IsNullOrEmpty(state.Message)
             ? Visibility.Collapsed
             : Visibility.Visible;
+        FidelityLabelTextBlock.Text = state.FidelityCue.Label;
+        FidelityDetailTextBlock.Text = state.FidelityCue.Detail;
         UpdateTechnicalDetail();
         ApplyStatusStyle(OverlayStatusStyle.FromStatus(state.Status));
         ApplyCropSelectionAvailability(state);
@@ -411,6 +413,8 @@ public sealed partial class OverlayWindow : Window
     {
         StatusPanelBorder.Background = CreateBrush(style.BackgroundArgb);
         StatusPanelBorder.BorderBrush = CreateBrush(style.BorderArgb);
+        FidelityPanelBorder.Background = CreateBrush(style.BackgroundArgb);
+        FidelityPanelBorder.BorderBrush = CreateBrush(style.BorderArgb);
     }
 
     private void UpdateTechnicalDetail()
@@ -452,6 +456,7 @@ public sealed partial class OverlayWindow : Window
         if (!selection.IsVisible)
         {
             HideCropVisuals();
+            UpdateCropSizeCue(null);
             return;
         }
 
@@ -478,6 +483,7 @@ public sealed partial class OverlayWindow : Window
         CropOuterBorderRectangle.Visibility = Visibility.Visible;
         CropInnerBorderRectangle.Visibility = Visibility.Visible;
         UpdateHandleVisuals(crop);
+        UpdateCropSizeCue(crop);
     }
 
     private void HideCropVisuals()
@@ -541,6 +547,24 @@ public sealed partial class OverlayWindow : Window
         Canvas.SetTop(rectangle, bounds.Y);
         rectangle.Width = bounds.Width;
         rectangle.Height = bounds.Height;
+    }
+
+    private void UpdateCropSizeCue(Rect? crop)
+    {
+        if (crop is not { } visibleCrop)
+        {
+            CropSizeTextBlock.Text = "Select a region";
+            return;
+        }
+
+        var pixelRegion = CropCoordinateMapper.MapToCapturePixels(
+            visibleCrop,
+            currentPreviewLayout.PreviewBounds,
+            currentCaptureFrameSize,
+            presenter.DpiScale,
+            presenter.DpiScale);
+
+        CropSizeTextBlock.Text = $"{pixelRegion.Width} x {pixelRegion.Height}px";
     }
 
     private static SolidColorBrush CreateBrush(uint argb) =>
@@ -642,7 +666,7 @@ public sealed partial class OverlayWindow : Window
     {
         var isExpanded = TechnicalDetailsBorder.Visibility == Visibility.Visible;
         TechnicalDetailsBorder.Visibility = isExpanded ? Visibility.Collapsed : Visibility.Visible;
-        ToggleTechnicalDetailsButton.Content = isExpanded ? "Technical details ▸" : "Technical details ▾";
+        ToggleTechnicalDetailsButton.Content = isExpanded ? "Technical details >" : "Technical details v";
     }
 
     private void OnClosed(object sender, WindowEventArgs args)

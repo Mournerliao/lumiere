@@ -15,6 +15,17 @@ public sealed class OverlayStateTests
     }
 
     [Fact]
+    public void HdrReady_DoesNotClaimHdrPreservedOutputByDefault()
+    {
+        var overlayState = OverlayState.HdrReady("HDR preview is ready.", "FP16 scRGB swap chain is attached.");
+
+        Assert.Equal(OverlayFidelityClaimKind.Unvalidated, overlayState.FidelityCue.Kind);
+        Assert.Equal("Output unvalidated", overlayState.FidelityCue.Label);
+        Assert.DoesNotContain("HDR-preserved", overlayState.FidelityCue.Label, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR-preserved", overlayState.FidelityCue.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void PreviewFailed_RequiresFailureTeardown()
     {
         var overlayState = OverlayState.PreviewFailed(
@@ -99,5 +110,18 @@ public sealed class OverlayStateTests
         var ready = OverlayStatusStyle.FromStatus(OverlayDisplayStatus.HdrReady);
 
         Assert.NotEqual(invalidCrop, ready);
+    }
+
+    [Theory]
+    [InlineData(OverlayFidelityClaimKind.Unvalidated)]
+    [InlineData(OverlayFidelityClaimKind.Converted)]
+    [InlineData(OverlayFidelityClaimKind.VisualMatch)]
+    [InlineData(OverlayFidelityClaimKind.HdrPreserved)]
+    public void FidelityCue_UsesDistinctLabels(OverlayFidelityClaimKind kind)
+    {
+        var cue = OverlayFidelityCue.FromClaim(kind);
+
+        Assert.False(string.IsNullOrWhiteSpace(cue.Label));
+        Assert.False(string.IsNullOrWhiteSpace(cue.Detail));
     }
 }

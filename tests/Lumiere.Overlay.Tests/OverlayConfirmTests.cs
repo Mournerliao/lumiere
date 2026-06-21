@@ -34,6 +34,31 @@ public sealed class OverlayConfirmTests
     }
 
     [Fact]
+    public void TryCreate_DoesNotPromoteHdrReadyPreviewToHdrPreservedOutput()
+    {
+        var selection = new CropSelection(
+            CropSelectionPhase.Active,
+            CropGeometry.FromEdges(10, 20, 50, 60, new Rect(0, 0, 100, 100)),
+            null);
+        var state = OverlayState.HdrReady("HDR preview is ready.", "FP16 scRGB preview.");
+
+        var result = ConfirmedCaptureSelection.TryCreate(
+            selection,
+            new Rect(0, 0, 100, 100),
+            new CaptureFrameSize(1000, 500),
+            state,
+            1.0,
+            1.0,
+            out var confirmed);
+
+        Assert.True(result);
+        Assert.Equal(OverlayDisplayStatus.HdrReady, confirmed.Status);
+        Assert.Equal(OverlayFidelityClaimKind.Unvalidated, state.FidelityCue.Kind);
+        Assert.DoesNotContain("HDR-preserved", confirmed.StatusText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR-preserved", confirmed.TechnicalDetail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void TryCreate_RejectsMissingCrop()
     {
         var result = ConfirmedCaptureSelection.TryCreate(

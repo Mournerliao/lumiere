@@ -5,8 +5,19 @@ public sealed record OverlayState(
     string Label,
     string Message,
     string TechnicalDetail,
-    OverlayFailureAction FailureAction)
+    OverlayFailureAction FailureAction,
+    OverlayFidelityCue FidelityCue)
 {
+    public OverlayState(
+        OverlayDisplayStatus status,
+        string label,
+        string message,
+        string technicalDetail,
+        OverlayFailureAction failureAction)
+        : this(status, label, message, technicalDetail, failureAction, OverlayFidelityCue.Unvalidated)
+    {
+    }
+
     public bool IsTerminal => Status is OverlayDisplayStatus.Closing or OverlayDisplayStatus.Disposed;
 
     public bool RequiresFailureTeardown =>
@@ -18,7 +29,8 @@ public sealed record OverlayState(
             "Initializing preview",
             message,
             technicalDetail,
-            OverlayFailureAction.KeepOpenWithFailure);
+            OverlayFailureAction.KeepOpenWithFailure,
+            OverlayFidelityCue.Unvalidated);
 
     public static OverlayState HdrReady(string message, string technicalDetail = "") =>
         new(
@@ -26,7 +38,8 @@ public sealed record OverlayState(
             "HDR-ready",
             message,
             technicalDetail,
-            OverlayFailureAction.KeepOpenWithFailure);
+            OverlayFailureAction.KeepOpenWithFailure,
+            OverlayFidelityCue.Unvalidated);
 
     public static OverlayState DegradedPreview(string message, string technicalDetail = "") =>
         new(
@@ -34,7 +47,8 @@ public sealed record OverlayState(
             "Degraded preview",
             message,
             technicalDetail,
-            OverlayFailureAction.KeepOpenWithFailure);
+            OverlayFailureAction.KeepOpenWithFailure,
+            OverlayFidelityCue.Converted);
 
     public static OverlayState UnsupportedCapture(string message, string technicalDetail = "") =>
         new(
@@ -42,7 +56,8 @@ public sealed record OverlayState(
             "Unsupported capture",
             message,
             technicalDetail,
-            OverlayFailureAction.KeepOpenWithFailure);
+            OverlayFailureAction.KeepOpenWithFailure,
+            OverlayFidelityCue.Unvalidated);
 
     public static OverlayState PreviewFailed(
         string message,
@@ -53,7 +68,8 @@ public sealed record OverlayState(
             "Preview failed",
             message,
             technicalDetail,
-            failureAction);
+            failureAction,
+            OverlayFidelityCue.Unvalidated);
 
     public static OverlayState Closing(string message = "Closing overlay", string technicalDetail = "") =>
         new(
@@ -61,7 +77,8 @@ public sealed record OverlayState(
             "Closing",
             message,
             technicalDetail,
-            OverlayFailureAction.CloseAfterTeardown);
+            OverlayFailureAction.CloseAfterTeardown,
+            OverlayFidelityCue.Unvalidated);
 
     public static OverlayState InvalidCrop(string message = "Crop region too small. Try again.", string technicalDetail = "") =>
         new(
@@ -69,7 +86,8 @@ public sealed record OverlayState(
             "Selection too small",
             message,
             technicalDetail,
-            OverlayFailureAction.KeepOpenWithFailure);
+            OverlayFailureAction.KeepOpenWithFailure,
+            OverlayFidelityCue.Unvalidated);
 
     public static OverlayState Disposed(string message = "Preview stopped", string technicalDetail = "") =>
         new(
@@ -77,5 +95,6 @@ public sealed record OverlayState(
             "Preview stopped",
             message,
             technicalDetail,
-            OverlayFailureAction.CloseAfterTeardown);
+            OverlayFailureAction.CloseAfterTeardown,
+            OverlayFidelityCue.Unvalidated);
 }

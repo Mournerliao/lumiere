@@ -110,7 +110,7 @@
       <Border
           x:Name="StatusPanelBorder"
           Margin="16"
-          Padding="12"
+          Padding="10"
           HorizontalAlignment="Left"
           VerticalAlignment="Top"
           Background="#CC111827"
@@ -118,42 +118,99 @@
           BorderThickness="1"
           CornerRadius="8">
         <StackPanel
-            MinWidth="260"
-            MaxWidth="420"
-            Spacing="8">
+            MinWidth="220"
+            MaxWidth="360"
+            Spacing="4">
           <TextBlock
               x:Name="StatusLabelTextBlock"
               Foreground="#F9FAFB"
-              FontSize="16"
+              FontSize="13"
               FontWeight="SemiBold"
               Text="Initializing preview" />
           <TextBlock
               x:Name="StatusMessageTextBlock"
               Foreground="#E5E7EB"
+              FontSize="11"
+              MaxLines="2"
               TextWrapping="Wrap" />
-          <Button
-              x:Name="ToggleTechnicalDetailsButton"
-              Background="Transparent"
-              BorderThickness="0"
-              Padding="0"
-              HorizontalAlignment="Left"
-              Click="OnToggleTechnicalDetailsClick"
-              Content="Technical details ▸"
-              FontSize="12"
-              Foreground="#9CA3AF" />
-          <Border
-              x:Name="TechnicalDetailsBorder"
-              Background="#44111827"
-              CornerRadius="4"
-              Padding="8"
-              Visibility="Collapsed">
+        </StackPanel>
+      </Border>
+
+      <Border
+          x:Name="FidelityPanelBorder"
+          Margin="16"
+          Padding="10"
+          HorizontalAlignment="Stretch"
+          VerticalAlignment="Bottom"
+          Background="#CC111827"
+          BorderBrush="#80F9FAFB"
+          BorderThickness="1"
+          CornerRadius="8">
+        <Grid ColumnSpacing="12">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+
+          <StackPanel
+              Grid.Column="0"
+              MinWidth="220"
+              MaxWidth="560"
+              Spacing="4">
             <TextBlock
-                x:Name="TechnicalDetailTextBlock"
+                x:Name="FidelityLabelTextBlock"
+                Foreground="#F9FAFB"
+                FontSize="12"
+                FontWeight="SemiBold"
+                Text="Output unvalidated" />
+            <TextBlock
+                x:Name="FidelityDetailTextBlock"
                 Foreground="#D1D5DB"
                 FontSize="11"
+                MaxLines="2"
                 TextWrapping="Wrap" />
-          </Border>
+            <TextBlock
+                x:Name="CropSizeTextBlock"
+                Foreground="#E5E7EB"
+                FontSize="11"
+                FontWeight="SemiBold"
+                Text="Select a region" />
+          </StackPanel>
+
           <StackPanel
+              Grid.Column="1"
+              MinWidth="180"
+              MaxWidth="420"
+              Spacing="6"
+              VerticalAlignment="Center">
+            <Button
+                x:Name="ToggleTechnicalDetailsButton"
+                Background="Transparent"
+                BorderThickness="0"
+                Padding="0"
+                HorizontalAlignment="Left"
+                Click="OnToggleTechnicalDetailsClick"
+                Content="Technical details &gt;"
+                FontSize="12"
+                Foreground="#9CA3AF" />
+            <Border
+                x:Name="TechnicalDetailsBorder"
+                Background="#44111827"
+                CornerRadius="4"
+                Padding="8"
+                Visibility="Collapsed">
+              <TextBlock
+                  x:Name="TechnicalDetailTextBlock"
+                  Foreground="#D1D5DB"
+                  FontSize="11"
+                  TextWrapping="Wrap" />
+            </Border>
+          </StackPanel>
+
+          <StackPanel
+              Grid.Column="2"
+              VerticalAlignment="Center"
               Orientation="Horizontal"
               Spacing="8">
             <Button
@@ -168,7 +225,7 @@
                 ClickMode="Press"
                 Content="Cancel" />
           </StackPanel>
-        </StackPanel>
+        </Grid>
       </Border>
     </Grid>
   </Grid>
