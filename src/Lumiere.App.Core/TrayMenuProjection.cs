@@ -28,6 +28,7 @@ public sealed record TrayMenuProjection(
         CaptureCommandMode? activeCaptureMode = null,
         OutputResult? outputResult = null,
         bool hdrAlertsEnabled = false,
+        IEnumerable<OutputValidationSessionArtifact>? validationArtifacts = null,
         OutputProfileExecutionCapabilities? executionCapabilities = null)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -39,6 +40,7 @@ public sealed record TrayMenuProjection(
             outputResult,
             hdrAlertsEnabled,
             settingsProvider.ExportColorFormat,
+            validationArtifacts,
             executionCapabilities: executionCapabilities);
         var appName = string.IsNullOrWhiteSpace(aboutInfoProvider.AppName)
             ? "Lumiere"

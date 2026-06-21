@@ -50,7 +50,9 @@ public sealed partial class MainWindow : Window
     private readonly IAboutInfoProvider aboutInfoProvider;
     private readonly GraphicsDeviceResources deviceResources;
     private readonly OutputProfileExecutionCapabilities outputCapabilities;
+    private readonly IOutputValidationArtifactSource outputValidationArtifactSource;
     private readonly GraphicsEngine graphicsEngine;
+    private OutputValidationArtifactSnapshot? outputValidationArtifacts;
     private ITrayMenu? trayMenu;
     private TrayMenuWindow? trayMenuWindow;
     private IGlobalHotkeyRegistrar? globalHotkeyRegistrar;
@@ -92,7 +94,8 @@ public sealed partial class MainWindow : Window
         IAboutInfoProvider aboutInfoProvider,
         CaptureService captureService,
         GraphicsDeviceResources deviceResources,
-        OutputProfileExecutionCapabilities? outputCapabilities = null)
+        OutputProfileExecutionCapabilities? outputCapabilities = null,
+        IOutputValidationArtifactSource? outputValidationArtifactSource = null)
     {
         this.captureCommandCoordinator = captureCommandCoordinator ?? throw new ArgumentNullException(nameof(captureCommandCoordinator));
         this.outputService = outputService ?? throw new ArgumentNullException(nameof(outputService));
@@ -102,6 +105,7 @@ public sealed partial class MainWindow : Window
         this.captureService = captureService ?? throw new ArgumentNullException(nameof(captureService));
         this.deviceResources = deviceResources ?? throw new ArgumentNullException(nameof(deviceResources));
         this.outputCapabilities = outputCapabilities ?? OutputProfileExecutionCapabilities.CompatibilityOnly;
+        this.outputValidationArtifactSource = outputValidationArtifactSource ?? FileOutputValidationArtifactSource.CreateDefault();
         this.graphicsEngine = new GraphicsEngine(deviceResources);
         InitializeComponent();
         Title = "Lumiere";
@@ -155,6 +159,40 @@ public sealed partial class MainWindow : Window
 
     public TrayMenuSnapshot CreateTrayMenuSnapshot() =>
         CreateTrayMenuSnapshot(captureService?.CurrentSessionState ?? CaptureSessionState.Idle(), lastOutputResult);
+
+    private OutputValidationArtifactSnapshot LoadOutputValidationArtifacts()
+    {
+        if (outputValidationArtifacts is not null)
+        {
+            return outputValidationArtifacts;
+        }
+
+        try
+        {
+            outputValidationArtifacts = outputValidationArtifactSource.Load();
+            Logger.LogInformation(
+                "operation=OutputValidationArtifacts, stage=Load, artifacts={ArtifactCount}, issues={IssueCount}",
+                outputValidationArtifacts.Artifacts.Count,
+                outputValidationArtifacts.LoadIssues.Count);
+            foreach (var issue in outputValidationArtifacts.LoadIssues)
+            {
+                Logger.LogWarning(
+                    "operation=OutputValidationArtifacts, stage=LoadIssue, path={Path}, detail={Detail}",
+                    issue.Path,
+                    issue.Detail);
+            }
+
+            return outputValidationArtifacts;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+        {
+            Logger.LogWarning(
+                ex,
+                "operation=OutputValidationArtifacts, stage=LoadFailed, detail=Validation artifacts ignored for this session.");
+            outputValidationArtifacts = OutputValidationArtifactSnapshot.Empty;
+            return outputValidationArtifacts;
+        }
+    }
 
     public void AttachGlobalHotkeys(IGlobalHotkeyRegistrar registrar)
     {
@@ -1425,6 +1463,7 @@ public sealed partial class MainWindow : Window
 
     private TrayMenuSnapshot CreateTrayMenuSnapshot(CaptureSessionState state, OutputResult? outputResult = null)
     {
+        var validation = LoadOutputValidationArtifacts();
         var projection = TrayMenuProjection.Project(
             state,
             settingsProvider,
@@ -1432,6 +1471,7 @@ public sealed partial class MainWindow : Window
             activeCaptureMode,
             outputResult,
             settingsProvider.HdrAlertsEnabled,
+            validation.Artifacts,
             outputCapabilities);
         return new TrayMenuSnapshot(
             projection.AppName,
@@ -1515,9 +1555,11 @@ public sealed partial class MainWindow : Window
 
     private void ApplySettingsProjection(CaptureSessionState state)
     {
+        var validation = LoadOutputValidationArtifacts();
         var projection = SettingsPanelProjection.Project(
             settingsProvider,
             state,
+            validation.Artifacts,
             aboutInfoProvider: aboutInfoProvider,
             executionCapabilities: outputCapabilities);
 
@@ -1854,11 +1896,13 @@ public sealed partial class MainWindow : Window
 
     private void UpdateMainPanelProjection(CaptureSessionState state, OutputResult? outputResult = null)
     {
+        var validation = LoadOutputValidationArtifacts();
         var projection = MainPanelProjection.Project(
             state,
             outputResult,
             settingsProvider.HdrAlertsEnabled,
             settingsProvider.ExportColorFormat,
+            validation.Artifacts,
             executionCapabilities: outputCapabilities);
         var isIdle = state.Status is CaptureSessionStatus.Idle;
         var statusBrush = GetTrustStatusBrush(projection.TrustSeverity);
@@ -2139,6 +2183,7 @@ public sealed partial class MainWindow : Window
                 FormatCrop(cropRegion),
                 outputFrame.Width,
                 outputFrame.Height);
+            var validation = LoadOutputValidationArtifacts();
 
             var request = new OutputRequest
             {
@@ -2151,6 +2196,7 @@ public sealed partial class MainWindow : Window
                     settingsProvider.TimestampNaming,
                     settingsProvider.AfterCaptureBehavior.ToString(),
                     settingsProvider.ExportColorFormat,
+                    validationArtifacts: validation.Artifacts,
                     executionCapabilities: outputCapabilities)
             };
 
@@ -2253,7 +2299,13 @@ public sealed partial class MainWindow : Window
             // is driving capture action state, not overlay completion ordering.
             if (!isClosed)
             {
-                var projection = MainPanelProjection.Project(captureService?.CurrentSessionState ?? CaptureSessionState.Idle(), hdrAlertsEnabled: settingsProvider.HdrAlertsEnabled);
+                var validation = LoadOutputValidationArtifacts();
+                var projection = MainPanelProjection.Project(
+                    captureService?.CurrentSessionState ?? CaptureSessionState.Idle(),
+                    hdrAlertsEnabled: settingsProvider.HdrAlertsEnabled,
+                    exportColorFormat: settingsProvider.ExportColorFormat,
+                    validationArtifacts: validation.Artifacts,
+                    executionCapabilities: outputCapabilities);
                 Logger.LogDebug(
                     "Post-overlay capture action state: canStartCapture={CanStart}, sessionStatus={Status}",
                     projection.CanStartCapture,

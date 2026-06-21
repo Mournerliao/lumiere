@@ -39,6 +39,10 @@ The current built-in HDR10 reference policy is `Bt2020PqReference1000Nit`: BT.20
 
 As of the current implementation, Lumiere has a Windows WIC-backed JPEG XR adapter for `64bppRGBAHalf` byte streams and the app wires the HDR10 JXR codec through that adapter. The adapter embeds Lumiere audit metadata under the JPEG XR XMP query namespace `/ifd/xmp/{wstr=https://lumiere.app/ns/hdr10-audit/1.0/}:*` so emitted artifacts can carry the selected HDR10 policy values for inspection. A WIC metadata inspection seam reads those same query paths back from an encoded `.jxr` artifact, proving audit metadata round-trip at the artifact level. Runtime HDR10 export remains disabled because this audit metadata is not yet proven equivalent to viewer-recognized HDR10 static metadata, and Windows manual viewer validation gates have not passed.
 
+## Validation Artifact Loading
+
+During a local Windows validation run, Lumiere reads output validation session JSON files from `%LOCALAPPDATA%\Lumiere\validation\output\*.json`. Each file must use the `OutputValidationSessionArtifact` schema and include the manual evidence fields listed above, target-aware HDR evidence, per-viewer artifact handling, visual match, HDR preservation, and HDR10 metadata recognition status. Invalid JSON files are ignored for the session and logged as validation artifact load issues; valid files are applied to the settings, main panel, tray, and output policy projections. Runtime HDR10 output is still gated separately by codec execution capabilities, so loading a validation artifact cannot enable HDR-preserved output by itself.
+
 ## Manual Validation Scenarios
 
 1. Clipboard output to Paint, Photos, and at least one Chromium-based app.
