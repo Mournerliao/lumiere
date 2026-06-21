@@ -101,8 +101,16 @@ public sealed record OutputProfileContract(
                 ? MergeViewerEvidence(viewer, ApplyEvidenceSource(validated, record.EvidenceSource))
                 : viewer)
             .ToArray();
+        var formatContract = record.EvidenceSource is OutputValidationEvidenceSource.WindowsManual
+            && record.FormatContract is { IsComplete: true }
+                ? record.FormatContract
+                : FormatContract;
 
-        return this with { ViewerEvidence = updatedViewerEvidence };
+        return this with
+        {
+            FormatContract = formatContract,
+            ViewerEvidence = updatedViewerEvidence,
+        };
     }
 
     public OutputProfileEvidenceSummary EvaluateEvidence()
@@ -332,6 +340,8 @@ public sealed record OutputProfileValidationRecord(
 {
     public OutputValidationEvidenceSource EvidenceSource { get; init; } =
         OutputValidationEvidenceSource.WindowsManual;
+
+    public OutputFormatContract? FormatContract { get; init; }
 }
 
 public sealed record OutputViewerCompatibilityEvidence(

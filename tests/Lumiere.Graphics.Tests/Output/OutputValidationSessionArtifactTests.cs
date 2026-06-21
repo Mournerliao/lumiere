@@ -43,6 +43,7 @@ public sealed class OutputValidationSessionArtifactTests
         var roundTripped = OutputValidationSessionArtifact.FromJson(artifact.ToJson());
 
         Assert.Equal("2026-06-21", roundTripped.Date);
+        Assert.Equal(2, roundTripped.SchemaVersion);
         Assert.Equal("04a8dd6", roundTripped.BuildCommit);
         Assert.Equal(["REL-OUT-01"], roundTripped.ChecklistIdsCovered);
         Assert.Equal(["docs/validation/evidence/photos-hdr10.md"], roundTripped.EvidencePaths);
@@ -50,6 +51,30 @@ public sealed class OutputValidationSessionArtifactTests
         var viewer = Assert.Single(roundTripped.OutputProfileRecords[0].ViewerEvidence);
         Assert.Equal("Windows Photos", viewer.Name);
         Assert.Equal(OutputCompatibilityEvidenceStatus.Pass, viewer.HdrPreservationStatus);
+    }
+
+    [Fact]
+    public void JsonRoundTrip_PreservesProfileFormatContractEvidence()
+    {
+        var artifact = CreateArtifact(
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer("Microsoft Paint"),
+                    ])
+                {
+                    FormatContract = CompleteHdr10Contract,
+                },
+            ]);
+
+        var roundTripped = OutputValidationSessionArtifact.FromJson(artifact.ToJson());
+        var record = Assert.Single(roundTripped.OutputProfileRecords);
+
+        Assert.NotNull(record.FormatContract);
+        Assert.Equal(OutputPixelFormat.R16G16B16A16Float, record.FormatContract.SourcePixelFormat);
+        Assert.Equal(OutputTransferFunction.PqSt2084, record.FormatContract.TransferFunction);
+        Assert.Equal(OutputMetadataPolicy.AttachHdr10StaticMetadata, record.FormatContract.MetadataPolicy);
     }
 
     [Fact]
@@ -97,13 +122,76 @@ public sealed class OutputValidationSessionArtifactTests
     }
 
     [Fact]
+    public void ApplyTo_AppliesCompleteManualFormatContractToMatchingProfile()
+    {
+        var artifact = CreateArtifact(
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer("Microsoft Paint"),
+                        PassingHdrViewer("Windows Photos"),
+                        PassingHdrViewer("Chromium browsers"),
+                    ])
+                {
+                    FormatContract = CompleteHdr10Contract,
+                },
+            ]);
+
+        var updated = artifact.ApplyTo(OutputProfileContract.Hdr10Pq);
+
+        Assert.True(updated.HasCompleteFormatContract);
+        Assert.Equal(OutputTransferFunction.PqSt2084, updated.FormatContract.TransferFunction);
+        Assert.Equal(OutputMetadataPolicy.AttachHdr10StaticMetadata, updated.FormatContract.MetadataPolicy);
+    }
+
+    [Fact]
+    public void ApplyTo_DoesNotApplyFormatContractFromIncompleteManualSession()
+    {
+        var artifact = CreateArtifact(
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer("Microsoft Paint"),
+                        PassingHdrViewer("Windows Photos"),
+                        PassingHdrViewer("Chromium browsers"),
+                    ])
+                {
+                    FormatContract = CompleteHdr10Contract,
+                },
+            ]) with
+        {
+            EvidencePaths = [],
+        };
+
+        var updated = artifact.ApplyTo(OutputProfileContract.Hdr10Pq);
+
+        Assert.False(updated.HasCompleteFormatContract);
+        Assert.Equal(OutputTransferFunction.NotDefined, updated.FormatContract.TransferFunction);
+    }
+
+    [Fact]
     public void FromJson_RejectsUnsupportedSchemaVersion()
     {
-        var json = CreateArtifact([]).ToJson().Replace("\"schemaVersion\": 1", "\"schemaVersion\": 99", StringComparison.Ordinal);
+        var json = CreateArtifact([]).ToJson().Replace("\"schemaVersion\": 2", "\"schemaVersion\": 99", StringComparison.Ordinal);
 
         var exception = Assert.Throws<InvalidOperationException>(() => OutputValidationSessionArtifact.FromJson(json));
 
         Assert.Contains("schema", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void FromJson_AcceptsLegacySchemaVersionOneArtifactsWithoutFormatContract()
+    {
+        var json = CreateArtifact([])
+            .ToJson()
+            .Replace("\"schemaVersion\": 2", "\"schemaVersion\": 1", StringComparison.Ordinal);
+
+        var artifact = OutputValidationSessionArtifact.FromJson(json);
+
+        Assert.Equal(1, artifact.SchemaVersion);
+        Assert.Empty(artifact.OutputProfileRecords);
     }
 
     [Fact]

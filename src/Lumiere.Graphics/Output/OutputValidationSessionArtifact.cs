@@ -25,7 +25,8 @@ public sealed record OutputValidationSessionArtifact(
     IReadOnlyList<string> FollowUpIssuesOrStories,
     IReadOnlyList<OutputProfileValidationRecord> OutputProfileRecords)
 {
-    private const int CurrentSchemaVersion = 1;
+    private const int CurrentSchemaVersion = 2;
+    private const int MinimumSupportedSchemaVersion = 1;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -73,7 +74,7 @@ public sealed record OutputValidationSessionArtifact(
 
         var artifact = JsonSerializer.Deserialize<OutputValidationSessionArtifact>(json, JsonOptions)
             ?? throw new InvalidOperationException("Validation session artifact JSON is invalid or empty.");
-        if (artifact.SchemaVersion != CurrentSchemaVersion)
+        if (artifact.SchemaVersion is < MinimumSupportedSchemaVersion or > CurrentSchemaVersion)
         {
             throw new InvalidOperationException(
                 $"Unsupported validation session artifact schema version {artifact.SchemaVersion}.");
@@ -94,6 +95,7 @@ public sealed record OutputValidationSessionArtifact(
         return record with
         {
             EvidenceSource = OutputValidationEvidenceSource.IncompleteManualSession,
+            FormatContract = null,
             ViewerEvidence = record.ViewerEvidence
                 .Select(evidence => evidence with { Detail = $"{evidence.Detail} {detailSuffix}" })
                 .ToArray(),
