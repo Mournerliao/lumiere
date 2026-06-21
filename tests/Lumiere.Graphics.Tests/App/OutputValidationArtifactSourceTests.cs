@@ -53,6 +53,67 @@ public sealed class OutputValidationArtifactSourceTests
     }
 
     [Fact]
+    public void Load_PreparesWorkspaceAndSeedsSampleTemplateWhenEnabled()
+    {
+        var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        const string templateJson = "{ \"schemaVersion\": 4 }";
+        var source = new FileOutputValidationArtifactSource(
+            "C:\\Validation",
+            "*.json",
+            directoryExists: directories.Contains,
+            fileExists: files.ContainsKey,
+            createDirectory: path => directories.Add(path),
+            enumerateFiles: (_, _) => Array.Empty<string>(),
+            readAllText: path => files[path],
+            writeAllText: (path, content) => files[path] = content,
+            resolveTemplateSourceText: () => templateJson,
+            prepareWorkspace: true);
+
+        var snapshot = source.Load();
+
+        Assert.True(snapshot.Workspace.IsReady);
+        Assert.Equal("C:\\Validation", snapshot.Workspace.DirectoryPath);
+        Assert.Equal("C:\\Validation\\templates", snapshot.Workspace.TemplatesDirectoryPath);
+        Assert.Equal("C:\\Validation\\evidence", snapshot.Workspace.EvidenceDirectoryPath);
+        Assert.Equal("C:\\Validation\\README.txt", snapshot.Workspace.GuidanceFilePath);
+        Assert.Equal("C:\\Validation\\templates\\output-validation-session.schema-v4.sample.json", snapshot.Workspace.SampleTemplatePath);
+        Assert.Equal(templateJson, files[snapshot.Workspace.SampleTemplatePath!]);
+        Assert.Contains("Workflow:", files[snapshot.Workspace.GuidanceFilePath], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Load_ReturnsWorkspaceIssueWhenTemplateCannotBeSeeded()
+    {
+        var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "C:\\Validation",
+            "C:\\Validation\\templates",
+            "C:\\Validation\\evidence",
+        };
+        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var source = new FileOutputValidationArtifactSource(
+            "C:\\Validation",
+            "*.json",
+            directoryExists: directories.Contains,
+            fileExists: files.ContainsKey,
+            createDirectory: path => directories.Add(path),
+            enumerateFiles: (_, _) => Array.Empty<string>(),
+            readAllText: path => files[path],
+            writeAllText: (path, content) => files[path] = content,
+            resolveTemplateSourceText: () => null,
+            prepareWorkspace: true);
+
+        var snapshot = source.Load();
+
+        Assert.False(snapshot.Workspace.IsReady);
+        var issue = Assert.Single(snapshot.Workspace.Issues);
+        Assert.Contains("sample template", issue.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(snapshot.Artifacts);
+        Assert.Empty(snapshot.LoadIssues);
+    }
+
+    [Fact]
     public void LoadedArtifactsCanFeedSettingsProjectionWithoutBypassingRuntimeCapabilities()
     {
         var source = new FileOutputValidationArtifactSource(
@@ -105,6 +166,7 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Contains("bad.json", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Contains("JsonException", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Equal("harness/validation/output-validation.md", projection.Validation.Record.EvidenceDocumentPath);
+        Assert.Equal("%LOCALAPPDATA%\\Lumiere\\validation\\output", projection.Validation.Record.ValidationWorkspacePath);
         Assert.Equal("Build", projection.MainPanel.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
     }
@@ -127,6 +189,7 @@ public sealed class OutputValidationArtifactSourceTests
 
         Assert.Equal(ValidationEvidenceStatus.Limited, projection.Validation.Record.WindowsManualValidationStatus);
         Assert.Contains("2 output validation artifact", projection.Validation.Record.WindowsManualValidationDetail);
+        Assert.Contains("Validation workspace:", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Contains("Release gates", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Equal("harness/validation/output-validation.md", projection.Validation.Record.EvidenceDocumentPath);
     }

@@ -650,30 +650,82 @@ public static class PerfectHdrFidelityProjection
         ArgumentNullException.ThrowIfNull(validationSnapshot);
 
         var baseline = ProjectValidationRecord(buildVersion);
-        if (validationSnapshot.HasLoadIssues)
+        var workspace = validationSnapshot.Workspace;
+        if (!workspace.IsConfigured)
         {
-            var firstIssue = validationSnapshot.LoadIssues[0];
-            return baseline with
+            workspace = new OutputValidationWorkspaceState(
+                "%LOCALAPPDATA%\\Lumiere\\validation\\output",
+                "%LOCALAPPDATA%\\Lumiere\\validation\\output\\templates",
+                "%LOCALAPPDATA%\\Lumiere\\validation\\output\\evidence",
+                "%LOCALAPPDATA%\\Lumiere\\validation\\output\\README.txt",
+                null,
+                []);
+        }
+        var workspaceSummary = CreateWorkspaceSummary(workspace);
+        var workspaceRecord = baseline with
+        {
+            ValidationWorkspacePath = string.IsNullOrWhiteSpace(workspace.DirectoryPath) ? null : workspace.DirectoryPath,
+            ValidationTemplatePath = workspace.HasSampleTemplate ? workspace.SampleTemplatePath : null,
+        };
+
+        if (!workspace.IsReady)
+        {
+            var detail = string.Join(
+                " ",
+                workspace.Issues.Select(issue => $"{Path.GetFileName(issue.Path)}: {issue.Detail}"));
+            return workspaceRecord with
             {
                 WindowsManualValidationStatus = ValidationEvidenceStatus.Limited,
                 WindowsManualValidationDetail =
-                    $"{validationSnapshot.Artifacts.Count} output validation artifact(s) loaded, but {validationSnapshot.LoadIssues.Count} file(s) were ignored. Fix ignored JSON/schema files before counting Windows manual output evidence. First issue: {Path.GetFileName(firstIssue.Path)}: {firstIssue.Detail}",
+                    string.IsNullOrWhiteSpace(detail)
+                        ? "Validation workspace is not ready on this machine. Lumiere could not prepare the local output-validation folder."
+                        : $"Validation workspace is not ready on this machine. {detail}",
+                EvidenceDocumentPath = "harness/validation/output-validation.md",
+            };
+        }
+
+        if (validationSnapshot.HasLoadIssues)
+        {
+            var firstIssue = validationSnapshot.LoadIssues[0];
+            return workspaceRecord with
+            {
+                WindowsManualValidationStatus = ValidationEvidenceStatus.Limited,
+                WindowsManualValidationDetail =
+                    $"{validationSnapshot.Artifacts.Count} output validation artifact(s) loaded, but {validationSnapshot.LoadIssues.Count} file(s) were ignored. Fix ignored JSON/schema files before counting Windows manual output evidence. {workspaceSummary} First issue: {Path.GetFileName(firstIssue.Path)}: {firstIssue.Detail}",
                 EvidenceDocumentPath = "harness/validation/output-validation.md",
             };
         }
 
         if (validationSnapshot.HasArtifacts)
         {
-            return baseline with
+            return workspaceRecord with
             {
                 WindowsManualValidationStatus = ValidationEvidenceStatus.Limited,
                 WindowsManualValidationDetail =
-                    $"{validationSnapshot.Artifacts.Count} output validation artifact(s) loaded for this session. Release gates still require target-aware HDR, visual match, HDR preservation, and HDR10 metadata recognition to pass.",
+                    $"{validationSnapshot.Artifacts.Count} output validation artifact(s) loaded for this session. {workspaceSummary} Release gates still require target-aware HDR, visual match, HDR preservation, and HDR10 metadata recognition to pass.",
                 EvidenceDocumentPath = "harness/validation/output-validation.md",
             };
         }
 
-        return baseline;
+        return workspaceRecord with
+        {
+            WindowsManualValidationStatus = ValidationEvidenceStatus.Limited,
+            WindowsManualValidationDetail =
+                $"{workspaceSummary} No output validation artifact is loaded for this session yet; copy the seeded sample, replace placeholders, and reload Lumiere after recording real Windows observations.",
+            EvidenceDocumentPath = "harness/validation/output-validation.md",
+        };
+    }
+
+    private static string CreateWorkspaceSummary(OutputValidationWorkspaceState workspace)
+    {
+        if (!workspace.IsReady)
+        {
+            return "Validation workspace setup is incomplete.";
+        }
+
+        return workspace.HasSampleTemplate
+            ? $"Validation workspace: {workspace.DirectoryPath}. Seeded sample: {workspace.SampleTemplatePath}."
+            : $"Validation workspace: {workspace.DirectoryPath}.";
     }
 
     public static string NormalizeExportColorFormat(string? exportColorFormat)
@@ -1067,7 +1119,19 @@ public sealed record ValidationRecordProjection(
     string AutomatedEvidenceDetail,
     ValidationEvidenceStatus WindowsManualValidationStatus,
     string WindowsManualValidationDetail,
-    string EvidenceDocumentPath);
+    string EvidenceDocumentPath)
+{
+    public string? ValidationWorkspacePath { get; init; }
+
+    public string? ValidationTemplatePath { get; init; }
+
+    public string WorkspaceSummary =>
+        string.IsNullOrWhiteSpace(ValidationWorkspacePath)
+            ? EvidenceDocumentPath
+            : string.IsNullOrWhiteSpace(ValidationTemplatePath)
+                ? $"Workspace: {ValidationWorkspacePath}"
+                : $"Workspace: {ValidationWorkspacePath} | Template: {ValidationTemplatePath}";
+}
 
 public enum ValidationEvidenceStatus
 {

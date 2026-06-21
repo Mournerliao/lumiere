@@ -9,4 +9,8 @@
     <ProjectReference Include="..\Lumiere.Graphics\Lumiere.Graphics.csproj" />
     <ProjectReference Include="..\Lumiere.Settings\Lumiere.Settings.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Validation\Output\output-validation-session.schema-v4.sample.json" />
+  </ItemGroup>
 </Project>

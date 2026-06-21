@@ -71,6 +71,14 @@ Where the selected output profile also exposes a detailed contract surface, that
 
 During a local Windows validation run, Lumiere reads output validation session JSON files from `%LOCALAPPDATA%\Lumiere\validation\output\*.json`. Each file must use the `OutputValidationSessionArtifact` schema and include the manual evidence fields listed above, target-aware HDR evidence, per-viewer artifact handling, visual match, HDR preservation, and HDR10 metadata recognition status. Invalid JSON files are ignored for the session, logged as validation artifact load issues, and surfaced in the settings validation record so the tester can fix ignored evidence files; valid files are applied to the settings, main panel, tray, and output policy projections. Runtime HDR10 output still requires codec implementation readiness as well, so loading artifacts alone cannot enable HDR-preserved output.
 
+On startup, Lumiere now also prepares the local validation workspace under `%LOCALAPPDATA%\Lumiere\validation\output\`. It seeds:
+
+- `templates\output-validation-session.schema-v4.sample.json` as the local copy-ready sample
+- `evidence\` as the default place for supporting screenshots, notes, or logs
+- `README.txt` with the short local workflow reminder
+
+The settings validation record now reports that workspace path and the seeded sample path for the current machine. Workspace readiness is not evidence by itself; it only reduces setup friction for real Windows manual validation.
+
 Use `templates/output-validation-session.schema-v4.sample.json` as the starting point for a local validation artifact. Copy it to `%LOCALAPPDATA%\Lumiere\validation\output\`, rename it for the session, replace every `REPLACE_WITH_*` value, and change each viewer status only after observing that viewer on the tested Windows machine. The sample intentionally keeps viewer statuses at `NotRun`; do not commit or share it as passing release evidence until the target-aware HDR evidence, evidence paths, visual-match result, HDR preservation result, and HDR10 metadata recognition result have all been replaced with real observations. If the same validation session covers different output targets for different profiles, keep `outputTargetsTested` as the session summary and use per-record `outputTargetsCovered` to declare the narrower profile-specific scope.
 
 ## Manual Validation Scenarios

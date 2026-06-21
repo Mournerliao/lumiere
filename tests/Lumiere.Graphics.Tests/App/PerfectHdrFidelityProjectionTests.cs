@@ -695,6 +695,56 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.DoesNotContain("HDR-preserved", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void ProjectValidationRecord_WithWorkspaceOnlySurfacesSeededValidationWorkspace()
+    {
+        var snapshot = new OutputValidationArtifactSnapshot([], [])
+        {
+            Workspace = new OutputValidationWorkspaceState(
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\evidence",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\README.txt",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\output-validation-session.schema-v4.sample.json",
+                []),
+        };
+
+        var record = PerfectHdrFidelityProjection.ProjectValidationRecord("v2.3.4", snapshot);
+
+        Assert.Equal(ValidationEvidenceStatus.Limited, record.WindowsManualValidationStatus);
+        Assert.Contains("Validation workspace:", record.WindowsManualValidationDetail);
+        Assert.Contains("seeded sample", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("No output validation artifact is loaded", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output", record.ValidationWorkspacePath);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\output-validation-session.schema-v4.sample.json", record.ValidationTemplatePath);
+    }
+
+    [Fact]
+    public void ProjectValidationRecord_WithWorkspaceFailureSurfacesSetupProblemWithoutClaimingManualPass()
+    {
+        var snapshot = new OutputValidationArtifactSnapshot([], [])
+        {
+            Workspace = new OutputValidationWorkspaceState(
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\evidence",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\README.txt",
+                null,
+                [new OutputValidationWorkspaceIssue(
+                    "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\output-validation-session.schema-v4.sample.json",
+                    "Validation sample template source could not be loaded from the current build.")]),
+        };
+
+        var record = PerfectHdrFidelityProjection.ProjectValidationRecord("v2.3.4", snapshot);
+
+        Assert.Equal(ValidationEvidenceStatus.Limited, record.WindowsManualValidationStatus);
+        Assert.Contains("workspace is not ready", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("sample template source", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("harness/validation/output-validation.md", record.EvidenceDocumentPath);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output", record.ValidationWorkspacePath);
+        Assert.Null(record.ValidationTemplatePath);
+    }
+
     private static OutputViewerCompatibilityEvidence PassingHdrViewer(string name) =>
         new(
             name,
