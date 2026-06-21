@@ -390,6 +390,29 @@ public sealed class SettingsPanelProjectionTests
     }
 
     [Fact]
+    public void Project_ValidationTargetAwareRowNamesUnresolvedDisplayMappingBlocker()
+    {
+        var state = CaptureSessionState.Degraded(
+            CreateTarget(),
+            PreviewReadinessStatus.Degraded(
+                PreviewReadinessStage.Presentation,
+                "HDR readiness is unvalidated for the selected capture target.",
+                "Target-aware display capability could not be matched to a DXGI output.",
+                PreviewReadinessReason.TargetDisplayUnresolved));
+
+        var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), state);
+        var targetAwareRow = Assert.Single(
+            projection.Validation.Rows,
+            row => row.Label == "Target-aware HDR");
+
+        Assert.Equal(ValidationEvidenceStatus.NotRun, targetAwareRow.Status);
+        Assert.Contains("selected capture target", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("DXGI output", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("mixed HDR/SDR", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Enable HDR", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Project_ValidationRecordUsesAboutVersionAndReleaseChecklist()
     {
         var aboutInfo = new TestAboutInfoProvider

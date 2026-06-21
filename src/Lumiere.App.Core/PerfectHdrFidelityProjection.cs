@@ -1,3 +1,4 @@
+using Lumiere.Graphics.Hdr;
 using Lumiere.Graphics.Output;
 
 namespace Lumiere.App;
@@ -67,43 +68,44 @@ public static class PerfectHdrFidelityProjection
 
     public static ValidationPanelProjection ProjectValidation(
         OutputProfileContract outputProfile,
-        ValidationRecordProjection? record = null)
+        ValidationRecordProjection? record = null,
+        PreviewReadinessStatus? readiness = null)
     {
         ArgumentNullException.ThrowIfNull(outputProfile);
-        return ProjectValidationCore(outputProfile, record);
+        return ProjectValidationCore(outputProfile, readiness, record);
     }
 
     public static ValidationPanelProjection ProjectValidation(
         OutputProfileContract outputProfile,
         OutputValidationSessionArtifact artifact,
-        ValidationRecordProjection? record = null)
+        ValidationRecordProjection? record = null,
+        PreviewReadinessStatus? readiness = null)
     {
         ArgumentNullException.ThrowIfNull(outputProfile);
         ArgumentNullException.ThrowIfNull(artifact);
-        return ProjectValidationCore(artifact.ApplyTo(outputProfile), record);
+        return ProjectValidationCore(artifact.ApplyTo(outputProfile), readiness, record);
     }
 
     public static ValidationPanelProjection ProjectValidation(
         OutputProfileContract outputProfile,
         IEnumerable<OutputValidationSessionArtifact> artifacts,
-        ValidationRecordProjection? record = null)
+        ValidationRecordProjection? record = null,
+        PreviewReadinessStatus? readiness = null)
     {
         ArgumentNullException.ThrowIfNull(outputProfile);
         ArgumentNullException.ThrowIfNull(artifacts);
-        return ProjectValidationCore(OutputValidationSessionArtifact.ApplyAllTo(outputProfile, artifacts), record);
+        return ProjectValidationCore(OutputValidationSessionArtifact.ApplyAllTo(outputProfile, artifacts), readiness, record);
     }
 
     private static ValidationPanelProjection ProjectValidationCore(
         OutputProfileContract outputProfile,
+        PreviewReadinessStatus? readiness,
         ValidationRecordProjection? record) =>
         new(
             ReleaseTarget,
             "Public release waits for evidence; SDR compatibility remains fallback only.",
             [
-                new(
-                    "Target-aware HDR",
-                    ValidationEvidenceStatus.NotRun,
-                    "Mixed HDR/SDR monitor evidence is required."),
+                ProjectTargetAwareHdrRow(readiness),
                 new(
                     "Visual-match output",
                     ValidationEvidenceStatus.Limited,
@@ -120,6 +122,22 @@ public static class PerfectHdrFidelityProjection
             "Named viewers must prove artifact handling, visual match, and fidelity separately.",
             outputProfile.ViewerEvidence.Select(ProjectViewerEvidence).ToArray(),
             record ?? ProjectValidationRecord(null));
+
+    private static ValidationEvidenceRowProjection ProjectTargetAwareHdrRow(PreviewReadinessStatus? readiness)
+    {
+        if (readiness?.Reason is PreviewReadinessReason.TargetDisplayUnresolved)
+        {
+            return new ValidationEvidenceRowProjection(
+                "Target-aware HDR",
+                ValidationEvidenceStatus.NotRun,
+                "HDR readiness is unvalidated for the selected capture target because display capability could not be matched to a DXGI output; mixed HDR/SDR monitor evidence is still required.");
+        }
+
+        return new ValidationEvidenceRowProjection(
+            "Target-aware HDR",
+            ValidationEvidenceStatus.NotRun,
+            "Mixed HDR/SDR monitor evidence is required.");
+    }
 
     public static ValidationRecordProjection ProjectValidationRecord(string? buildVersion)
     {

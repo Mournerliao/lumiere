@@ -69,7 +69,8 @@ public sealed record SettingsPanelProjection(
             PerfectHdrFidelityProjection.ProjectValidation(
                 selectedProfileContract,
                 artifacts,
-                PerfectHdrFidelityProjection.ProjectValidationRecord(about.Version)),
+                PerfectHdrFidelityProjection.ProjectValidationRecord(about.Version),
+                readiness: sessionState.Readiness),
             about,
             settingsProvider.TimestampNaming,
             settingsProvider.CopyAsImage,
