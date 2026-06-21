@@ -9,7 +9,8 @@ public sealed record OutputResult(
     string? TechnicalDetail,
     AfterCaptureResult? AfterCapture = null,
     OutputProfileContract? RequestedProfileEvidence = null,
-    OutputProfileContract? EffectiveProfileEvidence = null)
+    OutputProfileContract? EffectiveProfileEvidence = null,
+    IReadOnlyList<OutputTargetProfileEvidence>? TargetProfileEvidence = null)
 {
     /// <summary>
     /// Gets whether the overall output operation succeeded (at least one target succeeded).
@@ -31,6 +32,15 @@ public sealed record OutputResult(
     public OutputProfileContract EffectiveProfile => EffectiveProfileEvidence ?? RequestedProfile.EffectiveExecutableProfile;
 
     public bool UsesCompatibilityProfileFallback => RequestedProfile.Kind != EffectiveProfile.Kind;
+
+    public IReadOnlyList<OutputTargetProfileEvidence> TargetProfiles => TargetProfileEvidence ?? [];
+
+    public OutputProfileContract EffectiveProfileFor(OutputTarget target) =>
+        TargetProfiles.FirstOrDefault(profile => profile.Target == target)?.EffectiveProfile
+        ?? EffectiveProfile;
+
+    public bool UsesCompatibilityProfileFallbackFor(OutputTarget target) =>
+        RequestedProfile.Kind != EffectiveProfileFor(target).Kind;
 
     /// <summary>
     /// Creates a successful clipboard output result.
@@ -142,20 +152,47 @@ public sealed record OutputResult(
     public OutputResult WithOutputPolicy(OutputPolicy policy)
     {
         ArgumentNullException.ThrowIfNull(policy);
-        return WithOutputProfiles(policy.RequestedProfile, policy.EffectiveProfile);
+        var targetProfiles = Targets
+            .Select(target => new OutputTargetProfileEvidence(
+                target.Target,
+                policy.EffectiveProfileFor(target.Target)))
+            .ToArray();
+        return WithOutputProfiles(policy.RequestedProfile, policy.EffectiveProfile, targetProfiles);
+    }
+
+    public OutputResult WithTargetProfile(OutputTarget target, OutputProfileContract effectiveProfile)
+    {
+        ArgumentNullException.ThrowIfNull(effectiveProfile);
+
+        var profiles = TargetProfiles
+            .Where(profile => profile.Target != target)
+            .Append(new OutputTargetProfileEvidence(target, effectiveProfile))
+            .OrderBy(profile => profile.Target)
+            .ToArray();
+
+        return this with
+        {
+            TargetProfileEvidence = profiles,
+        };
     }
 
     private OutputResult WithOutputProfiles(
         OutputProfileContract requestedProfile,
-        OutputProfileContract effectiveProfile)
+        OutputProfileContract effectiveProfile,
+        IReadOnlyList<OutputTargetProfileEvidence>? targetProfiles = null)
     {
         return this with
         {
             RequestedProfileEvidence = requestedProfile,
             EffectiveProfileEvidence = effectiveProfile,
+            TargetProfileEvidence = targetProfiles ?? TargetProfileEvidence,
         };
     }
 }
+
+public sealed record OutputTargetProfileEvidence(
+    OutputTarget Target,
+    OutputProfileContract EffectiveProfile);
 
 /// <summary>
 /// Represents post-output artifact action state, separate from target output success.

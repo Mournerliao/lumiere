@@ -8,6 +8,17 @@ public sealed record OutputResultProjection(
     string FidelityDetail,
     OutputResultProjectionSeverity Severity)
 {
+    public static OutputResultProjection Project(OutputResult? outputResult, OutputProfileProjection profile)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+
+        return new OutputResultProjection(
+            ProjectTitle(outputResult),
+            ProjectDetail(outputResult),
+            ProjectFidelityDetail(outputResult, profile.FidelityClaim, profile),
+            ProjectSeverity(outputResult));
+    }
+
     public static OutputResultProjection Project(OutputResult? outputResult, FidelityClaimProjection fidelityClaim)
     {
         ArgumentNullException.ThrowIfNull(fidelityClaim);
@@ -90,29 +101,80 @@ public sealed record OutputResultProjection(
         FidelityClaimProjection fidelityClaim,
         OutputProfileProjection? profile)
     {
+        var gatePrefix = profile is null
+            ? string.Empty
+            : $"Selected profile gate: {profile.StatusLabel}. {profile.Detail} ";
         var profilePrefix = profile is null
             ? "Output profile: not selected."
+            : HasMixedTargetProfiles(outputResult)
+                ? $"Output profiles: {FormatPerTargetProfiles(outputResult!)}."
             : outputResult?.UsesCompatibilityProfileFallback is true
                 ? $"Output profile: requested {outputResult.RequestedProfile.Label}; using {outputResult.EffectiveProfile.Label} compatibility fallback."
                 : $"Output profile: {profile.Label}.";
         var viewerEvidence = outputResult is null
             ? string.Empty
+            : HasMixedTargetProfiles(outputResult)
+                ? $" Per-target viewer evidence: {FormatPerTargetViewerEvidence(outputResult!)}."
             : $" Viewer evidence: {FormatViewerEvidence(outputResult.EffectiveProfile)}.";
         var formatContract = profile is null
             ? string.Empty
+            : HasMixedTargetProfiles(outputResult)
+                ? $" Per-target formats: {FormatPerTargetFormatContracts(outputResult!)}."
             : $" Effective format: {FormatFormatContract(profile.Contract)}.";
 
-        return $"{profilePrefix} Fidelity claim: {fidelityClaim.Label}. {fidelityClaim.Detail}{formatContract}{viewerEvidence}";
+        return $"{gatePrefix}{profilePrefix} Fidelity claim: {fidelityClaim.Label}. {fidelityClaim.Detail}{formatContract}{viewerEvidence}";
     }
+
+    private static bool HasMixedTargetProfiles(OutputResult? outputResult) =>
+        outputResult is not null
+        && outputResult.TargetProfiles
+            .Select(profile => profile.EffectiveProfile.Kind)
+            .Distinct()
+            .Skip(1)
+            .Any();
 
     private static string FormatFormatContract(OutputProfileContractProjection contract) =>
         $"{contract.DestinationPixelFormatLabel}; Transfer: {contract.TransferFunctionLabel}; "
         + $"Primaries: {contract.ColorPrimariesLabel}; Metadata: {contract.MetadataPolicyLabel}";
 
+    private static string FormatPerTargetProfiles(OutputResult outputResult) =>
+        string.Join(
+            "; ",
+            outputResult.TargetProfiles.Select(profile =>
+            {
+                var fallback = outputResult.UsesCompatibilityProfileFallbackFor(profile.Target)
+                    ? " compatibility fallback"
+                    : string.Empty;
+                return $"{FormatTarget(profile.Target)} {profile.EffectiveProfile.Label}{fallback}";
+            }));
+
+    private static string FormatPerTargetFormatContracts(OutputResult outputResult) =>
+        string.Join(
+            "; ",
+            outputResult.TargetProfiles.Select(profile =>
+            {
+                var contract = PerfectHdrFidelityProjection.ProjectOutputProfile(profile.EffectiveProfile).Contract;
+                return $"{FormatTarget(profile.Target)} {FormatFormatContract(contract)}";
+            }));
+
+    private static string FormatPerTargetViewerEvidence(OutputResult outputResult) =>
+        string.Join(
+            "; ",
+            outputResult.TargetProfiles.Select(profile =>
+                $"{FormatTarget(profile.Target)} {FormatViewerEvidence(profile.EffectiveProfile)}"));
+
     private static string FormatViewerEvidence(OutputProfileContract profile) =>
         string.Join(
             ", ",
             profile.ViewerEvidence.Select(viewer => $"{viewer.Name} {FormatEvidenceStatus(viewer.ArtifactHandlingStatus)}"));
+
+    private static string FormatTarget(OutputTarget target) =>
+        target switch
+        {
+            OutputTarget.Folder => "Folder",
+            OutputTarget.Clipboard => "Clipboard",
+            _ => target.ToString(),
+        };
 
     private static string FormatEvidenceStatus(OutputCompatibilityEvidenceStatus status) =>
         status switch

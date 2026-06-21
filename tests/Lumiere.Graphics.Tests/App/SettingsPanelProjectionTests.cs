@@ -305,8 +305,8 @@ public sealed class SettingsPanelProjectionTests
         Assert.False(projection.Output.IsExportColorReadOnly);
 
         Assert.Equal(["HDR10", "P3", "sRGB"], projection.Output.ExportColorOptions.Select(option => option.Label).ToArray());
-        Assert.Equal("Build", projection.Output.ExportColorOptions[0].StatusLabel);
-        Assert.Equal("Build", projection.Output.ExportColorOptions[1].StatusLabel);
+        Assert.Equal("Compat", projection.Output.ExportColorOptions[0].StatusLabel);
+        Assert.Equal("Compat", projection.Output.ExportColorOptions[1].StatusLabel);
         Assert.Equal("Compat", projection.Output.ExportColorOptions[2].StatusLabel);
         Assert.True(projection.Output.ExportColorOptions[0].IsReadOnly);
         Assert.True(projection.Output.ExportColorOptions[1].IsReadOnly);
@@ -317,9 +317,9 @@ public sealed class SettingsPanelProjectionTests
         Assert.False(projection.Output.ExportColorOptions[0].IsInteractive);
         Assert.False(projection.Output.ExportColorOptions[1].IsInteractive);
         Assert.True(projection.Output.ExportColorOptions[2].IsInteractive);
-        Assert.Contains("profile contract", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Windows validation", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("shown for planning", projection.Output.ExportColorOptions[1].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("clipboard output stays on sRGB compatibility output", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("clipboard target", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("clipboard output stays on sRGB compatibility output", projection.Output.ExportColorOptions[1].HelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Compatibility output", projection.Output.ExportColorOptions[2].HelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("not selected and currently unavailable", projection.Output.ExportColorOptions[0].AccessibilityHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("design reference", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
@@ -337,6 +337,7 @@ public sealed class SettingsPanelProjectionTests
         var settings = new TestSettingsProvider
         {
             ExportColorFormat = "HDR10",
+            OutputTarget = OutputTarget.Folder,
         };
 
         var projection = SettingsPanelProjection.Project(settings, CreateState());
@@ -357,11 +358,68 @@ public sealed class SettingsPanelProjectionTests
     }
 
     [Fact]
+    public void Project_ClipboardTargetKeepsHdr10OptionOnCompatibilityGateEvenWithReadyFolderEvidence()
+    {
+        var settings = new TestSettingsProvider
+        {
+            ExportColorFormat = "HDR10",
+            OutputTarget = OutputTarget.Clipboard,
+        };
+        OutputValidationSessionArtifact[] artifacts =
+        [
+            ArtifactWithFormatContract("Microsoft Paint"),
+            ArtifactWithFormatContract("Windows Photos"),
+            ArtifactWithFormatContract("Chromium browsers"),
+        ];
+
+        var projection = SettingsPanelProjection.Project(
+            settings,
+            CreateState(),
+            artifacts,
+            executionCapabilities: ValidateOnlyHdr10Capabilities(artifacts));
+
+        Assert.Equal("HDR10", projection.Output.ExportColorDisplayValue);
+        Assert.Equal("Compat", projection.Output.ExportColorOptions[0].StatusLabel);
+        Assert.Contains("clipboard output stays on sRGB compatibility output", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Compat", projection.MainPanel.OutputProfile.StatusLabel);
+        Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
+    }
+
+    [Fact]
+    public void Project_BothTargetKeepsHdr10GateVisibleButOverallClaimConverted()
+    {
+        var settings = new TestSettingsProvider
+        {
+            ExportColorFormat = "HDR10",
+            OutputTarget = OutputTarget.Both,
+        };
+        OutputValidationSessionArtifact[] artifacts =
+        [
+            ArtifactWithFormatContract("Microsoft Paint"),
+            ArtifactWithFormatContract("Windows Photos"),
+            ArtifactWithFormatContract("Chromium browsers"),
+        ];
+
+        var projection = SettingsPanelProjection.Project(
+            settings,
+            CreateState(),
+            artifacts,
+            executionCapabilities: ValidateOnlyHdr10Capabilities(artifacts));
+
+        Assert.Equal("Ready", projection.Output.ExportColorOptions[0].StatusLabel);
+        Assert.Contains("Both-target output still keeps clipboard on sRGB compatibility fallback", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Ready", projection.MainPanel.OutputProfile.StatusLabel);
+        Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
+        Assert.Contains("folder artifacts separately", projection.MainPanel.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Project_SelectedHdr10ProfileSurfacesOutputContractPolicy()
     {
         var settings = new TestSettingsProvider
         {
             ExportColorFormat = "HDR10",
+            OutputTarget = OutputTarget.Folder,
         };
 
         var projection = SettingsPanelProjection.Project(settings, CreateState());
@@ -381,6 +439,7 @@ public sealed class SettingsPanelProjectionTests
         var settings = new TestSettingsProvider
         {
             ExportColorFormat = "HDR10",
+            OutputTarget = OutputTarget.Folder,
         };
 
         var projection = SettingsPanelProjection.Project(
@@ -424,6 +483,7 @@ public sealed class SettingsPanelProjectionTests
         var settings = new TestSettingsProvider
         {
             ExportColorFormat = "HDR10",
+            OutputTarget = OutputTarget.Folder,
         };
 
         var projection = SettingsPanelProjection.Project(
@@ -448,6 +508,7 @@ public sealed class SettingsPanelProjectionTests
         var settings = new TestSettingsProvider
         {
             ExportColorFormat = "HDR10",
+            OutputTarget = OutputTarget.Folder,
         };
 
         var projection = SettingsPanelProjection.Project(
@@ -483,6 +544,7 @@ public sealed class SettingsPanelProjectionTests
         var settings = new TestSettingsProvider
         {
             ExportColorFormat = "HDR10",
+            OutputTarget = OutputTarget.Folder,
         };
 
         var projection = SettingsPanelProjection.Project(
@@ -762,7 +824,7 @@ public sealed class SettingsPanelProjectionTests
             HdrState: "HDR enabled",
             DpiScales: ["150%"],
             EntryPointsTested: ["Settings panel"],
-            OutputTargetsTested: ["Clipboard"],
+            OutputTargetsTested: ["Folder"],
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation passed.",
@@ -793,7 +855,7 @@ public sealed class SettingsPanelProjectionTests
             HdrState: "HDR enabled",
             DpiScales: ["150%"],
             EntryPointsTested: ["Settings panel"],
-            OutputTargetsTested: ["Clipboard"],
+            OutputTargetsTested: ["Folder"],
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation passed.",
@@ -827,7 +889,7 @@ public sealed class SettingsPanelProjectionTests
             HdrState: "HDR enabled",
             DpiScales: ["150%"],
             EntryPointsTested: ["Settings panel"],
-            OutputTargetsTested: ["Clipboard"],
+            OutputTargetsTested: ["Folder"],
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation is incomplete.",

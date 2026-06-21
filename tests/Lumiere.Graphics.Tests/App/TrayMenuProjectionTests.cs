@@ -82,6 +82,7 @@ public sealed class TrayMenuProjectionTests
             new StubSettingsProvider("Ctrl+Shift+F", "Ctrl+Shift+R")
             {
                 ExportColorFormat = "HDR10",
+                OutputTarget = OutputTarget.Folder,
             },
             new StubAboutInfoProvider("Lumiere"));
 
@@ -103,6 +104,7 @@ public sealed class TrayMenuProjectionTests
             new StubSettingsProvider("Ctrl+Shift+F", "Ctrl+Shift+R")
             {
                 ExportColorFormat = "HDR10",
+                OutputTarget = OutputTarget.Folder,
             },
             new StubAboutInfoProvider("Lumiere"),
             validationArtifacts:
@@ -119,6 +121,32 @@ public sealed class TrayMenuProjectionTests
         Assert.Equal("Ready", projection.OutputProfileStatusLabel);
         Assert.Equal(TrayMenuStatusSeverity.Success, projection.OutputProfileSeverity);
         Assert.Contains("validated session", projection.OutputProfileDetail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Project_ClipboardTargetKeepsHdr10ProfileAtCompatEvenWhenFolderEvidenceWouldPass()
+    {
+        var projection = TrayMenuProjection.Project(
+            CaptureSessionState.Idle(PreviewReadinessStatus.Ready("Ready", "HDR preview is ready.")),
+            new StubSettingsProvider("Ctrl+Shift+F", "Ctrl+Shift+R")
+            {
+                ExportColorFormat = "HDR10",
+                OutputTarget = OutputTarget.Clipboard,
+            },
+            new StubAboutInfoProvider("Lumiere"),
+            validationArtifacts:
+            [
+                ArtifactWithFormatContract("Microsoft Paint"),
+                ArtifactWithFormatContract("Windows Photos"),
+                ArtifactWithFormatContract("Chromium browsers"),
+            ],
+            executionCapabilities: OutputProfileExecutionCapabilities.Create(
+                OutputProfileExecutionCapability.SrgbCompatibility,
+                OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder));
+
+        Assert.Equal("Compat", projection.OutputProfileStatusLabel);
+        Assert.Contains("clipboard output stays on sRGB compatibility output", projection.OutputProfileDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Converted", projection.FidelityClaimLabel);
     }
 
     [Fact]
@@ -168,6 +196,20 @@ public sealed class TrayMenuProjectionTests
         Assert.Contains("selected capture target", projection.HdrStatusDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("selected target", projection.TrayAlertMessage, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Enable HDR", projection.TrayAlertMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Project_ActiveTargetDetailIncludesSelectedDisplayScope()
+    {
+        var projection = TrayMenuProjection.Project(
+            CaptureSessionState.Capturing(
+                CreateTarget(),
+                PreviewReadinessStatus.Ready("HDR preview is ready.", "Target-aware readiness passed.")),
+            new StubSettingsProvider(string.Empty, string.Empty),
+            new StubAboutInfoProvider("Lumiere"));
+
+        Assert.Contains("Selected display: Test Display.", projection.HdrStatusDetail, StringComparison.Ordinal);
+        Assert.Contains("HDR preview is ready.", projection.HdrStatusDetail, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -247,7 +289,7 @@ public sealed class TrayMenuProjectionTests
             HdrState: "HDR enabled",
             DpiScales: ["150%"],
             EntryPointsTested: ["Tray menu"],
-            OutputTargetsTested: ["Clipboard"],
+            OutputTargetsTested: ["Folder"],
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation passed.",
@@ -320,7 +362,7 @@ public sealed class TrayMenuProjectionTests
 
         public bool HdrAlertsEnabled => true;
 
-        public OutputTarget OutputTarget => OutputTarget.Clipboard;
+        public OutputTarget OutputTarget { get; init; } = OutputTarget.Clipboard;
 
         public string? SavePath => null;
 

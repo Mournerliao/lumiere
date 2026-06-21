@@ -1,4 +1,5 @@
 using Lumiere.App;
+using Lumiere.Graphics.Hdr;
 using Lumiere.Graphics.Output;
 using Xunit;
 
@@ -87,6 +88,32 @@ public sealed class OutputResultProjectionTests
     }
 
     [Fact]
+    public void Project_WithSelectedProfilePreservesRequestedGateWhenRuntimeFallsBack()
+    {
+        OutputValidationSessionArtifact[] artifacts =
+        [
+            ArtifactFor("Microsoft Paint"),
+            ArtifactFor("Windows Photos"),
+            ArtifactFor("Chromium browsers"),
+        ];
+        var selectedProfile = PerfectHdrFidelityProjection.ProjectOutputProfile(
+            OutputProfileContract.FromSettingsValue("HDR10"),
+            artifacts,
+            readiness: null,
+            executionCapabilities: ValidateOnlyHdr10Capabilities(artifacts));
+        var output = OutputResult.ClipboardSuccess(1024)
+            .WithRequestedProfile(OutputProfileContract.FromSettingsValue("HDR10"));
+
+        var projection = OutputResultProjection.Project(output, selectedProfile);
+
+        Assert.Contains("requested HDR10", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Validate", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("Windows manual viewer evidence", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("using sRGB", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Fidelity claim: Converted", projection.FidelityDetail, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Project_FolderSuccessShowsSavedArtifact()
     {
         var output = OutputResult.FromTargets(
@@ -116,6 +143,40 @@ public sealed class OutputResultProjectionTests
     }
 
     [Fact]
+    public void Project_BothTargetMixedProfilesCallsOutPerTargetFidelity()
+    {
+        var requested = OutputProfileContract.Hdr10Pq with
+        {
+            FormatContract = CompleteHdr10Contract,
+        };
+        var output = OutputResult.FromTargets(
+                OutputTargetResult.Success(OutputTarget.Clipboard, "Copied"),
+                OutputTargetResult.Success(OutputTarget.Folder, "Saved", artifactPath: "C:\\Captures\\frame.jxr"))
+            .WithOutputPolicy(OutputPolicy.FromSettings(
+                OutputTarget.Both,
+                copyAsImage: true,
+                savePath: "C:\\Captures",
+                timestampNaming: true,
+                afterCaptureBehavior: null,
+                exportColorFormat: "HDR10",
+                validationArtifacts: [CompleteHdr10Artifact()],
+                executionCapabilities: OutputProfileExecutionCapabilities.Create(
+                    OutputProfileExecutionCapability.SrgbCompatibility,
+                    OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder)) with
+            {
+                RequestedProfile = requested,
+            });
+
+        var projection = OutputResultProjection.Project(output);
+
+        Assert.Contains("Output profiles:", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("Clipboard sRGB", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("Folder HDR10", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("Per-target formats:", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("Per-target viewer evidence:", projection.FidelityDetail, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Project_FailedOutputUsesWarningSeverity()
     {
         var output = OutputResult.ClipboardFailed("Clipboard write denied.");
@@ -127,4 +188,104 @@ public sealed class OutputResultProjectionTests
         Assert.Equal(OutputResultProjectionSeverity.Warning, projection.Severity);
         Assert.Equal("Failed to copy to clipboard", projection.Detail);
     }
+
+    private static OutputViewerCompatibilityEvidence PassingHdrViewer(string name) =>
+        new(
+            name,
+            OutputCompatibilityEvidenceStatus.Pass,
+            OutputCompatibilityEvidenceStatus.Pass,
+            OutputCompatibilityEvidenceStatus.Pass,
+            "Validated HDR viewer.")
+        {
+            Hdr10MetadataStatus = OutputCompatibilityEvidenceStatus.Pass,
+        };
+
+    private static OutputValidationSessionArtifact ArtifactFor(string viewerName) =>
+        new(
+            Date: "2026-06-21",
+            Tester: "QA",
+            BuildCommit: "485bc31",
+            WindowsVersion: "Windows 11 24H2",
+            Device: "HDR workstation",
+            Gpu: "Test GPU",
+            DisplaySetup: "HDR primary",
+            HdrState: "HDR enabled",
+            DpiScales: ["150%"],
+            EntryPointsTested: ["Main panel"],
+            OutputTargetsTested: ["Folder"],
+            TargetAppsTested: [viewerName],
+            ChecklistIdsCovered: ["REL-OUT-01"],
+            ResultSummary: $"{viewerName} HDR validation passed.",
+            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            KnownLimitations: [],
+            FollowUpIssuesOrStories: [],
+            OutputProfileRecords:
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer(viewerName),
+                    ]),
+            ]);
+
+    private static OutputValidationSessionArtifact CompleteHdr10Artifact() =>
+        new(
+            Date: "2026-06-21",
+            Tester: "QA",
+            BuildCommit: "485bc31",
+            WindowsVersion: "Windows 11 24H2",
+            Device: "HDR workstation",
+            Gpu: "Test GPU",
+            DisplaySetup: "HDR primary",
+            HdrState: "HDR enabled",
+            DpiScales: ["150%"],
+            EntryPointsTested: ["Main panel"],
+            OutputTargetsTested: ["Folder"],
+            TargetAppsTested: ["Windows Photos"],
+            ChecklistIdsCovered: ["REL-OUT-04"],
+            ResultSummary: "HDR10 output profile validation passed.",
+            EvidencePaths: ["docs/validation/evidence/hdr10-output.md"],
+            KnownLimitations: [],
+            FollowUpIssuesOrStories: [],
+            OutputProfileRecords:
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer("Microsoft Paint"),
+                        PassingHdrViewer("Windows Photos"),
+                        PassingHdrViewer("Chromium browsers"),
+                    ])
+                {
+                    FormatContract = CompleteHdr10Contract,
+                },
+            ]);
+
+    private static OutputProfileExecutionCapabilities ValidateOnlyHdr10Capabilities(
+        IEnumerable<OutputValidationSessionArtifact> artifacts) =>
+        OutputProfileExecutionCapabilities.ResolveHdr10JxrReleaseCapabilities(
+            ReadyHdr10JxrReadiness,
+            artifacts);
+
+    private static Hdr10JxrCodecReadiness ReadyHdr10JxrReadiness { get; } =
+        new(
+            HasNativeWicJpegXrEncoder: true,
+            AcceptsRgba16FloatSource: true,
+            WritesAuditMetadata: true,
+            HasArtifactAuditMetadataRoundTripEvidence: true,
+            HasViewerRecognizedHdr10StaticMetadata: true,
+            Hdr10StaticMetadataPolicy: Hdr10StaticMetadataPolicy.Bt2020PqReference1000Nit,
+            HasWindowsManualViewerValidation: true,
+            Blockers: []);
+
+    private static OutputFormatContract CompleteHdr10Contract { get; } =
+        new(
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputTransferFunction.PqSt2084,
+            OutputColorPrimaries.Bt2020,
+            OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
+            OutputMetadataPolicy.AttachHdr10StaticMetadata,
+            OutputTargetAppAssumption.RequiresHdrViewerValidation,
+            Hdr10StaticMetadataPolicy.Bt2020PqReference1000Nit);
 }

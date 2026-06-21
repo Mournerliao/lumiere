@@ -24,7 +24,8 @@ public sealed record MainPanelProjection(
         bool hdrAlertsEnabled = false,
         string? exportColorFormat = null,
         IEnumerable<OutputValidationSessionArtifact>? validationArtifacts = null,
-        OutputProfileExecutionCapabilities? executionCapabilities = null)
+        OutputProfileExecutionCapabilities? executionCapabilities = null,
+        OutputTarget outputTarget = OutputTarget.Folder)
     {
         ArgumentNullException.ThrowIfNull(state);
 
@@ -48,19 +49,21 @@ public sealed record MainPanelProjection(
         var alertMessage = MapAlertMessage(state.Readiness, outputResult, hdrAlertsEnabled);
         var selectedContract = OutputProfileContract.FromSettingsValue(exportColorFormat);
         var outputProfile = validationArtifacts is null
-            ? PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, state.Readiness, capabilities)
-            : PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, validationArtifacts, state.Readiness, capabilities);
+            ? PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, state.Readiness, capabilities, outputTarget)
+            : PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, validationArtifacts, state.Readiness, capabilities, outputTarget);
         var outputResultProjection = outputResult is null
             ? OutputResultProjection.Project(outputResult, outputProfile.FidelityClaim)
-            : OutputResultProjection.Project(outputResult);
+            : OutputResultProjection.Project(outputResult, outputProfile);
 
         return new MainPanelProjection(
             canStartCapture,
             actionTitle,
             trust.Label,
-            string.IsNullOrWhiteSpace(state.UserFacingReason)
-                ? "HDR preview status is being checked."
-                : state.UserFacingReason,
+            CaptureTargetScopeProjection.PrefixDetail(
+                state.Target,
+                string.IsNullOrWhiteSpace(state.UserFacingReason)
+                    ? "HDR preview status is being checked."
+                    : state.UserFacingReason),
             trust.Icon,
             trust.Severity,
             outputProfile,

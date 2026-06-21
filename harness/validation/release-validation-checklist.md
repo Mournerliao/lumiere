@@ -44,7 +44,7 @@ These gates apply to the fixed public release target. They are stricter than the
 | Gate | Required evidence | Current status | Evidence / notes |
 |---|---|---|---|
 | Fidelity definition approved | Written definition distinguishes data-preserving capture, HDR preview match, SDR-compatible conversion, and HDR-preserved file export. | PASS with limitation | Output profile contracts and UI projections now distinguish SDR-compatible, visual-match, HDR-preserved, and unvalidated paths. Final public copy review still required before release. |
-| Target-aware HDR detection | HDR readiness is tied to the active capture target display/output, including mixed HDR/SDR multi-monitor setups. | PASS with limitation | Code now carries display identity and probes by target evidence where available; mixed HDR/SDR multi-monitor Windows manual validation is still required before this can count as an unrestricted public claim. |
+| Target-aware HDR detection | HDR readiness is tied to the active capture target display/output, including mixed HDR/SDR multi-monitor setups. | PASS with limitation | Code now carries display identity and probes by target evidence where available; run `target-aware-hdr-validation.md` for the focused Windows workflow. Mixed HDR/SDR multi-monitor Windows manual validation is still required before this can count as an unrestricted public claim. |
 | HDR-preserved output profile contract | At least one enabled output profile has source format, destination format, transfer function, primaries, conversion/tone-mapping policy, metadata policy, and named viewer assumptions for HDR preservation. | NOT RUN | HDR10 JXR codec/readback/audit metadata seams exist, but runtime HDR10 export remains gated until viewer-recognized HDR10 metadata and Windows manual viewer validation pass. SDR-compatible output can supplement this but cannot replace it. |
 | Supported output compatibility matrix | Visual-match output and HDR-preserved output are validated against named target apps and viewers. | NOT RUN | Viewer evidence is modeled and can be loaded from validation artifacts, but real named target-app/viewer evidence has not been recorded. Must separate "artifact written", "visual match", and "HDR preserved". |
 | HDR/SDR visual validation set | Standard test content covers bright highlights, SDR/HDR mixed content, browser/media/game scenarios, and display mode changes. | NOT RUN | Standard scenario guidance now lives in `hdr-sdr-validation-scenarios.md` with a reusable session template, but executed validation sessions are still missing. |
@@ -94,10 +94,10 @@ These gates apply to the fixed public release target. They are stricter than the
 
 | ID | Scenario | Expected result | Status | Evidence / notes | Retest trigger |
 |---|---|---|---|---|---|
-| REL-HDR-01 | HDR display with Windows HDR enabled. | UI state and overlay messaging match observed HDR-ready condition. | NOT RUN |  | HDR probe, swap-chain, status copy, display mapping change. |
-| REL-HDR-02 | HDR-capable display with Windows HDR disabled. | UI asks user to enable HDR without claiming HDR-ready output. | NOT RUN |  | HDR probe or status copy change. |
-| REL-HDR-03 | SDR-only display or SDR target. | UI reports unavailable/degraded honestly and capture behavior remains recoverable. | NOT RUN |  | HDR probe, fallback messaging, capture state change. |
-| REL-HDR-04 | Multi-monitor mixed HDR/SDR setup. | Status reflects the capture target, or limitation is explicitly recorded. | NOT RUN |  | Multi-monitor target selection or HDR probe change. |
+| REL-HDR-01 | HDR display with Windows HDR enabled. | UI state and overlay messaging match observed HDR-ready condition. | NOT RUN | Run `target-aware-hdr-validation.md` and record the active target display. | HDR probe, swap-chain, status copy, display mapping change. |
+| REL-HDR-02 | HDR-capable display with Windows HDR disabled. | UI asks user to enable HDR without claiming HDR-ready output. | NOT RUN | Run `target-aware-hdr-validation.md` and record the active target display. | HDR probe or status copy change. |
+| REL-HDR-03 | SDR-only display or SDR target. | UI reports unavailable/degraded honestly and capture behavior remains recoverable. | NOT RUN | Run `target-aware-hdr-validation.md` and record the active target display. | HDR probe, fallback messaging, capture state change. |
+| REL-HDR-04 | Multi-monitor mixed HDR/SDR setup. | Status reflects the capture target, or limitation is explicitly recorded. | NOT RUN | Run `target-aware-hdr-validation.md`; record both the chosen target and any unresolved/mixed-monitor limitation separately. | Multi-monitor target selection or HDR probe change. |
 | REL-HDR-05 | Bright, dark, and high-contrast content under overlay. | Crop border, mask, and status panel remain legible. | NOT RUN |  | Overlay styling or status panel change. |
 | REL-HDR-06 | Export profile settings. | UI does not imply HDR10/P3 are functional until encoder and validation exist. | NOT RUN | Run `settings-accessibility-validation.md` export-profile checks and record selected-disabled behavior separately from artifact/output fidelity. | Export format UI/copy change. |
 
@@ -162,6 +162,6 @@ When a feature changes or a new feature is added:
 1. Add at least one checklist row for the user-visible behavior.
 2. Add retest triggers so future changes know when the row becomes stale.
 3. If the feature touches WGC, DXGI, D3D11, HDR, multi-monitor behavior, clipboard, filesystem, tray, hotkeys, or packaging, require Windows manual validation.
-4. Link detailed workflows to focused documents such as `overlay-validation.md`, `output-validation.md`, `lifecycle-validation.md`, `hdr-sdr-validation-scenarios.md`, and `settings-accessibility-validation.md` instead of duplicating every step here.
+4. Link detailed workflows to focused documents such as `target-aware-hdr-validation.md`, `overlay-validation.md`, `output-validation.md`, `lifecycle-validation.md`, `hdr-sdr-validation-scenarios.md`, and `settings-accessibility-validation.md` instead of duplicating every step here.
 5. Update `history/foundation-validation-snapshot-2026-06-03.md` only when a new point-in-time snapshot is intentionally recorded.
 

@@ -106,10 +106,12 @@ At each scale:
 4. Confirm long save paths ellipsize without overlapping nearby controls.
 5. Confirm export profile rows remain legible and do not collapse their status labels into each other.
 6. Confirm target-aware evidence text wraps instead of overflowing.
+7. If the main panel shows an HDR alert `InfoBar`, confirm the compact shell still leaves primary capture actions and status content visible rather than compressing them into unusable space.
 
 Expected result:
 
 - Settings composition adapts structurally.
+- Main-panel alert states do not force the compact shell into unusable density.
 - No row becomes unreadable or unreachable at common scales.
 
 ## Export Profile Specific Checks

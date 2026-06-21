@@ -16,7 +16,7 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
         Assert.False(evidence.HasCompleteFormatContract);
         Assert.False(evidence.HasViewerRecognizedHdr10StaticMetadata);
         Assert.False(evidence.HasWindowsManualViewerValidation);
-        Assert.Contains(evidence.Blockers, blocker => blocker.Contains("No output validation artifacts", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(evidence.Blockers, blocker => blocker.Contains("No folder-output validation artifacts", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -83,6 +83,43 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
         Assert.Empty(evidence.Blockers);
     }
 
+    [Fact]
+    public void FromArtifacts_IgnoresClipboardOnlyArtifactsForHdr10JxrFolderReleaseGate()
+    {
+        var artifacts = RequiredHdrViewers
+            .Select((viewer, index) => Hdr10Artifact(
+                viewer,
+                metadataStatus: OutputCompatibilityEvidenceStatus.Pass,
+                includeFormatContract: index == 0,
+                outputTarget: "Clipboard"))
+            .ToArray();
+
+        var evidence = Hdr10JxrViewerValidationEvidence.FromArtifacts(artifacts);
+
+        Assert.False(evidence.IsComplete);
+        Assert.False(evidence.HasArtifacts);
+        Assert.Contains(evidence.Blockers, blocker => blocker.Contains("folder-output", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void FromArtifacts_UsesRecordLevelOutputTargetsWhenArtifactSessionCoversBoth()
+    {
+        var artifacts = RequiredHdrViewers
+            .Select((viewer, index) => Hdr10Artifact(
+                viewer,
+                metadataStatus: OutputCompatibilityEvidenceStatus.Pass,
+                includeFormatContract: index == 0,
+                outputTarget: "Both",
+                recordOutputTargetsCovered: ["Clipboard"]))
+            .ToArray();
+
+        var evidence = Hdr10JxrViewerValidationEvidence.FromArtifacts(artifacts);
+
+        Assert.False(evidence.IsComplete);
+        Assert.False(evidence.HasArtifacts);
+        Assert.Contains(evidence.Blockers, blocker => blocker.Contains("folder-output", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static IReadOnlyList<string> RequiredHdrViewers { get; } =
         ["Microsoft Paint", "Windows Photos", "Chromium browsers"];
 
@@ -90,7 +127,9 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
         string viewerName,
         OutputCompatibilityEvidenceStatus metadataStatus,
         bool includeFormatContract,
-        OutputValidationEvidenceSource evidenceSource = OutputValidationEvidenceSource.WindowsManual) =>
+        OutputValidationEvidenceSource evidenceSource = OutputValidationEvidenceSource.WindowsManual,
+        string outputTarget = "Folder",
+        IReadOnlyList<string>? recordOutputTargetsCovered = null) =>
         new(
             Date: "2026-06-22",
             Tester: "QA",
@@ -102,7 +141,7 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
             HdrState: "HDR enabled",
             DpiScales: ["150%"],
             EntryPointsTested: ["Settings panel"],
-            OutputTargetsTested: ["Folder"],
+            OutputTargetsTested: [outputTarget],
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-04", "REL-HDR-04"],
             ResultSummary: $"{viewerName} HDR10 JXR validation passed.",
@@ -127,6 +166,7 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
                 {
                     EvidenceSource = evidenceSource,
                     FormatContract = includeFormatContract ? CompleteHdr10Contract : null,
+                    OutputTargetsCovered = recordOutputTargetsCovered ?? [],
                 },
             ])
         {

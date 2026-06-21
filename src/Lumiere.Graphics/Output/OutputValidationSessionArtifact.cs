@@ -41,6 +41,13 @@ public sealed record OutputValidationSessionArtifact(
 
     public TargetAwareHdrValidationEvidence? TargetHdrEvidence { get; init; }
 
+    public bool CoversOutputTarget(OutputTarget target) => TargetsCover(OutputTargetsTested, target);
+
+    public bool CoversProfileOutputTarget(OutputProfileKind profileKind, OutputTarget target) =>
+        OutputProfileRecords
+            .Where(record => record.ProfileKind == profileKind)
+            .Any(record => RecordCoversOutputTarget(record, target));
+
     public string ToJson() => JsonSerializer.Serialize(this, JsonOptions);
 
     public OutputProfileContract ApplyTo(OutputProfileContract contract)
@@ -49,6 +56,17 @@ public sealed record OutputValidationSessionArtifact(
 
         return OutputProfileRecords
             .Where(record => record.ProfileKind == contract.Kind)
+            .Select(PrepareRecordForReleaseEvidence)
+            .Aggregate(contract, (current, record) => current.ApplyValidationRecord(record));
+    }
+
+    public OutputProfileContract ApplyTo(OutputProfileContract contract, OutputTarget target)
+    {
+        ArgumentNullException.ThrowIfNull(contract);
+
+        return OutputProfileRecords
+            .Where(record => record.ProfileKind == contract.Kind)
+            .Where(record => RecordCoversOutputTarget(record, target))
             .Select(PrepareRecordForReleaseEvidence)
             .Aggregate(contract, (current, record) => current.ApplyValidationRecord(record));
     }
@@ -66,6 +84,23 @@ public sealed record OutputValidationSessionArtifact(
             {
                 ArgumentNullException.ThrowIfNull(artifact);
                 return artifact.ApplyTo(current);
+            });
+    }
+
+    public static OutputProfileContract ApplyAllTo(
+        OutputProfileContract contract,
+        IEnumerable<OutputValidationSessionArtifact> artifacts,
+        OutputTarget target)
+    {
+        ArgumentNullException.ThrowIfNull(contract);
+        ArgumentNullException.ThrowIfNull(artifacts);
+
+        return artifacts.Aggregate(
+            contract,
+            (current, artifact) =>
+            {
+                ArgumentNullException.ThrowIfNull(artifact);
+                return artifact.ApplyTo(current, target);
             });
     }
 
@@ -211,6 +246,53 @@ public sealed record OutputValidationSessionArtifact(
 
     private static bool IsMissing(IEnumerable<string> values) =>
         !values.Any(value => !OutputValidationManualEvidenceFields.IsMissing(value));
+
+    private bool RecordCoversOutputTarget(OutputProfileValidationRecord record, OutputTarget target)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+
+        return record.OutputTargetsCovered.Count == 0
+            ? CoversOutputTarget(target)
+            : TargetsCover(record.OutputTargetsCovered, target);
+    }
+
+    private static bool TargetsCover(IEnumerable<string> values, OutputTarget target) =>
+        values.Any(value =>
+            TryParseOutputTarget(value, out var parsed)
+            && (parsed == target
+                || parsed == OutputTarget.Both && target is OutputTarget.Clipboard or OutputTarget.Folder));
+
+    private static bool TryParseOutputTarget(string? value, out OutputTarget target)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            target = default;
+            return false;
+        }
+
+        var normalized = value.Trim();
+        if (normalized.Equals("Clipboard", StringComparison.OrdinalIgnoreCase))
+        {
+            target = OutputTarget.Clipboard;
+            return true;
+        }
+
+        if (normalized.Equals("Folder", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("File", StringComparison.OrdinalIgnoreCase))
+        {
+            target = OutputTarget.Folder;
+            return true;
+        }
+
+        if (normalized.Equals("Both", StringComparison.OrdinalIgnoreCase))
+        {
+            target = OutputTarget.Both;
+            return true;
+        }
+
+        target = default;
+        return false;
+    }
 }
 
 public sealed record TargetAwareHdrValidationEvidence(

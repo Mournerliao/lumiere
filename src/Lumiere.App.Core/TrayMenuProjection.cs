@@ -45,7 +45,8 @@ public sealed record TrayMenuProjection(
             hdrAlertsEnabled,
             settingsProvider.ExportColorFormat,
             validationArtifacts,
-            executionCapabilities: executionCapabilities);
+            executionCapabilities: executionCapabilities,
+            outputTarget: settingsProvider.OutputTarget);
         var appName = string.IsNullOrWhiteSpace(aboutInfoProvider.AppName)
             ? "Lumiere"
             : aboutInfoProvider.AppName;

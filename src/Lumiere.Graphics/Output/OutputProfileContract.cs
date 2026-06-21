@@ -626,6 +626,8 @@ public sealed record OutputProfileValidationRecord(
         OutputValidationEvidenceSource.WindowsManual;
 
     public OutputFormatContract? FormatContract { get; init; }
+
+    public IReadOnlyList<string> OutputTargetsCovered { get; init; } = [];
 }
 
 public sealed record OutputViewerCompatibilityEvidence(

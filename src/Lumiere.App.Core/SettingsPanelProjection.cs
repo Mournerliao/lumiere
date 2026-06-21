@@ -112,7 +112,8 @@ public sealed record SettingsPanelProjection(
                 artifacts,
                 capabilities,
                 validationRecordFactory(about.Version),
-                readiness: sessionState.Readiness),
+                readiness: sessionState.Readiness,
+                outputTarget: settingsProvider.OutputTarget),
             about,
             settingsProvider.TimestampNaming,
             settingsProvider.CopyAsImage,
@@ -120,6 +121,7 @@ public sealed record SettingsPanelProjection(
                 sessionState,
                 hdrAlertsEnabled: settingsProvider.HdrAlertsEnabled,
                 exportColorFormat: settingsProvider.ExportColorFormat,
+                outputTarget: settingsProvider.OutputTarget,
                 validationArtifacts: artifacts,
                 executionCapabilities: capabilities));
     }
@@ -273,10 +275,11 @@ public sealed record OutputSettingsProjection(
             afterCaptureBehavior);
         var selectedContract = OutputProfileContract.FromSettingsValue(exportColorFormat);
         var selectedProfile = validationArtifacts is null
-            ? PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, readiness: null, capabilities)
-            : PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, validationArtifacts, readiness: null, capabilities);
+            ? PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, readiness: null, capabilities, outputTarget)
+            : PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, validationArtifacts, readiness: null, capabilities, outputTarget);
         var exportColorOptions = CreateExportColorOptions(
             selectedProfile.Label,
+            outputTarget,
             validationArtifacts,
             capabilities);
 
@@ -309,29 +312,31 @@ public sealed record OutputSettingsProjection(
 
     private static IReadOnlyList<ExportColorOptionProjection> CreateExportColorOptions(
         string selectedLabel,
+        Lumiere.Graphics.Output.OutputTarget outputTarget,
         IEnumerable<OutputValidationSessionArtifact>? validationArtifacts,
         OutputProfileExecutionCapabilities capabilities) =>
     [
         CreateExportColorOption(
-            ProjectExportColorOptionProfile("HDR10", validationArtifacts, capabilities),
+            ProjectExportColorOptionProfile("HDR10", outputTarget, validationArtifacts, capabilities),
             selectedLabel),
         CreateExportColorOption(
-            ProjectExportColorOptionProfile("P3", validationArtifacts, capabilities),
+            ProjectExportColorOptionProfile("P3", outputTarget, validationArtifacts, capabilities),
             selectedLabel),
         CreateExportColorOption(
-            ProjectExportColorOptionProfile("sRGB", validationArtifacts, capabilities),
+            ProjectExportColorOptionProfile("sRGB", outputTarget, validationArtifacts, capabilities),
             selectedLabel),
     ];
 
     private static OutputProfileProjection ProjectExportColorOptionProfile(
         string exportColorFormat,
+        Lumiere.Graphics.Output.OutputTarget outputTarget,
         IEnumerable<OutputValidationSessionArtifact>? validationArtifacts,
         OutputProfileExecutionCapabilities capabilities)
     {
         var contract = OutputProfileContract.FromSettingsValue(exportColorFormat);
         return validationArtifacts is null
-            ? PerfectHdrFidelityProjection.ProjectOutputProfile(contract, readiness: null, capabilities)
-            : PerfectHdrFidelityProjection.ProjectOutputProfile(contract, validationArtifacts, readiness: null, capabilities);
+            ? PerfectHdrFidelityProjection.ProjectOutputProfile(contract, readiness: null, capabilities, outputTarget)
+            : PerfectHdrFidelityProjection.ProjectOutputProfile(contract, validationArtifacts, readiness: null, capabilities, outputTarget);
     }
 
     private static ExportColorOptionProjection CreateExportColorOption(

@@ -149,6 +149,19 @@ public sealed class MainPanelProjectionTests
     }
 
     [Fact]
+    public void ProjectStatus_TrustMessageIncludesSelectedDisplayScope()
+    {
+        var state = CaptureSessionState.Capturing(
+            CreateTarget(),
+            PreviewReadinessStatus.Ready("HDR preview is ready.", "Target-aware readiness passed."));
+
+        var projection = MainPanelProjection.Project(state);
+
+        Assert.Contains("Selected display: Test Display.", projection.TrustMessage, StringComparison.Ordinal);
+        Assert.Contains("HDR preview is ready.", projection.TrustMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ProjectStatus_TargetAwareUnvalidatedKeepsHdr10RuntimeFallbackWithViewerEvidence()
     {
         var state = CaptureSessionState.Degraded(
@@ -180,6 +193,33 @@ public sealed class MainPanelProjectionTests
         Assert.Contains("compatibility fallback", projection.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("viewer evidence", projection.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("validated HDR-preserved", projection.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectStatus_ClipboardTargetDoesNotProjectHdr10AsReadyEvenWhenFolderEvidenceWouldPass()
+    {
+        var state = CaptureSessionState.Capturing(
+            CreateTarget(),
+            PreviewReadinessStatus.Ready("HDR ready", "Target-aware readiness passed."));
+        var artifacts = new[]
+        {
+            ArtifactFor("Microsoft Paint"),
+            ArtifactFor("Windows Photos"),
+            ArtifactFor("Chromium browsers"),
+        };
+
+        var projection = MainPanelProjection.Project(
+            state,
+            hdrAlertsEnabled: true,
+            exportColorFormat: "HDR10",
+            validationArtifacts: artifacts,
+            executionCapabilities: ValidateOnlyHdr10Capabilities(artifacts),
+            outputTarget: OutputTarget.Clipboard);
+
+        Assert.Equal("HDR10", projection.OutputProfile.Label);
+        Assert.Equal("Compat", projection.OutputProfile.StatusLabel);
+        Assert.Equal(FidelityClaimKind.Converted, projection.FidelityClaim.Kind);
+        Assert.Contains("clipboard output stays on sRGB compatibility output", projection.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -519,7 +559,7 @@ public sealed class MainPanelProjectionTests
             HdrState: "HDR enabled",
             DpiScales: ["150%"],
             EntryPointsTested: ["Main panel"],
-            OutputTargetsTested: ["Clipboard"],
+            OutputTargetsTested: ["Folder"],
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation passed.",

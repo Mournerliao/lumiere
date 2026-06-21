@@ -78,46 +78,48 @@
         </Grid>
       </Border>
 
-      <Grid
+      <ScrollViewer
           Grid.Row="2"
-          Padding="20,18">
-        <StackPanel
-            VerticalAlignment="Center"
-            Spacing="8">
+          Padding="20,18"
+          HorizontalScrollBarVisibility="Disabled"
+          VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="8">
 
-          <local:CaptureActionCard
-              x:Name="SelectCaptureTargetButton"
-              Background="{StaticResource PrimaryActionBrush}"
-              BorderBrush="{StaticResource PrimaryActionBorderBrush}"
-              Click="OnSelectCaptureTargetClick"
-              Description="Capture the current display"
-              HoverBackground="{StaticResource PrimaryActionHoverBrush}"
-              HoverBorderBrush="{StaticResource PrimaryActionHoverBorderBrush}"
-              Icon="Camera"
-              IconBackground="{StaticResource AccentSoftBrush}"
-              IconBorderBrush="{StaticResource AccentBorderBrush}"
-              IconForeground="{StaticResource AccentBrush}"
-              SecondaryForeground="{StaticResource MutedTextBrush}"
-              ShortcutForeground="{StaticResource TextBrush}"
-              ShortcutText="Not assigned"
-              Title="Full Screen" />
+          <StackPanel Spacing="8">
+            <local:CaptureActionCard
+                x:Name="SelectCaptureTargetButton"
+                Background="{StaticResource PrimaryActionBrush}"
+                BorderBrush="{StaticResource PrimaryActionBorderBrush}"
+                Click="OnSelectCaptureTargetClick"
+                Description="Capture the current display"
+                HoverBackground="{StaticResource PrimaryActionHoverBrush}"
+                HoverBorderBrush="{StaticResource PrimaryActionHoverBorderBrush}"
+                Icon="Camera"
+                IconBackground="{StaticResource AccentSoftBrush}"
+                IconBorderBrush="{StaticResource AccentBorderBrush}"
+                IconForeground="{StaticResource AccentBrush}"
+                SecondaryForeground="{StaticResource MutedTextBrush}"
+                ShortcutForeground="{StaticResource TextBrush}"
+                ShortcutText="Not assigned"
+                Title="Full Screen" />
 
-          <local:CaptureActionCard
-              x:Name="RegionSelectButton"
-              Background="{StaticResource SecondaryPanelBrush}"
-              BorderBrush="{StaticResource BorderBrush}"
-              Click="OnRegionCaptureClick"
-              Description="Select a region by dragging"
-              HoverBackground="{StaticResource SecondaryPanelHoverBrush}"
-              HoverBorderBrush="{StaticResource SecondaryBorderHoverBrush}"
-              Icon="Layer"
-              IconBackground="{StaticResource SecondaryPanelBrush}"
-              IconBorderBrush="{StaticResource BorderBrush}"
-              IconForeground="{StaticResource MutedTextBrush}"
-              SecondaryForeground="{StaticResource MutedTextBrush}"
-              ShortcutForeground="{StaticResource SubtleTextBrush}"
-              ShortcutText="Not assigned"
-              Title="Region" />
+            <local:CaptureActionCard
+                x:Name="RegionSelectButton"
+                Background="{StaticResource SecondaryPanelBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                Click="OnRegionCaptureClick"
+                Description="Select a region by dragging"
+                HoverBackground="{StaticResource SecondaryPanelHoverBrush}"
+                HoverBorderBrush="{StaticResource SecondaryBorderHoverBrush}"
+                Icon="Layer"
+                IconBackground="{StaticResource SecondaryPanelBrush}"
+                IconBorderBrush="{StaticResource BorderBrush}"
+                IconForeground="{StaticResource MutedTextBrush}"
+                SecondaryForeground="{StaticResource MutedTextBrush}"
+                ShortcutForeground="{StaticResource SubtleTextBrush}"
+                ShortcutText="Not assigned"
+                Title="Region" />
+          </StackPanel>
 
           <Grid
               Margin="0,8,0,0"
@@ -300,7 +302,7 @@
           </Border>
 
         </StackPanel>
-      </Grid>
+      </ScrollViewer>
 
       <InfoBar
           x:Name="HdrAlertInfoBar"

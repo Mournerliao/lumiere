@@ -285,7 +285,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             HdrState: "HDR enabled",
             DpiScales: ["150%"],
             EntryPointsTested: ["Main panel"],
-            OutputTargetsTested: ["Clipboard"],
+            OutputTargetsTested: ["Folder"],
             TargetAppsTested: ["Windows Photos"],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: "Windows Photos HDR validation passed.",
@@ -537,6 +537,55 @@ public sealed class PerfectHdrFidelityProjectionTests
     }
 
     [Fact]
+    public void ProjectOutputProfile_ClipboardTargetKeepsHdr10OnCompatibilityPathEvenWithCompleteArtifacts()
+    {
+        OutputValidationSessionArtifact[] artifacts =
+        [
+            ArtifactWithFormatContract("Microsoft Paint"),
+            ArtifactWithFormatContract("Windows Photos"),
+            ArtifactWithFormatContract("Chromium browsers"),
+        ];
+
+        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(
+            OutputProfileContract.Hdr10Pq,
+            artifacts,
+            readiness: null,
+            ValidateOnlyHdr10Capabilities(artifacts),
+            OutputTarget.Clipboard);
+
+        Assert.Equal("HDR10", profile.Label);
+        Assert.Equal("Compat", profile.StatusLabel);
+        Assert.True(profile.IsReadOnly);
+        Assert.Equal(FidelityClaimKind.Converted, profile.FidelityClaim.Kind);
+        Assert.Contains("clipboard output stays on sRGB compatibility output", profile.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("do not promote the clipboard target", profile.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectOutputProfile_BothTargetKeepsOverallFidelityConvertedEvenWhenFolderHdr10IsReady()
+    {
+        OutputValidationSessionArtifact[] artifacts =
+        [
+            ArtifactWithFormatContract("Microsoft Paint"),
+            ArtifactWithFormatContract("Windows Photos"),
+            ArtifactWithFormatContract("Chromium browsers"),
+        ];
+
+        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(
+            OutputProfileContract.Hdr10Pq,
+            artifacts,
+            readiness: null,
+            ValidateOnlyHdr10Capabilities(artifacts),
+            OutputTarget.Both);
+
+        Assert.Equal("HDR10", profile.Label);
+        Assert.Equal("Ready", profile.StatusLabel);
+        Assert.Equal(FidelityClaimKind.Converted, profile.FidelityClaim.Kind);
+        Assert.Contains("Both-target output still keeps clipboard on sRGB compatibility fallback", profile.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("folder artifacts separately", profile.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void ProjectOutputProfile_ClaimsHdrPreservedOnlyWhenArtifactsAndRuntimeCapabilitiesPass()
     {
         var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(
@@ -669,7 +718,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             HdrState: "HDR enabled",
             DpiScales: ["150%"],
             EntryPointsTested: ["Main panel"],
-            OutputTargetsTested: ["Clipboard"],
+            OutputTargetsTested: ["Folder"],
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation passed.",
@@ -700,7 +749,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             HdrState: "HDR enabled",
             DpiScales: ["150%"],
             EntryPointsTested: ["Main panel"],
-            OutputTargetsTested: ["Clipboard"],
+            OutputTargetsTested: ["Folder"],
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation passed.",
@@ -734,7 +783,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             HdrState: "HDR enabled",
             DpiScales: ["150%"],
             EntryPointsTested: ["Main panel"],
-            OutputTargetsTested: ["Clipboard"],
+            OutputTargetsTested: ["Folder"],
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation is incomplete.",

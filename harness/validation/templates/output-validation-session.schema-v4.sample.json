@@ -38,10 +38,14 @@
   "followUpIssuesOrStories": [
     "Template only: remove or replace after validation."
   ],
+  "_comment_outputTargetsTested": "Use \"Folder\" for HDR10 JXR file-output evidence. Use \"Both\" only when the same session explicitly validates both clipboard and folder behavior. Clipboard-only evidence must not be treated as HDR10 JXR folder-output proof.",
   "outputProfileRecords": [
     {
       "profileKind": "Hdr10Pq",
       "evidenceSource": "WindowsManual",
+      "outputTargetsCovered": [
+        "Folder"
+      ],
       "formatContract": {
         "sourcePixelFormat": "R16G16B16A16Float",
         "destinationPixelFormat": "R16G16B16A16Float",

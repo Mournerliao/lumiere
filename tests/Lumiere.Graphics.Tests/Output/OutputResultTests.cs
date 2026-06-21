@@ -71,7 +71,7 @@ public sealed class OutputResultTests
     }
 
     [Fact]
-    public void WithOutputPolicy_RecordsRuntimeEffectiveProfile()
+    public void WithOutputPolicy_RecordsRuntimeEffectiveProfileForFolderArtifacts()
     {
         var requested = OutputProfileContract.Hdr10Pq with
         {
@@ -79,6 +79,7 @@ public sealed class OutputResultTests
         };
         var policy = OutputPolicy.Default with
         {
+            Target = OutputTarget.Folder,
             RequestedProfile = requested,
             ExecutionCapabilities = OutputProfileExecutionCapabilities.Create(
                 OutputProfileExecutionCapability.SrgbCompatibility,
@@ -93,6 +94,37 @@ public sealed class OutputResultTests
         Assert.True(result.EffectiveProfile.IsExecutable);
         Assert.Equal(OutputFidelityMode.HdrPreserved, result.EffectiveProfile.FidelityMode);
         Assert.False(result.UsesCompatibilityProfileFallback);
+    }
+
+    [Fact]
+    public void WithOutputPolicy_RecordsPerTargetProfilesForMixedClipboardAndFolderOutputs()
+    {
+        var requested = OutputProfileContract.Hdr10Pq with
+        {
+            FormatContract = CompleteHdr10Contract,
+        };
+        var policy = OutputPolicy.Default with
+        {
+            Target = OutputTarget.Both,
+            RequestedProfile = requested,
+            ExecutionCapabilities = OutputProfileExecutionCapabilities.Create(
+                OutputProfileExecutionCapability.SrgbCompatibility,
+                OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder),
+        };
+
+        var result = OutputResult.FromTargets(
+                OutputTargetResult.Success(OutputTarget.Clipboard, "Copied to clipboard"),
+                OutputTargetResult.Success(OutputTarget.Folder, "Saved to folder", artifactPath: "C:\\Captures\\frame.jxr"))
+            .WithOutputPolicy(policy);
+
+        Assert.Equal(OutputProfileKind.Hdr10Pq, result.RequestedProfile.Kind);
+        Assert.Equal(OutputProfileKind.SrgbCompatibilityPng, result.EffectiveProfile.Kind);
+        Assert.True(result.UsesCompatibilityProfileFallback);
+        Assert.Equal(OutputProfileKind.SrgbCompatibilityPng, result.EffectiveProfileFor(OutputTarget.Clipboard).Kind);
+        Assert.Equal(OutputProfileKind.Hdr10Pq, result.EffectiveProfileFor(OutputTarget.Folder).Kind);
+        Assert.True(result.UsesCompatibilityProfileFallbackFor(OutputTarget.Clipboard));
+        Assert.False(result.UsesCompatibilityProfileFallbackFor(OutputTarget.Folder));
+        Assert.Equal(2, result.TargetProfiles.Count);
     }
 
     private static OutputFormatContract CompleteHdr10Contract { get; } =

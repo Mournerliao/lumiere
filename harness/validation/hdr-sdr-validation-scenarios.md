@@ -20,6 +20,8 @@ Every Windows manual validation session should answer the same core questions:
 3. Did output behavior separate artifact success, visual match, and HDR-preserved claims correctly?
 4. Did settings, DPI, and accessibility behaviors remain usable under public-release conditions?
 
+For target-specific trust-state verification, also run `target-aware-hdr-validation.md`.
+
 ## Session Metadata
 
 Every recorded session should include:

@@ -37,9 +37,6 @@ public sealed partial class MainWindow : Window
     private const string StatusErrorBadgeGlyph = "\uE783";
     private const string StatusWarningGlyph = "\uE7BA";
     private const string StatusInfoGlyph = "\uE946";
-    private const int MainPanelWidthDips = 360;
-    private const int MainPanelHeightDips = 680;
-    private const int SettingsPanelHeightDips = 680;
     private const int WorkAreaMarginPixels = 16;
 
     private readonly object previewSync = new();
@@ -81,10 +78,14 @@ public sealed partial class MainWindow : Window
     private bool sizingMainPanel;
     private bool isExplicitShutdown;
     private bool hdrAlertDismissed;
+    private bool isHdrAlertVisible;
     private bool backgroundWindowEventsEnabled;
     private AppShellView activeShellView = AppShellView.Main;
     private int overlayDispatcherFallbackReported;
     private int uiDispatchFailureReported;
+    private int lastRequestedShellWidthDips = -1;
+    private int lastRequestedShellHeightDips = -1;
+    private double lastRequestedShellScale = -1;
     private InputNonClientPointerSource? nonClientPointerSource;
 
     public MainWindow(
@@ -936,20 +937,28 @@ public sealed partial class MainWindow : Window
 
     private void SizeToActiveShellView()
     {
-        var height = activeShellView is AppShellView.Settings
-            ? SettingsPanelHeightDips
-            : MainPanelHeightDips;
-        SizeToShell(MainPanelWidthDips, height);
+        var layout = AppShellLayoutProjection.Project(activeShellView, isHdrAlertVisible);
+        var scale = RootGrid.XamlRoot?.RasterizationScale ?? 1.0;
+        if (layout.WidthDips == lastRequestedShellWidthDips
+            && layout.HeightDips == lastRequestedShellHeightDips
+            && Math.Abs(scale - lastRequestedShellScale) < 0.001)
+        {
+            return;
+        }
+
+        lastRequestedShellWidthDips = layout.WidthDips;
+        lastRequestedShellHeightDips = layout.HeightDips;
+        lastRequestedShellScale = scale;
+        SizeToShell(layout.WidthDips, layout.HeightDips, scale);
     }
 
-    private void SizeToShell(int widthDips, int heightDips)
+    private void SizeToShell(int widthDips, int heightDips, double scale)
     {
         if (sizingMainPanel)
         {
             return;
         }
 
-        var scale = RootGrid.XamlRoot?.RasterizationScale ?? 1.0;
         try
         {
             sizingMainPanel = true;
@@ -1991,7 +2000,8 @@ public sealed partial class MainWindow : Window
             settingsProvider.HdrAlertsEnabled,
             settingsProvider.ExportColorFormat,
             validation.Artifacts,
-            executionCapabilities: outputCapabilities);
+            executionCapabilities: outputCapabilities,
+            outputTarget: settingsProvider.OutputTarget);
         var isIdle = state.Status is CaptureSessionStatus.Idle;
         var statusBrush = GetTrustStatusBrush(projection.TrustSeverity);
         var fidelityBrush = GetTrustStatusBrush(projection.FidelityClaim.Severity);
@@ -2038,7 +2048,11 @@ public sealed partial class MainWindow : Window
 
         ApplyOutputResultProjection(projection.OutputResult);
 
-        ApplyHdrAlert(projection);
+        isHdrAlertVisible = ApplyHdrAlert(projection);
+        if (activeShellView is AppShellView.Main)
+        {
+            SizeToActiveShellView();
+        }
     }
 
     private void ApplyOutputResultProjection(OutputResultProjection outputResult)
@@ -2059,19 +2073,21 @@ public sealed partial class MainWindow : Window
             $"{outputResult.Detail} {outputResult.FidelityDetail}");
     }
 
-    private void ApplyHdrAlert(MainPanelProjection projection)
+    private bool ApplyHdrAlert(MainPanelProjection projection)
     {
         if (!projection.HasAlert)
         {
             hdrAlertDismissed = false;
             HdrAlertInfoBar.IsOpen = false;
             HdrAlertInfoBar.Visibility = Visibility.Collapsed;
-            return;
+            return false;
         }
 
         if (hdrAlertDismissed)
         {
-            return;
+            HdrAlertInfoBar.IsOpen = false;
+            HdrAlertInfoBar.Visibility = Visibility.Collapsed;
+            return false;
         }
 
         HdrAlertInfoBar.Severity = projection.TrustSeverity switch
@@ -2083,11 +2099,17 @@ public sealed partial class MainWindow : Window
         HdrAlertInfoBar.Message = projection.AlertMessage;
         HdrAlertInfoBar.IsOpen = true;
         HdrAlertInfoBar.Visibility = Visibility.Visible;
+        return true;
     }
 
     private void OnHdrAlertInfoBarClosed(InfoBar sender, InfoBarClosedEventArgs args)
     {
         hdrAlertDismissed = true;
+        isHdrAlertVisible = false;
+        if (activeShellView is AppShellView.Main)
+        {
+            SizeToActiveShellView();
+        }
     }
 
     private void ApplyMainCaptureCardStyles()
@@ -2394,6 +2416,7 @@ public sealed partial class MainWindow : Window
                     captureService?.CurrentSessionState ?? CaptureSessionState.Idle(),
                     hdrAlertsEnabled: settingsProvider.HdrAlertsEnabled,
                     exportColorFormat: settingsProvider.ExportColorFormat,
+                    outputTarget: settingsProvider.OutputTarget,
                     validationArtifacts: validation.Artifacts,
                     executionCapabilities: outputCapabilities);
                 Logger.LogDebug(
@@ -2439,14 +2462,19 @@ public sealed partial class MainWindow : Window
 
         var isFrozenPreview = overlayPreviewFreezeController?.IsFrozen == true
             && activeCaptureMode is CaptureCommandMode.Region;
-        var message = sessionState.UserFacingReason ?? string.Empty;
+        var message = CaptureTargetScopeProjection.PrefixDetail(
+            sessionState.Target,
+            sessionState.UserFacingReason);
         var detail = AppendOverlayFreezeDetail(
             sessionState.TechnicalDetail ?? string.Empty,
             isFrozenPreview);
         var hdrAlertsEnabled = settingsProvider.HdrAlertsEnabled;
+        var validation = LoadOutputValidationArtifacts();
         var fidelityCue = CreateOverlayFidelityCue(
             settingsProvider.ExportColorFormat,
-            ResolveOutputCapabilities());
+            sessionState.Readiness,
+            validation.Artifacts,
+            ResolveOutputCapabilities(validation));
         return sessionState.Status switch
         {
             CaptureSessionStatus.Capturing => OverlayState.HdrReady(
@@ -2495,23 +2523,30 @@ public sealed partial class MainWindow : Window
             : $"{detail} {frozenDetail}";
     }
 
-    private static OverlayFidelityCue CreateOverlayFidelityCue(
+    private OverlayFidelityCue CreateOverlayFidelityCue(
         string? exportColorFormat,
+        PreviewReadinessStatus? readiness,
+        IEnumerable<OutputValidationSessionArtifact>? validationArtifacts,
         OutputProfileExecutionCapabilities executionCapabilities)
     {
-        var claim = PerfectHdrFidelityProjection.ProjectOutputProfile(
-            OutputProfileContract.FromSettingsValue(exportColorFormat),
-            readiness: null,
-            executionCapabilities).FidelityClaim.Kind;
-        var overlayClaim = claim switch
+        var projection = OverlayFidelityProjection.Project(
+            exportColorFormat,
+            readiness,
+            validationArtifacts,
+            executionCapabilities,
+            settingsProvider.OutputTarget);
+        var overlayClaim = projection.Kind switch
         {
-            FidelityClaimKind.Converted => OverlayFidelityClaimKind.Converted,
-            FidelityClaimKind.VisualMatch => OverlayFidelityClaimKind.VisualMatch,
-            FidelityClaimKind.HdrPreserved => OverlayFidelityClaimKind.HdrPreserved,
+            OverlayFidelityClaimProjection.Converted => OverlayFidelityClaimKind.Converted,
+            OverlayFidelityClaimProjection.VisualMatch => OverlayFidelityClaimKind.VisualMatch,
+            OverlayFidelityClaimProjection.HdrPreserved => OverlayFidelityClaimKind.HdrPreserved,
             _ => OverlayFidelityClaimKind.Unvalidated,
         };
 
-        return OverlayFidelityCue.FromClaim(overlayClaim);
+        return new OverlayFidelityCue(
+            overlayClaim,
+            projection.Label,
+            projection.Detail);
     }
 
     private void OnWindowClosed(object sender, WindowEventArgs args)

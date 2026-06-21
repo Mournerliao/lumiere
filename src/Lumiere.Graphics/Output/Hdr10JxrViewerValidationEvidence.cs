@@ -25,14 +25,17 @@ public sealed record Hdr10JxrViewerValidationEvidence(
     {
         ArgumentNullException.ThrowIfNull(artifacts);
 
-        var artifactArray = artifacts.ToArray();
+        var artifactArray = artifacts
+            .Where(artifact => artifact.CoversProfileOutputTarget(OutputProfileKind.Hdr10Pq, OutputTarget.Folder))
+            .ToArray();
         var evaluatedProfile = OutputValidationSessionArtifact.ApplyAllTo(
             OutputProfileContract.Hdr10Pq with
             {
                 IsExecutable = true,
                 FidelityMode = OutputFidelityMode.HdrPreserved,
             },
-            artifactArray);
+            artifactArray,
+            OutputTarget.Folder);
         var viewerEvidence = evaluatedProfile.ViewerEvidence.ToArray();
         var hasArtifacts = artifactArray.Length > 0;
         var hasCompleteTargetAwareHdrEvidence = artifactArray.Any(ArtifactHasCompleteTargetAwareHdrEvidence);
@@ -53,7 +56,7 @@ public sealed record Hdr10JxrViewerValidationEvidence(
 
         if (!hasArtifacts)
         {
-            blockers.Add("No output validation artifacts were loaded.");
+            blockers.Add("No folder-output validation artifacts were loaded for the HDR10 JXR path.");
         }
 
         if (!hasCompleteTargetAwareHdrEvidence)

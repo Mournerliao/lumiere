@@ -107,6 +107,51 @@ public sealed class OutputValidationSessionArtifactTests
     }
 
     [Fact]
+    public void CoversOutputTarget_TreatsBothAsCoveringClipboardAndFolder()
+    {
+        var artifact = CreateArtifact([]) with
+        {
+            OutputTargetsTested = ["Both"],
+        };
+
+        Assert.True(artifact.CoversOutputTarget(OutputTarget.Both));
+        Assert.True(artifact.CoversOutputTarget(OutputTarget.Clipboard));
+        Assert.True(artifact.CoversOutputTarget(OutputTarget.Folder));
+    }
+
+    [Fact]
+    public void CoversOutputTarget_DoesNotTreatClipboardOnlyEvidenceAsFolderCoverage()
+    {
+        var artifact = CreateArtifact([]);
+
+        Assert.True(artifact.CoversOutputTarget(OutputTarget.Clipboard));
+        Assert.False(artifact.CoversOutputTarget(OutputTarget.Folder));
+    }
+
+    [Fact]
+    public void CoversProfileOutputTarget_UsesRecordLevelTargetsWhenProvided()
+    {
+        var artifact = CreateArtifact(
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer("Windows Photos"),
+                    ])
+                {
+                    OutputTargetsCovered = ["Clipboard"],
+                },
+            ]) with
+        {
+            OutputTargetsTested = ["Both"],
+        };
+
+        Assert.True(artifact.CoversOutputTarget(OutputTarget.Folder));
+        Assert.True(artifact.CoversProfileOutputTarget(OutputProfileKind.Hdr10Pq, OutputTarget.Clipboard));
+        Assert.False(artifact.CoversProfileOutputTarget(OutputProfileKind.Hdr10Pq, OutputTarget.Folder));
+    }
+
+    [Fact]
     public void ApplyTo_UpdatesMatchingProfileAndLeavesMissingViewersBlockingClaims()
     {
         var artifact = CreateArtifact(
@@ -172,6 +217,34 @@ public sealed class OutputValidationSessionArtifactTests
         Assert.True(updated.HasCompleteFormatContract);
         Assert.Equal(OutputTransferFunction.PqSt2084, updated.FormatContract.TransferFunction);
         Assert.Equal(OutputMetadataPolicy.AttachHdr10StaticMetadata, updated.FormatContract.MetadataPolicy);
+    }
+
+    [Fact]
+    public void ApplyTo_WithTarget_DoesNotApplyRecordThatDoesNotCoverRequestedOutputTarget()
+    {
+        var artifact = CreateArtifact(
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer("Microsoft Paint"),
+                        PassingHdrViewer("Windows Photos"),
+                        PassingHdrViewer("Chromium browsers"),
+                    ])
+                {
+                    FormatContract = CompleteHdr10Contract,
+                    OutputTargetsCovered = ["Clipboard"],
+                },
+            ]) with
+        {
+            OutputTargetsTested = ["Both"],
+        };
+
+        var folderUpdated = artifact.ApplyTo(OutputProfileContract.Hdr10Pq, OutputTarget.Folder);
+        var clipboardUpdated = artifact.ApplyTo(OutputProfileContract.Hdr10Pq, OutputTarget.Clipboard);
+
+        Assert.False(folderUpdated.HasCompleteFormatContract);
+        Assert.True(clipboardUpdated.HasCompleteFormatContract);
     }
 
     [Fact]
