@@ -496,7 +496,10 @@ public sealed class MainPanelProjectionTests
             OutputCompatibilityEvidenceStatus.Pass,
             OutputCompatibilityEvidenceStatus.Pass,
             OutputCompatibilityEvidenceStatus.Pass,
-            "Validated HDR viewer.");
+            "Validated HDR viewer.")
+        {
+            Hdr10MetadataStatus = OutputCompatibilityEvidenceStatus.Pass,
+        };
 
     private static OutputValidationSessionArtifact ArtifactFor(string viewerName) =>
         new(

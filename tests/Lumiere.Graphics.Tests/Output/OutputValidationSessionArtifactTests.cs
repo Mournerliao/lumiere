@@ -36,7 +36,10 @@ public sealed class OutputValidationSessionArtifactTests
                             OutputCompatibilityEvidenceStatus.Pass,
                             OutputCompatibilityEvidenceStatus.Pass,
                             OutputCompatibilityEvidenceStatus.Pass,
-                            "Manual HDR validation passed in Windows Photos."),
+                            "Manual HDR validation passed in Windows Photos.")
+                        {
+                            Hdr10MetadataStatus = OutputCompatibilityEvidenceStatus.Pass,
+                        },
                     ]),
             ])
         {
@@ -46,7 +49,7 @@ public sealed class OutputValidationSessionArtifactTests
         var roundTripped = OutputValidationSessionArtifact.FromJson(artifact.ToJson());
 
         Assert.Equal("2026-06-21", roundTripped.Date);
-        Assert.Equal(3, roundTripped.SchemaVersion);
+        Assert.Equal(4, roundTripped.SchemaVersion);
         Assert.Equal("04a8dd6", roundTripped.BuildCommit);
         Assert.Equal(["REL-OUT-01"], roundTripped.ChecklistIdsCovered);
         Assert.Equal(["docs/validation/evidence/photos-hdr10.md"], roundTripped.EvidencePaths);
@@ -58,6 +61,7 @@ public sealed class OutputValidationSessionArtifactTests
         var viewer = Assert.Single(roundTripped.OutputProfileRecords[0].ViewerEvidence);
         Assert.Equal("Windows Photos", viewer.Name);
         Assert.Equal(OutputCompatibilityEvidenceStatus.Pass, viewer.HdrPreservationStatus);
+        Assert.Equal(OutputCompatibilityEvidenceStatus.Pass, viewer.Hdr10MetadataStatus);
     }
 
     [Fact]
@@ -199,7 +203,7 @@ public sealed class OutputValidationSessionArtifactTests
     [Fact]
     public void FromJson_RejectsUnsupportedSchemaVersion()
     {
-        var json = CreateArtifact([]).ToJson().Replace("\"schemaVersion\": 3", "\"schemaVersion\": 99", StringComparison.Ordinal);
+        var json = CreateArtifact([]).ToJson().Replace("\"schemaVersion\": 4", "\"schemaVersion\": 99", StringComparison.Ordinal);
 
         var exception = Assert.Throws<InvalidOperationException>(() => OutputValidationSessionArtifact.FromJson(json));
 
@@ -211,7 +215,7 @@ public sealed class OutputValidationSessionArtifactTests
     {
         var json = CreateArtifact([])
             .ToJson()
-            .Replace("\"schemaVersion\": 3", "\"schemaVersion\": 1", StringComparison.Ordinal);
+            .Replace("\"schemaVersion\": 4", "\"schemaVersion\": 1", StringComparison.Ordinal);
 
         var artifact = OutputValidationSessionArtifact.FromJson(json);
 
@@ -360,6 +364,7 @@ public sealed class OutputValidationSessionArtifactTests
         Assert.Equal(OutputCompatibilityEvidenceStatus.Pass, photos.ArtifactHandlingStatus);
         Assert.Equal(OutputCompatibilityEvidenceStatus.Pass, photos.VisualMatchStatus);
         Assert.Equal(OutputCompatibilityEvidenceStatus.Pass, photos.HdrPreservationStatus);
+        Assert.Equal(OutputCompatibilityEvidenceStatus.Pass, photos.Hdr10MetadataStatus);
         Assert.True(updated.EvaluateEvidence().AllowsHdrPreservedClaim);
     }
 
@@ -437,7 +442,10 @@ public sealed class OutputValidationSessionArtifactTests
             OutputCompatibilityEvidenceStatus.Pass,
             OutputCompatibilityEvidenceStatus.Pass,
             OutputCompatibilityEvidenceStatus.Pass,
-            $"Manual HDR validation passed in {name}.");
+            $"Manual HDR validation passed in {name}.")
+        {
+            Hdr10MetadataStatus = OutputCompatibilityEvidenceStatus.Pass,
+        };
 
     private static OutputFormatContract CompleteHdr10Contract { get; } =
         new(

@@ -484,9 +484,11 @@ public static class PerfectHdrFidelityProjection
             MapEvidenceStatus(evidence.ArtifactHandlingStatus),
             MapEvidenceStatus(evidence.VisualMatchStatus),
             MapEvidenceStatus(evidence.HdrPreservationStatus),
+            MapEvidenceStatus(evidence.Hdr10MetadataStatus),
             $"Artifact: {FormatEvidenceStatus(evidence.ArtifactHandlingStatus)}. "
                 + $"Visual match: {FormatEvidenceStatus(evidence.VisualMatchStatus)}. "
                 + $"HDR preservation: {FormatEvidenceStatus(evidence.HdrPreservationStatus)}. "
+                + $"HDR10 metadata: {FormatEvidenceStatus(evidence.Hdr10MetadataStatus)}. "
                 + "Fidelity evidence is separated by category. "
                 + evidence.Detail);
 
@@ -566,10 +568,11 @@ public sealed record ValidationViewerMatrixRowProjection(
     ValidationEvidenceStatus ArtifactHandlingStatus,
     ValidationEvidenceStatus VisualMatchStatus,
     ValidationEvidenceStatus HdrPreservationStatus,
+    ValidationEvidenceStatus Hdr10MetadataStatus,
     string Detail)
 {
     public ValidationEvidenceStatus Status =>
-        CombineStatus(ArtifactHandlingStatus, VisualMatchStatus, HdrPreservationStatus);
+        CombineStatus(ArtifactHandlingStatus, VisualMatchStatus, HdrPreservationStatus, Hdr10MetadataStatus);
 
     private static ValidationEvidenceStatus CombineStatus(params ValidationEvidenceStatus[] statuses)
     {

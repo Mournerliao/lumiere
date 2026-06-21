@@ -130,9 +130,10 @@ public sealed record OutputProfileContract(
             && hdrEvidenceRequired
             && applicableViewers.Length > 0
             && applicableViewers.All(viewer =>
-                viewer.ArtifactHandlingStatus is OutputCompatibilityEvidenceStatus.Pass
-                && viewer.VisualMatchStatus is OutputCompatibilityEvidenceStatus.Pass
-                && viewer.HdrPreservationStatus is OutputCompatibilityEvidenceStatus.Pass);
+            viewer.ArtifactHandlingStatus is OutputCompatibilityEvidenceStatus.Pass
+            && viewer.VisualMatchStatus is OutputCompatibilityEvidenceStatus.Pass
+            && viewer.HdrPreservationStatus is OutputCompatibilityEvidenceStatus.Pass
+            && viewer.Hdr10MetadataStatus is OutputCompatibilityEvidenceStatus.Pass);
         var hdrDetail = allowsHdrPreserved
             ? "HDR preservation evidence passed for all named viewers."
             : !IsExecutable
@@ -161,7 +162,8 @@ public sealed record OutputProfileContract(
         viewers.Where(viewer =>
             viewer.ArtifactHandlingStatus is not OutputCompatibilityEvidenceStatus.Pass
             || viewer.VisualMatchStatus is not OutputCompatibilityEvidenceStatus.Pass
-            || viewer.HdrPreservationStatus is not OutputCompatibilityEvidenceStatus.Pass);
+            || viewer.HdrPreservationStatus is not OutputCompatibilityEvidenceStatus.Pass
+            || viewer.Hdr10MetadataStatus is not OutputCompatibilityEvidenceStatus.Pass);
 
     private static string FormatViewerNames(IEnumerable<OutputViewerCompatibilityEvidence> viewers)
     {
@@ -183,6 +185,7 @@ public sealed record OutputProfileContract(
             ArtifactHandlingStatus = CapAutomatedPass(evidence.ArtifactHandlingStatus),
             VisualMatchStatus = CapAutomatedPass(evidence.VisualMatchStatus),
             HdrPreservationStatus = CapAutomatedPass(evidence.HdrPreservationStatus),
+            Hdr10MetadataStatus = CapAutomatedPass(evidence.Hdr10MetadataStatus),
             Detail = $"{evidence.Detail} Windows manual validation is still required before this evidence can count as PASS.",
         };
     }
@@ -201,6 +204,7 @@ public sealed record OutputProfileContract(
             ArtifactHandlingStatus = MergeEvidenceStatus(current.ArtifactHandlingStatus, incoming.ArtifactHandlingStatus),
             VisualMatchStatus = MergeEvidenceStatus(current.VisualMatchStatus, incoming.VisualMatchStatus),
             HdrPreservationStatus = MergeEvidenceStatus(current.HdrPreservationStatus, incoming.HdrPreservationStatus),
+            Hdr10MetadataStatus = MergeEvidenceStatus(current.Hdr10MetadataStatus, incoming.Hdr10MetadataStatus),
         };
 
         if (HasSameStatuses(merged, current))
@@ -256,7 +260,8 @@ public sealed record OutputProfileContract(
         OutputViewerCompatibilityEvidence right) =>
         left.ArtifactHandlingStatus == right.ArtifactHandlingStatus
         && left.VisualMatchStatus == right.VisualMatchStatus
-        && left.HdrPreservationStatus == right.HdrPreservationStatus;
+        && left.HdrPreservationStatus == right.HdrPreservationStatus
+        && left.Hdr10MetadataStatus == right.Hdr10MetadataStatus;
 
     private static IReadOnlyList<OutputViewerCompatibilityEvidence> CreateCompatibilityViewerEvidence() =>
     [
@@ -493,6 +498,11 @@ public sealed record OutputViewerCompatibilityEvidence(
     OutputCompatibilityEvidenceStatus HdrPreservationStatus,
     string Detail)
 {
+    public OutputCompatibilityEvidenceStatus Hdr10MetadataStatus { get; init; } =
+        HdrPreservationStatus is OutputCompatibilityEvidenceStatus.NotApplicable
+            ? OutputCompatibilityEvidenceStatus.NotApplicable
+            : OutputCompatibilityEvidenceStatus.NotRun;
+
     public static OutputViewerCompatibilityEvidence ForSdrCompatibility(string name) =>
         new(
             name,

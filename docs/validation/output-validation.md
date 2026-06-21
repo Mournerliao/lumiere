@@ -20,6 +20,7 @@ Any enabled HDR10, P3, sRGB, ICC, HEIF, AVIF, JPEG XL, or similar export/color o
 - Conversion policy from FP16 scRGB to the output format.
 - Metadata policy, including HDR metadata, ICC profile, transfer function, mastering/display assumptions, and omissions.
 - Target-app assumptions and compatibility matrix.
+- Per-viewer HDR10 metadata recognition status, separate from artifact handling, visual match, and HDR preservation.
 - Windows manual validation date, device/display configuration, app versions, and observed result.
 - Known limitations and user-facing copy that avoids unsupported preservation claims.
 

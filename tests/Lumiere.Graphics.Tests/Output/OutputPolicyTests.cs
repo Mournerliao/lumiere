@@ -325,7 +325,10 @@ public sealed class OutputPolicyTests
             OutputCompatibilityEvidenceStatus.Pass,
             OutputCompatibilityEvidenceStatus.Pass,
             OutputCompatibilityEvidenceStatus.Pass,
-            "Validated HDR viewer.");
+            "Validated HDR viewer.")
+        {
+            Hdr10MetadataStatus = OutputCompatibilityEvidenceStatus.Pass,
+        };
 
     private static OutputFormatContract CompleteHdr10Contract { get; } =
         new(

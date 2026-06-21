@@ -156,6 +156,32 @@ public sealed class OutputProfileContractTests
     }
 
     [Fact]
+    public void EvidenceSummary_BlocksHdrPreservedWhenHdr10MetadataRecognitionIsMissing()
+    {
+        var contract = OutputProfileContract.Hdr10Pq with
+        {
+            IsExecutable = true,
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract,
+            ViewerEvidence =
+            [
+                PassingHdrViewer("Microsoft Paint") with
+                {
+                    Hdr10MetadataStatus = OutputCompatibilityEvidenceStatus.NotRun,
+                },
+                PassingHdrViewer("Windows Photos"),
+                PassingHdrViewer("Chromium browsers"),
+            ],
+        };
+
+        var summary = contract.EvaluateEvidence();
+
+        Assert.True(summary.AllowsVisualMatchClaim);
+        Assert.False(summary.AllowsHdrPreservedClaim);
+        Assert.Contains("Microsoft Paint", summary.HdrPreservedGateDetail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void EvidenceSummary_BlocksHdrPreservedWhenFormatContractIsIncomplete()
     {
         var contract = OutputProfileContract.Hdr10Pq with
@@ -188,7 +214,10 @@ public sealed class OutputProfileContractTests
                     OutputCompatibilityEvidenceStatus.Pass,
                     OutputCompatibilityEvidenceStatus.Pass,
                     OutputCompatibilityEvidenceStatus.Pass,
-                    "Validated on HDR display with Windows Photos."),
+                    "Validated on HDR display with Windows Photos.")
+                {
+                    Hdr10MetadataStatus = OutputCompatibilityEvidenceStatus.Pass,
+                },
             ]);
         var contract = OutputProfileContract.Hdr10Pq with
         {
@@ -271,7 +300,10 @@ public sealed class OutputProfileContractTests
             OutputCompatibilityEvidenceStatus.Pass,
             OutputCompatibilityEvidenceStatus.Pass,
             OutputCompatibilityEvidenceStatus.Pass,
-            "Validated HDR viewer.");
+            "Validated HDR viewer.")
+        {
+            Hdr10MetadataStatus = OutputCompatibilityEvidenceStatus.Pass,
+        };
 
     private static OutputFormatContract CompleteHdr10Contract { get; } =
         new(

@@ -25,7 +25,7 @@ public sealed record OutputValidationSessionArtifact(
     IReadOnlyList<string> FollowUpIssuesOrStories,
     IReadOnlyList<OutputProfileValidationRecord> OutputProfileRecords)
 {
-    private const int CurrentSchemaVersion = 3;
+    private const int CurrentSchemaVersion = 4;
     private const int MinimumSupportedSchemaVersion = 1;
 
     private static readonly JsonSerializerOptions JsonOptions = new()

@@ -200,9 +200,11 @@ public sealed class PerfectHdrFidelityProjectionTests
                 Assert.Equal(ValidationEvidenceStatus.NotRun, viewer.ArtifactHandlingStatus);
                 Assert.Equal(ValidationEvidenceStatus.NotRun, viewer.VisualMatchStatus);
                 Assert.Equal(ValidationEvidenceStatus.NotApplicable, viewer.HdrPreservationStatus);
+                Assert.Equal(ValidationEvidenceStatus.NotApplicable, viewer.Hdr10MetadataStatus);
                 Assert.Contains("Artifact", viewer.Detail, StringComparison.OrdinalIgnoreCase);
                 Assert.Contains("visual", viewer.Detail, StringComparison.OrdinalIgnoreCase);
                 Assert.Contains("HDR preservation: N/A", viewer.Detail, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("HDR10 metadata: N/A", viewer.Detail, StringComparison.OrdinalIgnoreCase);
             });
     }
 
@@ -227,6 +229,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             && viewer.ArtifactHandlingStatus == ValidationEvidenceStatus.Pass
             && viewer.VisualMatchStatus == ValidationEvidenceStatus.Pass
             && viewer.HdrPreservationStatus == ValidationEvidenceStatus.Pass
+            && viewer.Hdr10MetadataStatus == ValidationEvidenceStatus.Pass
             && viewer.Status == ValidationEvidenceStatus.Pass);
         Assert.Contains(validation.ViewerMatrix, viewer =>
             viewer.Name == "Microsoft Paint"
@@ -424,7 +427,10 @@ public sealed class PerfectHdrFidelityProjectionTests
             OutputCompatibilityEvidenceStatus.Pass,
             OutputCompatibilityEvidenceStatus.Pass,
             OutputCompatibilityEvidenceStatus.Pass,
-            "Validated HDR viewer.");
+            "Validated HDR viewer.")
+        {
+            Hdr10MetadataStatus = OutputCompatibilityEvidenceStatus.Pass,
+        };
 
     private static OutputValidationSessionArtifact ArtifactFor(string viewerName) =>
         new(
