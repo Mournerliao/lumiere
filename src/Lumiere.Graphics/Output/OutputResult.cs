@@ -7,7 +7,9 @@ public sealed record OutputResult(
     IReadOnlyList<OutputTargetResult> Targets,
     string? UserMessage,
     string? TechnicalDetail,
-    AfterCaptureResult? AfterCapture = null)
+    AfterCaptureResult? AfterCapture = null,
+    OutputProfileContract? RequestedProfileEvidence = null,
+    OutputProfileContract? EffectiveProfileEvidence = null)
 {
     /// <summary>
     /// Gets whether the overall output operation succeeded (at least one target succeeded).
@@ -23,6 +25,12 @@ public sealed record OutputResult(
     /// Gets the folder output outcome.
     /// </summary>
     public OutputOutcome FolderOutcome => OutcomeFor(OutputTarget.Folder);
+
+    public OutputProfileContract RequestedProfile => RequestedProfileEvidence ?? OutputProfileContract.SrgbCompatibilityPng;
+
+    public OutputProfileContract EffectiveProfile => EffectiveProfileEvidence ?? RequestedProfile.EffectiveExecutableProfile;
+
+    public bool UsesCompatibilityProfileFallback => RequestedProfile != EffectiveProfile;
 
     /// <summary>
     /// Creates a successful clipboard output result.
@@ -117,6 +125,19 @@ public sealed record OutputResult(
     {
         ArgumentNullException.ThrowIfNull(afterCapture);
         return this with { AfterCapture = afterCapture };
+    }
+
+    /// <summary>
+    /// Creates a copy with output profile evidence attached.
+    /// </summary>
+    public OutputResult WithRequestedProfile(OutputProfileContract requestedProfile)
+    {
+        ArgumentNullException.ThrowIfNull(requestedProfile);
+        return this with
+        {
+            RequestedProfileEvidence = requestedProfile,
+            EffectiveProfileEvidence = requestedProfile.EffectiveExecutableProfile,
+        };
     }
 }
 

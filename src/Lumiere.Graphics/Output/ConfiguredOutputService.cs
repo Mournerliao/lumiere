@@ -40,7 +40,8 @@ public sealed class ConfiguredOutputService : IOutputService
             results.AddRange(await ExecuteTargetAsync(OutputTarget.Folder, folderOutput, request, cancellationToken));
         }
 
-        return OutputResult.FromTargets(results);
+        return OutputResult.FromTargets(results)
+            .WithRequestedProfile(request.Policy.RequestedProfile);
     }
 
     private async Task<IReadOnlyList<OutputTargetResult>> ExecuteTargetAsync(

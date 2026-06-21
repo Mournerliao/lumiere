@@ -1,4 +1,5 @@
 using Lumiere.App;
+using Lumiere.Graphics.Output;
 using Xunit;
 
 namespace Lumiere.Graphics.Tests.App;
@@ -54,6 +55,22 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Equal("Compatibility-converted sRGB artifact", profile.Contract.DestinationPolicy);
         Assert.Contains("no HDR metadata", profile.Contract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("public release target", profile.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectOutputProfile_UsesOutputContractAsSourceOfTruth()
+    {
+        var contract = OutputProfileContract.FromSettingsValue("HDR10");
+
+        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(contract);
+
+        Assert.Equal(contract.Label, profile.Label);
+        Assert.Equal(contract.SourceFormatPolicy, profile.Contract.SourcePolicy);
+        Assert.Equal(contract.DestinationFormatPolicy, profile.Contract.DestinationPolicy);
+        Assert.Equal(contract.ConversionPolicy, profile.Contract.ConversionPolicy);
+        Assert.Equal(contract.MetadataPolicy, profile.Contract.MetadataPolicy);
+        Assert.Equal(contract.ViewerCompatibilityPolicy, profile.Contract.ViewerCompatibilityPolicy);
+        Assert.Equal(FidelityClaimKind.Unvalidated, profile.FidelityClaim.Kind);
     }
 
     [Fact]

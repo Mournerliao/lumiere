@@ -22,7 +22,8 @@ public sealed class OutputResultProjectionTests
     [Fact]
     public void Project_ClipboardSuccessSeparatesArtifactSuccessFromFidelityClaim()
     {
-        var output = OutputResult.ClipboardSuccess(1024);
+        var output = OutputResult.ClipboardSuccess(1024)
+            .WithRequestedProfile(OutputProfileContract.FromSettingsValue("HDR10"));
         var fidelity = PerfectHdrFidelityProjection.ProjectOutputProfile("HDR10").FidelityClaim;
 
         var projection = OutputResultProjection.Project(output, fidelity);
@@ -30,9 +31,26 @@ public sealed class OutputResultProjectionTests
         Assert.Equal("Copied", projection.Title);
         Assert.Equal("Clipboard copied", projection.Detail);
         Assert.Equal(OutputResultProjectionSeverity.Success, projection.Severity);
+        Assert.Contains("requested HDR10", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("using sRGB", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Fidelity claim: Unvalidated", projection.FidelityDetail);
         Assert.DoesNotContain("HDR-preserved", projection.Title, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", projection.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR-preserved", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Project_UsesOutputResultEffectiveProfileWhenFidelityClaimIsNotProvided()
+    {
+        var output = OutputResult.ClipboardSuccess(1024)
+            .WithRequestedProfile(OutputProfileContract.FromSettingsValue("P3"));
+
+        var projection = OutputResultProjection.Project(output);
+
+        Assert.Equal("Copied", projection.Title);
+        Assert.Contains("requested P3", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("using sRGB", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Fidelity claim: Converted", projection.FidelityDetail);
         Assert.DoesNotContain("HDR-preserved", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
     }
 

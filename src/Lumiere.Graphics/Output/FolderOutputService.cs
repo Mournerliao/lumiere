@@ -47,22 +47,23 @@ public sealed class FolderOutputService : IOutputService
             return OutputResult.FromTargets(OutputTargetResult.Skipped(
                 OutputTarget.Folder,
                 "Folder output skipped by settings",
-                "Folder target is not configured."));
+                "Folder target is not configured."))
+                .WithRequestedProfile(request.Policy.RequestedProfile);
         }
 
         if (request.Texture is null)
         {
-            return Failed("No captured frame texture available");
+            return Failed(request, "No captured frame texture available");
         }
 
         if (string.IsNullOrWhiteSpace(request.Policy.SavePath))
         {
-            return Failed("Save path is not configured");
+            return Failed(request, "Save path is not configured");
         }
 
         if (!directoryExists(request.Policy.SavePath))
         {
-            return Failed("Save folder is not available");
+            return Failed(request, "Save folder is not available");
         }
 
         try
@@ -80,7 +81,8 @@ public sealed class FolderOutputService : IOutputService
                 OutputTarget.Folder,
                 "Saved to folder",
                 $"Folder output success: {pngBytes.Length} bytes",
-                artifactPath));
+                artifactPath))
+                .WithRequestedProfile(request.Policy.RequestedProfile);
         }
         catch (OperationCanceledException)
         {
@@ -95,13 +97,14 @@ public sealed class FolderOutputService : IOutputService
                 exception: ex);
             diagnostic.LogTo(Logger);
 
-            return Failed("Failed to save file", ex.Message);
+            return Failed(request, "Failed to save file", ex.Message);
         }
     }
 
-    private static OutputResult Failed(string userMessage, string? technicalDetail = null) =>
+    private static OutputResult Failed(OutputRequest request, string userMessage, string? technicalDetail = null) =>
         OutputResult.FromTargets(OutputTargetResult.Failed(
             OutputTarget.Folder,
             userMessage,
-            technicalDetail ?? userMessage));
+            technicalDetail ?? userMessage))
+            .WithRequestedProfile(request.Policy.RequestedProfile);
 }

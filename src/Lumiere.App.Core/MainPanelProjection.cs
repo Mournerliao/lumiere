@@ -44,6 +44,9 @@ public sealed record MainPanelProjection(
         var trust = MapTrust(state.Readiness.State, outputResult);
         var alertMessage = MapAlertMessage(state.Readiness.State, outputResult, hdrAlertsEnabled);
         var outputProfile = PerfectHdrFidelityProjection.ProjectOutputProfile(exportColorFormat);
+        var outputResultProjection = outputResult is null
+            ? OutputResultProjection.Project(outputResult, outputProfile.FidelityClaim)
+            : OutputResultProjection.Project(outputResult);
 
         return new MainPanelProjection(
             canStartCapture,
@@ -56,7 +59,7 @@ public sealed record MainPanelProjection(
             trust.Severity,
             outputProfile,
             outputProfile.FidelityClaim,
-            OutputResultProjection.Project(outputResult, outputProfile.FidelityClaim),
+            outputResultProjection,
             PerfectHdrFidelityProjection.ReleaseTarget,
             alertMessage,
             !string.IsNullOrEmpty(alertMessage));

@@ -32,13 +32,17 @@ public sealed class OutputPolicyTests
             copyAsImage,
             " C:\\Captures ",
             timestampNaming: true,
-            afterCaptureBehavior: "RevealInFolder");
+            afterCaptureBehavior: "RevealInFolder",
+            exportColorFormat: "sRGB");
 
         Assert.Equal(shouldAttemptClipboard, policy.ShouldAttemptClipboard);
         Assert.Equal(shouldAttemptFolder, policy.ShouldAttemptFolder);
         Assert.Equal("C:\\Captures", policy.SavePath);
         Assert.Equal("RevealInFolder", policy.AfterCaptureBehavior);
         Assert.Equal(OutputAfterCaptureAction.Reveal, policy.AfterCaptureAction);
+        Assert.Equal("sRGB", policy.RequestedProfile.Label);
+        Assert.Equal("sRGB", policy.EffectiveProfile.Label);
+        Assert.False(policy.UsesCompatibilityProfileFallback);
     }
 
     [Theory]
@@ -76,5 +80,53 @@ public sealed class OutputPolicyTests
             afterCaptureBehavior: value);
 
         Assert.Equal(expectedAction, policy.AfterCaptureAction);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("sRGB")]
+    [InlineData("unknown")]
+    public void FromSettings_UsesSrgbCompatibilityProfileForExecutableOutput(string? exportColorFormat)
+    {
+        var policy = OutputPolicy.FromSettings(
+            OutputTarget.Clipboard,
+            copyAsImage: true,
+            savePath: null,
+            timestampNaming: true,
+            afterCaptureBehavior: null,
+            exportColorFormat);
+
+        Assert.Equal(OutputProfileKind.SrgbCompatibilityPng, policy.RequestedProfile.Kind);
+        Assert.Equal(OutputProfileKind.SrgbCompatibilityPng, policy.EffectiveProfile.Kind);
+        Assert.Equal(OutputFidelityMode.SdrCompatible, policy.EffectiveProfile.FidelityMode);
+        Assert.True(policy.EffectiveProfile.IsExecutable);
+        Assert.Contains("No HDR metadata", policy.EffectiveProfile.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.False(policy.EffectiveProfile.AllowsHdrPreservedClaim);
+    }
+
+    [Theory]
+    [InlineData("HDR10", OutputProfileKind.Hdr10Pq)]
+    [InlineData("P3", OutputProfileKind.DisplayP3)]
+    [InlineData("wide", OutputProfileKind.DisplayP3)]
+    public void FromSettings_KeepsUnsupportedProfilesNonExecutableAndFallsBackToSrgb(
+        string exportColorFormat,
+        OutputProfileKind requestedKind)
+    {
+        var policy = OutputPolicy.FromSettings(
+            OutputTarget.Clipboard,
+            copyAsImage: true,
+            savePath: null,
+            timestampNaming: true,
+            afterCaptureBehavior: null,
+            exportColorFormat);
+
+        Assert.Equal(requestedKind, policy.RequestedProfile.Kind);
+        Assert.False(policy.RequestedProfile.IsExecutable);
+        Assert.Equal(OutputFidelityMode.Unvalidated, policy.RequestedProfile.FidelityMode);
+        Assert.False(policy.RequestedProfile.AllowsHdrPreservedClaim);
+        Assert.Equal(OutputProfileKind.SrgbCompatibilityPng, policy.EffectiveProfile.Kind);
+        Assert.True(policy.UsesCompatibilityProfileFallback);
+        Assert.True(policy.ShouldAttemptClipboard);
     }
 }

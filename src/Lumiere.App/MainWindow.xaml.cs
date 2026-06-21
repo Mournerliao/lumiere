@@ -2132,7 +2132,8 @@ public sealed partial class MainWindow : Window
                     settingsProvider.CopyAsImage,
                     settingsProvider.SavePath,
                     settingsProvider.TimestampNaming,
-                    settingsProvider.AfterCaptureBehavior.ToString())
+                    settingsProvider.AfterCaptureBehavior.ToString(),
+                    settingsProvider.ExportColorFormat)
             };
 
             var result = await outputService.ExecuteOutputAsync(request);

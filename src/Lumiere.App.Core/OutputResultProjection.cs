@@ -12,12 +12,21 @@ public sealed record OutputResultProjection(
     {
         ArgumentNullException.ThrowIfNull(fidelityClaim);
 
+        var profile = outputResult is null
+            ? null
+            : PerfectHdrFidelityProjection.ProjectOutputProfile(outputResult.EffectiveProfile);
         return new OutputResultProjection(
             ProjectTitle(outputResult),
             ProjectDetail(outputResult),
-            $"Fidelity claim: {fidelityClaim.Label}. {fidelityClaim.Detail}",
+            ProjectFidelityDetail(outputResult, fidelityClaim, profile),
             ProjectSeverity(outputResult));
     }
+
+    public static OutputResultProjection Project(OutputResult? outputResult) =>
+        Project(
+            outputResult,
+            PerfectHdrFidelityProjection.ProjectOutputProfile(outputResult?.EffectiveProfile
+                ?? OutputProfileContract.SrgbCompatibilityPng).FidelityClaim);
 
     private static string ProjectTitle(OutputResult? outputResult)
     {
@@ -74,6 +83,20 @@ public sealed record OutputResultProjection(
         return outputResult.IsSuccess && !hasFailure
             ? OutputResultProjectionSeverity.Success
             : OutputResultProjectionSeverity.Warning;
+    }
+
+    private static string ProjectFidelityDetail(
+        OutputResult? outputResult,
+        FidelityClaimProjection fidelityClaim,
+        OutputProfileProjection? profile)
+    {
+        var profilePrefix = profile is null
+            ? "Output profile: not selected."
+            : outputResult?.UsesCompatibilityProfileFallback is true
+                ? $"Output profile: requested {outputResult.RequestedProfile.Label}; using {outputResult.EffectiveProfile.Label} compatibility fallback."
+                : $"Output profile: {profile.Label}.";
+
+        return $"{profilePrefix} Fidelity claim: {fidelityClaim.Label}. {fidelityClaim.Detail}";
     }
 }
 

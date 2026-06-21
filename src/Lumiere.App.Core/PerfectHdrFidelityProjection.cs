@@ -1,3 +1,5 @@
+using Lumiere.Graphics.Output;
+
 namespace Lumiere.App;
 
 public static class PerfectHdrFidelityProjection
@@ -6,60 +8,48 @@ public static class PerfectHdrFidelityProjection
 
     public static OutputProfileProjection ProjectOutputProfile(string? exportColorFormat)
     {
-        var normalized = NormalizeExportColorFormat(exportColorFormat);
-        return normalized switch
+        var contract = OutputProfileContract.FromSettingsValue(exportColorFormat);
+        return contract.Kind switch
         {
-            "HDR10" => new OutputProfileProjection(
-                "HDR10",
+            OutputProfileKind.Hdr10Pq => CreateOutputProfile(
+                contract,
                 "Validate",
                 "Requires profile contract, metadata policy, supported viewer evidence, and Windows validation.",
-                IsReadOnly: true,
-                new OutputProfileContractProjection(
-                    "FP16/scRGB capture source",
-                    "HDR10 output contract pending implementation",
-                    "Transfer, tone mapping, and gamut mapping policy must be defined before use.",
-                    "HDR10 metadata policy is required before this profile can make a fidelity claim.",
-                    "Named target-app compatibility matrix is required."),
-                new FidelityClaimProjection(
-                    FidelityClaimKind.Unvalidated,
-                    "Unvalidated",
-                    "No fidelity claim is made for this path.",
-                    MainPanelTrustIcon.ErrorCircle,
-                    MainPanelTrustSeverity.Error)),
-            "P3" => new OutputProfileProjection(
-                "P3",
+                isReadOnly: true),
+            OutputProfileKind.DisplayP3 => CreateOutputProfile(
+                contract,
                 "Build",
                 "Wide-gamut output is visible as intent, but not selectable as a fidelity claim yet.",
-                IsReadOnly: true,
-                new OutputProfileContractProjection(
-                    "FP16/scRGB capture source",
-                    "Display P3 output contract pending implementation",
-                    "Wide-gamut conversion policy must be specified before use.",
-                    "Color profile and metadata attachment policy are not validated.",
-                    "Target-app compatibility matrix is not run."),
-                new FidelityClaimProjection(
-                    FidelityClaimKind.Unvalidated,
-                    "Unvalidated",
-                    "No fidelity claim is made for this path.",
-                    MainPanelTrustIcon.ErrorCircle,
-                    MainPanelTrustSeverity.Error)),
-            _ => new OutputProfileProjection(
-                "sRGB",
+                isReadOnly: true),
+            _ => CreateOutputProfile(
+                contract,
                 "Compat",
                 "Compatibility output; useful fallback, not the public release target.",
-                IsReadOnly: false,
-                new OutputProfileContractProjection(
-                    "FP16/scRGB capture source",
-                    "Compatibility-converted sRGB artifact",
-                    "Output is converted for common SDR destinations.",
-                    "No HDR metadata is attached to the compatibility artifact.",
-                    "Compatibility-oriented target-app checks are still required."),
-                new FidelityClaimProjection(
-                    FidelityClaimKind.Converted,
-                    "Converted",
-                    "Output is optimized for compatibility, not HDR preservation.",
-                    MainPanelTrustIcon.InfoCircle,
-                    MainPanelTrustSeverity.Warning)),
+                isReadOnly: false),
+        };
+    }
+
+    public static OutputProfileProjection ProjectOutputProfile(OutputProfileContract contract)
+    {
+        ArgumentNullException.ThrowIfNull(contract);
+
+        return contract.Kind switch
+        {
+            OutputProfileKind.Hdr10Pq => CreateOutputProfile(
+                contract,
+                "Validate",
+                "Requires profile contract, metadata policy, supported viewer evidence, and Windows validation.",
+                isReadOnly: true),
+            OutputProfileKind.DisplayP3 => CreateOutputProfile(
+                contract,
+                "Build",
+                "Wide-gamut output is visible as intent, but not selectable as a fidelity claim yet.",
+                isReadOnly: true),
+            _ => CreateOutputProfile(
+                contract,
+                "Compat",
+                "Compatibility output; useful fallback, not the public release target.",
+                isReadOnly: false),
         };
     }
 
@@ -121,20 +111,54 @@ public static class PerfectHdrFidelityProjection
     }
 
     public static string NormalizeExportColorFormat(string? exportColorFormat)
-    {
-        var normalized = exportColorFormat?.Trim();
-        if (string.IsNullOrEmpty(normalized))
-        {
-            return "sRGB";
-        }
+        => OutputProfileContract.FromSettingsValue(exportColorFormat).Label;
 
-        return normalized.Equals("HDR10", StringComparison.OrdinalIgnoreCase)
-            ? "HDR10"
-            : normalized.Equals("P3", StringComparison.OrdinalIgnoreCase)
-                || normalized.Equals("Wide", StringComparison.OrdinalIgnoreCase)
-                ? "P3"
-                : "sRGB";
-    }
+    private static OutputProfileProjection CreateOutputProfile(
+        OutputProfileContract contract,
+        string statusLabel,
+        string detail,
+        bool isReadOnly) =>
+        new(
+            contract.Label,
+            statusLabel,
+            detail,
+            isReadOnly,
+            new OutputProfileContractProjection(
+                contract.SourceFormatPolicy,
+                contract.DestinationFormatPolicy,
+                contract.ConversionPolicy,
+                contract.MetadataPolicy,
+                contract.ViewerCompatibilityPolicy),
+            CreateFidelityClaim(contract));
+
+    private static FidelityClaimProjection CreateFidelityClaim(OutputProfileContract contract) =>
+        contract.FidelityMode switch
+        {
+            OutputFidelityMode.SdrCompatible => new FidelityClaimProjection(
+                FidelityClaimKind.Converted,
+                "Converted",
+                "Output is optimized for compatibility, not HDR preservation.",
+                MainPanelTrustIcon.InfoCircle,
+                MainPanelTrustSeverity.Warning),
+            OutputFidelityMode.VisualMatch => new FidelityClaimProjection(
+                FidelityClaimKind.VisualMatch,
+                "Visual match",
+                "Output has visual-match validation for the supported path.",
+                MainPanelTrustIcon.CheckmarkCircle,
+                MainPanelTrustSeverity.Success),
+            OutputFidelityMode.HdrPreserved when contract.AllowsHdrPreservedClaim => new FidelityClaimProjection(
+                FidelityClaimKind.HdrPreserved,
+                "HDR-preserved",
+                "Output uses a validated HDR-preserved supported path.",
+                MainPanelTrustIcon.CheckmarkCircle,
+                MainPanelTrustSeverity.Success),
+            _ => new FidelityClaimProjection(
+                FidelityClaimKind.Unvalidated,
+                "Unvalidated",
+                "No fidelity claim is made for this path.",
+                MainPanelTrustIcon.ErrorCircle,
+                MainPanelTrustSeverity.Error),
+        };
 }
 
 public sealed record OutputProfileProjection(

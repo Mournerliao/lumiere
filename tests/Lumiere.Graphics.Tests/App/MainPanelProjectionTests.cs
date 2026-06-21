@@ -78,7 +78,8 @@ public sealed class MainPanelProjectionTests
     public void ProjectStatus_SeparatesOutputSuccessFromFidelityClaim()
     {
         var state = CreateState(PreviewReadinessState.Ready);
-        var outputResult = OutputResult.ClipboardSuccess(1024);
+        var outputResult = OutputResult.ClipboardSuccess(1024)
+            .WithRequestedProfile(OutputProfileContract.FromSettingsValue("HDR10"));
 
         var projection = MainPanelProjection.Project(
             state,
@@ -90,8 +91,12 @@ public sealed class MainPanelProjectionTests
         Assert.Equal("Validate", projection.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Unvalidated, projection.FidelityClaim.Kind);
         Assert.Equal("Unvalidated", projection.FidelityClaim.Label);
+        Assert.Contains("requested HDR10", projection.OutputResult.FidelityDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("using sRGB", projection.OutputResult.FidelityDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Fidelity claim: Converted", projection.OutputResult.FidelityDetail);
         Assert.DoesNotContain("HDR-preserved", projection.TrustLabel, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", projection.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR-preserved", projection.OutputResult.FidelityDetail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

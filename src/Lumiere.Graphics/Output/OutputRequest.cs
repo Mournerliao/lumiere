@@ -32,7 +32,8 @@ public sealed record OutputPolicy(
     bool CopyAsImage,
     string? SavePath,
     bool TimestampNaming,
-    string? AfterCaptureBehavior)
+    string? AfterCaptureBehavior,
+    OutputProfileContract RequestedProfile)
 {
     /// <summary>
     /// Gets the default output policy.
@@ -42,7 +43,8 @@ public sealed record OutputPolicy(
         CopyAsImage: true,
         SavePath: null,
         TimestampNaming: true,
-        AfterCaptureBehavior: null);
+        AfterCaptureBehavior: null,
+        OutputProfileContract.SrgbCompatibilityPng);
 
     /// <summary>
     /// Gets whether clipboard image output should be attempted.
@@ -60,6 +62,16 @@ public sealed record OutputPolicy(
     public OutputAfterCaptureAction AfterCaptureAction => OutputAfterCaptureActionParser.Parse(AfterCaptureBehavior);
 
     /// <summary>
+    /// Gets the executable output profile currently used by the output pipeline.
+    /// </summary>
+    public OutputProfileContract EffectiveProfile => RequestedProfile.EffectiveExecutableProfile;
+
+    /// <summary>
+    /// Gets whether a requested non-executable profile falls back to the compatibility profile.
+    /// </summary>
+    public bool UsesCompatibilityProfileFallback => !RequestedProfile.IsExecutable;
+
+    /// <summary>
     /// Creates a policy from raw settings values without taking a dependency on the settings module.
     /// </summary>
     public static OutputPolicy FromSettings(
@@ -67,13 +79,15 @@ public sealed record OutputPolicy(
         bool copyAsImage,
         string? savePath,
         bool timestampNaming,
-        string? afterCaptureBehavior) =>
+        string? afterCaptureBehavior,
+        string? exportColorFormat = null) =>
         new(
             target,
             copyAsImage,
             string.IsNullOrWhiteSpace(savePath) ? null : savePath.Trim(),
             timestampNaming,
-            string.IsNullOrWhiteSpace(afterCaptureBehavior) ? null : afterCaptureBehavior.Trim());
+            string.IsNullOrWhiteSpace(afterCaptureBehavior) ? null : afterCaptureBehavior.Trim(),
+            OutputProfileContract.FromSettingsValue(exportColorFormat));
 }
 
 /// <summary>
