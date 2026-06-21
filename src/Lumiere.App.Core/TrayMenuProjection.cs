@@ -10,6 +10,10 @@ public sealed record TrayMenuProjection(
     string AppName,
     string HdrStatusLabel,
     string HdrStatusDetail,
+    string OutputProfileLabel,
+    string OutputProfileStatusLabel,
+    string OutputProfileDetail,
+    TrayMenuStatusSeverity OutputProfileSeverity,
     string FidelityClaimLabel,
     string FidelityClaimDetail,
     TrayMenuStatusSeverity FidelityClaimSeverity,
@@ -61,6 +65,10 @@ public sealed record TrayMenuProjection(
             AppName: appName,
             HdrStatusLabel: main.TrustLabel,
             HdrStatusDetail: main.TrustMessage,
+            OutputProfileLabel: main.OutputProfile.Label,
+            OutputProfileStatusLabel: main.OutputProfile.StatusLabel,
+            OutputProfileDetail: main.OutputProfile.Detail,
+            OutputProfileSeverity: ToOutputProfileSeverity(main.OutputProfile),
             FidelityClaimLabel: main.FidelityClaim.Label,
             FidelityClaimDetail: main.FidelityClaim.Detail,
             FidelityClaimSeverity: ToTrayStatusSeverity(main.FidelityClaim.Severity),
@@ -92,6 +100,16 @@ public sealed record TrayMenuProjection(
             MainPanelTrustSeverity.Warning => TrayMenuStatusSeverity.Warning,
             MainPanelTrustSeverity.Error => TrayMenuStatusSeverity.Error,
             MainPanelTrustSeverity.Info => TrayMenuStatusSeverity.Info,
+            _ => TrayMenuStatusSeverity.Neutral,
+        };
+
+    private static TrayMenuStatusSeverity ToOutputProfileSeverity(OutputProfileProjection outputProfile) =>
+        outputProfile.StatusLabel switch
+        {
+            "Ready" => TrayMenuStatusSeverity.Success,
+            "Validate" => TrayMenuStatusSeverity.Warning,
+            "Build" => TrayMenuStatusSeverity.Warning,
+            "Compat" => TrayMenuStatusSeverity.Info,
             _ => TrayMenuStatusSeverity.Neutral,
         };
 

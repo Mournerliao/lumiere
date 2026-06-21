@@ -41,6 +41,11 @@
               Foreground="{StaticResource MutedTextBrush}"
               Text="" />
           <TextBlock
+              x:Name="OutputProfileLabel"
+              FontSize="10"
+              Foreground="{StaticResource MutedTextBrush}"
+              Text="" />
+          <TextBlock
               x:Name="FidelityClaimLabel"
               FontSize="10"
               Foreground="{StaticResource MutedTextBrush}"

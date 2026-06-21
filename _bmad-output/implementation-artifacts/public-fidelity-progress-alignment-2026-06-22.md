@@ -128,6 +128,7 @@ Evidence:
 - Main panel, tray, overlay, settings, and output result projections distinguish artifact completion from fidelity claims.
 - Tests assert that unvalidated paths do not claim HDR-preserved behavior.
 - Validation panel wording keeps public release claims behind evidence gates.
+- Tray surfaces now also carry explicit output-profile gate state (`Build`, `Validate`, `Ready`, `Compat`) instead of relying only on the fidelity-claim line to imply runtime status.
 
 ### 13-2 Harden Native Settings and Accessibility Semantics - in-progress
 

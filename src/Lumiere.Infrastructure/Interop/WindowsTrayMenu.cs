@@ -195,6 +195,7 @@ public sealed class WindowsTrayMenu : ITrayMenu
         {
             AppendDisabledHeader(menu, currentSnapshot.AppName);
             AppendDisabledHeader(menu, currentSnapshot.HdrStatusLabel);
+            AppendDisabledHeader(menu, $"Output profile: {currentSnapshot.OutputProfileLabel} [{currentSnapshot.OutputProfileStatusLabel}]");
             AppendMenu(menu, MfSeparator, UIntPtr.Zero, null);
             AppendCommand(menu, TrayMenuCommand.FullscreenCapture, currentSnapshot.FullscreenCapture);
             AppendCommand(menu, TrayMenuCommand.RegionCapture, currentSnapshot.RegionCapture);

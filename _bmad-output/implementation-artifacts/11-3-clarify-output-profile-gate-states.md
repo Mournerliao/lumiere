@@ -33,6 +33,7 @@ This slice clarifies those states without weakening the gate itself.
    - `Ready` only when the current session has both implementation readiness and complete manual evidence
 4. Updated settings export-option projection so the `HDR10` radio option now follows the same runtime gate as the main panel instead of always rendering from the static design-only projection.
 5. Added/updated tests across main-panel, settings, output-validation-source, and fidelity-projection coverage to lock the three-state behavior.
+6. Extended tray projections so tray surfaces now carry explicit output-profile gate labels instead of relying only on fidelity-claim wording to imply runtime executability.
 
 ## Suggested Review Order
 
@@ -53,5 +54,5 @@ Story `11-3` is still `in-progress`, not `done`.
 Remaining blockers:
 
 - The repo still does not contain real Windows manual output validation artifacts, so HDR10 will ordinarily remain at `Build` or `Validate`, not `Ready`.
-- Tray and validation surfaces still depend on real evidence before any public-release claim can move beyond scoped status copy.
+- Validation surfaces still depend on real evidence before any public-release claim can move beyond scoped status copy.
 - Story `13-2` still needs real Windows accessibility validation for the export-profile interaction under keyboard, screen reader, high contrast, and text scaling.

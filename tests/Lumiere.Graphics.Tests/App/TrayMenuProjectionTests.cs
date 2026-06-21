@@ -22,6 +22,9 @@ public sealed class TrayMenuProjectionTests
         Assert.Equal("Lumiere", projection.AppName);
         Assert.Equal("HDR Ready", projection.HdrStatusLabel);
         Assert.Equal("Ready", projection.HdrStatusDetail);
+        Assert.Equal("sRGB", projection.OutputProfileLabel);
+        Assert.Equal("Compat", projection.OutputProfileStatusLabel);
+        Assert.Equal(TrayMenuStatusSeverity.Info, projection.OutputProfileSeverity);
         Assert.Equal("Converted", projection.FidelityClaimLabel);
         Assert.Equal("Full Screen", projection.FullscreenCapture.Label);
         Assert.Equal("Ctrl+Shift+F", projection.FullscreenCapture.ShortcutText);
@@ -83,9 +86,39 @@ public sealed class TrayMenuProjectionTests
             new StubAboutInfoProvider("Lumiere"));
 
         Assert.Equal("HDR Ready", projection.HdrStatusLabel);
+        Assert.Equal("HDR10", projection.OutputProfileLabel);
+        Assert.Equal("Build", projection.OutputProfileStatusLabel);
+        Assert.Contains("compatibility fallback", projection.OutputProfileDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(TrayMenuStatusSeverity.Warning, projection.OutputProfileSeverity);
         Assert.Equal("Converted", projection.FidelityClaimLabel);
         Assert.Contains("compatibility", projection.FidelityClaimDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(TrayMenuStatusSeverity.Warning, projection.FidelityClaimSeverity);
+    }
+
+    [Fact]
+    public void Project_Hdr10ProfileShowsReadyGateWhenRuntimeCapabilityAndManualEvidencePass()
+    {
+        var projection = TrayMenuProjection.Project(
+            CaptureSessionState.Idle(PreviewReadinessStatus.Ready("Ready", "HDR preview is ready.")),
+            new StubSettingsProvider("Ctrl+Shift+F", "Ctrl+Shift+R")
+            {
+                ExportColorFormat = "HDR10",
+            },
+            new StubAboutInfoProvider("Lumiere"),
+            validationArtifacts:
+            [
+                ArtifactWithFormatContract("Microsoft Paint"),
+                ArtifactWithFormatContract("Windows Photos"),
+                ArtifactWithFormatContract("Chromium browsers"),
+            ],
+            executionCapabilities: OutputProfileExecutionCapabilities.Create(
+                OutputProfileExecutionCapability.SrgbCompatibility,
+                OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder));
+
+        Assert.Equal("HDR10", projection.OutputProfileLabel);
+        Assert.Equal("Ready", projection.OutputProfileStatusLabel);
+        Assert.Equal(TrayMenuStatusSeverity.Success, projection.OutputProfileSeverity);
+        Assert.Contains("validated session", projection.OutputProfileDetail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -201,6 +234,74 @@ public sealed class TrayMenuProjectionTests
             },
             "Test Display",
             CaptureTargetKind.Display);
+
+    private static OutputValidationSessionArtifact ArtifactWithFormatContract(string viewerName) =>
+        new(
+            Date: "2026-06-21",
+            Tester: "QA",
+            BuildCommit: "72c3be7",
+            WindowsVersion: "Windows 11 24H2",
+            Device: "HDR workstation",
+            Gpu: "Test GPU",
+            DisplaySetup: "HDR primary",
+            HdrState: "HDR enabled",
+            DpiScales: ["150%"],
+            EntryPointsTested: ["Tray menu"],
+            OutputTargetsTested: ["Clipboard"],
+            TargetAppsTested: [viewerName],
+            ChecklistIdsCovered: ["REL-OUT-01"],
+            ResultSummary: $"{viewerName} HDR validation passed.",
+            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            KnownLimitations: [],
+            FollowUpIssuesOrStories: [],
+            OutputProfileRecords:
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer(viewerName),
+                    ])
+                {
+                    FormatContract = CompleteHdr10Contract,
+                },
+            ])
+        {
+            TargetHdrEvidence = CompleteTargetHdrEvidence,
+        };
+
+    private static OutputViewerCompatibilityEvidence PassingHdrViewer(string viewerName) =>
+        new(
+            viewerName,
+            OutputCompatibilityEvidenceStatus.Pass,
+            OutputCompatibilityEvidenceStatus.Pass,
+            OutputCompatibilityEvidenceStatus.Pass,
+            $"Validated HDR-preserved viewer compatibility for {viewerName}.")
+        {
+            Hdr10MetadataStatus = OutputCompatibilityEvidenceStatus.Pass,
+        };
+
+    private static OutputFormatContract CompleteHdr10Contract { get; } =
+        new(
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputTransferFunction.PqSt2084,
+            OutputColorPrimaries.Bt2020,
+            OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
+            OutputMetadataPolicy.AttachHdr10StaticMetadata,
+            OutputTargetAppAssumption.RequiresHdrViewerValidation,
+            Hdr10StaticMetadataPolicy.Bt2020PqReference1000Nit);
+
+    private static TargetAwareHdrValidationEvidence CompleteTargetHdrEvidence { get; } =
+        new(
+            TargetDisplayName: "HDR primary",
+            Left: 0,
+            Top: 0,
+            Width: 3840,
+            Height: 2160,
+            MatchKind: "DesktopBounds",
+            HdrState: "Active",
+            ColorSpace: "RgbFullG2084NoneP2020",
+            Detail: "Validated target-aware HDR match evidence.");
 
     private sealed class StubAboutInfoProvider(string appName) : IAboutInfoProvider
     {

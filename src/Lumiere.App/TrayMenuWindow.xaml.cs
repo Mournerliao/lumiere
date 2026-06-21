@@ -101,6 +101,9 @@ public sealed partial class TrayMenuWindow : Window
     private void ApplySnapshot(TrayMenuSnapshot snapshot)
     {
         HdrStatusLabel.Text = snapshot.HdrStatusLabel;
+        OutputProfileLabel.Text = $"Output profile: {snapshot.OutputProfileLabel} · {snapshot.OutputProfileStatusLabel}";
+        OutputProfileLabel.Foreground = GetFidelityClaimBrush(snapshot.OutputProfileSeverity);
+        ToolTipService.SetToolTip(OutputProfileLabel, snapshot.OutputProfileDetail);
         FidelityClaimLabel.Text = snapshot.FidelityClaimLabel;
         FidelityClaimLabel.Foreground = GetFidelityClaimBrush(snapshot.FidelityClaimSeverity);
         ToolTipService.SetToolTip(FidelityClaimLabel, snapshot.FidelityClaimDetail);
