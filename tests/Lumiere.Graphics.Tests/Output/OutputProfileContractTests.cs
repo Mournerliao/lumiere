@@ -25,6 +25,20 @@ public sealed class OutputProfileContractTests
     }
 
     [Fact]
+    public void SrgbCompatibilityProfileHasCompleteTypedOutputContract()
+    {
+        var contract = OutputProfileContract.SrgbCompatibilityPng;
+
+        Assert.True(contract.HasCompleteFormatContract);
+        Assert.Equal(OutputPixelFormat.Rgba8UnsignedNormalized, contract.FormatContract.DestinationPixelFormat);
+        Assert.Equal(OutputTransferFunction.Srgb, contract.FormatContract.TransferFunction);
+        Assert.Equal(OutputColorPrimaries.Bt709, contract.FormatContract.ColorPrimaries);
+        Assert.Equal(OutputMetadataPolicy.NoHdrMetadata, contract.FormatContract.MetadataPolicy);
+        Assert.Equal(OutputConversionPolicy.SdrToneMapped, contract.FormatContract.ConversionPolicy);
+        Assert.Equal(OutputTargetAppAssumption.CompatibilityFirst, contract.FormatContract.TargetAppAssumption);
+    }
+
+    [Fact]
     public void Hdr10ProfileRequiresHdrPreservationEvidenceBeforeClaim()
     {
         var contract = OutputProfileContract.Hdr10Pq;
@@ -40,6 +54,21 @@ public sealed class OutputProfileContractTests
                 Assert.Equal(OutputCompatibilityEvidenceStatus.NotRun, viewer.HdrPreservationStatus);
                 Assert.Contains("HDR preservation", viewer.Detail, StringComparison.OrdinalIgnoreCase);
             });
+    }
+
+    [Fact]
+    public void Hdr10ProfileRemainsValidationScopedUntilTypedOutputContractIsComplete()
+    {
+        var contract = OutputProfileContract.Hdr10Pq;
+
+        Assert.False(contract.HasCompleteFormatContract);
+        Assert.Equal(OutputPixelFormat.R16G16B16A16Float, contract.FormatContract.SourcePixelFormat);
+        Assert.Equal(OutputPixelFormat.NotDefined, contract.FormatContract.DestinationPixelFormat);
+        Assert.Equal(OutputTransferFunction.NotDefined, contract.FormatContract.TransferFunction);
+        Assert.Equal(OutputColorPrimaries.NotDefined, contract.FormatContract.ColorPrimaries);
+        Assert.Equal(OutputMetadataPolicy.RequiredButUndefined, contract.FormatContract.MetadataPolicy);
+        Assert.Equal(OutputConversionPolicy.RequiredButUndefined, contract.FormatContract.ConversionPolicy);
+        Assert.Equal(OutputTargetAppAssumption.RequiresHdrViewerValidation, contract.FormatContract.TargetAppAssumption);
     }
 
     [Fact]
@@ -81,6 +110,7 @@ public sealed class OutputProfileContractTests
         {
             IsExecutable = true,
             FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract,
             ViewerEvidence =
             [
                 PassingHdrViewer("Microsoft Paint"),
@@ -94,6 +124,28 @@ public sealed class OutputProfileContractTests
         Assert.True(summary.AllowsVisualMatchClaim);
         Assert.True(summary.AllowsHdrPreservedClaim);
         Assert.Contains("HDR preservation evidence passed", summary.HdrPreservedGateDetail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void EvidenceSummary_BlocksHdrPreservedWhenFormatContractIsIncomplete()
+    {
+        var contract = OutputProfileContract.Hdr10Pq with
+        {
+            IsExecutable = true,
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+            ViewerEvidence =
+            [
+                PassingHdrViewer("Microsoft Paint"),
+                PassingHdrViewer("Windows Photos"),
+                PassingHdrViewer("Chromium browsers"),
+            ],
+        };
+
+        var summary = contract.EvaluateEvidence();
+
+        Assert.False(contract.HasCompleteFormatContract);
+        Assert.False(summary.AllowsHdrPreservedClaim);
+        Assert.Contains("format contract", summary.HdrPreservedGateDetail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -113,6 +165,7 @@ public sealed class OutputProfileContractTests
         {
             IsExecutable = true,
             FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract,
         };
 
         var updated = contract.ApplyValidationRecord(record);
@@ -190,4 +243,14 @@ public sealed class OutputProfileContractTests
             OutputCompatibilityEvidenceStatus.Pass,
             OutputCompatibilityEvidenceStatus.Pass,
             "Validated HDR viewer.");
+
+    private static OutputFormatContract CompleteHdr10Contract { get; } =
+        new(
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputTransferFunction.PqSt2084,
+            OutputColorPrimaries.Bt2020,
+            OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
+            OutputMetadataPolicy.AttachHdr10StaticMetadata,
+            OutputTargetAppAssumption.RequiresHdrViewerValidation);
 }

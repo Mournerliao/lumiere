@@ -59,6 +59,20 @@ public sealed class PerfectHdrFidelityProjectionTests
     }
 
     [Fact]
+    public void ProjectOutputProfile_SurfacesTypedFormatContractLabels()
+    {
+        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile("sRGB");
+
+        Assert.Equal("R16G16B16A16 float", profile.Contract.SourcePixelFormatLabel);
+        Assert.Equal("RGBA8 sRGB", profile.Contract.DestinationPixelFormatLabel);
+        Assert.Equal("sRGB", profile.Contract.TransferFunctionLabel);
+        Assert.Equal("BT.709", profile.Contract.ColorPrimariesLabel);
+        Assert.Equal("SDR tone-mapped", profile.Contract.ConversionPolicyLabel);
+        Assert.Equal("No HDR metadata", profile.Contract.MetadataPolicyLabel);
+        Assert.Equal("Compatibility-first target apps", profile.Contract.TargetAppAssumptionLabel);
+    }
+
+    [Fact]
     public void ProjectOutputProfile_UsesOutputContractAsSourceOfTruth()
     {
         var contract = OutputProfileContract.FromSettingsValue("HDR10");
@@ -81,6 +95,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         {
             IsExecutable = true,
             FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract,
         };
 
         var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(contract);
@@ -97,6 +112,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         {
             IsExecutable = true,
             FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract,
             ViewerEvidence =
             [
                 PassingHdrViewer("Microsoft Paint"),
@@ -118,6 +134,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         {
             IsExecutable = true,
             FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract,
             ViewerEvidence =
             [
                 PassingHdrViewer("Microsoft Paint"),
@@ -196,6 +213,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         {
             IsExecutable = true,
             FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract,
         }).ApplyValidationRecord(new OutputProfileValidationRecord(
             OutputProfileKind.Hdr10Pq,
             [
@@ -223,6 +241,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         {
             IsExecutable = true,
             FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract,
         };
         var artifact = new OutputValidationSessionArtifact(
             Date: "2026-06-21",
@@ -270,6 +289,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         {
             IsExecutable = true,
             FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract,
         };
 
         var validation = PerfectHdrFidelityProjection.ProjectValidation(
@@ -290,6 +310,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         {
             IsExecutable = true,
             FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract,
         };
 
         var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(
@@ -353,4 +374,14 @@ public sealed class PerfectHdrFidelityProjectionTests
                         PassingHdrViewer(viewerName),
                     ]),
             ]);
+
+    private static OutputFormatContract CompleteHdr10Contract { get; } =
+        new(
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputTransferFunction.PqSt2084,
+            OutputColorPrimaries.Bt2020,
+            OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
+            OutputMetadataPolicy.AttachHdr10StaticMetadata,
+            OutputTargetAppAssumption.RequiresHdrViewerValidation);
 }

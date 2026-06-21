@@ -201,6 +201,13 @@ public static class PerfectHdrFidelityProjection
             detail,
             isReadOnly,
             new OutputProfileContractProjection(
+                FormatPixelFormat(contract.FormatContract.SourcePixelFormat, isDestination: false),
+                FormatPixelFormat(contract.FormatContract.DestinationPixelFormat, isDestination: true),
+                FormatTransferFunction(contract.FormatContract.TransferFunction),
+                FormatColorPrimaries(contract.FormatContract.ColorPrimaries),
+                FormatConversionPolicy(contract.FormatContract.ConversionPolicy),
+                FormatMetadataPolicy(contract.FormatContract.MetadataPolicy),
+                FormatTargetAppAssumption(contract.FormatContract.TargetAppAssumption),
                 contract.SourceFormatPolicy,
                 contract.DestinationFormatPolicy,
                 contract.ConversionPolicy,
@@ -290,6 +297,56 @@ public static class PerfectHdrFidelityProjection
             MainPanelTrustIcon.ErrorCircle,
             MainPanelTrustSeverity.Error);
 
+    private static string FormatPixelFormat(OutputPixelFormat value, bool isDestination) =>
+        value switch
+        {
+            OutputPixelFormat.R16G16B16A16Float => "R16G16B16A16 float",
+            OutputPixelFormat.Rgba8UnsignedNormalized => isDestination ? "RGBA8 sRGB" : "RGBA8 unsigned normalized",
+            _ => "Not defined",
+        };
+
+    private static string FormatTransferFunction(OutputTransferFunction value) =>
+        value switch
+        {
+            OutputTransferFunction.Srgb => "sRGB",
+            OutputTransferFunction.PqSt2084 => "PQ ST.2084",
+            _ => "Not defined",
+        };
+
+    private static string FormatColorPrimaries(OutputColorPrimaries value) =>
+        value switch
+        {
+            OutputColorPrimaries.Bt709 => "BT.709",
+            OutputColorPrimaries.Bt2020 => "BT.2020",
+            OutputColorPrimaries.DisplayP3 => "Display P3",
+            _ => "Not defined",
+        };
+
+    private static string FormatConversionPolicy(OutputConversionPolicy value) =>
+        value switch
+        {
+            OutputConversionPolicy.SdrToneMapped => "SDR tone-mapped",
+            OutputConversionPolicy.PreserveHdrWithDefinedToneMapping => "HDR-preserving defined tone mapping",
+            _ => "Required but undefined",
+        };
+
+    private static string FormatMetadataPolicy(OutputMetadataPolicy value) =>
+        value switch
+        {
+            OutputMetadataPolicy.NoHdrMetadata => "No HDR metadata",
+            OutputMetadataPolicy.AttachHdr10StaticMetadata => "Attach HDR10 static metadata",
+            _ => "Required but undefined",
+        };
+
+    private static string FormatTargetAppAssumption(OutputTargetAppAssumption value) =>
+        value switch
+        {
+            OutputTargetAppAssumption.CompatibilityFirst => "Compatibility-first target apps",
+            OutputTargetAppAssumption.RequiresHdrViewerValidation => "Requires HDR viewer validation",
+            OutputTargetAppAssumption.RequiresWideGamutViewerValidation => "Requires wide-gamut viewer validation",
+            _ => "Not defined",
+        };
+
     private static ValidationViewerMatrixRowProjection ProjectViewerEvidence(OutputViewerCompatibilityEvidence evidence) =>
         new(
             evidence.Name,
@@ -332,6 +389,13 @@ public sealed record OutputProfileProjection(
     FidelityClaimProjection FidelityClaim);
 
 public sealed record OutputProfileContractProjection(
+    string SourcePixelFormatLabel,
+    string DestinationPixelFormatLabel,
+    string TransferFunctionLabel,
+    string ColorPrimariesLabel,
+    string ConversionPolicyLabel,
+    string MetadataPolicyLabel,
+    string TargetAppAssumptionLabel,
     string SourcePolicy,
     string DestinationPolicy,
     string ConversionPolicy,

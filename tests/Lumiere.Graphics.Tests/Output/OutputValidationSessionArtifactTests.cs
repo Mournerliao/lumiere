@@ -82,6 +82,7 @@ public sealed class OutputValidationSessionArtifactTests
         {
             IsExecutable = true,
             FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract,
         };
 
         var updated = artifact.ApplyTo(contract);
@@ -126,6 +127,7 @@ public sealed class OutputValidationSessionArtifactTests
         {
             IsExecutable = true,
             FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract,
         };
 
         var updated = artifact.ApplyTo(contract);
@@ -161,6 +163,7 @@ public sealed class OutputValidationSessionArtifactTests
         {
             IsExecutable = true,
             FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract,
         };
 
         var updated = artifact.ApplyTo(contract);
@@ -198,6 +201,7 @@ public sealed class OutputValidationSessionArtifactTests
         {
             IsExecutable = true,
             FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract,
         };
 
         var updated = OutputValidationSessionArtifact.ApplyAllTo(contract, [complete, incomplete]);
@@ -239,6 +243,7 @@ public sealed class OutputValidationSessionArtifactTests
         {
             IsExecutable = true,
             FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract,
         };
 
         var updated = OutputValidationSessionArtifact.ApplyAllTo(contract, [complete, failed]);
@@ -280,4 +285,14 @@ public sealed class OutputValidationSessionArtifactTests
             OutputCompatibilityEvidenceStatus.Pass,
             OutputCompatibilityEvidenceStatus.Pass,
             $"Manual HDR validation passed in {name}.");
+
+    private static OutputFormatContract CompleteHdr10Contract { get; } =
+        new(
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputTransferFunction.PqSt2084,
+            OutputColorPrimaries.Bt2020,
+            OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
+            OutputMetadataPolicy.AttachHdr10StaticMetadata,
+            OutputTargetAppAssumption.RequiresHdrViewerValidation);
 }

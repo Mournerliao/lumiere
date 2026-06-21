@@ -8,6 +8,7 @@ public sealed record OutputProfileContract(
     string Label,
     bool IsExecutable,
     OutputFidelityMode FidelityMode,
+    OutputFormatContract FormatContract,
     string SourceFormatPolicy,
     string DestinationFormatPolicy,
     string ConversionPolicy,
@@ -21,6 +22,7 @@ public sealed record OutputProfileContract(
             "sRGB",
             IsExecutable: true,
             OutputFidelityMode.SdrCompatible,
+            OutputFormatContract.SrgbCompatibility,
             "FP16/scRGB capture source",
             "Compatibility-converted sRGB artifact",
             "scRGB linear values are converted into SDR-compatible sRGB for common destinations.",
@@ -34,6 +36,7 @@ public sealed record OutputProfileContract(
             "HDR10",
             IsExecutable: false,
             OutputFidelityMode.Unvalidated,
+            OutputFormatContract.Hdr10Pending,
             "FP16/scRGB capture source",
             "HDR10 output contract pending implementation",
             "Transfer, tone mapping, and gamut mapping policy must be defined before use.",
@@ -47,6 +50,7 @@ public sealed record OutputProfileContract(
             "P3",
             IsExecutable: false,
             OutputFidelityMode.Unvalidated,
+            OutputFormatContract.DisplayP3Pending,
             "FP16/scRGB capture source",
             "Display P3 output contract pending implementation",
             "Wide-gamut conversion policy must be specified before use.",
@@ -55,7 +59,9 @@ public sealed record OutputProfileContract(
             CreateWideGamutViewerEvidence());
 
     public bool AllowsHdrPreservedClaim =>
-        IsExecutable && FidelityMode is OutputFidelityMode.HdrPreserved;
+        IsExecutable && HasCompleteFormatContract && FidelityMode is OutputFidelityMode.HdrPreserved;
+
+    public bool HasCompleteFormatContract => FormatContract.IsComplete;
 
     public static OutputProfileContract FromSettingsValue(string? value)
     {
@@ -77,7 +83,7 @@ public sealed record OutputProfileContract(
     }
 
     public OutputProfileContract EffectiveExecutableProfile =>
-        IsExecutable ? this : SrgbCompatibilityPng;
+        IsExecutable && HasCompleteFormatContract ? this : SrgbCompatibilityPng;
 
     public OutputProfileContract ApplyValidationRecord(OutputProfileValidationRecord record)
     {
@@ -112,6 +118,7 @@ public sealed record OutputProfileContract(
 
         var hdrEvidenceRequired = FidelityMode is OutputFidelityMode.HdrPreserved;
         var allowsHdrPreserved = IsExecutable
+            && HasCompleteFormatContract
             && hdrEvidenceRequired
             && applicableViewers.Length > 0
             && applicableViewers.All(viewer =>
@@ -122,9 +129,11 @@ public sealed record OutputProfileContract(
             ? "HDR preservation evidence passed for all named viewers."
             : !IsExecutable
                 ? "HDR-preserved claim blocked: output profile is not executable, and HDR preservation evidence cannot be counted yet."
-                : !hdrEvidenceRequired
-                    ? "HDR-preserved claim blocked: this is not an HDR-preserved profile."
-                    : $"HDR-preserved claim blocked for {FormatViewerNames(FindHdrPreservedBlockers(applicableViewers))}: HDR preservation evidence is NOT RUN, limited, or failed for at least one named viewer.";
+                : !HasCompleteFormatContract
+                    ? "HDR-preserved claim blocked: output format contract is incomplete."
+                    : !hdrEvidenceRequired
+                        ? "HDR-preserved claim blocked: this is not an HDR-preserved profile."
+                        : $"HDR-preserved claim blocked for {FormatViewerNames(FindHdrPreservedBlockers(applicableViewers))}: HDR preservation evidence is NOT RUN, limited, or failed for at least one named viewer.";
 
         return new OutputProfileEvidenceSummary(
             allowsVisualMatch,
@@ -269,6 +278,54 @@ public sealed record OutputProfileEvidenceSummary(
     string VisualMatchGateDetail,
     string HdrPreservedGateDetail);
 
+public sealed record OutputFormatContract(
+    OutputPixelFormat SourcePixelFormat,
+    OutputPixelFormat DestinationPixelFormat,
+    OutputTransferFunction TransferFunction,
+    OutputColorPrimaries ColorPrimaries,
+    OutputConversionPolicy ConversionPolicy,
+    OutputMetadataPolicy MetadataPolicy,
+    OutputTargetAppAssumption TargetAppAssumption)
+{
+    public static OutputFormatContract SrgbCompatibility { get; } =
+        new(
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputPixelFormat.Rgba8UnsignedNormalized,
+            OutputTransferFunction.Srgb,
+            OutputColorPrimaries.Bt709,
+            OutputConversionPolicy.SdrToneMapped,
+            OutputMetadataPolicy.NoHdrMetadata,
+            OutputTargetAppAssumption.CompatibilityFirst);
+
+    public static OutputFormatContract Hdr10Pending { get; } =
+        new(
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputPixelFormat.NotDefined,
+            OutputTransferFunction.NotDefined,
+            OutputColorPrimaries.NotDefined,
+            OutputConversionPolicy.RequiredButUndefined,
+            OutputMetadataPolicy.RequiredButUndefined,
+            OutputTargetAppAssumption.RequiresHdrViewerValidation);
+
+    public static OutputFormatContract DisplayP3Pending { get; } =
+        new(
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputPixelFormat.NotDefined,
+            OutputTransferFunction.NotDefined,
+            OutputColorPrimaries.DisplayP3,
+            OutputConversionPolicy.RequiredButUndefined,
+            OutputMetadataPolicy.RequiredButUndefined,
+            OutputTargetAppAssumption.RequiresWideGamutViewerValidation);
+
+    public bool IsComplete =>
+        SourcePixelFormat is not OutputPixelFormat.NotDefined
+        && DestinationPixelFormat is not OutputPixelFormat.NotDefined
+        && TransferFunction is not OutputTransferFunction.NotDefined
+        && ColorPrimaries is not OutputColorPrimaries.NotDefined
+        && ConversionPolicy is not OutputConversionPolicy.RequiredButUndefined
+        && MetadataPolicy is not OutputMetadataPolicy.RequiredButUndefined;
+}
+
 public sealed record OutputProfileValidationRecord(
     OutputProfileKind ProfileKind,
     IReadOnlyList<OutputViewerCompatibilityEvidence> ViewerEvidence)
@@ -316,6 +373,49 @@ public enum OutputCompatibilityEvidenceStatus
     Fail,
     NotRun,
     NotApplicable,
+}
+
+public enum OutputPixelFormat
+{
+    NotDefined = 0,
+    R16G16B16A16Float,
+    Rgba8UnsignedNormalized,
+}
+
+public enum OutputTransferFunction
+{
+    NotDefined = 0,
+    Srgb,
+    PqSt2084,
+}
+
+public enum OutputColorPrimaries
+{
+    NotDefined = 0,
+    Bt709,
+    Bt2020,
+    DisplayP3,
+}
+
+public enum OutputConversionPolicy
+{
+    RequiredButUndefined = 0,
+    SdrToneMapped,
+    PreserveHdrWithDefinedToneMapping,
+}
+
+public enum OutputMetadataPolicy
+{
+    RequiredButUndefined = 0,
+    NoHdrMetadata,
+    AttachHdr10StaticMetadata,
+}
+
+public enum OutputTargetAppAssumption
+{
+    CompatibilityFirst = 0,
+    RequiresHdrViewerValidation,
+    RequiresWideGamutViewerValidation,
 }
 
 public enum OutputValidationEvidenceSource
