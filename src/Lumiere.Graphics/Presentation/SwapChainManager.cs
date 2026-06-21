@@ -12,12 +12,13 @@ public sealed class SwapChainManager
     private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Graphics);
     private const string OperationName = "IDXGIFactory2.CreateSwapChainForComposition";
 
-    private static HdrDisplayCapability? cachedHdrCapability;
+    private static readonly Dictionary<SwapChainTargetHint, HdrDisplayCapability> CachedHdrCapabilities = [];
 
     public SwapChainResources CreateAttachedCompositionSwapChain(
         GraphicsDeviceResources deviceResources,
         SwapChainCreationOptions options,
-        ISwapChainPreviewSurface previewSurface)
+        ISwapChainPreviewSurface previewSurface,
+        SwapChainTargetHint? targetHint = null)
     {
         ArgumentNullException.ThrowIfNull(previewSurface);
 
@@ -25,14 +26,16 @@ public sealed class SwapChainManager
             deviceResources,
             options,
             previewSurface.AttachSwapChain,
-            previewSurface.DetachSwapChain);
+            previewSurface.DetachSwapChain,
+            targetHint);
     }
 
     private static SwapChainResources CreateCompositionSwapChain(
         GraphicsDeviceResources deviceResources,
         SwapChainCreationOptions options,
         Action<IDXGISwapChain> attachPreview,
-        Action detachPreview)
+        Action detachPreview,
+        SwapChainTargetHint? targetHint = null)
     {
         ArgumentNullException.ThrowIfNull(deviceResources);
         ArgumentNullException.ThrowIfNull(options);
@@ -54,7 +57,7 @@ public sealed class SwapChainManager
 
             Logger.LogDebug("SwapChain created: format={Format}, colorSpace={ColorSpace}", options.CreateDescription().Format, options.ColorSpace);
 
-            var displayCapability = cachedHdrCapability ??= HdrDisplayCapability.Probe(factory);
+            var displayCapability = GetDisplayCapability(factory, targetHint);
 
             var presentationEvidence = SwapChainColorSpaceConfigurator.Configure(
                 new SwapChainColorSpaceController(swapChain3),
@@ -87,6 +90,28 @@ public sealed class SwapChainManager
         }
     }
 
+    private static HdrDisplayCapability GetDisplayCapability(
+        IDXGIFactory2 factory,
+        SwapChainTargetHint? targetHint)
+    {
+        if (targetHint is null)
+        {
+            return HdrDisplayCapability.Probe(factory);
+        }
+
+        if (!CachedHdrCapabilities.TryGetValue(targetHint, out var capability))
+        {
+            capability = HdrDisplayCapability.Probe(
+                factory,
+                targetHint.DisplayName,
+                targetHint.Width,
+                targetHint.Height);
+            CachedHdrCapabilities[targetHint] = capability;
+        }
+
+        return capability;
+    }
+
     public static PreviewReadinessStatus FormatFailureAsReadiness(Exception exception) =>
         PreviewReadinessStatus.Failed(
             PreviewReadinessStage.Presentation,
@@ -112,3 +137,8 @@ public sealed class SwapChainManager
         return $"{exception.GetType().Name}:{hResult} {exception.Message}";
     }
 }
+
+public sealed record SwapChainTargetHint(
+    string? DisplayName,
+    int Width,
+    int Height);

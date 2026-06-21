@@ -941,7 +941,11 @@ public sealed partial class MainWindow : Window
         {
             swapChainResources = graphicsEngine!.CreatePreviewSwapChain(
                 new SwapChainCreationOptions(target.Size.Width, target.Size.Height),
-                overlayWindow!.PreviewSurface);
+                overlayWindow!.PreviewSurface,
+                new SwapChainTargetHint(
+                    target.DisplayName,
+                    target.Size.Width,
+                    target.Size.Height));
             previewFramePresenter = new PreviewFramePresenter(deviceResources!, swapChainResources);
             activeCaptureTarget = target;
             presentationEvidence = swapChainResources.PresentationEvidence;

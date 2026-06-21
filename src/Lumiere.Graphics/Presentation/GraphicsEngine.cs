@@ -18,6 +18,7 @@ public sealed class GraphicsEngine
 
     public SwapChainResources CreatePreviewSwapChain(
         SwapChainCreationOptions options,
-        ISwapChainPreviewSurface previewSurface) =>
-        swapChainManager.CreateAttachedCompositionSwapChain(deviceResources, options, previewSurface);
+        ISwapChainPreviewSurface previewSurface,
+        SwapChainTargetHint? targetHint = null) =>
+        swapChainManager.CreateAttachedCompositionSwapChain(deviceResources, options, previewSurface, targetHint);
 }

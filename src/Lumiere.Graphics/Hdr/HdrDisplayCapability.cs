@@ -22,11 +22,28 @@ public sealed record HdrDisplayCapability(
 
     /// <summary>
     /// Probes HDR display capability using a DXGI factory.
-    /// Enumerates adapter index 0 and output index 0 from the factory.
-    /// On multi-monitor setups with different HDR states per display,
-    /// this probe reflects the first output's state only.
+    /// Compatibility path: when no target hint is available, this reflects
+    /// the first enumerated output only.
     /// </summary>
     public static HdrDisplayCapability Probe(IDXGIFactory2 factory)
+    {
+        var outputs = ProbeOutputs(factory);
+        return outputs.Count == 0
+            ? Unknown()
+            : FromOutputSnapshot(outputs[0]);
+    }
+
+    public static HdrDisplayCapability Probe(
+        IDXGIFactory2 factory,
+        string? targetDisplayName,
+        int targetWidth,
+        int targetHeight)
+    {
+        var outputs = ProbeOutputs(factory);
+        return SelectForTarget(outputs, targetDisplayName, targetWidth, targetHeight);
+    }
+
+    private static IReadOnlyList<HdrDisplayOutputSnapshot> ProbeOutputs(IDXGIFactory2 factory)
     {
         ArgumentNullException.ThrowIfNull(factory);
 
@@ -37,11 +54,11 @@ public sealed record HdrDisplayCapability(
             var hr = factory.EnumAdapters(0, out adapter);
             if (hr.Failure || adapter is null)
             {
-                Logger.LogWarning("HDR display probe (factory): EnumAdapters(0) failed (hr={HResult}); falling back to Unknown.", FormatHResult(hr.Code));
-                return Unknown();
+                Logger.LogWarning("HDR display probe (factory): EnumAdapters(0) failed (hr={HResult}); returning no output evidence.", FormatHResult(hr.Code));
+                return [];
             }
 
-            return ProbeAdapter(adapter);
+            return ProbeAdapterOutputs(adapter);
         }
         catch (Exception exception)
         {
@@ -52,7 +69,7 @@ public sealed record HdrDisplayCapability(
                 exception: exception);
             diagnostic.LogTo(Logger);
 
-            return Unknown();
+            return [];
         }
         finally
         {
@@ -60,50 +77,115 @@ public sealed record HdrDisplayCapability(
         }
     }
 
-    private static HdrDisplayCapability ProbeAdapter(IDXGIAdapter adapter)
+    private static IReadOnlyList<HdrDisplayOutputSnapshot> ProbeAdapterOutputs(IDXGIAdapter adapter)
     {
-        IDXGIOutput? output = null;
-        IDXGIOutput6? output6 = null;
+        var outputs = new List<HdrDisplayOutputSnapshot>();
 
-        try
+        for (var outputIndex = 0; ; outputIndex++)
         {
-            var hr = adapter.EnumOutputs(0, out output);
+            IDXGIOutput? output = null;
+            IDXGIOutput6? output6 = null;
+
+            var hr = adapter.EnumOutputs((uint)outputIndex, out output);
             if (hr.Failure || output is null)
             {
-                Logger.LogWarning("HDR display probe: EnumOutputs(0) failed (hr={HResult}); falling back to Unknown.", FormatHResult(hr.Code));
-                return Unknown();
+                if (outputIndex == 0)
+                {
+                    Logger.LogWarning("HDR display probe: EnumOutputs(0) failed (hr={HResult}); returning no output evidence.", FormatHResult(hr.Code));
+                }
+
+                break;
             }
 
-            output6 = output.QueryInterface<IDXGIOutput6>();
-            if (output6 is null)
+            try
             {
-                Logger.LogWarning("HDR display probe: QueryInterface<IDXGIOutput6> returned null; falling back to Unknown.");
-                return Unknown();
+                output6 = output.QueryInterface<IDXGIOutput6>();
+                if (output6 is null)
+                {
+                    Logger.LogWarning("HDR display probe: QueryInterface<IDXGIOutput6> returned null for outputIndex={OutputIndex}.", outputIndex);
+                    continue;
+                }
+
+                var desc = output6.Description1;
+                var colorSpace = desc.ColorSpace;
+                var deviceName = desc.DeviceName;
+                var snapshot = new HdrDisplayOutputSnapshot(
+                    deviceName,
+                    desc.DesktopCoordinates.Right - desc.DesktopCoordinates.Left,
+                    desc.DesktopCoordinates.Bottom - desc.DesktopCoordinates.Top,
+                    colorSpace);
+                var capability = FromOutputSnapshot(snapshot);
+
+                Logger.LogDebug(
+                    "HDR display probe: outputIndex={OutputIndex}, deviceName={DeviceName}, colorSpace={ColorSpace}, isHdrActive={IsHdrActive}",
+                    outputIndex, deviceName, colorSpace, capability.IsHdrActive);
+
+                outputs.Add(snapshot);
             }
-
-            var desc = output6.Description1;
-            var colorSpace = desc.ColorSpace;
-            var deviceName = desc.DeviceName;
-            var isHdr = IsHdrColorSpace(colorSpace);
-
-            Logger.LogDebug(
-                "HDR display probe: deviceName={DeviceName}, colorSpace={ColorSpace}, isHdrActive={IsHdrActive}",
-                deviceName, colorSpace, isHdr);
-
-            return new HdrDisplayCapability(
-                isHdr ? HdrDisplayState.Active : HdrDisplayState.Inactive,
-                colorSpace,
-                deviceName);
+            finally
+            {
+                output6?.Dispose();
+                output.Dispose();
+            }
         }
-        finally
-        {
-            output6?.Dispose();
-            output?.Dispose();
-        }
+
+        return outputs;
     }
 
     public static HdrDisplayCapability Unknown() =>
         new(HdrDisplayState.Unknown, null, null);
+
+    public static HdrDisplayCapability SelectForTarget(
+        IReadOnlyList<HdrDisplayOutputSnapshot> outputs,
+        string? targetDisplayName,
+        int targetWidth,
+        int targetHeight)
+    {
+        ArgumentNullException.ThrowIfNull(outputs);
+
+        var matchingOutput = FindByDisplayName(outputs, targetDisplayName)
+            ?? FindBySize(outputs, targetWidth, targetHeight);
+
+        return matchingOutput is null
+            ? Unknown()
+            : FromOutputSnapshot(matchingOutput);
+    }
+
+    private static HdrDisplayOutputSnapshot? FindByDisplayName(
+        IReadOnlyList<HdrDisplayOutputSnapshot> outputs,
+        string? targetDisplayName)
+    {
+        if (string.IsNullOrWhiteSpace(targetDisplayName))
+        {
+            return null;
+        }
+
+        return outputs.FirstOrDefault(output =>
+            string.Equals(output.DeviceName, targetDisplayName.Trim(), StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static HdrDisplayOutputSnapshot? FindBySize(
+        IReadOnlyList<HdrDisplayOutputSnapshot> outputs,
+        int targetWidth,
+        int targetHeight)
+    {
+        if (targetWidth <= 0 || targetHeight <= 0)
+        {
+            return null;
+        }
+
+        return outputs.FirstOrDefault(output =>
+            output.Width == targetWidth && output.Height == targetHeight);
+    }
+
+    private static HdrDisplayCapability FromOutputSnapshot(HdrDisplayOutputSnapshot output)
+    {
+        var isHdr = IsHdrColorSpace(output.ColorSpace);
+        return new HdrDisplayCapability(
+            isHdr ? HdrDisplayState.Active : HdrDisplayState.Inactive,
+            output.ColorSpace,
+            output.DeviceName);
+    }
 
     private static bool IsHdrColorSpace(ColorSpaceType colorSpace) =>
         colorSpace is ColorSpaceType.RgbFullG2084NoneP2020
@@ -114,3 +196,9 @@ public sealed record HdrDisplayCapability(
     private static string FormatHResult(int hResult) =>
         hResult == 0 ? string.Empty : $"0x{hResult:X8}";
 }
+
+public sealed record HdrDisplayOutputSnapshot(
+    string DeviceName,
+    int Width,
+    int Height,
+    ColorSpaceType ColorSpace);
