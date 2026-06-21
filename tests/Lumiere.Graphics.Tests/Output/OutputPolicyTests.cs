@@ -167,7 +167,7 @@ public sealed class OutputPolicyTests
     }
 
     [Fact]
-    public void FromSettings_UsesValidatedHdrProfileOnlyWhenRuntimeCapabilityIsPresent()
+    public void FromSettings_KeepsValidatedHdrProfileFallbackWhenRuntimeEncoderIsNotImplemented()
     {
         var policy = OutputPolicy.FromSettings(
             OutputTarget.Folder,
@@ -179,7 +179,28 @@ public sealed class OutputPolicyTests
             validationArtifacts: [CompleteHdr10Artifact()],
             executionCapabilities: OutputProfileExecutionCapabilities.Create(
                 OutputProfileExecutionCapability.SrgbCompatibility,
-                OutputProfileExecutionCapability.Hdr10Preserved));
+                OutputProfileExecutionCapability.Hdr10PreservedPendingArtifactEncoder));
+
+        Assert.Equal(OutputProfileKind.Hdr10Pq, policy.RequestedProfile.Kind);
+        Assert.True(policy.RequestedProfile.HasCompleteFormatContract);
+        Assert.Equal(OutputProfileKind.SrgbCompatibilityPng, policy.EffectiveProfile.Kind);
+        Assert.True(policy.UsesCompatibilityProfileFallback);
+    }
+
+    [Fact]
+    public void FromSettings_UsesValidatedHdrProfileOnlyWhenRuntimeEncoderCapabilityIsImplemented()
+    {
+        var policy = OutputPolicy.FromSettings(
+            OutputTarget.Folder,
+            copyAsImage: true,
+            savePath: "C:\\Captures",
+            timestampNaming: true,
+            afterCaptureBehavior: null,
+            exportColorFormat: "HDR10",
+            validationArtifacts: [CompleteHdr10Artifact()],
+            executionCapabilities: OutputProfileExecutionCapabilities.Create(
+                OutputProfileExecutionCapability.SrgbCompatibility,
+                ImplementedHdr10PreservedCapability));
 
         Assert.Equal(OutputProfileKind.Hdr10Pq, policy.EffectiveProfile.Kind);
         Assert.True(policy.EffectiveProfile.IsExecutable);
@@ -253,4 +274,10 @@ public sealed class OutputPolicyTests
             HdrState: "Active",
             ColorSpace: "RgbFullG2084NoneP2020",
             Detail: "Validated target-aware HDR match evidence.");
+
+    private static OutputProfileExecutionCapability ImplementedHdr10PreservedCapability { get; } =
+        new(
+            OutputProfileKind.Hdr10Pq,
+            OutputFidelityMode.HdrPreserved,
+            OutputArtifactEncoderImplementation.Implemented);
 }

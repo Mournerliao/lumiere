@@ -311,6 +311,11 @@ public sealed record OutputProfileExecutionCapabilities(
             return OutputProfileContract.SrgbCompatibilityPng;
         }
 
+        if (capability.ArtifactEncoderImplementation is not OutputArtifactEncoderImplementation.Implemented)
+        {
+            return OutputProfileContract.SrgbCompatibilityPng;
+        }
+
         var executableProfile = requestedProfile with
         {
             IsExecutable = true,
@@ -325,13 +330,20 @@ public sealed record OutputProfileExecutionCapabilities(
 
 public sealed record OutputProfileExecutionCapability(
     OutputProfileKind ProfileKind,
-    OutputFidelityMode FidelityMode)
+    OutputFidelityMode FidelityMode,
+    OutputArtifactEncoderImplementation ArtifactEncoderImplementation)
 {
     public static OutputProfileExecutionCapability SrgbCompatibility { get; } =
-        new(OutputProfileKind.SrgbCompatibilityPng, OutputFidelityMode.SdrCompatible);
+        new(
+            OutputProfileKind.SrgbCompatibilityPng,
+            OutputFidelityMode.SdrCompatible,
+            OutputArtifactEncoderImplementation.Implemented);
 
-    public static OutputProfileExecutionCapability Hdr10Preserved { get; } =
-        new(OutputProfileKind.Hdr10Pq, OutputFidelityMode.HdrPreserved);
+    public static OutputProfileExecutionCapability Hdr10PreservedPendingArtifactEncoder { get; } =
+        new(
+            OutputProfileKind.Hdr10Pq,
+            OutputFidelityMode.HdrPreserved,
+            OutputArtifactEncoderImplementation.NotImplemented);
 }
 
 public sealed record OutputFormatContract(
@@ -481,6 +493,12 @@ public enum OutputValidationEvidenceSource
     WindowsManual = 0,
     Automated = 1,
     IncompleteManualSession = 2,
+}
+
+public enum OutputArtifactEncoderImplementation
+{
+    NotImplemented = 0,
+    Implemented,
 }
 
 public enum OutputProfileKind
