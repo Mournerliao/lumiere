@@ -22,11 +22,12 @@ dotnet format Lumiere.sln --verify-no-changes --verbosity minimal
 2. Click the default Capture action and confirm no picker appears before overlay entry.
 3. Confirm the direct monitor target is resolved and the overlay opens as a borderless topmost window on the intended monitor.
 4. Confirm the hardware preview is attached through the overlay `SwapChainPanel` and fills the overlay surface.
-5. Confirm the status/control layer appears above the preview and does not resize or shift the preview when status text changes.
-6. Press Escape and verify the overlay closes and WGC frame pool/session plus swap-chain resources are torn down.
-7. Reopen capture repeatedly and verify stale callbacks do not update a closed or replaced overlay.
-8. Force or simulate a preview startup failure where practical and verify no unusable topmost overlay remains.
-9. Repeat on HDR and SDR displays, with Windows scaling enabled, and record whether behavior is `Windows manual-pass`, degraded, or failed.
+5. For region capture, confirm the overlay freezes on the first presented frame and remains static while crop input stays interactive.
+6. Confirm the status/control layer appears above the preview and does not resize or shift the preview when status text changes.
+7. Press Escape and verify the overlay closes and WGC frame pool/session plus swap-chain resources are torn down.
+8. Reopen capture repeatedly and verify stale callbacks do not update a closed or replaced overlay.
+9. Force or simulate a preview startup failure where practical and verify no unusable topmost overlay remains.
+10. Repeat on HDR and SDR displays, with Windows scaling enabled, and record whether behavior is `Windows manual-pass`, degraded, or failed.
 
 ## Story 3.2 Crop Drag Checks
 
@@ -95,26 +96,27 @@ Story 3.5 does not introduce whole-window pass-through mode for crop-capable ove
 Story 3.6 changes the baseline overlay completion path from explicit confirm controls to release-to-capture/copy. In addition to the Story 3.1 through 3.5 checks:
 
 1. Click the default Capture action and confirm no picker appears before overlay entry.
-2. Drag a valid crop and release the pointer; verify the crop is confirmed without clicking a Confirm button.
-3. Verify the overlay does not expose a multi-action toolbar, output choices, annotation tools, tray controls, or settings controls.
-4. Verify lightweight "Copied to clipboard" feedback appears in the closing state message without resizing or shifting the preview/crop coordinate mapping.
-5. Press Escape before release and verify the overlay cancels with deterministic teardown.
-6. Try a tiny or invalid crop and verify no output is produced and the overlay remains active.
-7. Reopen capture repeatedly and verify no stale callbacks from the previous preview generation update the new overlay or copied-feedback state.
-8. Repeat release-to-capture over bright, dark, and high-contrast HDR content, SDR displays, fullscreen apps, and multi-monitor placements; record whether behavior is `Windows manual-pass`, degraded, or failed.
+2. Confirm the visible frame pauses after the first presented frame and does not continue updating while the user drags.
+3. Drag a valid crop and release the pointer; verify the crop is confirmed without clicking a Confirm button.
+4. Verify the overlay does not expose a multi-action toolbar, output choices, annotation tools, tray controls, or settings controls.
+5. Verify lightweight "Copied to clipboard" feedback appears in the closing state message without resizing or shifting the preview/crop coordinate mapping.
+6. Press Escape before release and verify the overlay cancels with deterministic teardown.
+7. Try a tiny or invalid crop and verify no output is produced and the overlay remains active.
+8. Reopen capture repeatedly and verify no stale callbacks from the previous preview generation update the new overlay or copied-feedback state.
+9. Repeat release-to-capture over bright, dark, and high-contrast HDR content, SDR displays, fullscreen apps, and multi-monitor placements; record whether behavior is `Windows manual-pass`, degraded, or failed.
 
 ### Clipboard Output Validation
 
-9. After release-to-capture, verify the Windows clipboard contains a bitmap by pasting into Paint, Snipping Tool, or another image editor.
-10. Verify the pasted image dimensions match the crop region pixel dimensions (accounting for display scaling).
-11. Verify the clipboard write does not leave capture resources active; the overlay should close cleanly after clipboard output.
-12. Force or simulate a clipboard write failure (e.g., clipboard locked by another app) and verify the overlay still closes and capture resources are torn down.
+10. After release-to-capture, verify the Windows clipboard contains a bitmap by pasting into Paint, Snipping Tool, or another image editor.
+11. Verify the pasted image dimensions match the crop region pixel dimensions (accounting for display scaling).
+12. Verify the clipboard write does not leave capture resources active; the overlay should close cleanly after clipboard output.
+13. Force or simulate a clipboard write failure (e.g., clipboard locked by another app) and verify the overlay still closes and capture resources are torn down.
 
 ### Release-to-Capture Auto-Confirm Logic
 
-13. Drag a valid crop and release; verify `CaptureConfirmed` fires automatically.
-14. Adjust an existing crop via handle/edge drag and release; verify `CaptureConfirmed` fires automatically.
-15. Click inside an existing crop without dragging and release; verify `CaptureConfirmed` does NOT fire (no-gesture commit).
-16. Start a drag that is too small and release; verify `CaptureConfirmed` does NOT fire and the overlay remains active.
-17. Press Escape during a drag (before pointer release) and verify the overlay cancels; release the pointer and verify `CaptureConfirmed` does NOT fire.
-18. Verify the `isClosingRequested` guard prevents double-confirm between release-to-capture and Escape cancel.
+14. Drag a valid crop and release; verify `CaptureConfirmed` fires automatically.
+15. Adjust an existing crop via handle/edge drag and release; verify `CaptureConfirmed` fires automatically.
+16. Click inside an existing crop without dragging and release; verify `CaptureConfirmed` does NOT fire (no-gesture commit).
+17. Start a drag that is too small and release; verify `CaptureConfirmed` does NOT fire and the overlay remains active.
+18. Press Escape during a drag (before pointer release) and verify the overlay cancels; release the pointer and verify `CaptureConfirmed` does NOT fire.
+19. Verify the `isClosingRequested` guard prevents double-confirm between release-to-capture and Escape cancel.

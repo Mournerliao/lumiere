@@ -9,7 +9,7 @@ public sealed class OutputValidationDocumentationTests
     public void OutputValidationDocs_RecordFutureFormatAcceptanceFields()
     {
         var repoRoot = LocateRepositoryRoot();
-        var document = File.ReadAllText(Path.Combine(repoRoot, "docs", "validation", "output-validation.md"));
+        var document = File.ReadAllText(Path.Combine(repoRoot, "harness", "validation", "output-validation.md"));
 
         Assert.Contains("not validated HDR-preserving output", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Format choice", document, StringComparison.OrdinalIgnoreCase);
@@ -29,7 +29,7 @@ public sealed class OutputValidationDocumentationTests
         var repoRoot = LocateRepositoryRoot();
         var templatePath = Path.Combine(
             repoRoot,
-            "docs",
+            "harness",
             "validation",
             "templates",
             "output-validation-session.schema-v4.sample.json");

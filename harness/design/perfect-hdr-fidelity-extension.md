@@ -110,6 +110,7 @@ The overlay remains a temporary lens over the target display. Do not add an edit
 Add only the minimum trust signals needed during capture:
 
 - Target display status: `HDR target`, `SDR target`, `Target unvalidated`, or `Mixed-display check needed`.
+- Region capture freezes the first presented frame on overlay entry so the user crops the intended moment instead of chasing live motion.
 - Crop validity and geometry.
 - Optional concise warning when output will be converted or unvalidated.
 - Stable cancel affordance and Escape behavior.
@@ -117,6 +118,7 @@ Add only the minimum trust signals needed during capture:
 Overlay rules:
 
 - Never hide clipping, tone-mapping uncertainty, or invalid crop state behind decorative dimming.
+- Show any paused-frame hint as concise operational copy, not as a new toolbar or mode switch.
 - Status chrome must remain legible over bright highlights, dark scenes, and gray/white UI content.
 - Status placement must be stable across DPI and mixed-monitor setups.
 

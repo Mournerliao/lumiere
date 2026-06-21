@@ -551,7 +551,7 @@ public sealed class SettingsPanelProjectionTests
         Assert.Equal(ValidationEvidenceStatus.NotRun, projection.Validation.Record.WindowsManualValidationStatus);
         Assert.Contains("Windows CI", projection.Validation.Record.AutomatedEvidenceDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("manual validation", projection.Validation.Record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("docs/validation/release-validation-checklist.md", projection.Validation.Record.EvidenceDocumentPath);
+        Assert.Contains("harness/validation/release-validation-checklist.md", projection.Validation.Record.EvidenceDocumentPath);
     }
 
     [Fact]

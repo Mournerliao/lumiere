@@ -102,7 +102,7 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Contains("1 file", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Contains("bad.json", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Contains("JsonException", projection.Validation.Record.WindowsManualValidationDetail);
-        Assert.Equal("docs/validation/output-validation.md", projection.Validation.Record.EvidenceDocumentPath);
+        Assert.Equal("harness/validation/output-validation.md", projection.Validation.Record.EvidenceDocumentPath);
         Assert.Equal("Fallback", projection.MainPanel.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
     }
@@ -126,7 +126,7 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Equal(ValidationEvidenceStatus.Limited, projection.Validation.Record.WindowsManualValidationStatus);
         Assert.Contains("2 output validation artifact", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Contains("Release gates", projection.Validation.Record.WindowsManualValidationDetail);
-        Assert.Equal("docs/validation/output-validation.md", projection.Validation.Record.EvidenceDocumentPath);
+        Assert.Equal("harness/validation/output-validation.md", projection.Validation.Record.EvidenceDocumentPath);
     }
 
     private static OutputValidationSessionArtifact CreateArtifact(string date, string viewerName) =>

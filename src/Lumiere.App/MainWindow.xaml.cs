@@ -62,6 +62,7 @@ public sealed partial class MainWindow : Window
     private SwapChainResources? swapChainResources;
     private CaptureTarget? activeCaptureTarget;
     private CaptureCommandMode? activeCaptureMode;
+    private OverlayPreviewFreezeController? overlayPreviewFreezeController;
     private CapturedFrameTexture? latestOutputFrameSnapshot;
     private PreviewReadinessStatus? activePresentationEvidence;
     private OverlayWindow? overlayWindow;
@@ -991,6 +992,7 @@ public sealed partial class MainWindow : Window
                     target.DisplayIdentity?.Height ?? target.Size.Height));
             previewFramePresenter = new PreviewFramePresenter(deviceResources!, swapChainResources);
             activeCaptureTarget = target;
+            overlayPreviewFreezeController = new OverlayPreviewFreezeController(activeCaptureMode.Value);
             presentationEvidence = swapChainResources.PresentationEvidence;
             activePresentationEvidence = presentationEvidence;
             previewSourceWidth = target.Size.Width;
@@ -1051,6 +1053,7 @@ public sealed partial class MainWindow : Window
         CaptureTarget? target;
         PreviewRenderResult result;
         CaptureFrameSizeChange? sizeChange = null;
+        var frameDisposition = OverlayPreviewFrameDisposition.Continue;
         var shouldCompleteFullscreenCapture = false;
         CapturedFrameTexture? snapshotToDispose = null;
         using (frame)
@@ -1058,11 +1061,12 @@ public sealed partial class MainWindow : Window
             lock (previewSync)
             {
                 var currentGeneration = Volatile.Read(ref previewGeneration);
-                if (generation != currentGeneration || previewFramePresenter is null)
+                var callbacksFrozen = overlayPreviewFreezeController is { AcceptsCallbacks: false };
+                if (generation != currentGeneration || previewFramePresenter is null || callbacksFrozen)
                 {
                     Logger.LogDebug(
-                        "operation=FrameCallback, stage=Reject, detail=Stale callback rejected: frameGeneration={FrameGeneration}, currentGeneration={CurrentGeneration}, hasPresenter={HasPresenter}",
-                        generation, currentGeneration, previewFramePresenter is not null);
+                        "operation=FrameCallback, stage=Reject, detail=Stale callback rejected: frameGeneration={FrameGeneration}, currentGeneration={CurrentGeneration}, hasPresenter={HasPresenter}, callbacksFrozen={CallbacksFrozen}",
+                        generation, currentGeneration, previewFramePresenter is not null, callbacksFrozen);
                     return;
                 }
 
@@ -1075,6 +1079,8 @@ public sealed partial class MainWindow : Window
                 {
                     result = null!;
                     target = null;
+                    frameDisposition = overlayPreviewFreezeController?.OnFramePresented(requiresRecreation: true)
+                        ?? OverlayPreviewFrameDisposition.Continue;
                 }
                 else
                 {
@@ -1083,6 +1089,8 @@ public sealed partial class MainWindow : Window
                     latestOutputFrameSnapshot = outputSnapshot;
                     result = previewFramePresenter.PresentFrame(frame);
                     target = activeCaptureTarget;
+                    frameDisposition = overlayPreviewFreezeController?.OnFramePresented(requiresRecreation: false)
+                        ?? OverlayPreviewFrameDisposition.Continue;
                     shouldCompleteFullscreenCapture = activeCaptureMode is CaptureCommandMode.Fullscreen
                         && target is not null
                         && Interlocked.CompareExchange(ref fullscreenOutputStarted, 1, 0) == 0;
@@ -1090,6 +1098,11 @@ public sealed partial class MainWindow : Window
             }
         }
         snapshotToDispose?.Dispose();
+
+        if (frameDisposition is OverlayPreviewFrameDisposition.FreezeAfterPresent)
+        {
+            FreezeOverlayPreviewCaptureSession(generation);
+        }
 
         if (frameNumber == 1 && !sizeChange?.RequiresRecreation == true)
         {
@@ -1161,6 +1174,7 @@ public sealed partial class MainWindow : Window
             previewFramePresenter = null;
             activeCaptureTarget = null;
             activeCaptureMode = null;
+            overlayPreviewFreezeController = null;
             outputFrameSnapshotToDispose = latestOutputFrameSnapshot;
             latestOutputFrameSnapshot = null;
             activePresentationEvidence = null;
@@ -1223,11 +1237,49 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private void FreezeOverlayPreviewCaptureSession(long generation)
+    {
+        CaptureSessionResources? captureSessionToDispose;
+        CaptureTarget? target;
+        lock (previewSync)
+        {
+            if (generation != Volatile.Read(ref previewGeneration)
+                || activeCaptureMode is not CaptureCommandMode.Region
+                || overlayPreviewFreezeController is not { IsFrozen: true })
+            {
+                return;
+            }
+
+            captureSessionToDispose = captureSession;
+            captureSession = null;
+            target = activeCaptureTarget;
+        }
+
+        if (captureSessionToDispose is null)
+        {
+            return;
+        }
+
+        Logger.LogInformation(
+            "operation=OverlayPreview, stage=Freeze, detail=Preview frozen after first presented frame for precise region selection: generation={Generation}, target={Target}",
+            generation,
+            target?.DisplayName ?? "unknown");
+        captureSessionToDispose.Dispose();
+    }
+
     private void ApplyFrameReadiness(long generation, PreviewReadinessStatus readiness)
     {
+        if (!ShouldAcceptPreviewCallbacks(generation))
+        {
+            Logger.LogDebug(
+                "operation=FrameReadiness, stage=Reject, detail=Readiness callback rejected for inactive or frozen preview generation={Generation}",
+                generation);
+            return;
+        }
+
         if (!TryEnqueueUi(() =>
             {
-                if (generation == Volatile.Read(ref previewGeneration))
+                if (ShouldAcceptPreviewCallbacks(generation))
                 {
                     var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
                     ApplySessionState(
@@ -1242,8 +1294,25 @@ public sealed partial class MainWindow : Window
 
     private void ApplyFrameDiagnostic(long generation, string detail)
     {
+        if (!ShouldAcceptPreviewCallbacks(generation))
+        {
+            Logger.LogDebug(
+                "operation=FrameDiagnostic, stage=Reject, detail=Diagnostic callback rejected for inactive or frozen preview generation={Generation}",
+                generation);
+            return;
+        }
+
         var frameNumber = Interlocked.Increment(ref frameEventCount);
         Logger.LogDebug("Frame diagnostic: generation={Generation}, event={Event}, detail={Detail}", generation, frameNumber, detail);
+    }
+
+    private bool ShouldAcceptPreviewCallbacks(long generation)
+    {
+        lock (previewSync)
+        {
+            return generation == Volatile.Read(ref previewGeneration)
+                && overlayPreviewFreezeController is not { AcceptsCallbacks: false };
+        }
     }
 
     private static PreviewReadinessStatus AppendFrameDetail(
@@ -1337,6 +1406,7 @@ public sealed partial class MainWindow : Window
             previewFramePresenter = null;
             activeCaptureTarget = null;
             activeCaptureMode = null;
+            overlayPreviewFreezeController = null;
             outputFrameSnapshotToDispose = latestOutputFrameSnapshot;
             latestOutputFrameSnapshot = null;
             activePresentationEvidence = null;
@@ -1385,7 +1455,7 @@ public sealed partial class MainWindow : Window
         if (applyingSessionState)
         {
             // Last-write-wins: overwrite the pending state with the latest.
-            // For state machines, the latest state is authoritative — intermediate states are stale.
+            // For state machines, the latest state is authoritative 鈥?intermediate states are stale.
             // The pending state will be applied after the current projection completes.
             pendingSessionState = state;
             Logger.LogDebug(
@@ -2347,15 +2417,24 @@ public sealed partial class MainWindow : Window
     {
         ArgumentNullException.ThrowIfNull(sessionState);
 
+        var isFrozenPreview = overlayPreviewFreezeController?.IsFrozen == true
+            && activeCaptureMode is CaptureCommandMode.Region;
         var message = sessionState.UserFacingReason ?? string.Empty;
-        var detail = sessionState.TechnicalDetail ?? string.Empty;
+        var detail = AppendOverlayFreezeDetail(
+            sessionState.TechnicalDetail ?? string.Empty,
+            isFrozenPreview);
         var hdrAlertsEnabled = settingsProvider.HdrAlertsEnabled;
         var fidelityCue = CreateOverlayFidelityCue(settingsProvider.ExportColorFormat, outputCapabilities);
         return sessionState.Status switch
         {
-            CaptureSessionStatus.Capturing => OverlayState.HdrReady(string.Empty, detail, fidelityCue),
+            CaptureSessionStatus.Capturing => OverlayState.HdrReady(
+                AppendOverlayFrozenMessage(string.Empty, isFrozenPreview),
+                detail,
+                fidelityCue),
             CaptureSessionStatus.Degraded => OverlayState.DegradedPreview(
-                hdrAlertsEnabled ? "Enable HDR in Windows for best capture quality" : string.Empty,
+                AppendOverlayFrozenMessage(
+                    hdrAlertsEnabled ? "Enable HDR in Windows for best capture quality" : string.Empty,
+                    isFrozenPreview),
                 detail,
                 fidelityCue),
             CaptureSessionStatus.Unsupported => OverlayState.UnsupportedCapture(
@@ -2366,6 +2445,32 @@ public sealed partial class MainWindow : Window
             CaptureSessionStatus.Disposed => OverlayState.Disposed(message, detail, fidelityCue),
             _ => OverlayState.Initializing(message, detail, fidelityCue),
         };
+    }
+
+    private static string AppendOverlayFrozenMessage(string message, bool isFrozenPreview)
+    {
+        if (!isFrozenPreview)
+        {
+            return message;
+        }
+
+        const string frozenMessage = "Frame paused for precise selection.";
+        return string.IsNullOrWhiteSpace(message)
+            ? frozenMessage
+            : $"{message} {frozenMessage}";
+    }
+
+    private static string AppendOverlayFreezeDetail(string detail, bool isFrozenPreview)
+    {
+        if (!isFrozenPreview)
+        {
+            return detail;
+        }
+
+        const string frozenDetail = "Overlay preview is frozen from the first presented frame to preserve capture timing while you crop.";
+        return string.IsNullOrWhiteSpace(detail)
+            ? frozenDetail
+            : $"{detail} {frozenDetail}";
     }
 
     private static OverlayFidelityCue CreateOverlayFidelityCue(

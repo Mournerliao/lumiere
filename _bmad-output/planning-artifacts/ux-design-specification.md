@@ -96,6 +96,8 @@ The region capture path should avoid a target picker in the default happy path. 
 
 The overlay should feel like a temporary lens over the user's current display, not a mode switch into a separate app. It should preserve orientation, show just enough boundary and readiness feedback to guide selection, and avoid visual noise that competes with the underlying HDR content.
 
+For region capture, the overlay should freeze on the first presented frame after entry. Users are selecting a precise moment, not tracking a moving live feed; frozen-frame selection is therefore the native-feeling, lower-anxiety behavior.
+
 Dragging a valid region and releasing the pointer should complete the capture action. Users should not need to click a second confirmation button in the happy path, choose an output target during capture, or manage a gallery/editor before returning to their task.
 
 Escape should cancel capture and return the user to the original task without side effects. Invalid or too-small regions should be clearly indicated before release when possible, should not produce output, and should never produce misleading success feedback.
@@ -644,6 +646,7 @@ Native controls should be styled through WinUI/Fluent resources and Lumiere-spec
 **Accessibility:** Escape must cancel. Any visible cancel affordance must have keyboard access where feasible. Text/status cues must remain readable across HDR/SDR displays and DPI scales.
 
 **Content Guidelines:** Keep chrome minimal. The underlying HDR content is the focus; the overlay is a temporary lens, not a separate workspace.
+For region capture, that lens is a paused frame from capture start, not an indefinitely live preview.
 
 #### Output Result Toast / Feedback Surface
 

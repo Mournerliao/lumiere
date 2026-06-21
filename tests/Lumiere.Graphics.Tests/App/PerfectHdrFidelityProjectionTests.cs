@@ -561,7 +561,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Equal(ValidationEvidenceStatus.NotRun, record.WindowsManualValidationStatus);
         Assert.Contains("Windows CI", record.AutomatedEvidenceDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("manual validation", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("docs/validation/release-validation-checklist.md", record.EvidenceDocumentPath);
+        Assert.Contains("harness/validation/release-validation-checklist.md", record.EvidenceDocumentPath);
         Assert.DoesNotContain("HDR-preserved", record.AutomatedEvidenceDetail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
     }
