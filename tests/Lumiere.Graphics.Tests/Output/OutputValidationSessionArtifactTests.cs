@@ -170,6 +170,87 @@ public sealed class OutputValidationSessionArtifactTests
         Assert.True(summary.AllowsHdrPreservedClaim);
     }
 
+    [Fact]
+    public void ApplyAllTo_DoesNotLetIncompleteSessionDowngradeCompleteManualEvidence()
+    {
+        var complete = CreateArtifact(
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer("Microsoft Paint"),
+                        PassingHdrViewer("Windows Photos"),
+                        PassingHdrViewer("Chromium browsers"),
+                    ]),
+            ]);
+        var incomplete = CreateArtifact(
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer("Windows Photos"),
+                    ]),
+            ]) with
+        {
+            EvidencePaths = [],
+        };
+        var contract = OutputProfileContract.Hdr10Pq with
+        {
+            IsExecutable = true,
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+        };
+
+        var updated = OutputValidationSessionArtifact.ApplyAllTo(contract, [complete, incomplete]);
+
+        var photos = Assert.Single(updated.ViewerEvidence, viewer => viewer.Name == "Windows Photos");
+        Assert.Equal(OutputCompatibilityEvidenceStatus.Pass, photos.ArtifactHandlingStatus);
+        Assert.Equal(OutputCompatibilityEvidenceStatus.Pass, photos.VisualMatchStatus);
+        Assert.Equal(OutputCompatibilityEvidenceStatus.Pass, photos.HdrPreservationStatus);
+        Assert.True(updated.EvaluateEvidence().AllowsHdrPreservedClaim);
+    }
+
+    [Fact]
+    public void ApplyAllTo_KeepsAnyFailedViewerEvidenceBlockingReleaseClaims()
+    {
+        var complete = CreateArtifact(
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer("Microsoft Paint"),
+                        PassingHdrViewer("Windows Photos"),
+                        PassingHdrViewer("Chromium browsers"),
+                    ]),
+            ]);
+        var failed = CreateArtifact(
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        new(
+                            "Windows Photos",
+                            OutputCompatibilityEvidenceStatus.Fail,
+                            OutputCompatibilityEvidenceStatus.Pass,
+                            OutputCompatibilityEvidenceStatus.Pass,
+                            "Artifact failed to open in Windows Photos."),
+                    ]),
+            ]);
+        var contract = OutputProfileContract.Hdr10Pq with
+        {
+            IsExecutable = true,
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+        };
+
+        var updated = OutputValidationSessionArtifact.ApplyAllTo(contract, [complete, failed]);
+        var summary = updated.EvaluateEvidence();
+
+        var photos = Assert.Single(updated.ViewerEvidence, viewer => viewer.Name == "Windows Photos");
+        Assert.Equal(OutputCompatibilityEvidenceStatus.Fail, photos.ArtifactHandlingStatus);
+        Assert.False(summary.AllowsVisualMatchClaim);
+        Assert.False(summary.AllowsHdrPreservedClaim);
+        Assert.Contains("Windows Photos", summary.HdrPreservedGateDetail, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static OutputValidationSessionArtifact CreateArtifact(
         IReadOnlyList<OutputProfileValidationRecord> records) =>
         new(

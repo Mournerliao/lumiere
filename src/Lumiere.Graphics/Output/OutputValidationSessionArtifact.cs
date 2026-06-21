@@ -48,6 +48,22 @@ public sealed record OutputValidationSessionArtifact(
             .Aggregate(contract, (current, record) => current.ApplyValidationRecord(record));
     }
 
+    public static OutputProfileContract ApplyAllTo(
+        OutputProfileContract contract,
+        IEnumerable<OutputValidationSessionArtifact> artifacts)
+    {
+        ArgumentNullException.ThrowIfNull(contract);
+        ArgumentNullException.ThrowIfNull(artifacts);
+
+        return artifacts.Aggregate(
+            contract,
+            (current, artifact) =>
+            {
+                ArgumentNullException.ThrowIfNull(artifact);
+                return artifact.ApplyTo(current);
+            });
+    }
+
     public static OutputValidationSessionArtifact FromJson(string json)
     {
         if (string.IsNullOrWhiteSpace(json))

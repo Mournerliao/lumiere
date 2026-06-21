@@ -235,6 +235,46 @@ public sealed class PerfectHdrFidelityProjectionTests
     }
 
     [Fact]
+    public void ProjectValidation_AppliesMultipleValidationSessionArtifacts()
+    {
+        var contract = OutputProfileContract.Hdr10Pq with
+        {
+            IsExecutable = true,
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+        };
+
+        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+            contract,
+            [
+                ArtifactFor("Microsoft Paint"),
+                ArtifactFor("Windows Photos"),
+                ArtifactFor("Chromium browsers"),
+            ]);
+
+        Assert.All(validation.ViewerMatrix, viewer => Assert.Equal(ValidationEvidenceStatus.Pass, viewer.Status));
+    }
+
+    [Fact]
+    public void ProjectOutputProfile_AppliesValidationSessionArtifactsBeforeClaimGate()
+    {
+        var contract = OutputProfileContract.Hdr10Pq with
+        {
+            IsExecutable = true,
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+        };
+
+        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(
+            contract,
+            [
+                ArtifactFor("Microsoft Paint"),
+                ArtifactFor("Windows Photos"),
+                ArtifactFor("Chromium browsers"),
+            ]);
+
+        Assert.Equal(FidelityClaimKind.HdrPreserved, profile.FidelityClaim.Kind);
+    }
+
+    [Fact]
     public void ProjectValidationRecord_UsesBuildVersionAndKeepsManualValidationNotRun()
     {
         var record = PerfectHdrFidelityProjection.ProjectValidationRecord("v2.3.4");
@@ -256,4 +296,32 @@ public sealed class PerfectHdrFidelityProjectionTests
             OutputCompatibilityEvidenceStatus.Pass,
             OutputCompatibilityEvidenceStatus.Pass,
             "Validated HDR viewer.");
+
+    private static OutputValidationSessionArtifact ArtifactFor(string viewerName) =>
+        new(
+            Date: "2026-06-21",
+            Tester: "QA",
+            BuildCommit: "485bc31",
+            WindowsVersion: "Windows 11 24H2",
+            Device: "HDR workstation",
+            Gpu: "Test GPU",
+            DisplaySetup: "HDR primary",
+            HdrState: "HDR enabled",
+            DpiScales: ["150%"],
+            EntryPointsTested: ["Main panel"],
+            OutputTargetsTested: ["Clipboard"],
+            TargetAppsTested: [viewerName],
+            ChecklistIdsCovered: ["REL-OUT-01"],
+            ResultSummary: $"{viewerName} HDR validation passed.",
+            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            KnownLimitations: [],
+            FollowUpIssuesOrStories: [],
+            OutputProfileRecords:
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer(viewerName),
+                    ]),
+            ]);
 }

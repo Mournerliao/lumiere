@@ -92,7 +92,7 @@ public sealed record OutputProfileContract(
             StringComparer.OrdinalIgnoreCase);
         var updatedViewerEvidence = ViewerEvidence
             .Select(viewer => evidenceByViewer.TryGetValue(viewer.Name, out var validated)
-                ? ApplyEvidenceSource(validated, record.EvidenceSource)
+                ? MergeViewerEvidence(viewer, ApplyEvidenceSource(validated, record.EvidenceSource))
                 : viewer)
             .ToArray();
 
@@ -174,6 +174,72 @@ public sealed record OutputProfileContract(
         status is OutputCompatibilityEvidenceStatus.Pass
             ? OutputCompatibilityEvidenceStatus.Limited
             : status;
+
+    private static OutputViewerCompatibilityEvidence MergeViewerEvidence(
+        OutputViewerCompatibilityEvidence current,
+        OutputViewerCompatibilityEvidence incoming)
+    {
+        var merged = incoming with
+        {
+            ArtifactHandlingStatus = MergeEvidenceStatus(current.ArtifactHandlingStatus, incoming.ArtifactHandlingStatus),
+            VisualMatchStatus = MergeEvidenceStatus(current.VisualMatchStatus, incoming.VisualMatchStatus),
+            HdrPreservationStatus = MergeEvidenceStatus(current.HdrPreservationStatus, incoming.HdrPreservationStatus),
+        };
+
+        if (HasSameStatuses(merged, current))
+        {
+            return current;
+        }
+
+        if (HasSameStatuses(merged, incoming))
+        {
+            return incoming;
+        }
+
+        return merged with { Detail = $"{current.Detail} {incoming.Detail}" };
+    }
+
+    private static OutputCompatibilityEvidenceStatus MergeEvidenceStatus(
+        OutputCompatibilityEvidenceStatus current,
+        OutputCompatibilityEvidenceStatus incoming)
+    {
+        if (current is OutputCompatibilityEvidenceStatus.NotApplicable)
+        {
+            return OutputCompatibilityEvidenceStatus.NotApplicable;
+        }
+
+        if (incoming is OutputCompatibilityEvidenceStatus.NotApplicable)
+        {
+            return current;
+        }
+
+        if (current is OutputCompatibilityEvidenceStatus.Fail
+            || incoming is OutputCompatibilityEvidenceStatus.Fail)
+        {
+            return OutputCompatibilityEvidenceStatus.Fail;
+        }
+
+        if (current is OutputCompatibilityEvidenceStatus.Pass
+            || incoming is OutputCompatibilityEvidenceStatus.Pass)
+        {
+            return OutputCompatibilityEvidenceStatus.Pass;
+        }
+
+        if (current is OutputCompatibilityEvidenceStatus.Limited
+            || incoming is OutputCompatibilityEvidenceStatus.Limited)
+        {
+            return OutputCompatibilityEvidenceStatus.Limited;
+        }
+
+        return OutputCompatibilityEvidenceStatus.NotRun;
+    }
+
+    private static bool HasSameStatuses(
+        OutputViewerCompatibilityEvidence left,
+        OutputViewerCompatibilityEvidence right) =>
+        left.ArtifactHandlingStatus == right.ArtifactHandlingStatus
+        && left.VisualMatchStatus == right.VisualMatchStatus
+        && left.HdrPreservationStatus == right.HdrPreservationStatus;
 
     private static IReadOnlyList<OutputViewerCompatibilityEvidence> CreateCompatibilityViewerEvidence() =>
     [

@@ -53,6 +53,15 @@ public static class PerfectHdrFidelityProjection
         };
     }
 
+    public static OutputProfileProjection ProjectOutputProfile(
+        OutputProfileContract contract,
+        IEnumerable<OutputValidationSessionArtifact> artifacts)
+    {
+        ArgumentNullException.ThrowIfNull(contract);
+        ArgumentNullException.ThrowIfNull(artifacts);
+        return ProjectOutputProfile(OutputValidationSessionArtifact.ApplyAllTo(contract, artifacts));
+    }
+
     public static ValidationPanelProjection ProjectValidation(ValidationRecordProjection? record = null) =>
         ProjectValidation(OutputProfileContract.SrgbCompatibilityPng, record);
 
@@ -72,6 +81,16 @@ public static class PerfectHdrFidelityProjection
         ArgumentNullException.ThrowIfNull(outputProfile);
         ArgumentNullException.ThrowIfNull(artifact);
         return ProjectValidationCore(artifact.ApplyTo(outputProfile), record);
+    }
+
+    public static ValidationPanelProjection ProjectValidation(
+        OutputProfileContract outputProfile,
+        IEnumerable<OutputValidationSessionArtifact> artifacts,
+        ValidationRecordProjection? record = null)
+    {
+        ArgumentNullException.ThrowIfNull(outputProfile);
+        ArgumentNullException.ThrowIfNull(artifacts);
+        return ProjectValidationCore(OutputValidationSessionArtifact.ApplyAllTo(outputProfile, artifacts), record);
     }
 
     private static ValidationPanelProjection ProjectValidationCore(
