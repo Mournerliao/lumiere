@@ -321,6 +321,24 @@ public sealed class SettingsPanelProjectionTests
     }
 
     [Fact]
+    public void Project_ValidationRecordUsesAboutVersionAndReleaseChecklist()
+    {
+        var aboutInfo = new TestAboutInfoProvider
+        {
+            Version = "2.3.4+abcdef",
+        };
+
+        var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState(), aboutInfo);
+
+        Assert.Equal("Build v2.3.4", projection.Validation.Record.BuildLabel);
+        Assert.Equal(ValidationEvidenceStatus.Limited, projection.Validation.Record.AutomatedEvidenceStatus);
+        Assert.Equal(ValidationEvidenceStatus.NotRun, projection.Validation.Record.WindowsManualValidationStatus);
+        Assert.Contains("Windows CI", projection.Validation.Record.AutomatedEvidenceDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("manual validation", projection.Validation.Record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("docs/validation/release-validation-checklist.md", projection.Validation.Record.EvidenceDocumentPath);
+    }
+
+    [Fact]
     public void Project_ReflectsAfterCaptureRevealForFolderArtifacts()
     {
         var settings = new TestSettingsProvider

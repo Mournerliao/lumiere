@@ -87,4 +87,19 @@ public sealed class PerfectHdrFidelityProjectionTests
                 Assert.DoesNotContain("HDR-preserved", viewer.Detail, StringComparison.OrdinalIgnoreCase);
             });
     }
+
+    [Fact]
+    public void ProjectValidationRecord_UsesBuildVersionAndKeepsManualValidationNotRun()
+    {
+        var record = PerfectHdrFidelityProjection.ProjectValidationRecord("v2.3.4");
+
+        Assert.Equal("Build v2.3.4", record.BuildLabel);
+        Assert.Equal(ValidationEvidenceStatus.Limited, record.AutomatedEvidenceStatus);
+        Assert.Equal(ValidationEvidenceStatus.NotRun, record.WindowsManualValidationStatus);
+        Assert.Contains("Windows CI", record.AutomatedEvidenceDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("manual validation", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("docs/validation/release-validation-checklist.md", record.EvidenceDocumentPath);
+        Assert.DoesNotContain("HDR-preserved", record.AutomatedEvidenceDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR-preserved", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
+    }
 }

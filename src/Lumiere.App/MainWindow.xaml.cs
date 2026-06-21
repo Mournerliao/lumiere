@@ -1703,6 +1703,7 @@ public sealed partial class MainWindow : Window
             ValidationViewerRow3Label,
             ValidationViewerRow3Detail,
             ValidationViewerRow3Status);
+        ApplyValidationRecord(validation.Record);
     }
 
     private static void ApplyValidationRow(
@@ -1745,6 +1746,21 @@ public sealed partial class MainWindow : Window
         status.Text = FormatValidationStatus(row.Status);
         status.Foreground = GetValidationStatusBrush(row.Status);
         AutomationProperties.SetHelpText(label, row.Detail);
+    }
+
+    private void ApplyValidationRecord(ValidationRecordProjection record)
+    {
+        ValidationRecordBuildText.Text = record.BuildLabel;
+        ValidationRecordAutomatedDetail.Text = record.AutomatedEvidenceDetail;
+        ValidationRecordAutomatedStatus.Text = FormatValidationStatus(record.AutomatedEvidenceStatus);
+        ValidationRecordAutomatedStatus.Foreground = GetValidationStatusBrush(record.AutomatedEvidenceStatus);
+        ValidationRecordManualDetail.Text = record.WindowsManualValidationDetail;
+        ValidationRecordManualStatus.Text = FormatValidationStatus(record.WindowsManualValidationStatus);
+        ValidationRecordManualStatus.Foreground = GetValidationStatusBrush(record.WindowsManualValidationStatus);
+        ValidationRecordEvidencePathText.Text = record.EvidenceDocumentPath;
+        AutomationProperties.SetHelpText(
+            ValidationRecordBuildText,
+            $"{record.BuildLabel}. {record.AutomatedEvidenceDetail} {record.WindowsManualValidationDetail} Evidence document: {record.EvidenceDocumentPath}");
     }
 
     private static string FormatValidationStatus(ValidationEvidenceStatus status) =>

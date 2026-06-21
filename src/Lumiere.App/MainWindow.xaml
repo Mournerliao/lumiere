@@ -1078,6 +1078,83 @@
                         Foreground="{StaticResource MutedTextBrush}" />
                   </Grid>
                 </StackPanel>
+
+                <Border
+                    Height="1"
+                    Background="{StaticResource BorderBrush}" />
+
+                <StackPanel Spacing="6">
+                  <TextBlock
+                      x:Name="ValidationRecordBuildText"
+                      FontSize="10"
+                      FontWeight="SemiBold"
+                      Foreground="{StaticResource TextBrush}"
+                      Text="Build unknown build" />
+                  <Grid
+                      MinHeight="34"
+                      ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="1">
+                      <TextBlock
+                          FontSize="10"
+                          FontWeight="SemiBold"
+                          Foreground="{StaticResource TextBrush}"
+                          Text="Automated evidence" />
+                      <TextBlock
+                          x:Name="ValidationRecordAutomatedDetail"
+                          FontSize="9"
+                          Foreground="{StaticResource MutedTextBrush}"
+                          Text="Windows CI restore, build, unit tests, and format gates can support implementation confidence only."
+                          TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+                    <TextBlock
+                        x:Name="ValidationRecordAutomatedStatus"
+                        Grid.Column="1"
+                        VerticalAlignment="Top"
+                        FontSize="9"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource WarningBrush}"
+                        Text="LIMITED" />
+                  </Grid>
+                  <Grid
+                      MinHeight="34"
+                      ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="1">
+                      <TextBlock
+                          FontSize="10"
+                          FontWeight="SemiBold"
+                          Foreground="{StaticResource TextBrush}"
+                          Text="Windows manual validation" />
+                      <TextBlock
+                          x:Name="ValidationRecordManualDetail"
+                          FontSize="9"
+                          Foreground="{StaticResource MutedTextBrush}"
+                          Text="Windows manual validation for HDR displays, target apps, mixed monitors, and visual match is not run."
+                          TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+                    <TextBlock
+                        x:Name="ValidationRecordManualStatus"
+                        Grid.Column="1"
+                        VerticalAlignment="Top"
+                        FontSize="9"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource MutedTextBrush}"
+                        Text="NOT RUN" />
+                  </Grid>
+                  <TextBlock
+                      x:Name="ValidationRecordEvidencePathText"
+                      FontSize="9"
+                      Foreground="{StaticResource SubtleTextBrush}"
+                      Text="docs/validation/release-validation-checklist.md"
+                      TextWrapping="WrapWholeWords" />
+                </StackPanel>
               </StackPanel>
             </Border>
           </StackPanel>

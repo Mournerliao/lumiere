@@ -28,6 +28,7 @@ public sealed record SettingsPanelProjection(
         ArgumentNullException.ThrowIfNull(sessionState);
         aboutInfoProvider ??= AssemblyAboutInfoProvider.CreateFallback();
         var hotkeyPlan = GlobalHotkeyRegistrationPlan.Project(settingsProvider);
+        var about = AboutInfoProjection.FromProvider(aboutInfoProvider);
 
         return new SettingsPanelProjection(
             ShortcutSettingProjection.FromHotkeyBinding(
@@ -46,8 +47,9 @@ public sealed record SettingsPanelProjection(
                 settingsProvider.CopyAsImage,
                 settingsProvider.AfterCaptureBehavior,
                 settingsProvider.ExportColorFormat),
-            PerfectHdrFidelityProjection.ProjectValidation(),
-            AboutInfoProjection.FromProvider(aboutInfoProvider),
+            PerfectHdrFidelityProjection.ProjectValidation(
+                PerfectHdrFidelityProjection.ProjectValidationRecord(about.Version)),
+            about,
             settingsProvider.TimestampNaming,
             settingsProvider.CopyAsImage,
             MainPanelProjection.Project(

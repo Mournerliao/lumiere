@@ -63,7 +63,7 @@ public static class PerfectHdrFidelityProjection
         };
     }
 
-    public static ValidationPanelProjection ProjectValidation() =>
+    public static ValidationPanelProjection ProjectValidation(ValidationRecordProjection? record = null) =>
         new(
             ReleaseTarget,
             "Public release waits for evidence; SDR compatibility remains fallback only.",
@@ -99,7 +99,26 @@ public static class PerfectHdrFidelityProjection
                     "Chromium browsers",
                     ValidationEvidenceStatus.NotRun,
                     "Paste/drop artifact handling, visual match, and fidelity are not validated."),
-            ]);
+            ],
+            record ?? ProjectValidationRecord(null));
+
+    public static ValidationRecordProjection ProjectValidationRecord(string? buildVersion)
+    {
+        var normalizedVersion = string.IsNullOrWhiteSpace(buildVersion)
+            ? "unknown build"
+            : buildVersion.Trim();
+        var buildLabel = normalizedVersion.StartsWith("Build ", StringComparison.OrdinalIgnoreCase)
+            ? normalizedVersion
+            : $"Build {normalizedVersion}";
+
+        return new ValidationRecordProjection(
+            buildLabel,
+            ValidationEvidenceStatus.Limited,
+            "Windows CI restore, build, unit tests, and format gates can support implementation confidence only.",
+            ValidationEvidenceStatus.NotRun,
+            "Windows manual validation for HDR displays, target apps, mixed monitors, and visual match is not run.",
+            "docs/validation/release-validation-checklist.md");
+    }
 
     public static string NormalizeExportColorFormat(string? exportColorFormat)
     {
@@ -153,7 +172,8 @@ public sealed record ValidationPanelProjection(
     string Summary,
     IReadOnlyList<ValidationEvidenceRowProjection> Rows,
     string ViewerMatrixSummary,
-    IReadOnlyList<ValidationViewerMatrixRowProjection> ViewerMatrix);
+    IReadOnlyList<ValidationViewerMatrixRowProjection> ViewerMatrix,
+    ValidationRecordProjection Record);
 
 public sealed record ValidationEvidenceRowProjection(
     string Label,
@@ -164,6 +184,14 @@ public sealed record ValidationViewerMatrixRowProjection(
     string Name,
     ValidationEvidenceStatus Status,
     string Detail);
+
+public sealed record ValidationRecordProjection(
+    string BuildLabel,
+    ValidationEvidenceStatus AutomatedEvidenceStatus,
+    string AutomatedEvidenceDetail,
+    ValidationEvidenceStatus WindowsManualValidationStatus,
+    string WindowsManualValidationDetail,
+    string EvidenceDocumentPath);
 
 public enum ValidationEvidenceStatus
 {
