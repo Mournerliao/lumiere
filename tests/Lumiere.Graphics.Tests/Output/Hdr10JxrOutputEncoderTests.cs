@@ -1,5 +1,6 @@
 using Lumiere.Graphics.Output;
 using Lumiere.Graphics.Presentation;
+using Lumiere.Infrastructure.Interop;
 using Xunit;
 
 namespace Lumiere.Graphics.Tests.Output;
@@ -167,6 +168,65 @@ public sealed class Hdr10JxrOutputEncoderTests
         Assert.Contains(readiness.Blockers, blocker => blocker.Contains("viewer validation", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public void WicHdr10JxrCodec_ReadinessReflectsNativeEncoderButKeepsMetadataAndValidationBlocked()
+    {
+        var nativeEncoder = new TestWicJpegXrEncoder(
+            new WicJpegXrEncoderReadiness(
+                HasWindowsWicFactory: true,
+                HasJpegXrContainerEncoder: true,
+                AcceptsRgbaHalfPixelFormat: true,
+                Blockers: []),
+            [9, 8, 7]);
+        var codec = new WicHdr10JxrCodec(nativeEncoder);
+
+        var readiness = codec.Readiness;
+
+        Assert.False(readiness.IsReady);
+        Assert.True(readiness.HasNativeWicJpegXrEncoder);
+        Assert.True(readiness.AcceptsRgba16FloatSource);
+        Assert.False(readiness.WritesHdr10Metadata);
+        Assert.Contains(readiness.Blockers, blocker => blocker.Contains("metadata writer", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(readiness.Blockers, blocker => blocker.Contains("manual viewer validation", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task WicHdr10JxrCodec_MapsRgbaHalfReadbackIntoNativeJpegXrRequest()
+    {
+        var sourceBytes = Enumerable.Range(0, CapturedFrameReadback.BytesPerPixel * 2)
+            .Select(value => (byte)value)
+            .ToArray();
+        var source = new CapturedFrameReadback(
+            2,
+            1,
+            OutputPixelFormat.R16G16B16A16Float,
+            sourceBytes);
+        var profile = OutputProfileContract.Hdr10Pq with
+        {
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract,
+        };
+        var nativeEncoder = new TestWicJpegXrEncoder(
+            WicJpegXrEncoderReadiness.Unknown with
+            {
+                HasWindowsWicFactory = true,
+                HasJpegXrContainerEncoder = true,
+                AcceptsRgbaHalfPixelFormat = true,
+                Blockers = [],
+            },
+            [1, 2, 3]);
+        var codec = new WicHdr10JxrCodec(nativeEncoder);
+
+        var encoded = await codec.EncodeAsync(new Hdr10JxrCodecInput(source, profile));
+
+        Assert.Equal([1, 2, 3], encoded);
+        Assert.NotNull(nativeEncoder.Request);
+        Assert.Equal(2, nativeEncoder.Request.Width);
+        Assert.Equal(1, nativeEncoder.Request.Height);
+        Assert.Equal(16, nativeEncoder.Request.StrideBytes);
+        Assert.Same(sourceBytes, nativeEncoder.Request.RgbaHalfPixels);
+    }
+
     private static OutputFormatContract CompleteHdr10Contract { get; } =
         new(
             OutputPixelFormat.R16G16B16A16Float,
@@ -227,6 +287,29 @@ public sealed class Hdr10JxrOutputEncoderTests
                 texture.Height,
                 OutputPixelFormat.R16G16B16A16Float,
                 new byte[texture.Width * texture.Height * CapturedFrameReadback.BytesPerPixel]);
+        }
+    }
+
+    private sealed class TestWicJpegXrEncoder : IWicJpegXrEncoder
+    {
+        private readonly byte[] encodedBytes;
+
+        public TestWicJpegXrEncoder(
+            WicJpegXrEncoderReadiness readiness,
+            byte[] encodedBytes)
+        {
+            Readiness = readiness;
+            this.encodedBytes = encodedBytes;
+        }
+
+        public WicJpegXrEncoderReadiness Readiness { get; }
+
+        public WicJpegXrEncodeRequest? Request { get; private set; }
+
+        public byte[] EncodeRgbaHalf(WicJpegXrEncodeRequest request)
+        {
+            Request = request;
+            return encodedBytes;
         }
     }
 }

@@ -1,3 +1,5 @@
+using Lumiere.Infrastructure.Interop;
+
 namespace Lumiere.Graphics.Output;
 
 public interface IHdr10JxrCodec
@@ -43,6 +45,39 @@ public sealed record Hdr10JxrCodecReadiness(
         IsReady
             ? "HDR10 JXR codec readiness passed."
             : string.Join(" ", Blockers);
+
+    public Hdr10JxrCodecReadiness WithNativeWicReadiness(WicJpegXrEncoderReadiness wicReadiness)
+    {
+        ArgumentNullException.ThrowIfNull(wicReadiness);
+
+        var blockers = new List<string>();
+        if (!wicReadiness.IsReady)
+        {
+            blockers.AddRange(wicReadiness.Blockers);
+        }
+
+        if (!WritesHdr10Metadata)
+        {
+            blockers.Add("HDR10 static metadata writer is not implemented for the JPEG XR container.");
+        }
+
+        if (!Hdr10StaticMetadataPolicy.IsComplete)
+        {
+            blockers.Add("HDR10 static metadata policy is not complete and auditable.");
+        }
+
+        if (!HasWindowsManualViewerValidation)
+        {
+            blockers.Add("Windows manual viewer validation for the emitted JXR artifact has not passed.");
+        }
+
+        return this with
+        {
+            HasNativeWicJpegXrEncoder = wicReadiness.HasJpegXrContainerEncoder,
+            AcceptsRgba16FloatSource = wicReadiness.AcceptsRgbaHalfPixelFormat,
+            Blockers = blockers,
+        };
+    }
 }
 
 public sealed record Hdr10JxrCodecInput
@@ -95,5 +130,44 @@ public sealed class PendingHdr10JxrCodec : IHdr10JxrCodec
 
         throw new OutputArtifactEncodingException(
             $"HDR10 JXR encoding is not implemented yet. {Readiness.FormatBlockers()}");
+    }
+}
+
+public sealed class WicHdr10JxrCodec : IHdr10JxrCodec
+{
+    private readonly IWicJpegXrEncoder encoder;
+
+    public WicHdr10JxrCodec(IWicJpegXrEncoder encoder)
+    {
+        this.encoder = encoder ?? throw new ArgumentNullException(nameof(encoder));
+    }
+
+    public Hdr10JxrCodecReadiness Readiness =>
+        Hdr10JxrCodecReadiness.PendingNativeWicImplementation
+            .WithNativeWicReadiness(encoder.Readiness);
+
+    public Task<byte[]> EncodeAsync(
+        Hdr10JxrCodecInput input,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        try
+        {
+            var source = input.Source;
+            var encoded = encoder.EncodeRgbaHalf(
+                new WicJpegXrEncodeRequest(
+                    source.Width,
+                    source.Height,
+                    checked(source.Width * WicJpegXrEncodeRequest.RgbaHalfBytesPerPixel),
+                    source.PixelData));
+            return Task.FromResult(encoded);
+        }
+        catch (NativeInteropException exception)
+        {
+            throw new OutputArtifactEncodingException(
+                $"HDR10 JXR WIC encoding failed. {exception.Message}");
+        }
     }
 }

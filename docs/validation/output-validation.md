@@ -35,6 +35,8 @@ The HDR10 `.jxr` output path is not enabled until the codec readiness record pro
 
 The current built-in HDR10 reference policy is `Bt2020PqReference1000Nit`: BT.2020 primaries, D65 white point, PQ/ST 2084 transfer, 0.005 to 1000 nit mastering luminance, 1000 nit MaxCLL, and 400 nit MaxFALL. This is an explicit policy input for the future encoder, not proof of target display fidelity or viewer compatibility.
 
+As of the current implementation, Lumiere has a Windows WIC-backed JPEG XR adapter for `64bppRGBAHalf` byte streams and the app wires the HDR10 JXR codec through that adapter. Runtime HDR10 export remains disabled because the JPEG XR HDR10 metadata writer and Windows manual viewer validation gates have not passed.
+
 ## Manual Validation Scenarios
 
 1. Clipboard output to Paint, Photos, and at least one Chromium-based app.

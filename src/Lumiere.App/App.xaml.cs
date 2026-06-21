@@ -41,7 +41,7 @@ public partial class App : Application
             captureService = new CaptureService(deviceResources, borderOptions);
             var captureCommandCoordinator = new CaptureCommandCoordinator(captureService);
             clipboardOutputService = new ClipboardOutputService(deviceResources);
-            var hdr10JxrCodec = new PendingHdr10JxrCodec();
+            var hdr10JxrCodec = new WicHdr10JxrCodec(new WindowsWicJpegXrEncoder());
             var folderArtifactEncoder = new CompositeOutputArtifactEncoder(
                 clipboardOutputService,
                 new Hdr10JxrOutputEncoder(
