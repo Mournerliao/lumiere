@@ -86,8 +86,10 @@ public sealed class DirectMonitorCaptureTargetSelectionService
             }
 
             var monitor = monitorResolver();
-            var target = monitorTargetFactory(monitor)
-                ?? throw new InvalidOperationException("Monitor target factory returned null.");
+            var target = EnsureDisplayIdentity(
+                monitor,
+                monitorTargetFactory(monitor)
+                    ?? throw new InvalidOperationException("Monitor target factory returned null."));
 
             Logger.LogInformation("Monitor resolved: displayName={DisplayName}, size={Width}x{Height}, kind={Kind}", target.DisplayName, target.Size.Width, target.Size.Height, target.Kind);
 
@@ -237,5 +239,20 @@ public sealed class DirectMonitorCaptureTargetSelectionService
         return item is null
             ? null
             : CaptureTarget.FromItem(item);
+    }
+
+    private static CaptureTarget EnsureDisplayIdentity(
+        MonitorHandle monitor,
+        CaptureTarget target)
+    {
+        if (target.Kind is not CaptureTargetKind.Display || target.DisplayIdentity is not null)
+        {
+            return target;
+        }
+
+        return target.WithDisplayIdentity(DisplayOutputIdentity.FromMonitorDisplayName(
+            monitor.DisplayName,
+            target.Size.Width,
+            target.Size.Height));
     }
 }

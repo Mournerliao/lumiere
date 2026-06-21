@@ -943,9 +943,9 @@ public sealed partial class MainWindow : Window
                 new SwapChainCreationOptions(target.Size.Width, target.Size.Height),
                 overlayWindow!.PreviewSurface,
                 new SwapChainTargetHint(
-                    target.DisplayName,
-                    target.Size.Width,
-                    target.Size.Height));
+                    target.DisplayIdentity?.DeviceName ?? target.DisplayName,
+                    target.DisplayIdentity?.Width ?? target.Size.Width,
+                    target.DisplayIdentity?.Height ?? target.Size.Height));
             previewFramePresenter = new PreviewFramePresenter(deviceResources!, swapChainResources);
             activeCaptureTarget = target;
             presentationEvidence = swapChainResources.PresentationEvidence;

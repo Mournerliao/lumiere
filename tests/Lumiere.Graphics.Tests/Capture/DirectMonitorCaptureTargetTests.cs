@@ -100,6 +100,9 @@ public sealed class DirectMonitorCaptureTargetSelectionServiceTests
         Assert.Equal(CaptureTargetKind.Display, result.Target.Kind);
         Assert.Equal(1920, result.Target.Size.Width);
         Assert.Equal(1080, result.Target.Size.Height);
+        Assert.Equal("DISPLAY1", result.Target.DisplayIdentity?.DeviceName);
+        Assert.Equal(1920, result.Target.DisplayIdentity?.Width);
+        Assert.Equal(1080, result.Target.DisplayIdentity?.Height);
     }
 
     [Fact]

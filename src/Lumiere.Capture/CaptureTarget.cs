@@ -14,12 +14,14 @@ public sealed class CaptureTarget
         GraphicsCaptureItem? item,
         SizeInt32 size,
         string displayName,
-        CaptureTargetKind kind)
+        CaptureTargetKind kind,
+        DisplayOutputIdentity? displayIdentity)
     {
         this.item = item;
         Size = size;
         DisplayName = displayName;
         Kind = kind;
+        DisplayIdentity = displayIdentity;
     }
 
     public GraphicsCaptureItem Item =>
@@ -33,10 +35,13 @@ public sealed class CaptureTarget
 
     public CaptureTargetKind Kind { get; }
 
+    public DisplayOutputIdentity? DisplayIdentity { get; }
+
     internal static CaptureTarget CreateForTest(
         SizeInt32 size,
         string displayName,
-        CaptureTargetKind kind = CaptureTargetKind.Unknown)
+        CaptureTargetKind kind = CaptureTargetKind.Unknown,
+        DisplayOutputIdentity? displayIdentity = null)
     {
         ValidateSize(size);
 
@@ -46,7 +51,8 @@ public sealed class CaptureTarget
             string.IsNullOrWhiteSpace(displayName)
                 ? "Capture target"
                 : displayName,
-            kind);
+            kind,
+            kind is CaptureTargetKind.Display ? displayIdentity : null);
     }
 
     public static CaptureTarget FromItem(GraphicsCaptureItem item)
@@ -60,10 +66,14 @@ public sealed class CaptureTarget
             string.IsNullOrWhiteSpace(item.DisplayName)
                 ? "Capture target"
                 : item.DisplayName,
-            CaptureTargetKind.Unknown);
+            CaptureTargetKind.Unknown,
+            displayIdentity: null);
     }
 
-    public static CaptureTarget FromDisplayItem(GraphicsCaptureItem item, string? displayName = null)
+    public static CaptureTarget FromDisplayItem(
+        GraphicsCaptureItem item,
+        string? displayName = null,
+        DisplayOutputIdentity? displayIdentity = null)
     {
         ArgumentNullException.ThrowIfNull(item);
         ValidateSize(item.Size);
@@ -78,14 +88,32 @@ public sealed class CaptureTarget
             string.IsNullOrWhiteSpace(resolvedName)
                 ? "Display"
                 : resolvedName,
-            CaptureTargetKind.Display);
+            CaptureTargetKind.Display,
+            displayIdentity);
     }
 
     public CaptureTarget WithSize(SizeInt32 size)
     {
         ValidateSize(size);
 
-        return new CaptureTarget(item, size, DisplayName, Kind);
+        return new CaptureTarget(
+            item,
+            size,
+            DisplayName,
+            Kind,
+            DisplayIdentity?.WithSize(size.Width, size.Height));
+    }
+
+    internal CaptureTarget WithDisplayIdentity(DisplayOutputIdentity displayIdentity)
+    {
+        ArgumentNullException.ThrowIfNull(displayIdentity);
+
+        return new CaptureTarget(
+            item,
+            size: new SizeInt32 { Width = displayIdentity.Width, Height = displayIdentity.Height },
+            DisplayName,
+            CaptureTargetKind.Display,
+            displayIdentity);
     }
 
     private static void ValidateSize(SizeInt32 size)

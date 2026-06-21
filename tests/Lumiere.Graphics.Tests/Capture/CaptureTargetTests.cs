@@ -126,4 +126,48 @@ public sealed class CaptureTargetTests
         Assert.Equal(CaptureTargetKind.Display, displayTarget.Kind);
         Assert.Equal(CaptureTargetKind.Window, windowTarget.Kind);
     }
+
+    [Fact]
+    public void CreateForTestCanAttachDisplayOutputIdentityWithoutNativeHandle()
+    {
+        var identity = new DisplayOutputIdentity("\\\\.\\DISPLAY2", 3840, 2160);
+
+        var target = CaptureTarget.CreateForTest(
+            new SizeInt32 { Width = 3840, Height = 2160 },
+            "HDR Display",
+            CaptureTargetKind.Display,
+            identity);
+
+        Assert.Equal(identity, target.DisplayIdentity);
+        Assert.Equal("\\\\.\\DISPLAY2", target.DisplayIdentity?.DeviceName);
+        Assert.Equal(3840, target.DisplayIdentity?.Width);
+        Assert.Equal(2160, target.DisplayIdentity?.Height);
+    }
+
+    [Fact]
+    public void CreateForTestDoesNotInventDisplayIdentityForWindowTargets()
+    {
+        var target = CaptureTarget.CreateForTest(
+            new SizeInt32 { Width = 1280, Height = 720 },
+            "Window",
+            CaptureTargetKind.Window);
+
+        Assert.Null(target.DisplayIdentity);
+    }
+
+    [Fact]
+    public void WithSizePreservesDisplayIdentityNameAndUpdatesIdentitySize()
+    {
+        var target = CaptureTarget.CreateForTest(
+            new SizeInt32 { Width = 1920, Height = 1080 },
+            "HDR Display",
+            CaptureTargetKind.Display,
+            new DisplayOutputIdentity("\\\\.\\DISPLAY1", 1920, 1080));
+
+        var resized = target.WithSize(new SizeInt32 { Width = 2560, Height = 1440 });
+
+        Assert.Equal("\\\\.\\DISPLAY1", resized.DisplayIdentity?.DeviceName);
+        Assert.Equal(2560, resized.DisplayIdentity?.Width);
+        Assert.Equal(1440, resized.DisplayIdentity?.Height);
+    }
 }
