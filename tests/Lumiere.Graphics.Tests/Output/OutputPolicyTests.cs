@@ -264,6 +264,25 @@ public sealed class OutputPolicyTests
         Assert.DoesNotContain(capabilities.Profiles, profile => profile.ProfileKind is OutputProfileKind.Hdr10Pq);
     }
 
+    [Fact]
+    public void FromHdr10JxrCodecReadiness_KeepsCompatibilityOnlyWhenOnlyAuditMetadataRoundTripIsProven()
+    {
+        var readiness = ReadyHdr10JxrReadiness with
+        {
+            HasViewerRecognizedHdr10StaticMetadata = false,
+            HasWindowsManualViewerValidation = false,
+            Blockers =
+            [
+                "Viewer-recognized HDR10 static metadata is not implemented or validated for the JPEG XR container.",
+                "Windows manual viewer validation for the emitted JXR artifact has not passed.",
+            ],
+        };
+
+        var capabilities = OutputProfileExecutionCapabilities.FromHdr10JxrCodecReadiness(readiness);
+
+        Assert.DoesNotContain(capabilities.Profiles, profile => profile.ProfileKind is OutputProfileKind.Hdr10Pq);
+    }
+
     private static OutputValidationSessionArtifact CompleteHdr10Artifact() =>
         new(
             Date: "2026-06-21",
@@ -335,7 +354,9 @@ public sealed class OutputPolicyTests
         new(
             HasNativeWicJpegXrEncoder: true,
             AcceptsRgba16FloatSource: true,
-            WritesHdr10Metadata: true,
+            WritesAuditMetadata: true,
+            HasArtifactAuditMetadataRoundTripEvidence: true,
+            HasViewerRecognizedHdr10StaticMetadata: true,
             Hdr10StaticMetadataPolicy: Hdr10StaticMetadataPolicy.Bt2020PqReference1000Nit,
             HasWindowsManualViewerValidation: true,
             Blockers: []);

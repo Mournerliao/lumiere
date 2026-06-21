@@ -14,7 +14,9 @@ public interface IHdr10JxrCodec
 public sealed record Hdr10JxrCodecReadiness(
     bool HasNativeWicJpegXrEncoder,
     bool AcceptsRgba16FloatSource,
-    bool WritesHdr10Metadata,
+    bool WritesAuditMetadata,
+    bool HasArtifactAuditMetadataRoundTripEvidence,
+    bool HasViewerRecognizedHdr10StaticMetadata,
     Hdr10StaticMetadataPolicy Hdr10StaticMetadataPolicy,
     bool HasWindowsManualViewerValidation,
     IReadOnlyList<string> Blockers)
@@ -23,20 +25,42 @@ public sealed record Hdr10JxrCodecReadiness(
         new(
             HasNativeWicJpegXrEncoder: false,
             AcceptsRgba16FloatSource: true,
-            WritesHdr10Metadata: false,
+            WritesAuditMetadata: false,
+            HasArtifactAuditMetadataRoundTripEvidence: false,
+            HasViewerRecognizedHdr10StaticMetadata: false,
             Hdr10StaticMetadataPolicy: Hdr10StaticMetadataPolicy.Undefined,
             HasWindowsManualViewerValidation: false,
             Blockers:
             [
                 "Native Windows WIC JPEG XR codec integration is not implemented.",
-                "HDR10 static metadata write policy is not implemented or auditable.",
+                "Lumiere audit metadata writer is not implemented for the JPEG XR container.",
+                "JPEG XR artifact audit metadata round-trip evidence has not passed.",
+                "Viewer-recognized HDR10 static metadata is not implemented or validated for the JPEG XR container.",
+                "Windows manual viewer validation for the emitted JXR artifact has not passed.",
+            ]);
+
+    public static Hdr10JxrCodecReadiness AuditMetadataRoundTripImplemented { get; } =
+        new(
+            HasNativeWicJpegXrEncoder: false,
+            AcceptsRgba16FloatSource: true,
+            WritesAuditMetadata: true,
+            HasArtifactAuditMetadataRoundTripEvidence: true,
+            HasViewerRecognizedHdr10StaticMetadata: false,
+            Hdr10StaticMetadataPolicy: Hdr10StaticMetadataPolicy.Bt2020PqReference1000Nit,
+            HasWindowsManualViewerValidation: false,
+            Blockers:
+            [
+                "Native Windows WIC JPEG XR codec readiness has not been probed.",
+                "Viewer-recognized HDR10 static metadata is not implemented or validated for the JPEG XR container.",
                 "Windows manual viewer validation for the emitted JXR artifact has not passed.",
             ]);
 
     public bool IsReady =>
         HasNativeWicJpegXrEncoder
         && AcceptsRgba16FloatSource
-        && WritesHdr10Metadata
+        && WritesAuditMetadata
+        && HasArtifactAuditMetadataRoundTripEvidence
+        && HasViewerRecognizedHdr10StaticMetadata
         && Hdr10StaticMetadataPolicy.IsComplete
         && HasWindowsManualViewerValidation
         && Blockers.Count == 0;
@@ -56,9 +80,19 @@ public sealed record Hdr10JxrCodecReadiness(
             blockers.AddRange(wicReadiness.Blockers);
         }
 
-        if (!WritesHdr10Metadata)
+        if (!WritesAuditMetadata)
         {
-            blockers.Add("HDR10 static metadata writer is not implemented for the JPEG XR container.");
+            blockers.Add("Lumiere audit metadata writer is not implemented for the JPEG XR container.");
+        }
+
+        if (!HasArtifactAuditMetadataRoundTripEvidence)
+        {
+            blockers.Add("JPEG XR artifact audit metadata round-trip evidence has not passed.");
+        }
+
+        if (!HasViewerRecognizedHdr10StaticMetadata)
+        {
+            blockers.Add("Viewer-recognized HDR10 static metadata is not implemented or validated for the JPEG XR container.");
         }
 
         if (!Hdr10StaticMetadataPolicy.IsComplete)
@@ -145,7 +179,7 @@ public sealed class WicHdr10JxrCodec : IHdr10JxrCodec
     }
 
     public Hdr10JxrCodecReadiness Readiness =>
-        Hdr10JxrCodecReadiness.PendingNativeWicImplementation
+        Hdr10JxrCodecReadiness.AuditMetadataRoundTripImplemented
             .WithNativeWicReadiness(encoder.Readiness);
 
     public Task<byte[]> EncodeAsync(

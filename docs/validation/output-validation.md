@@ -29,7 +29,8 @@ The HDR10 `.jxr` output path is not enabled until the codec readiness record pro
 
 - Native Windows WIC JPEG XR integration is implemented for `.jxr`/WMP container output.
 - The codec accepts the captured `R16G16B16A16_FLOAT` source readback without routing through sRGB PNG conversion.
-- HDR10 static metadata write policy is implemented and recorded as typed evidence, including metadata source, BT.2020 primaries, white point, mastering luminance, MaxCLL, MaxFALL, and a rationale/detail string.
+- The Lumiere audit metadata write/read path round-trips from a real encoded `.jxr` artifact, including metadata source, BT.2020 primaries, white point, mastering luminance, MaxCLL, MaxFALL, and a rationale/detail string.
+- Viewer-recognized HDR10 static metadata is implemented or validated for the JPEG XR container. Lumiere audit metadata alone is not sufficient.
 - Codec readiness is blocked unless the HDR10 static metadata policy is complete and auditable; an `AttachHdr10StaticMetadata` enum value alone is not enough to enable the profile.
 - Windows manual viewer validation passes for every named target viewer before runtime capability is marked implemented.
 

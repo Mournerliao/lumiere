@@ -161,15 +161,18 @@ public sealed class Hdr10JxrOutputEncoderTests
         Assert.False(readiness.IsReady);
         Assert.False(readiness.HasNativeWicJpegXrEncoder);
         Assert.True(readiness.AcceptsRgba16FloatSource);
-        Assert.False(readiness.WritesHdr10Metadata);
+        Assert.False(readiness.WritesAuditMetadata);
+        Assert.False(readiness.HasArtifactAuditMetadataRoundTripEvidence);
+        Assert.False(readiness.HasViewerRecognizedHdr10StaticMetadata);
         Assert.False(readiness.HasWindowsManualViewerValidation);
         Assert.Contains(readiness.Blockers, blocker => blocker.Contains("WIC JPEG XR", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(readiness.Blockers, blocker => blocker.Contains("metadata", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(readiness.Blockers, blocker => blocker.Contains("audit metadata", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(readiness.Blockers, blocker => blocker.Contains("Viewer-recognized HDR10", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(readiness.Blockers, blocker => blocker.Contains("viewer validation", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
-    public void WicHdr10JxrCodec_ReadinessReflectsNativeEncoderButKeepsMetadataAndValidationBlocked()
+    public void WicHdr10JxrCodec_ReadinessReflectsAuditRoundTripButKeepsViewerHdrMetadataAndValidationBlocked()
     {
         var nativeEncoder = new TestWicJpegXrEncoder(
             new WicJpegXrEncoderReadiness(
@@ -185,8 +188,11 @@ public sealed class Hdr10JxrOutputEncoderTests
         Assert.False(readiness.IsReady);
         Assert.True(readiness.HasNativeWicJpegXrEncoder);
         Assert.True(readiness.AcceptsRgba16FloatSource);
-        Assert.False(readiness.WritesHdr10Metadata);
-        Assert.Contains(readiness.Blockers, blocker => blocker.Contains("metadata writer", StringComparison.OrdinalIgnoreCase));
+        Assert.True(readiness.WritesAuditMetadata);
+        Assert.True(readiness.HasArtifactAuditMetadataRoundTripEvidence);
+        Assert.False(readiness.HasViewerRecognizedHdr10StaticMetadata);
+        Assert.True(readiness.Hdr10StaticMetadataPolicy.IsComplete);
+        Assert.Contains(readiness.Blockers, blocker => blocker.Contains("Viewer-recognized HDR10", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(readiness.Blockers, blocker => blocker.Contains("manual viewer validation", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -304,7 +310,9 @@ public sealed class Hdr10JxrOutputEncoderTests
             new(
                 HasNativeWicJpegXrEncoder: true,
                 AcceptsRgba16FloatSource: true,
-                WritesHdr10Metadata: true,
+                WritesAuditMetadata: true,
+                HasArtifactAuditMetadataRoundTripEvidence: true,
+                HasViewerRecognizedHdr10StaticMetadata: true,
                 Hdr10StaticMetadataPolicy: Hdr10StaticMetadataPolicy.Bt2020PqReference1000Nit,
                 HasWindowsManualViewerValidation: true,
                 Blockers: []);
