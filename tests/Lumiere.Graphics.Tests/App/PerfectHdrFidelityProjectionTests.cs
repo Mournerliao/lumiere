@@ -1,4 +1,5 @@
 using Lumiere.App;
+using Lumiere.Graphics.Hdr;
 using Lumiere.Graphics.Output;
 using Xunit;
 
@@ -108,6 +109,34 @@ public sealed class PerfectHdrFidelityProjectionTests
 
         Assert.Equal(FidelityClaimKind.HdrPreserved, profile.FidelityClaim.Kind);
         Assert.Contains("validated HDR-preserved", profile.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectOutputProfile_BlocksHdrPreservedClaimWhenTargetAwareReadinessIsUnresolved()
+    {
+        var contract = OutputProfileContract.Hdr10Pq with
+        {
+            IsExecutable = true,
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+            ViewerEvidence =
+            [
+                PassingHdrViewer("Microsoft Paint"),
+                PassingHdrViewer("Windows Photos"),
+                PassingHdrViewer("Chromium browsers"),
+            ],
+        };
+        var readiness = PreviewReadinessStatus.Degraded(
+            PreviewReadinessStage.Presentation,
+            "HDR readiness is unvalidated for the selected capture target.",
+            "Target-aware display capability could not be matched to a DXGI output.",
+            PreviewReadinessReason.TargetDisplayUnresolved);
+
+        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(contract, readiness);
+
+        Assert.Equal(FidelityClaimKind.Unvalidated, profile.FidelityClaim.Kind);
+        Assert.Equal("Unvalidated", profile.FidelityClaim.Label);
+        Assert.Contains("target-aware HDR readiness", profile.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("validated HDR-preserved", profile.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

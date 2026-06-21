@@ -33,24 +33,41 @@ public static class PerfectHdrFidelityProjection
     public static OutputProfileProjection ProjectOutputProfile(OutputProfileContract contract)
     {
         ArgumentNullException.ThrowIfNull(contract);
+        return ProjectOutputProfileCore(contract, readiness: null);
+    }
 
+    public static OutputProfileProjection ProjectOutputProfile(
+        OutputProfileContract contract,
+        PreviewReadinessStatus? readiness)
+    {
+        ArgumentNullException.ThrowIfNull(contract);
+        return ProjectOutputProfileCore(contract, readiness);
+    }
+
+    private static OutputProfileProjection ProjectOutputProfileCore(
+        OutputProfileContract contract,
+        PreviewReadinessStatus? readiness)
+    {
         return contract.Kind switch
         {
             OutputProfileKind.Hdr10Pq => CreateOutputProfile(
                 contract,
                 "Validate",
                 "Requires profile contract, metadata policy, supported viewer evidence, and Windows validation.",
-                isReadOnly: true),
+                isReadOnly: true,
+                readiness),
             OutputProfileKind.DisplayP3 => CreateOutputProfile(
                 contract,
                 "Build",
                 "Wide-gamut output is visible as intent, but not selectable as a fidelity claim yet.",
-                isReadOnly: true),
+                isReadOnly: true,
+                readiness),
             _ => CreateOutputProfile(
                 contract,
                 "Compat",
                 "Compatibility output; useful fallback, not the public release target.",
-                isReadOnly: false),
+                isReadOnly: false,
+                readiness),
         };
     }
 
@@ -61,6 +78,18 @@ public static class PerfectHdrFidelityProjection
         ArgumentNullException.ThrowIfNull(contract);
         ArgumentNullException.ThrowIfNull(artifacts);
         return ProjectOutputProfile(OutputValidationSessionArtifact.ApplyAllTo(contract, artifacts));
+    }
+
+    public static OutputProfileProjection ProjectOutputProfile(
+        OutputProfileContract contract,
+        IEnumerable<OutputValidationSessionArtifact> artifacts,
+        PreviewReadinessStatus? readiness)
+    {
+        ArgumentNullException.ThrowIfNull(contract);
+        ArgumentNullException.ThrowIfNull(artifacts);
+        return ProjectOutputProfile(
+            OutputValidationSessionArtifact.ApplyAllTo(contract, artifacts),
+            readiness);
     }
 
     public static ValidationPanelProjection ProjectValidation(ValidationRecordProjection? record = null) =>
@@ -164,7 +193,8 @@ public static class PerfectHdrFidelityProjection
         OutputProfileContract contract,
         string statusLabel,
         string detail,
-        bool isReadOnly) =>
+        bool isReadOnly,
+        PreviewReadinessStatus? readiness = null) =>
         new(
             contract.Label,
             statusLabel,
@@ -176,9 +206,11 @@ public static class PerfectHdrFidelityProjection
                 contract.ConversionPolicy,
                 contract.MetadataPolicy,
                 contract.ViewerCompatibilityPolicy),
-            CreateFidelityClaim(contract));
+            CreateFidelityClaim(contract, readiness));
 
-    private static FidelityClaimProjection CreateFidelityClaim(OutputProfileContract contract) =>
+    private static FidelityClaimProjection CreateFidelityClaim(
+        OutputProfileContract contract,
+        PreviewReadinessStatus? readiness) =>
         contract.FidelityMode switch
         {
             OutputFidelityMode.SdrCompatible => new FidelityClaimProjection(
@@ -187,8 +219,8 @@ public static class PerfectHdrFidelityProjection
                 "Output is optimized for compatibility, not HDR preservation.",
                 MainPanelTrustIcon.InfoCircle,
                 MainPanelTrustSeverity.Warning),
-            OutputFidelityMode.VisualMatch => CreateVisualMatchClaim(contract),
-            OutputFidelityMode.HdrPreserved => CreateHdrPreservedClaim(contract),
+            OutputFidelityMode.VisualMatch => CreateVisualMatchClaim(contract, readiness),
+            OutputFidelityMode.HdrPreserved => CreateHdrPreservedClaim(contract, readiness),
             _ => new FidelityClaimProjection(
                 FidelityClaimKind.Unvalidated,
                 "Unvalidated",
@@ -197,8 +229,15 @@ public static class PerfectHdrFidelityProjection
                 MainPanelTrustSeverity.Error),
         };
 
-    private static FidelityClaimProjection CreateVisualMatchClaim(OutputProfileContract contract)
+    private static FidelityClaimProjection CreateVisualMatchClaim(
+        OutputProfileContract contract,
+        PreviewReadinessStatus? readiness)
     {
+        if (RequiresTargetAwareReadiness(readiness))
+        {
+            return TargetAwareReadinessBlockedClaim();
+        }
+
         var evidence = contract.EvaluateEvidence();
         return evidence.AllowsVisualMatchClaim
             ? new FidelityClaimProjection(
@@ -215,8 +254,15 @@ public static class PerfectHdrFidelityProjection
                 MainPanelTrustSeverity.Error);
     }
 
-    private static FidelityClaimProjection CreateHdrPreservedClaim(OutputProfileContract contract)
+    private static FidelityClaimProjection CreateHdrPreservedClaim(
+        OutputProfileContract contract,
+        PreviewReadinessStatus? readiness)
     {
+        if (RequiresTargetAwareReadiness(readiness))
+        {
+            return TargetAwareReadinessBlockedClaim();
+        }
+
         var evidence = contract.EvaluateEvidence();
         return evidence.AllowsHdrPreservedClaim
             ? new FidelityClaimProjection(
@@ -232,6 +278,17 @@ public static class PerfectHdrFidelityProjection
                 MainPanelTrustIcon.ErrorCircle,
                 MainPanelTrustSeverity.Error);
     }
+
+    private static bool RequiresTargetAwareReadiness(PreviewReadinessStatus? readiness) =>
+        readiness?.Reason is PreviewReadinessReason.TargetDisplayUnresolved;
+
+    private static FidelityClaimProjection TargetAwareReadinessBlockedClaim() =>
+        new(
+            FidelityClaimKind.Unvalidated,
+            "Unvalidated",
+            "Fidelity claim blocked: target-aware HDR readiness is unvalidated for the selected capture target.",
+            MainPanelTrustIcon.ErrorCircle,
+            MainPanelTrustSeverity.Error);
 
     private static ValidationViewerMatrixRowProjection ProjectViewerEvidence(OutputViewerCompatibilityEvidence evidence) =>
         new(

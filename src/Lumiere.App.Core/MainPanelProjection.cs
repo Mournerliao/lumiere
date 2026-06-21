@@ -46,8 +46,8 @@ public sealed record MainPanelProjection(
         var alertMessage = MapAlertMessage(state.Readiness, outputResult, hdrAlertsEnabled);
         var selectedContract = OutputProfileContract.FromSettingsValue(exportColorFormat);
         var outputProfile = validationArtifacts is null
-            ? PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract)
-            : PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, validationArtifacts);
+            ? PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, state.Readiness)
+            : PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, validationArtifacts, state.Readiness);
         var outputResultProjection = outputResult is null
             ? OutputResultProjection.Project(outputResult, outputProfile.FidelityClaim)
             : OutputResultProjection.Project(outputResult);
