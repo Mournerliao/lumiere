@@ -33,6 +33,30 @@ public sealed class SwapChainConfigurationTests
         Assert.Equal(HdrConstants.DxgiColorSpace, options.ColorSpace);
     }
 
+    [Fact]
+    public void TargetHintNormalizeTrimsNameAndRejectsNegativeSize()
+    {
+        var hint = new SwapChainTargetHint("  HDR Display  ", -1, 2160);
+
+        var normalized = hint.Normalize();
+
+        Assert.Equal("HDR Display", normalized.DisplayName);
+        Assert.Equal(0, normalized.Width);
+        Assert.Equal(2160, normalized.Height);
+    }
+
+    [Fact]
+    public void TargetHintNormalizeUsesNullForBlankName()
+    {
+        var hint = new SwapChainTargetHint("   ", 3840, 2160);
+
+        var normalized = hint.Normalize();
+
+        Assert.Null(normalized.DisplayName);
+        Assert.Equal(3840, normalized.Width);
+        Assert.Equal(2160, normalized.Height);
+    }
+
     [Theory]
     [InlineData(0, 1080)]
     [InlineData(1920, 0)]

@@ -99,14 +99,15 @@ public sealed class SwapChainManager
             return HdrDisplayCapability.Probe(factory);
         }
 
-        if (!CachedHdrCapabilities.TryGetValue(targetHint, out var capability))
+        var normalizedHint = targetHint.Normalize();
+        if (!CachedHdrCapabilities.TryGetValue(normalizedHint, out var capability))
         {
             capability = HdrDisplayCapability.Probe(
                 factory,
-                targetHint.DisplayName,
-                targetHint.Width,
-                targetHint.Height);
-            CachedHdrCapabilities[targetHint] = capability;
+                normalizedHint.DisplayName,
+                normalizedHint.Width,
+                normalizedHint.Height);
+            CachedHdrCapabilities[normalizedHint] = capability;
         }
 
         return capability;
@@ -141,4 +142,11 @@ public sealed class SwapChainManager
 public sealed record SwapChainTargetHint(
     string? DisplayName,
     int Width,
-    int Height);
+    int Height)
+{
+    public SwapChainTargetHint Normalize() =>
+        new(
+            string.IsNullOrWhiteSpace(DisplayName) ? null : DisplayName.Trim(),
+            Math.Max(0, Width),
+            Math.Max(0, Height));
+}

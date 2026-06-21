@@ -174,8 +174,14 @@ public sealed record HdrDisplayCapability(
             return null;
         }
 
-        return outputs.FirstOrDefault(output =>
-            output.Width == targetWidth && output.Height == targetHeight);
+        var matchingOutputs = outputs
+            .Where(output => output.Width == targetWidth && output.Height == targetHeight)
+            .Take(2)
+            .ToArray();
+
+        return matchingOutputs.Length == 1
+            ? matchingOutputs[0]
+            : null;
     }
 
     private static HdrDisplayCapability FromOutputSnapshot(HdrDisplayOutputSnapshot output)

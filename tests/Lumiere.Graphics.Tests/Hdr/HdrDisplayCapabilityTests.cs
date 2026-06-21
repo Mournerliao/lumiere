@@ -124,6 +124,31 @@ public sealed class HdrDisplayCapabilityTests
     }
 
     [Fact]
+    public void SelectForTarget_ReturnsUnknownWhenSizeMatchIsAmbiguous()
+    {
+        var capability = HdrDisplayCapability.SelectForTarget(
+            [
+                new HdrDisplayOutputSnapshot(
+                    "SDR Display",
+                    Width: 3840,
+                    Height: 2160,
+                    ColorSpaceType.RgbFullG22NoneP709),
+                new HdrDisplayOutputSnapshot(
+                    "HDR Display",
+                    Width: 3840,
+                    Height: 2160,
+                    ColorSpaceType.RgbFullG2084NoneP2020),
+            ],
+            targetDisplayName: null,
+            targetWidth: 3840,
+            targetHeight: 2160);
+
+        Assert.Equal(HdrDisplayState.Unknown, capability.State);
+        Assert.Null(capability.DisplayColorSpace);
+        Assert.Null(capability.DeviceName);
+    }
+
+    [Fact]
     public void Configure_WithInactiveDisplayCapability_ReturnsDegraded()
     {
         var controller = new FakeColorSpaceController(
