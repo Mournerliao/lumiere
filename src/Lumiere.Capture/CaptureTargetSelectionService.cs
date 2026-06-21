@@ -7,7 +7,7 @@ namespace Lumiere.Capture;
 /// <summary>
 /// Picker-first capture target selection service.
 /// This is a fallback/debug-only path retained for scenarios where direct monitor capture
-/// is unavailable or needs manual target selection. The default MVP path uses
+/// is unavailable or needs manual target selection. The default current-baseline path uses
 /// <see cref="DirectMonitorCaptureTargetSelectionService.CreateDirectOnly"/> instead.
 /// </summary>
 public sealed class CaptureTargetSelectionService

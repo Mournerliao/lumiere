@@ -30,7 +30,7 @@
   ],
   "resultSummary": "Template only: replace with the observed Windows manual validation result before using this artifact as evidence.",
   "evidencePaths": [
-    "docs/validation/evidence/REPLACE_WITH_SESSION_RECORD.md"
+    "harness/validation/evidence/REPLACE_WITH_SESSION_RECORD.md"
   ],
   "knownLimitations": [
     "Template only: remove or replace after validation."

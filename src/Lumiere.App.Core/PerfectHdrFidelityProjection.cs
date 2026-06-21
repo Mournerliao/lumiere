@@ -5,7 +5,7 @@ namespace Lumiere.App;
 
 public static class PerfectHdrFidelityProjection
 {
-    public const string ReleaseTarget = "Perfect HDR Fidelity Public Release";
+    public const string ReleaseTarget = "Public perfect-HDR-fidelity";
 
     public static OutputProfileProjection ProjectOutputProfile(string? exportColorFormat)
     {
@@ -470,7 +470,7 @@ public static class PerfectHdrFidelityProjection
             "Windows CI restore, build, unit tests, and format gates can support implementation confidence only.",
             ValidationEvidenceStatus.NotRun,
             "Windows manual validation for HDR displays, target apps, mixed monitors, and visual match is not run.",
-            "docs/validation/release-validation-checklist.md");
+            "harness/validation/release-validation-checklist.md");
     }
 
     public static ValidationRecordProjection ProjectValidationRecord(
@@ -488,7 +488,7 @@ public static class PerfectHdrFidelityProjection
                 WindowsManualValidationStatus = ValidationEvidenceStatus.Limited,
                 WindowsManualValidationDetail =
                     $"{validationSnapshot.Artifacts.Count} output validation artifact(s) loaded, but {validationSnapshot.LoadIssues.Count} file(s) were ignored. Fix ignored JSON/schema files before counting Windows manual output evidence. First issue: {Path.GetFileName(firstIssue.Path)}: {firstIssue.Detail}",
-                EvidenceDocumentPath = "docs/validation/output-validation.md",
+                EvidenceDocumentPath = "harness/validation/output-validation.md",
             };
         }
 
@@ -499,7 +499,7 @@ public static class PerfectHdrFidelityProjection
                 WindowsManualValidationStatus = ValidationEvidenceStatus.Limited,
                 WindowsManualValidationDetail =
                     $"{validationSnapshot.Artifacts.Count} output validation artifact(s) loaded for this session. Release gates still require target-aware HDR, visual match, HDR preservation, and HDR10 metadata recognition to pass.",
-                EvidenceDocumentPath = "docs/validation/output-validation.md",
+                EvidenceDocumentPath = "harness/validation/output-validation.md",
             };
         }
 
@@ -805,3 +805,4 @@ public enum ValidationEvidenceStatus
     NotRun,
     NotApplicable,
 }
+

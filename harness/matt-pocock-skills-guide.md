@@ -36,7 +36,7 @@ This document provides a usage guide for the skills installed from [mattpocock/s
 
 ### improve-codebase-architecture -- Architecture Improvement
 
-**When to use:** When the codebase feels tightly coupled, needs refactoring, or you want to improve testability and AI-navigability. References `CONTEXT.md` and `docs/adr/` for informed suggestions.
+**When to use:** When the codebase feels tightly coupled, needs refactoring, or you want to improve testability and AI-navigability. References `CONTEXT.md` and `harness/architecture/adr/` for informed suggestions.
 
 **How to use:** Describe what you want to improve, such as finding the most coupled modules or making the codebase more testable.
 

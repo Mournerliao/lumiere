@@ -8,9 +8,9 @@ This glossary defines Lumiere's product-domain terms. It records the language us
 Evidence-backed fidelity for explicitly supported capture, preview, and output paths. It does not mean every device, application, format, and viewing condition is guaranteed.
 _Avoid_: Universal HDR perfection, all-app HDR guarantee, unbounded HDR promise
 
-**Perfect HDR Fidelity Public Release**:
+**Public perfect-HDR-fidelity**:
 The fixed public release target for Lumiere. The first public release must include evidence-backed visual-match output and at least one HDR-preserved supported output path; SDR-compatible output may exist as a fallback or auxiliary path but cannot replace this target.
-_Avoid_: Public SDR-Compatible Fidelity Release, downscoped public fidelity release, private-preview rebrand
+_Avoid_: Public SDR-Compatible Fidelity Release, downscoped public fidelity release, foundation-baseline relabel
 
 **Supported Output Path**:
 A capture output path that Lumiere publicly enables and validates with a written fidelity contract, target-app or viewer assumptions, and recorded Windows evidence.
@@ -33,7 +33,7 @@ A validated output path whose SDR or HDR appearance is checked against real HDR 
 _Avoid_: Looks fine locally, screenshot seems okay, unvalidated visual match
 
 **Fidelity Design Extension**:
-A design pass that extends the existing v0 MVP workflow reference with Perfect HDR Fidelity states, output profiles, validation evidence, and release-copy boundaries. It must preserve the existing design language instead of replacing it with a separate visual system.
+A design pass that extends the existing v0 public-fidelity workflow reference with Perfect HDR Fidelity states, output profiles, validation evidence, and release-copy boundaries. It must preserve the existing design language instead of replacing it with a separate visual system.
 _Avoid_: New design direction, v1 redesign, replacement design spec
 
 **Highlight Preservation Priority**:
@@ -65,9 +65,11 @@ A fidelity mode that Lumiere may name as product direction but cannot enable or 
 _Avoid_: Coming soon support, hidden HDR success, partially supported preservation
 
 **SDR-Compatible Fidelity**:
-A fallback or auxiliary fidelity level where Lumiere captures HDR-aware content and produces a validated SDR-compatible artifact with explicit conversion semantics. It is not sufficient by itself for Perfect HDR Fidelity Public Release.
+A fallback or auxiliary fidelity level where Lumiere captures HDR-aware content and produces a validated SDR-compatible artifact with explicit conversion semantics. It is not sufficient by itself for Public perfect-HDR-fidelity.
 _Avoid_: HDR-preserved output, exact HDR output, generic SDR fallback
 
 **HDR-Preserved Fidelity**:
 A public fidelity level where Lumiere preserves HDR semantics in the output artifact through a validated format, metadata policy, target-app assumptions, and Windows evidence. It is not implied by capture success or SDR-compatible output.
 _Avoid_: HDR-looking output, copied HDR, saved HDR without contract
+
+

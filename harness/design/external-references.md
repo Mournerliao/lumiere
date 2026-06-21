@@ -43,11 +43,11 @@ Use these products for workflow comparison, not visual copying:
 
 ## Imported Design References
 
-### v0.dev MVP Prototype
+### v0.dev Public-Fidelity Prototype
 
 - Source: imported from `/Users/asherliao/Downloads/b_rQnQ7Q13jLu`.
-- Installed path: `harness/design/v0-mvp-reference/`.
-- Use for: current MVP visual direction for the main panel, settings panel, tray context menu, and HDR status simulation.
+- Installed path: `harness/design/prototype/v0-public-fidelity-reference/`.
+- Use for: current public-fidelity visual direction for the main panel, settings panel, tray context menu, and HDR status simulation.
 - Boundary: keep it as a React/Next design reference only. Do not introduce web UI dependencies or treat prototype HDR/SDR wording as validated product behavior.
 
 ## External Skills Not Installed

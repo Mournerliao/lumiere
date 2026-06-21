@@ -901,7 +901,7 @@
                         FontSize="12"
                         FontWeight="SemiBold"
                         Foreground="{StaticResource TextBrush}"
-                        Text="Perfect HDR Fidelity Public Release"
+                        Text="Public perfect-HDR-fidelity"
                         TextWrapping="WrapWholeWords" />
                     <TextBlock
                         x:Name="ValidationSummaryText"
@@ -1199,7 +1199,7 @@
                       x:Name="ValidationRecordEvidencePathText"
                       FontSize="9"
                       Foreground="{StaticResource SubtleTextBrush}"
-                      Text="docs/validation/release-validation-checklist.md"
+                      Text="harness/validation/release-validation-checklist.md"
                       TextWrapping="WrapWholeWords" />
                 </StackPanel>
               </StackPanel>
@@ -1534,3 +1534,4 @@
     </Grid>
   </Grid>
 </Window>
+

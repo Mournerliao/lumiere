@@ -18,7 +18,7 @@ product
 
 Lumiere should make screenshot capture feel native, precise, and trustworthy on Windows. The main product promise is not decoration or cloud sharing; it is accurate capture, accurate preview, clear export behavior, and a low-interruption workflow.
 
-The current public release target is Perfect HDR Fidelity Public Release. The MVP capture loop may be used as an internal/private preview foundation, but public release claims require target-aware HDR detection, documented output fidelity semantics, target-app compatibility evidence, Windows manual validation, visual-match output, and at least one HDR-preserved supported output path.
+The current public release target is Public perfect-HDR-fidelity. The current capture and workflow baseline provides the product foundation, but public release claims require target-aware HDR detection, documented output fidelity semantics, target-app compatibility evidence, Windows manual validation, visual-match output, and at least one HDR-preserved supported output path.
 
 ## Strategic Principles
 
@@ -42,3 +42,4 @@ Calm, precise, professional, native, and concise. The UI should sound like a rel
 - Unverified HDR claims.
 - Cloud-sharing-first screenshot tools.
 - Decorative motion that delays capture or confirmation.
+

@@ -2,7 +2,7 @@
 
 Lumiere is a native Windows desktop screenshot tool focused on HDR-correct capture and preview. The application foundation is WinUI 3 on Windows App SDK with Windows Graphics Capture, Direct3D 11, DXGI, and Vortice for the future GPU-resident HDR pipeline.
 
-The current public release target is validated perfect HDR fidelity for supported paths. The existing MVP capture loop is treated as the foundation for internal/private preview and validation; public release requires target-aware HDR detection, documented output semantics, compatibility evidence, and Windows manual validation.
+The current public release target is validated perfect HDR fidelity for supported paths. The existing capture and workflow baseline is treated as the implementation foundation; public release requires target-aware HDR detection, documented output semantics, compatibility evidence, and Windows manual validation.
 
 ## Platform Constraints
 

@@ -3,7 +3,7 @@ using Lumiere.Graphics.Output;
 namespace Lumiere.Settings;
 
 /// <summary>
-/// Provides shared local settings for MVP settings consumers.
+/// Provides shared local settings for capture, shell, and output consumers.
 /// </summary>
 public sealed class DefaultSettingsProvider : ISettingsWriterAggregator
 {

@@ -2,7 +2,7 @@
 
 Story 3.1 adds the first fullscreen overlay host for the HDR preview path. Automated tests cover the hardware-independent state and layout seams; the following checks require a Windows desktop with WinUI, WGC, DXGI, D3D11, and HDR-capable display validation.
 
-MVP rebaseline note: the default user path is direct monitor capture with no picker-first interruption, then drag a region and release the pointer to capture/copy. Explicit confirm controls are historical/internal foundation behavior unless a debug or fallback path exposes them.
+Foundation rebaseline note: the default user path is direct monitor capture with no picker-first interruption, then drag a region and release the pointer to capture/copy. Explicit confirm controls are historical/internal foundation behavior unless a debug or fallback path exposes them.
 
 ## Automated Checks
 
@@ -40,7 +40,7 @@ Story 3.2 adds crop creation over the live preview. In addition to the Story 3.1
 6. Press Escape or Cancel while creating a crop and verify overlay teardown still works without leaving a stuck creating state.
 7. Repeat on high-DPI scaling, HDR/SDR displays, and multi-monitor placements; record whether behavior is `Windows manual-pass`, degraded, or failed.
 
-Story 3.2 does not validate resize handles, release-to-copy output, annotations, or HDR export fidelity. Release-to-copy is covered by Story 3.6 and MVP clipboard output is covered by Epic 4.
+Story 3.2 does not validate resize handles, release-to-copy output, annotations, or HDR export fidelity. Release-to-copy is covered by Story 3.6 and clipboard foundation output is covered by Epic 4.
 
 ## Story 3.3 Crop Adjustment Checks
 
@@ -57,11 +57,11 @@ Story 3.3 adds adjustment handles, edge resizing, crop recreation, and the pure 
 9. Confirm the white filled handles with dark strokes, dual crop boundary, and dimmed mask remain visible over bright, dark, and high-contrast HDR preview content.
 10. Repeat handle and recreation gestures on common Windows scaling values, HDR and SDR displays, and multi-monitor placements; record whether behavior is `Windows manual-pass`, degraded, or failed.
 
-Story 3.3 does not implement release-to-copy output, annotations, global hotkeys, tray workflow, or HDR export fidelity. Coordinate mapping is covered by automated tests and is ready for release-to-copy and MVP clipboard output stories to consume.
+Story 3.3 does not implement release-to-copy output, annotations, global hotkeys, tray workflow, or HDR export fidelity. Coordinate mapping is covered by automated tests and is ready for release-to-copy and clipboard foundation output stories to consume.
 
 ## Story 3.4 Confirm and Cancel Foundation Checks
 
-Story 3.4 adds the typed confirmation/cancel foundation used internally by the later release-to-copy MVP path. These checks validate the foundation where it remains exposed through tests, debug UI, or fallback flows; explicit confirm controls are not the default MVP overlay interaction. In addition to the Story 3.1 through 3.3 checks:
+Story 3.4 adds the typed confirmation/cancel foundation used internally by the later release-to-copy path. These checks validate the foundation where it remains exposed through tests, debug UI, or fallback flows; explicit confirm controls are not the default baseline overlay interaction. In addition to the Story 3.1 through 3.3 checks:
 
 1. If explicit controls are exposed, open the overlay without a crop and verify `Confirm crop` is disabled while `Cancel` remains available.
 2. If explicit controls are exposed, create a valid crop and verify `Confirm crop` enables without resizing or shifting the `SwapChainPanel`, crop canvas, status panel, mask, or crop coordinate mapping.
@@ -74,7 +74,7 @@ Story 3.4 adds the typed confirmation/cancel foundation used internally by the l
 9. Force or simulate unsupported capture, preview failure, closing, and disposed states; verify confirm is disabled or rejected, while cancel still closes wherever safe.
 10. Repeat confirm and cancel checks on common Windows scaling values, HDR and SDR displays, and multi-monitor placements; record whether behavior is `Windows manual-pass`, degraded, or failed.
 
-Story 3.4 still does not implement the default release-to-copy interaction, file export, annotation, capture history, tone mapping, HDR still image encoding, global hotkeys, tray workflow, or final HDR/SDR output semantics. The MVP completion path is validated in Story 3.6 and Epic 4.
+Story 3.4 still does not implement the default release-to-copy interaction, file export, annotation, capture history, tone mapping, HDR still image encoding, global hotkeys, tray workflow, or final HDR/SDR output semantics. The baseline completion path is validated in Story 3.6 and Epic 4.
 
 ## Story 3.5 Hit Testing and Escape Checks
 
@@ -92,7 +92,7 @@ Story 3.5 does not introduce whole-window pass-through mode for crop-capable ove
 
 ## Story 3.6 Release-to-Capture Checks
 
-Story 3.6 changes the MVP overlay completion path from explicit confirm controls to release-to-capture/copy. In addition to the Story 3.1 through 3.5 checks:
+Story 3.6 changes the baseline overlay completion path from explicit confirm controls to release-to-capture/copy. In addition to the Story 3.1 through 3.5 checks:
 
 1. Click the default Capture action and confirm no picker appears before overlay entry.
 2. Drag a valid crop and release the pointer; verify the crop is confirmed without clicking a Confirm button.

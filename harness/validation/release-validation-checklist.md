@@ -2,10 +2,9 @@
 
 Updated: 2026-06-21
 
-This checklist is the live release-gate view for Lumiere. It tracks two distinct gates:
+This checklist is the live release-gate view for Lumiere. Its single current target is **Public perfect-HDR-fidelity**.
 
-1. **Private Preview / Early Validation:** the MVP foundation is usable by trusted testers with documented limitations.
-2. **Perfect HDR Fidelity Public Release:** public release claims require target-aware HDR detection, output fidelity contracts, compatibility evidence, Windows manual validation, visual-match output evidence, and at least one HDR-preserved supported output path.
+Foundation readiness checks still matter because they provide the baseline evidence the public-fidelity release builds on, but they are not a separate current release brand or stage.
 
 Use this document to record manual Windows validation that may already have happened, to decide which release gate a build satisfies, and to add new validation items when product behavior changes.
 
@@ -21,9 +20,9 @@ Use this document to record manual Windows validation that may already have happ
 
 Validation evidence should include date, tester, build or commit, device/display setup, Windows version, display mode, DPI scale, output target apps where relevant, observed result, and any log or screenshot path.
 
-## Minimum Private Preview / Early Validation Gates
+## Foundation Readiness Checks
 
-These are the minimum gates before calling a build "Private Preview" or "Early Validation" instead of "Internal Alpha". They do not approve Perfect HDR Fidelity Public Release.
+These are the minimum baseline checks that should be recorded before treating the current implementation as a credible foundation for Public perfect-HDR-fidelity. They do not by themselves approve public release.
 
 | Gate | Required evidence | Current status | Evidence / notes |
 |---|---|---|---|
@@ -31,26 +30,26 @@ These are the minimum gates before calling a build "Private Preview" or "Early V
 | Direct capture entry | Main window, tray, and hotkey can enter capture without picker-first interruption. | NOT RUN | User reports some validation exists; backfill date, build, device, display setup, and observed result before counting it. |
 | Region capture loop | Drag valid crop, release to capture/output, overlay closes, app returns to ready state. | NOT RUN | Link detailed checks from `overlay-validation.md`. |
 | Fullscreen capture loop | Fullscreen command captures current target and produces configured output. | NOT RUN | Must include no stuck overlay/session state. |
-| Output usability | Clipboard and folder output work for the selected private-preview scope. | NOT RUN | Include target app paste/open/reveal observations. |
+| Output usability | Clipboard and folder output work for the current baseline scope. | NOT RUN | Include target app paste/open/reveal observations. |
 | HDR status honesty | HDR state shown in UI matches observed display configuration and does not overclaim preservation. | NOT RUN | Must cover at least one HDR-active and one non-HDR/degraded condition if available. |
 | Tray/background workflow | Minimize/close-to-tray, tray capture commands, open settings/main window, and quit work. | NOT RUN | Epic 7 recorded manual evidence on 2026-05-26; confirm still valid for current build before counting it. |
 | Repeated lifecycle stability | 10+ capture/cancel/output cycles show no stuck state or obvious resource growth. | NOT RUN | Use `lifecycle-validation.md` for detailed checks. |
 | DPI/layout sanity | Main panel, settings, overlay, and InfoBar remain usable at tested DPI scales. | NOT RUN | Minimum: current tester DPI. Preferred: 100%, 125%, 150%, 200%. |
 | Known limitations reviewed | Remaining NOT RUN or PASS-with-limitation items are listed in release notes. | NOT RUN | Must happen after this checklist is filled. |
 
-## Perfect HDR Fidelity Public Release Gates
+## Public perfect-HDR-fidelity Gates
 
-These gates apply to the fixed public release target. They are stricter than the minimum Private Preview / Early Validation gates above and must prove both visual-match output and at least one HDR-preserved supported output path.
+These gates apply to the fixed public release target. They are stricter than the foundation readiness checks above and must prove both visual-match output and at least one HDR-preserved supported output path.
 
 | Gate | Required evidence | Current status | Evidence / notes |
 |---|---|---|---|
-| Fidelity definition approved | Written definition distinguishes data-preserving capture, HDR preview match, SDR-compatible conversion, and HDR-preserved file export. | NOT RUN | Planned in Epic 11. Needed before advanced export work starts. |
-| Target-aware HDR detection | HDR readiness is tied to the active capture target display/output, including mixed HDR/SDR multi-monitor setups. | NOT RUN | Planned in Epic 10. Current known limitation: first-output probing is not enough for public fidelity claims. |
-| HDR-preserved output profile contract | At least one enabled output profile has source format, destination format, transfer function, primaries, conversion/tone-mapping policy, metadata policy, and named viewer assumptions for HDR preservation. | NOT RUN | Planned in Epic 11. SDR-compatible output can supplement this but cannot replace it. |
-| Supported output compatibility matrix | Visual-match output and HDR-preserved output are validated against named target apps and viewers. | NOT RUN | Planned in Epic 11/Epic 12. Must separate "artifact written", "visual match", and "HDR preserved". |
-| HDR/SDR visual validation set | Standard test content covers bright highlights, SDR/HDR mixed content, browser/media/game scenarios, and display mode changes. | NOT RUN | Planned in Epic 12. Required to support public fidelity claims. |
-| Multi-monitor and DPI validation | HDR/SDR mixed displays and common DPI scales are recorded with pass/fail/limitation status. | NOT RUN | Planned in Epic 10/Epic 12. Public claims cannot imply untested display topologies. |
-| Long-run lifecycle evidence | Repeated capture/output cycles record private bytes, handles, and GPU resource trends. | NOT RUN | Planned in Epic 12. Prefer 50+ or 100+ cycles for public release confidence. |
+| Fidelity definition approved | Written definition distinguishes data-preserving capture, HDR preview match, SDR-compatible conversion, and HDR-preserved file export. | PASS with limitation | Output profile contracts and UI projections now distinguish SDR-compatible, visual-match, HDR-preserved, and unvalidated paths. Final public copy review still required before release. |
+| Target-aware HDR detection | HDR readiness is tied to the active capture target display/output, including mixed HDR/SDR multi-monitor setups. | PASS with limitation | Code now carries display identity and probes by target evidence where available; mixed HDR/SDR multi-monitor Windows manual validation is still required before this can count as an unrestricted public claim. |
+| HDR-preserved output profile contract | At least one enabled output profile has source format, destination format, transfer function, primaries, conversion/tone-mapping policy, metadata policy, and named viewer assumptions for HDR preservation. | NOT RUN | HDR10 JXR codec/readback/audit metadata seams exist, but runtime HDR10 export remains gated until viewer-recognized HDR10 metadata and Windows manual viewer validation pass. SDR-compatible output can supplement this but cannot replace it. |
+| Supported output compatibility matrix | Visual-match output and HDR-preserved output are validated against named target apps and viewers. | NOT RUN | Viewer evidence is modeled and can be loaded from validation artifacts, but real named target-app/viewer evidence has not been recorded. Must separate "artifact written", "visual match", and "HDR preserved". |
+| HDR/SDR visual validation set | Standard test content covers bright highlights, SDR/HDR mixed content, browser/media/game scenarios, and display mode changes. | NOT RUN | Checklist categories and output validation artifact template exist; actual standard content and executed validation sessions still need to be recorded. |
+| Multi-monitor and DPI validation | HDR/SDR mixed displays and common DPI scales are recorded with pass/fail/limitation status. | NOT RUN | Target-aware code support exists, but public claims cannot imply untested display topologies or DPI configurations. |
+| Long-run lifecycle evidence | Repeated capture/output cycles record private bytes, handles, and GPU resource trends. | NOT RUN | No focused 50+ or 100+ cycle resource trend evidence has been recorded yet. |
 | Public release copy review | Release notes and UI copy only claim fidelity modes that passed validation. | NOT RUN | Planned as final release gate. Limitations and unsupported modes must be explicit. |
 
 ## Functional Validation Matrix
@@ -164,5 +163,5 @@ When a feature changes or a new feature is added:
 2. Add retest triggers so future changes know when the row becomes stale.
 3. If the feature touches WGC, DXGI, D3D11, HDR, multi-monitor behavior, clipboard, filesystem, tray, hotkeys, or packaging, require Windows manual validation.
 4. Link detailed workflows to focused documents such as `overlay-validation.md`, `output-validation.md`, and `lifecycle-validation.md` instead of duplicating every step here.
-5. Update `mvp-release-validation-matrix.md` only after this checklist has recorded evidence.
+5. Update `history/foundation-validation-snapshot-2026-06-03.md` only when a new point-in-time snapshot is intentionally recorded.
 

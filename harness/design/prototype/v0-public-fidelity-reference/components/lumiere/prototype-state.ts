@@ -174,4 +174,5 @@ export const VALIDATION_STATUS_UI: Record<ValidationStatus, { label: string; cla
   na: { label: "N/A", className: "text-muted-foreground" },
 }
 
-export const RELEASE_TARGET = "Perfect HDR Fidelity Public Release"
+export const RELEASE_TARGET = "Public perfect-HDR-fidelity"
+

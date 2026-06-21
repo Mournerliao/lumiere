@@ -48,4 +48,4 @@ Any UI copy, design doc, or review note that references HDR, WinUI, WGC, DXGI, D
 
 ## Prototype Boundary
 
-The imported v0.dev MVP prototype is a visual reference, not a source of verified product behavior. Any SDR fallback wording, HDR completeness claim, color format option, or preview guarantee in the prototype must be reviewed against Lumiere's HDR invariants before it is implemented.
+The imported v0.dev public-fidelity prototype is a visual reference, not a source of verified product behavior. Any SDR fallback wording, HDR completeness claim, color format option, or preview guarantee in the prototype must be reviewed against Lumiere's HDR invariants before it is implemented.

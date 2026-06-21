@@ -1,9 +1,11 @@
-# MVP Release Validation Matrix
+# Foundation Validation Snapshot (Historical)
 
 Generated: 2026-06-03
-Story: 8.5 Run MVP Release Validation Matrix
+Story provenance: 8.5 "Run MVP Release Validation Matrix"
 
-This document captures the MVP release validation snapshot created for Story 8.5. For ongoing private-preview or public-release decisions, use `docs/validation/release-validation-checklist.md` as the live release-gate checklist, then update this matrix when a new validation snapshot is recorded.
+This document is a historical point-in-time validation snapshot captured on 2026-06-03. It is not the current live release-gate document for Lumiere.
+
+This document captures the implementation-foundation validation snapshot created for Story 8.5. For current release decisions, use `harness/validation/release-validation-checklist.md` as the live release-gate checklist, then record a new historical snapshot when intentionally needed.
 
 ## Section 1: Automated Gates
 
@@ -89,7 +91,7 @@ All manual validation scenarios require interactive desktop access with real Win
 
 ## Section 3: Validation Gap Inventory
 
-Gaps sourced from `docs/validation/mvp-validation-registry.md` and story acceptance criteria, classified per AC2.
+Gaps sourced from `harness/validation/history/foundation-validation-registry-2026-06-03.md` and story acceptance criteria, classified per AC2.
 
 ### Hardware/Platform Behavior (Epic 4) — 5 gaps
 
@@ -152,7 +154,7 @@ Gaps sourced from `docs/validation/mvp-validation-registry.md` and story accepta
 
 ### Automated Gates Status
 
-All automated gates pass. The only exception is 2 pre-existing test failures in `DefaultSettingsProviderTests` that are documented in `deferred-work.md` and unrelated to the MVP capture loop. No source code was modified during this validation process.
+All automated gates pass. The only exception is 2 pre-existing test failures in `DefaultSettingsProviderTests` that are documented in `deferred-work.md` and unrelated to the capture-foundation loop under review. No source code was modified during this validation process.
 
 ### Windows Manual Validation Status
 
@@ -162,9 +164,9 @@ No manual validation scenarios were executed in this validation run. 10 scenario
 
 The remaining 33 scenarios have no manual validation evidence.
 
-### Capabilities Validated for Private Preview / Early Validation
+### Capabilities Considered Usable In This Historical Foundation Snapshot
 
-The following capabilities had sufficient evidence for private preview or early validation under the 2026-06-03 MVP foundation bar. This section does not approve Perfect HDR Fidelity Public Release.
+The following capabilities had sufficient evidence for the 2026-06-03 foundation baseline snapshot. This section does not approve Public perfect-HDR-fidelity.
 
 1. **Capture lifecycle management** (Epic 4): command routing, session state machine, direct monitor capture path — Windows CI-pass + partial manual
 2. **Overlay and crop interaction** (Epic 4): crop creation, adjustment, release-to-capture — Windows CI-pass + partial manual at 150% DPI
@@ -173,7 +175,7 @@ The following capabilities had sufficient evidence for private preview or early 
 5. **Tray, hotkeys, and background** (Epic 7): all tray/hotkey/quit capabilities — Windows manual-pass
 6. **HDR trust model** (Epic 8): state mapping, alerts, diagnostics — Windows CI-pass
 
-### Known Limitations for Private Preview / Early Validation Users
+### Known Limitations In This Historical Foundation Snapshot
 
 1. **Multi-monitor**: overlay placement and capture targeting on multi-monitor setups not validated. May work but is unconfirmed.
 2. **DPI scaling**: only 150% DPI was tested. Users at 100%, 125%, or 200% may encounter visual issues.
@@ -184,13 +186,13 @@ The following capabilities had sufficient evidence for private preview or early 
 7. **Resource trends**: no long-running resource stability data. Code manages disposal deterministically but 10+ cycle resource monitoring not performed.
 8. **Settings persistence in packaged context**: settings JSON persistence works in development; packaged app relaunch not verified.
 
-### MVP Foundation Blockers
+### Historical Foundation Baseline Blockers
 
-**No MVP foundation blockers identified in this 2026-06-03 snapshot.** All 21 validation gaps were classified as limitations (11) or deferred risks (10) for the MVP foundation/private-preview bar. This does not mean Perfect HDR Fidelity Public Release is unblocked; that release target is governed by `docs/validation/release-validation-checklist.md`.
+**No historical foundation-baseline blockers were identified in this 2026-06-03 snapshot.** All 21 validation gaps were classified as limitations (11) or deferred risks (10) for the implementation foundation captured at that time. This does not mean Public perfect-HDR-fidelity is unblocked; that release target is governed by `harness/validation/release-validation-checklist.md`.
 
 ### Recommendation
 
-Lumiere was considered usable for private preview / early validation with documented limitations under this snapshot. Perfect HDR Fidelity Public Release requires the stricter gates in `docs/validation/release-validation-checklist.md`. Priority follow-up validation should target:
+Lumiere was considered usable as a historical implementation foundation with documented limitations under this snapshot. Public perfect-HDR-fidelity requires the stricter gates in `harness/validation/release-validation-checklist.md`. Priority follow-up validation should target:
 1. Multi-monitor behavior (deferred risk — NFR27)
 2. DPI scaling at 100%/125%/200% (deferred risk — NFR27)
 3. HDR display rendering (deferred risk — HDR trust model)

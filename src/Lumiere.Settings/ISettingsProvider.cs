@@ -3,7 +3,7 @@ using Lumiere.Graphics.Output;
 namespace Lumiere.Settings;
 
 /// <summary>
-/// Read-only settings provider for MVP settings.
+/// Read-only settings provider for shared capture and output settings.
 /// </summary>
 public interface ISettingsProvider
 {

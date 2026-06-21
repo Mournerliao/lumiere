@@ -1,6 +1,6 @@
-# Lumiere v0 MVP Reference
+# Lumiere v0 Public-Fidelity Reference
 
-This folder contains the imported v0.dev MVP design reference for Lumiere.
+This folder contains the imported v0.dev public-fidelity design reference for Lumiere.
 
 It is a runnable Next/React prototype used for durable UX reference only. It is not production application code and must not introduce a web UI dependency into Lumiere's WinUI 3 implementation.
 

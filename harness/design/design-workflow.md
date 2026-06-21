@@ -50,6 +50,6 @@ Do not use Impeccable to:
 
 - Store durable UX guidance in `harness/design/`.
 - Keep generated, stage-specific planning output in `_bmad-output/`.
-- Treat `v0-mvp-reference/` as design reference only; translate visual hierarchy, density, and copy intent into native WinUI/Fluent patterns.
+- Treat `prototype/v0-public-fidelity-reference/` as a runnable design reference only; translate visual hierarchy, density, and copy intent into native WinUI/Fluent patterns.
 - Do not copy React, Tailwind, Radix, shadcn, or web-specific layout code into `src/`.
 - Update `harness/design/index.md` whenever a durable design document is added, moved, or removed.

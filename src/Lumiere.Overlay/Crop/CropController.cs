@@ -96,8 +96,8 @@ public sealed class CropController
             return false;
         }
 
-        // MVP: handle/edge adjustment is disabled. Release-to-capture completes on first
-        // pointer release, so there is no opportunity to adjust. Post-MVP, restore the
+        // Current baseline: handle/edge adjustment is disabled. Release-to-capture completes on first
+        // pointer release, so there is no opportunity to adjust. Later public-fidelity work can restore the
         // full HitTest path below to enable two-step crop (create → adjust → confirm).
         //
         // var hitTest = HitTest(start);

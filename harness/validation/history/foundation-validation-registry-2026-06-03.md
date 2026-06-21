@@ -1,9 +1,11 @@
-# MVP Validation Registry
+# Foundation Validation Registry (Historical Snapshot)
 
 Generated: 2026-06-03
-Story: 8.4 Record Validation Level for Every MVP Capability
+Story provenance: 8.4 "Record Validation Level for Every MVP Capability"
 
-This registry records the validation level for every MVP capability implemented in Epic 4 through Epic 8. It ensures release claims do not outrun evidence and that validation gaps are explicitly tracked.
+This document is a historical validation registry captured on 2026-06-03. It is not the current release-gate document for Lumiere.
+
+This registry records the validation level for the implementation foundation captured across Epic 4 through Epic 8. It preserves the original story context while ensuring release claims do not outrun evidence and that validation gaps are explicitly tracked.
 
 ## Validation Level Assignment Rules
 
@@ -133,14 +135,14 @@ The following capabilities require Windows manual validation but currently only 
 
 ### Validation Gap Summary
 
-| Category | Gap Count | MVP foundation blocker? | Public perfect-HDR-fidelity blocker? |
+| Category | Gap Count | Historical foundation baseline blocker? | Public perfect-HDR-fidelity blocker? |
 |----------|-----------|-------------------------|----------------------------------|
-| Hardware/platform behavior (Epic 4) | 5 | No — classified as limitation or deferred risk for private preview | Yes where target-aware HDR, multi-monitor, or DPI claims are public |
-| Settings/accessibility (Epic 5) | 5 | No — accessibility gaps are limitations for private preview | Yes for public accessibility or broad Windows compatibility claims |
-| Output behavior (Epic 6) | 4 | No — clipboard/folder behavior classified as limitation for private preview | Yes for HDR-preserving output or target-app compatibility claims |
-| HDR display (Epic 8) | 4 | No — HDR trust gaps classified as deferred risk for private preview | Yes for public HDR fidelity claims |
-| Performance/stability (NFR1, NFR5) | 3 | No — responsiveness and resource gaps classified as limitation for private preview | Yes for public reliability claims until long-run evidence exists |
-| **Total** | **21** | **No MVP foundation blockers in this snapshot** | **Public release governed by `release-validation-checklist.md` Perfect HDR Fidelity gates** |
+| Hardware/platform behavior (Epic 4) | 5 | No — classified as limitation or deferred risk for the 2026-06-03 foundation baseline | Yes where target-aware HDR, multi-monitor, or DPI claims are public |
+| Settings/accessibility (Epic 5) | 5 | No — accessibility gaps are limitations for the 2026-06-03 foundation baseline | Yes for public accessibility or broad Windows compatibility claims |
+| Output behavior (Epic 6) | 4 | No — clipboard/folder behavior classified as limitation for the 2026-06-03 foundation baseline | Yes for HDR-preserving output or target-app compatibility claims |
+| HDR display (Epic 8) | 4 | No — HDR trust gaps classified as deferred risk for the 2026-06-03 foundation baseline | Yes for public HDR fidelity claims |
+| Performance/stability (NFR1, NFR5) | 3 | No — responsiveness and resource gaps classified as limitation for the 2026-06-03 foundation baseline | Yes for public reliability claims until long-run evidence exists |
+| **Total** | **21** | **No historical foundation-baseline blockers in this snapshot** | **Public release governed by `release-validation-checklist.md` Public perfect-HDR-fidelity gates** |
 
 ## Story-Level Validation Evidence Map
 
@@ -162,15 +164,15 @@ The following capabilities require Windows manual validation but currently only 
 
 | Document | Path | Coverage | Validation Level |
 |----------|------|----------|-----------------|
-| **Release Validation Checklist** | `docs/validation/release-validation-checklist.md` | Active release-gate checklist for private preview and public fidelity | Live working document; records manual evidence, status, and retest triggers |
-| **MVP Release Validation Matrix** | `docs/validation/mvp-release-validation-matrix.md` | All FR/NFR — point-in-time validation snapshot | Automated gates executed; 43 manual scenarios catalogued (not-run pending human tester) |
-| Lifecycle Validation | `docs/validation/lifecycle-validation.md` | FR45, NFR5, NFR11 | Checklist defined; partial manual execution from Story 4.5 |
-| Overlay Validation | `docs/validation/overlay-validation.md` | FR47, NFR3, NFR27 | Checklist defined; partial manual execution from Story 4.5 |
-| Output Validation | `docs/validation/output-validation.md` | FR48, NFR8, NFR19 | Scope table defined; manual validation required but not executed |
+| **Release Validation Checklist** | `harness/validation/release-validation-checklist.md` | Active release-gate checklist for the 2026-06-03 foundation baseline and public fidelity | Live working document; records manual evidence, status, and retest triggers |
+| **Foundation Validation Snapshot** | `harness/validation/history/foundation-validation-snapshot-2026-06-03.md` | All FR/NFR — point-in-time validation snapshot | Automated gates executed; 43 manual scenarios catalogued (not-run pending human tester) |
+| Lifecycle Validation | `harness/validation/lifecycle-validation.md` | FR45, NFR5, NFR11 | Checklist defined; partial manual execution from Story 4.5 |
+| Overlay Validation | `harness/validation/overlay-validation.md` | FR47, NFR3, NFR27 | Checklist defined; partial manual execution from Story 4.5 |
+| Output Validation | `harness/validation/output-validation.md` | FR48, NFR8, NFR19 | Scope table defined; manual validation required but not executed |
 
 ## How to Use This Registry
 
-1. **Before release claims**: Check that any capability mentioned in release copy has at least the required validation level. Use `docs/validation/release-validation-checklist.md` as the live release-gate checklist, then consult `docs/validation/mvp-release-validation-matrix.md` for the latest recorded validation snapshot.
+1. **Before release claims**: Check that any capability mentioned in release copy has at least the required validation level. Use `harness/validation/release-validation-checklist.md` as the live release-gate checklist, then consult `harness/validation/history/foundation-validation-snapshot-2026-06-03.md` for the latest recorded validation snapshot.
 2. **Before new stories**: Reference the gap list to identify validation work that should accompany implementation.
-3. **After Windows manual validation**: Update the relevant row with evidence, date, tester, and device/display configuration. Also update the release validation matrix.
-4. **For release readiness**: The Release Validation Checklist (`docs/validation/release-validation-checklist.md`) is the active working document. This registry feeds the checklist, and the release validation matrix records point-in-time validation snapshots.
+3. **After Windows manual validation**: Update the relevant row with evidence, date, tester, and device/display configuration. Record a new historical snapshot only when you intentionally want a point-in-time freeze.
+4. **For release readiness**: The Release Validation Checklist (`harness/validation/release-validation-checklist.md`) is the active working document. This registry feeds the checklist, and the historical snapshots preserve earlier validation baselines.

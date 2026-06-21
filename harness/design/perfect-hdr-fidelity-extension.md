@@ -2,11 +2,11 @@
 
 Updated: 2026-06-21
 
-This document extends the existing `v0-mvp-reference/` design direction for the fixed Perfect HDR Fidelity Public Release target. It is a design brief and UX specification supplement, not production code and not a replacement visual system.
+This document extends the existing `prototype/v0-public-fidelity-reference/` design direction for the fixed Public perfect-HDR-fidelity target. It is a design brief and UX specification supplement, not production code and not a replacement visual system.
 
 ## Source Of Truth
 
-The v0 MVP reference remains the base for Lumiere's layout density, command hierarchy, tray/menu shape, settings organization, and compact native Windows tone. Perfect HDR Fidelity adds states and controls on top of that base so the public release can prove fidelity rather than merely claim it.
+The v0 public-fidelity prototype remains the base for Lumiere's layout density, command hierarchy, tray/menu shape, settings organization, and compact native Windows tone. Perfect HDR Fidelity adds states and controls on top of that base so the public release can prove fidelity rather than merely claim it.
 
 This extension inherits:
 
@@ -27,7 +27,7 @@ This extension adds:
 
 ## Impeccable Shape Brief
 
-**Feature summary:** Add the UI and UX model required for Perfect HDR Fidelity Public Release without replacing the v0 MVP design. The target user is a Windows HDR screenshot user who needs to capture quickly, then trust whether the result is visually matched, SDR-compatible, HDR-preserved, degraded, or unvalidated.
+**Feature summary:** Add the UI and UX model required for Public perfect-HDR-fidelity without replacing the existing v0 design reference. The target user is a Windows HDR screenshot user who needs to capture quickly, then trust whether the result is visually matched, SDR-compatible, HDR-preserved, degraded, or unvalidated.
 
 **Primary user action:** Capture a region or fullscreen target, receive configured output, and immediately understand which fidelity claim is true for that result.
 
@@ -52,7 +52,7 @@ The UI must treat fidelity as a set of separate user-facing facts, never a singl
 | HDR-preserved | Supported output profile preserves HDR according to its contract. | Profile contract and Windows validation pass. |
 | Unvalidated | Lumiere cannot prove the claim for this target/profile/viewer. | Any required evidence is missing. |
 
-Perfect HDR Fidelity Public Release requires visual-match output evidence and at least one HDR-preserved supported output path. SDR-compatible output may be useful, but it is fallback or auxiliary and must never become the public release target.
+Public perfect-HDR-fidelity requires visual-match output evidence and at least one HDR-preserved supported output path. SDR-compatible output may be useful, but it is fallback or auxiliary and must never become the public release target.
 
 ## Surface Additions
 
@@ -170,7 +170,7 @@ Recommended native shape:
 - Rows for capture target, preview path, output profile, compatibility matrix, last validation build/date, and known limitations.
 - Each row uses `Validated`, `Validated with limitation`, `Not run`, `Failed`, or `Not applicable`.
 
-Evidence surfaces must link back to `docs/validation/release-validation-checklist.md` in docs and release work. The app UI should summarize evidence; the docs remain the durable release record.
+Evidence surfaces must link back to `harness/validation/release-validation-checklist.md` in docs and release work. The app UI should summarize evidence; the docs remain the durable release record.
 
 ## Component And State Inventory
 
@@ -264,15 +264,16 @@ Before implementing or reviewing this extension, verify:
 
 Use these files together:
 
-- `harness/design/v0-mvp-reference/` for base layout and density.
+- `harness/design/prototype/v0-public-fidelity-reference/` for base layout and density.
 - `harness/design/design-principles.md` for native Windows and HDR-trust principles.
 - `harness/design/ui-review-checklist.md` for review checks.
 - `_bmad-output/planning-artifacts/ux-design-specification.md` for broader UX state model.
 - `_bmad-output/planning-artifacts/epics.md` for Epic 10-13 public fidelity work.
-- `docs/validation/release-validation-checklist.md` for release gates and evidence vocabulary.
-- `docs/adr/0001-perfect-hdr-fidelity-public-release-is-fixed-target.md` for the fixed target decision.
-- `docs/adr/0002-perfect-hdr-fidelity-design-extends-v0-reference.md` for the extension-over-replacement decision.
+- `harness/validation/release-validation-checklist.md` for release gates and evidence vocabulary.
+- `harness/architecture/adr/0001-perfect-hdr-fidelity-public-release-is-fixed-target.md` for the fixed target decision.
+- `harness/architecture/adr/0002-perfect-hdr-fidelity-design-extends-v0-reference.md` for the extension-over-replacement decision.
 
 ## Confirmation Gate
 
-This document is the design direction to carry forward unless superseded by an explicit new ADR. It keeps Perfect HDR Fidelity Public Release fixed as the public target and keeps the existing v0 MVP reference as the visual foundation.
+This document is the design direction to carry forward unless superseded by an explicit new ADR. It keeps Public perfect-HDR-fidelity fixed as the public target and keeps the existing v0 prototype reference as the visual foundation.
+

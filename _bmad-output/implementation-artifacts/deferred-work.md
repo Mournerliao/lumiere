@@ -1,6 +1,6 @@
 # Deferred Work
 
-Updated: 2026-06-21 (public fidelity cleanup pass)
+Updated: 2026-06-22 (public fidelity progress alignment)
 
 This file tracks work intentionally deferred after implementation, review, or retrospective. It is not a graveyard: every unresolved item should either have a target epic/story hint, an accepted-tech-debt label, or a clear reason it remains parked.
 
@@ -17,20 +17,20 @@ These items do not block the existing MVP foundation or private validation build
 ### Target-aware HDR detection
 
 - Source: 2026-06-21 course correction and prior Story 8-2 review.
-- Current limitation: HDR probing has relied on first-output style evidence in parts of the pipeline and is not sufficient for mixed HDR/SDR multi-monitor public claims.
-- Required before public release: Epic 10 target-aware display/output identity, active-target HDR probing, and mixed-monitor validation evidence.
+- Current state: capture targets now preserve display identity, target-aware HDR probing can match by display name, desktop bounds, or unambiguous size, and unresolved target evidence is surfaced as unvalidated rather than `HDR Ready`.
+- Remaining public-release blocker: mixed HDR/SDR and multi-monitor Windows manual validation evidence is still required before public claims can count Epic 10 complete.
 
 ### HDR fidelity contract and supported output profile semantics
 
 - Source: 2026-06-21 course correction.
-- Current limitation: basic PNG/clipboard usability exists, while HDR10/P3 or HDR-preserving output semantics are not yet implemented and validated.
-- Required before public release: Epic 11 fidelity definition, output profile contract, conversion/tone-mapping policy, metadata policy, and target-app compatibility evidence.
+- Current state: output profile contracts now distinguish SDR-compatible, visual-match, HDR-preserved, and unvalidated modes; runtime capability gates prevent unsupported profiles from becoming fidelity claims; HDR10 JXR encoder/readback seams and audit metadata exist behind readiness gates.
+- Remaining public-release blocker: at least one HDR-preserved output profile still needs complete viewer-recognized HDR10 metadata evidence, target-app compatibility evidence, and Windows manual validation before it can be treated as a supported public-release path.
 
 ### Public release validation evidence
 
 - Source: 2026-06-21 course correction and `docs/validation/release-validation-checklist.md`.
-- Current limitation: manual validation evidence exists or may exist informally, but it must be backfilled into the release checklist and expanded for public fidelity claims.
-- Required before public release: Epic 12 validation content/scenarios, public fidelity gate status, and long-run resource trend evidence.
+- Current state: the public release checklist, output validation artifact model, validation artifact loader, schema template, load-issue surfacing, and JXR viewer-evidence evaluator exist.
+- Remaining public-release blocker: real Windows validation artifacts must still be recorded for target-aware HDR, visual match, HDR preservation, target apps/viewers, mixed displays, DPI, and long-run resource trends.
 
 ## Active Technical Debt
 
@@ -98,10 +98,9 @@ None currently unresolved.
 ### HDR probe hardcodes output index 0
 
 - Source: Story 8-2 review.
-- `HdrDisplayCapability.Probe(IDXGIFactory2)` always queries adapter 0, output 0.
-- On multi-monitor setups with different HDR states per display, probe result may not match capture target.
-- Status: no longer acceptable as a public-release limitation for Perfect HDR Fidelity. Tracked as Epic 10 work.
-- Correct fix requires passing the capture target's display adapter/output.
+- Historical limitation: the compatibility probe still reflects the first enumerated output when no target hint is available.
+- Current state: target-aware overloads and capture display identity are implemented for the active-target path.
+- Status: mixed-monitor Windows manual validation remains required before public-release target-aware HDR claims.
 
 ## Accepted Decisions / No Current Action
 
