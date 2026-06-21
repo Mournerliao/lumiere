@@ -161,6 +161,33 @@ public sealed class PerfectHdrFidelityProjectionTests
     }
 
     [Fact]
+    public void ProjectValidation_ReflectsAppliedViewerValidationRecord()
+    {
+        var contract = (OutputProfileContract.Hdr10Pq with
+        {
+            IsExecutable = true,
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+        }).ApplyValidationRecord(new OutputProfileValidationRecord(
+            OutputProfileKind.Hdr10Pq,
+            [
+                PassingHdrViewer("Windows Photos"),
+            ]));
+
+        var validation = PerfectHdrFidelityProjection.ProjectValidation(contract);
+
+        Assert.Contains(validation.ViewerMatrix, viewer =>
+            viewer.Name == "Windows Photos"
+            && viewer.ArtifactHandlingStatus == ValidationEvidenceStatus.Pass
+            && viewer.VisualMatchStatus == ValidationEvidenceStatus.Pass
+            && viewer.HdrPreservationStatus == ValidationEvidenceStatus.Pass
+            && viewer.Status == ValidationEvidenceStatus.Pass);
+        Assert.Contains(validation.ViewerMatrix, viewer =>
+            viewer.Name == "Microsoft Paint"
+            && viewer.Status == ValidationEvidenceStatus.NotRun);
+        Assert.Equal(FidelityClaimKind.Unvalidated, PerfectHdrFidelityProjection.ProjectOutputProfile(contract).FidelityClaim.Kind);
+    }
+
+    [Fact]
     public void ProjectValidationRecord_UsesBuildVersionAndKeepsManualValidationNotRun()
     {
         var record = PerfectHdrFidelityProjection.ProjectValidationRecord("v2.3.4");
