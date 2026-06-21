@@ -576,6 +576,53 @@
                 <Border
                     Height="1"
                     Background="{StaticResource BorderBrush}" />
+                <StackPanel Padding="0,12,0,14" Spacing="6">
+                  <Grid ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="1">
+                      <TextBlock
+                          x:Name="SettingsTargetEvidenceTargetText"
+                          FontSize="11"
+                          FontWeight="SemiBold"
+                          Foreground="{StaticResource TextBrush}"
+                          Text="No active target"
+                          TextTrimming="CharacterEllipsis" />
+                      <TextBlock
+                          x:Name="SettingsTargetEvidenceStageText"
+                          FontSize="9"
+                          Foreground="{StaticResource SubtleTextBrush}"
+                          Text="Capture"
+                          TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+                    <Border
+                        Grid.Column="1"
+                        Padding="8,4"
+                        VerticalAlignment="Top"
+                        Background="#241D2024"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6">
+                      <TextBlock
+                          x:Name="SettingsTargetEvidenceScopeText"
+                          FontSize="9"
+                          FontWeight="Bold"
+                          Foreground="{StaticResource MutedTextBrush}"
+                          Text="Target unresolved" />
+                    </Border>
+                  </Grid>
+                  <TextBlock
+                      x:Name="SettingsTargetEvidenceDetailText"
+                      FontSize="10"
+                      Foreground="{StaticResource MutedTextBrush}"
+                      Text="Select a target before public release can replace the global HDR guess with target-aware evidence."
+                      TextWrapping="WrapWholeWords" />
+                </StackPanel>
+                <Border
+                    Height="1"
+                    Background="{StaticResource BorderBrush}" />
                 <Grid MinHeight="64" ColumnSpacing="14">
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />

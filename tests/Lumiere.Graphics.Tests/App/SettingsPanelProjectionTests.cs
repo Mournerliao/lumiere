@@ -88,6 +88,51 @@ public sealed class SettingsPanelProjectionTests
         Assert.Contains("global HDR guess", projection.TargetAwareStateHelpText, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void Project_TargetEvidenceScopesDisplayTargetReadiness()
+    {
+        var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
+
+        Assert.Equal("Display target", projection.TargetEvidence.ScopeLabel);
+        Assert.Equal("Test Display", projection.TargetEvidence.TargetLabel);
+        Assert.Equal("Presentation", projection.TargetEvidence.ReadinessStageLabel);
+        Assert.Contains("selected display", projection.TargetEvidence.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("global HDR guess", projection.TargetEvidence.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Project_TargetEvidenceMarksWindowTargetAsNeedsDisplayMapping()
+    {
+        var state = CaptureSessionState.Capturing(
+            CaptureTarget.CreateForTest(
+                new SizeInt32
+                {
+                    Width = 1280,
+                    Height = 720,
+                },
+                "Test Window",
+                CaptureTargetKind.Window),
+            PreviewReadinessStatus.Ready("Ready", "Window capture readiness."));
+
+        var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), state);
+
+        Assert.Equal("Window target", projection.TargetEvidence.ScopeLabel);
+        Assert.Equal("Test Window", projection.TargetEvidence.TargetLabel);
+        Assert.Contains("display mapping", projection.TargetEvidence.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("target-aware", projection.TargetEvidence.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Project_TargetEvidenceMarksIdleStateAsUnresolved()
+    {
+        var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CaptureSessionState.Idle());
+
+        Assert.Equal("Target unresolved", projection.TargetEvidence.ScopeLabel);
+        Assert.Equal("No active target", projection.TargetEvidence.TargetLabel);
+        Assert.Contains("select a target", projection.TargetEvidence.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("global HDR guess", projection.TargetEvidence.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Theory]
     [InlineData(OutputTarget.Clipboard, "Clipboard", true, false, false)]
     [InlineData(OutputTarget.Folder, "Folder", false, true, false)]

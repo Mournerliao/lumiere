@@ -1528,6 +1528,7 @@ public sealed partial class MainWindow : Window
             SettingsTargetAwareStateHelpText.Text = projection.TargetAwareStateHelpText;
             AutomationProperties.SetName(SettingsTargetAwareStateLabel, $"Target-aware state: {projection.TargetAwareStateLabel}");
             AutomationProperties.SetHelpText(SettingsTargetAwareStateLabel, projection.TargetAwareStateHelpText);
+            ApplyTargetEvidenceProjection(projection.TargetEvidence);
             ApplyDestinationSegmentProjection(projection.Output);
 
             var showSavePath = projection.Output.IsFolderSelected || projection.Output.IsBothSelected;
@@ -1612,6 +1613,18 @@ public sealed partial class MainWindow : Window
         AutomationProperties.SetName(SettingsDestinationClipboardSegment, "Destination option: Clipboard");
         AutomationProperties.SetName(SettingsDestinationFolderSegment, "Destination option: Folder");
         AutomationProperties.SetName(SettingsDestinationBothSegment, "Destination option: Both");
+    }
+
+    private void ApplyTargetEvidenceProjection(TargetEvidenceProjection evidence)
+    {
+        SettingsTargetEvidenceScopeText.Text = evidence.ScopeLabel;
+        SettingsTargetEvidenceTargetText.Text = evidence.TargetLabel;
+        SettingsTargetEvidenceStageText.Text = $"Readiness stage: {evidence.ReadinessStageLabel}";
+        SettingsTargetEvidenceDetailText.Text = evidence.Detail;
+        var helpText = $"{evidence.ScopeLabel}. {evidence.TargetLabel}. Readiness stage: {evidence.ReadinessStageLabel}. {evidence.Detail}";
+        AutomationProperties.SetName(SettingsTargetEvidenceScopeText, evidence.ScopeLabel);
+        AutomationProperties.SetHelpText(SettingsTargetEvidenceScopeText, helpText);
+        ToolTipService.SetToolTip(SettingsTargetEvidenceDetailText, helpText);
     }
 
     private void ApplyExportColorProjection(OutputSettingsProjection output)

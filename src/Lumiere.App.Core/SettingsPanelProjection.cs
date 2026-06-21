@@ -12,6 +12,7 @@ public sealed record SettingsPanelProjection(
     string HdrAlertsHelpText,
     string TargetAwareStateLabel,
     string TargetAwareStateHelpText,
+    TargetEvidenceProjection TargetEvidence,
     OutputSettingsProjection Output,
     ValidationPanelProjection Validation,
     AboutInfoProjection About,
@@ -40,6 +41,7 @@ public sealed record SettingsPanelProjection(
             "Show warnings when HDR is unavailable, degraded, unsupported, or failed.",
             "Required",
             "Public release cannot use a global HDR guess; state must follow the selected target.",
+            TargetEvidenceProjection.Project(sessionState),
             OutputSettingsProjection.ReadOnly(
                 settingsProvider.OutputTarget,
                 settingsProvider.SavePath,
@@ -56,6 +58,51 @@ public sealed record SettingsPanelProjection(
                 sessionState,
                 hdrAlertsEnabled: settingsProvider.HdrAlertsEnabled,
                 exportColorFormat: settingsProvider.ExportColorFormat));
+    }
+}
+
+public sealed record TargetEvidenceProjection(
+    string ScopeLabel,
+    string TargetLabel,
+    string ReadinessStageLabel,
+    string Detail)
+{
+    public static TargetEvidenceProjection Project(CaptureSessionState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+
+        var stageLabel = state.Readiness.Stage.ToString();
+        if (state.Target is null)
+        {
+            return new TargetEvidenceProjection(
+                "Target unresolved",
+                "No active target",
+                stageLabel,
+                "Select a target before public release can replace the global HDR guess with target-aware evidence.");
+        }
+
+        var targetLabel = string.IsNullOrWhiteSpace(state.Target.DisplayName)
+            ? "Capture target"
+            : state.Target.DisplayName;
+
+        return state.Target.Kind switch
+        {
+            CaptureTargetKind.Display => new TargetEvidenceProjection(
+                "Display target",
+                targetLabel,
+                stageLabel,
+                "HDR readiness is scoped to the selected display target and its preview path."),
+            CaptureTargetKind.Window => new TargetEvidenceProjection(
+                "Window target",
+                targetLabel,
+                stageLabel,
+                "Window capture still needs display mapping before it can satisfy target-aware HDR evidence."),
+            _ => new TargetEvidenceProjection(
+                "Target kind unknown",
+                targetLabel,
+                stageLabel,
+                "Capture target kind is unresolved, so target-aware HDR evidence remains incomplete."),
+        };
     }
 }
 
