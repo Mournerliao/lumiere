@@ -1,0 +1,158 @@
+using Lumiere.Graphics.Output;
+using Xunit;
+
+namespace Lumiere.Graphics.Tests.Output;
+
+public sealed class Hdr10JxrViewerValidationEvidenceTests
+{
+    [Fact]
+    public void FromArtifacts_BlocksWhenNoOutputValidationArtifactsAreLoaded()
+    {
+        var evidence = Hdr10JxrViewerValidationEvidence.FromArtifacts([]);
+
+        Assert.False(evidence.IsComplete);
+        Assert.False(evidence.HasArtifacts);
+        Assert.False(evidence.HasCompleteTargetAwareHdrEvidence);
+        Assert.False(evidence.HasCompleteFormatContract);
+        Assert.False(evidence.HasViewerRecognizedHdr10StaticMetadata);
+        Assert.False(evidence.HasWindowsManualViewerValidation);
+        Assert.Contains(evidence.Blockers, blocker => blocker.Contains("No output validation artifacts", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void FromArtifacts_BlocksWhenNamedViewersAreMissingHdr10MetadataEvidence()
+    {
+        var evidence = Hdr10JxrViewerValidationEvidence.FromArtifacts(
+            [
+                Hdr10Artifact(
+                    "Windows Photos",
+                    metadataStatus: OutputCompatibilityEvidenceStatus.NotRun,
+                    includeFormatContract: true),
+            ]);
+
+        Assert.False(evidence.IsComplete);
+        Assert.True(evidence.HasCompleteTargetAwareHdrEvidence);
+        Assert.True(evidence.HasCompleteFormatContract);
+        Assert.False(evidence.HasViewerRecognizedHdr10StaticMetadata);
+        Assert.False(evidence.HasWindowsManualViewerValidation);
+        Assert.Contains(evidence.Blockers, blocker =>
+            blocker.Contains("Windows Photos", StringComparison.OrdinalIgnoreCase)
+            && blocker.Contains("Microsoft Paint", StringComparison.OrdinalIgnoreCase)
+            && blocker.Contains("Chromium browsers", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void FromArtifacts_TreatsAutomatedViewerEvidenceAsIncompleteForReadiness()
+    {
+        var artifacts = RequiredHdrViewers
+            .Select(viewer => Hdr10Artifact(
+                viewer,
+                metadataStatus: OutputCompatibilityEvidenceStatus.Pass,
+                includeFormatContract: true,
+                evidenceSource: OutputValidationEvidenceSource.Automated))
+            .ToArray();
+
+        var evidence = Hdr10JxrViewerValidationEvidence.FromArtifacts(artifacts);
+
+        Assert.False(evidence.IsComplete);
+        Assert.False(evidence.HasCompleteFormatContract);
+        Assert.False(evidence.HasViewerRecognizedHdr10StaticMetadata);
+        Assert.False(evidence.HasWindowsManualViewerValidation);
+        Assert.Contains(evidence.Blockers, blocker => blocker.Contains("format contract", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(evidence.Blockers, blocker => blocker.Contains("Windows manual viewer validation", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void FromArtifacts_AllowsCompleteManualViewerMetadataEvidenceToSatisfyJxrViewerGates()
+    {
+        var artifacts = RequiredHdrViewers
+            .Select((viewer, index) => Hdr10Artifact(
+                viewer,
+                metadataStatus: OutputCompatibilityEvidenceStatus.Pass,
+                includeFormatContract: index == 0))
+            .ToArray();
+
+        var evidence = Hdr10JxrViewerValidationEvidence.FromArtifacts(artifacts);
+
+        Assert.True(evidence.IsComplete);
+        Assert.True(evidence.HasArtifacts);
+        Assert.True(evidence.HasCompleteTargetAwareHdrEvidence);
+        Assert.True(evidence.HasCompleteFormatContract);
+        Assert.True(evidence.HasViewerRecognizedHdr10StaticMetadata);
+        Assert.True(evidence.HasWindowsManualViewerValidation);
+        Assert.Empty(evidence.Blockers);
+    }
+
+    private static IReadOnlyList<string> RequiredHdrViewers { get; } =
+        ["Microsoft Paint", "Windows Photos", "Chromium browsers"];
+
+    private static OutputValidationSessionArtifact Hdr10Artifact(
+        string viewerName,
+        OutputCompatibilityEvidenceStatus metadataStatus,
+        bool includeFormatContract,
+        OutputValidationEvidenceSource evidenceSource = OutputValidationEvidenceSource.WindowsManual) =>
+        new(
+            Date: "2026-06-22",
+            Tester: "QA",
+            BuildCommit: "d54155c",
+            WindowsVersion: "Windows 11 24H2",
+            Device: "HDR workstation",
+            Gpu: "Test GPU",
+            DisplaySetup: "HDR primary",
+            HdrState: "HDR enabled",
+            DpiScales: ["150%"],
+            EntryPointsTested: ["Settings panel"],
+            OutputTargetsTested: ["Folder"],
+            TargetAppsTested: [viewerName],
+            ChecklistIdsCovered: ["REL-OUT-04", "REL-HDR-04"],
+            ResultSummary: $"{viewerName} HDR10 JXR validation passed.",
+            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            KnownLimitations: [],
+            FollowUpIssuesOrStories: [],
+            OutputProfileRecords:
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        new(
+                            viewerName,
+                            OutputCompatibilityEvidenceStatus.Pass,
+                            OutputCompatibilityEvidenceStatus.Pass,
+                            OutputCompatibilityEvidenceStatus.Pass,
+                            "Validated HDR10 JXR viewer.")
+                        {
+                            Hdr10MetadataStatus = metadataStatus,
+                        },
+                    ])
+                {
+                    EvidenceSource = evidenceSource,
+                    FormatContract = includeFormatContract ? CompleteHdr10Contract : null,
+                },
+            ])
+        {
+            TargetHdrEvidence = CompleteTargetHdrEvidence,
+        };
+
+    private static OutputFormatContract CompleteHdr10Contract { get; } =
+        new(
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputPixelFormat.R16G16B16A16Float,
+            OutputTransferFunction.PqSt2084,
+            OutputColorPrimaries.Bt2020,
+            OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
+            OutputMetadataPolicy.AttachHdr10StaticMetadata,
+            OutputTargetAppAssumption.RequiresHdrViewerValidation,
+            Hdr10StaticMetadataPolicy.Bt2020PqReference1000Nit);
+
+    private static TargetAwareHdrValidationEvidence CompleteTargetHdrEvidence { get; } =
+        new(
+            TargetDisplayName: "HDR primary",
+            Left: 0,
+            Top: 0,
+            Width: 3840,
+            Height: 2160,
+            MatchKind: "DesktopBounds",
+            HdrState: "Active",
+            ColorSpace: "RgbFullG2084NoneP2020",
+            Detail: "Validated target-aware HDR match evidence.");
+}
