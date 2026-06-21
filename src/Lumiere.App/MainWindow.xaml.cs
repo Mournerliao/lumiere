@@ -1803,53 +1803,28 @@ public sealed partial class MainWindow : Window
         ToolTipService.SetToolTip(OutputProfilePanel, projection.OutputProfile.Detail);
         AutomationProperties.SetHelpText(OutputProfilePanel, projection.OutputProfile.Detail);
 
-        ApplyOutputResultProjection(outputResult, projection);
+        ApplyOutputResultProjection(projection.OutputResult);
 
         ApplyHdrAlert(projection);
     }
 
-    private void ApplyOutputResultProjection(OutputResult? outputResult, MainPanelProjection projection)
+    private void ApplyOutputResultProjection(OutputResultProjection outputResult)
     {
-        OutputResultTitle.Text = outputResult is null
-            ? "Ready"
-            : outputResult.IsSuccess
-                ? FormatOutputSuccessTitle(outputResult)
-                : outputResult.UserMessage ?? "Output failed";
-        OutputResultDetail.Text = outputResult is null
-            ? "No capture output has completed yet."
-            : FormatOutputTargets(outputResult);
-        OutputResultFidelityDetail.Text =
-            $"Fidelity claim: {projection.FidelityClaim.Label}. {projection.FidelityClaim.Detail}";
-        var brush = outputResult is null
-            ? (Brush)Application.Current.Resources["MutedTextBrush"]
-            : outputResult.IsSuccess
-                ? (Brush)Application.Current.Resources["SuccessBrush"]
-                : (Brush)Application.Current.Resources["WarningBrush"];
+        OutputResultTitle.Text = outputResult.Title;
+        OutputResultDetail.Text = outputResult.Detail;
+        OutputResultFidelityDetail.Text = outputResult.FidelityDetail;
+        var brush = outputResult.Severity switch
+        {
+            OutputResultProjectionSeverity.Success => (Brush)Application.Current.Resources["SuccessBrush"],
+            OutputResultProjectionSeverity.Warning => (Brush)Application.Current.Resources["WarningBrush"],
+            _ => (Brush)Application.Current.Resources["MutedTextBrush"],
+        };
         OutputResultGlyph.Foreground = brush;
         AutomationProperties.SetName(OutputResultPanel, OutputResultTitle.Text);
-        AutomationProperties.SetHelpText(OutputResultPanel, OutputResultDetail.Text);
+        AutomationProperties.SetHelpText(
+            OutputResultPanel,
+            $"{outputResult.Detail} {outputResult.FidelityDetail}");
     }
-
-    private static string FormatOutputSuccessTitle(OutputResult outputResult)
-    {
-        var targets = outputResult.Targets.Select(target => target.Target).Distinct().ToArray();
-        return targets.Contains(OutputTarget.Clipboard) && targets.Contains(OutputTarget.Folder)
-            ? "Copied and saved"
-            : targets.Contains(OutputTarget.Folder)
-                ? "Saved"
-                : "Copied";
-    }
-
-    private static string FormatOutputTargets(OutputResult outputResult) =>
-        string.Join(
-            " · ",
-            outputResult.Targets.Select(target =>
-                target.Target switch
-                {
-                    OutputTarget.Folder => target.Outcome is OutputOutcome.Success ? "File saved" : target.UserMessage,
-                    OutputTarget.Clipboard => target.Outcome is OutputOutcome.Success ? "Clipboard copied" : target.UserMessage,
-                    _ => target.UserMessage,
-                }));
 
     private void ApplyHdrAlert(MainPanelProjection projection)
     {

@@ -13,6 +13,7 @@ public sealed record MainPanelProjection(
     MainPanelTrustSeverity TrustSeverity,
     OutputProfileProjection OutputProfile,
     FidelityClaimProjection FidelityClaim,
+    OutputResultProjection OutputResult,
     string ReleaseTarget,
     string AlertMessage,
     bool HasAlert)
@@ -55,6 +56,7 @@ public sealed record MainPanelProjection(
             trust.Severity,
             outputProfile,
             outputProfile.FidelityClaim,
+            OutputResultProjection.Project(outputResult, outputProfile.FidelityClaim),
             PerfectHdrFidelityProjection.ReleaseTarget,
             alertMessage,
             !string.IsNullOrEmpty(alertMessage));
