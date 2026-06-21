@@ -23,25 +23,29 @@ public sealed record SettingsPanelProjection(
     public static SettingsPanelProjection Project(
         ISettingsProvider settingsProvider,
         CaptureSessionState sessionState,
-        IAboutInfoProvider? aboutInfoProvider = null)
+        IAboutInfoProvider? aboutInfoProvider = null,
+        OutputProfileExecutionCapabilities? executionCapabilities = null)
     {
         return Project(
             settingsProvider,
             sessionState,
             Array.Empty<OutputValidationSessionArtifact>(),
-            aboutInfoProvider);
+            aboutInfoProvider,
+            executionCapabilities);
     }
 
     public static SettingsPanelProjection Project(
         ISettingsProvider settingsProvider,
         CaptureSessionState sessionState,
         IEnumerable<OutputValidationSessionArtifact> validationArtifacts,
-        IAboutInfoProvider? aboutInfoProvider = null)
+        IAboutInfoProvider? aboutInfoProvider = null,
+        OutputProfileExecutionCapabilities? executionCapabilities = null)
     {
         ArgumentNullException.ThrowIfNull(settingsProvider);
         ArgumentNullException.ThrowIfNull(sessionState);
         ArgumentNullException.ThrowIfNull(validationArtifacts);
         aboutInfoProvider ??= AssemblyAboutInfoProvider.CreateFallback();
+        var capabilities = executionCapabilities ?? OutputProfileExecutionCapabilities.CompatibilityOnly;
         var hotkeyPlan = GlobalHotkeyRegistrationPlan.Project(settingsProvider);
         var about = AboutInfoProjection.FromProvider(aboutInfoProvider);
         var artifacts = validationArtifacts.ToArray();
@@ -65,10 +69,12 @@ public sealed record SettingsPanelProjection(
                 settingsProvider.CopyAsImage,
                 settingsProvider.AfterCaptureBehavior,
                 settingsProvider.ExportColorFormat,
-                artifacts),
+                artifacts,
+                capabilities),
             PerfectHdrFidelityProjection.ProjectValidation(
                 selectedProfileContract,
                 artifacts,
+                capabilities,
                 PerfectHdrFidelityProjection.ProjectValidationRecord(about.Version),
                 readiness: sessionState.Readiness),
             about,
@@ -78,7 +84,8 @@ public sealed record SettingsPanelProjection(
                 sessionState,
                 hdrAlertsEnabled: settingsProvider.HdrAlertsEnabled,
                 exportColorFormat: settingsProvider.ExportColorFormat,
-                validationArtifacts: artifacts));
+                validationArtifacts: artifacts,
+                executionCapabilities: capabilities));
     }
 }
 
@@ -210,8 +217,10 @@ public sealed record OutputSettingsProjection(
         bool copyAsImage,
         AfterCaptureBehavior afterCaptureBehavior,
         string? exportColorFormat = null,
-        IEnumerable<OutputValidationSessionArtifact>? validationArtifacts = null)
+        IEnumerable<OutputValidationSessionArtifact>? validationArtifacts = null,
+        OutputProfileExecutionCapabilities? executionCapabilities = null)
     {
+        var capabilities = executionCapabilities ?? OutputProfileExecutionCapabilities.CompatibilityOnly;
         var (displayValue, isClipboardSelected, isFolderSelected, isBothSelected) = outputTarget switch
         {
             Lumiere.Graphics.Output.OutputTarget.Folder => ("Folder", false, true, false),
@@ -228,8 +237,8 @@ public sealed record OutputSettingsProjection(
             afterCaptureBehavior);
         var selectedContract = OutputProfileContract.FromSettingsValue(exportColorFormat);
         var selectedProfile = validationArtifacts is null
-            ? PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract)
-            : PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, validationArtifacts);
+            ? PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, readiness: null, capabilities)
+            : PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, validationArtifacts, readiness: null, capabilities);
         var exportColorOptions = CreateExportColorOptions(selectedProfile.Label);
 
         return new OutputSettingsProjection(

@@ -88,9 +88,10 @@ public sealed class MainPanelProjectionTests
 
         Assert.Equal("Output complete", projection.TrustLabel);
         Assert.Equal("HDR10", projection.OutputProfile.Label);
-        Assert.Equal("Validate", projection.OutputProfile.StatusLabel);
-        Assert.Equal(FidelityClaimKind.Unvalidated, projection.FidelityClaim.Kind);
-        Assert.Equal("Unvalidated", projection.FidelityClaim.Label);
+        Assert.Equal("Fallback", projection.OutputProfile.StatusLabel);
+        Assert.Equal(FidelityClaimKind.Converted, projection.FidelityClaim.Kind);
+        Assert.Equal("Converted", projection.FidelityClaim.Label);
+        Assert.Contains("compatibility fallback", projection.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("requested HDR10", projection.OutputResult.FidelityDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("using sRGB", projection.OutputResult.FidelityDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Fidelity claim: Converted", projection.OutputResult.FidelityDetail);
@@ -147,7 +148,7 @@ public sealed class MainPanelProjectionTests
     }
 
     [Fact]
-    public void ProjectStatus_TargetAwareUnvalidatedKeepsHdr10FidelityUnvalidatedEvenWithViewerEvidence()
+    public void ProjectStatus_TargetAwareUnvalidatedKeepsHdr10RuntimeFallbackWithViewerEvidence()
     {
         var state = CaptureSessionState.Degraded(
             CreateTarget(),
@@ -170,9 +171,11 @@ public sealed class MainPanelProjectionTests
             validationArtifacts: artifacts);
 
         Assert.Equal("HDR10", projection.OutputProfile.Label);
-        Assert.Equal(FidelityClaimKind.Unvalidated, projection.FidelityClaim.Kind);
-        Assert.Equal("Unvalidated", projection.FidelityClaim.Label);
-        Assert.Contains("No fidelity claim", projection.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Fallback", projection.OutputProfile.StatusLabel);
+        Assert.Equal(FidelityClaimKind.Converted, projection.FidelityClaim.Kind);
+        Assert.Equal("Converted", projection.FidelityClaim.Label);
+        Assert.Contains("compatibility", projection.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("compatibility fallback", projection.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("validated HDR-preserved", projection.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
     }
 

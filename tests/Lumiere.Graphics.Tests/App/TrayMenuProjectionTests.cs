@@ -72,7 +72,7 @@ public sealed class TrayMenuProjectionTests
     }
 
     [Fact]
-    public void Project_Hdr10ProfileMirrorsUnvalidatedFidelityClaim()
+    public void Project_Hdr10ProfileMirrorsRuntimeFallbackFidelityClaim()
     {
         var projection = TrayMenuProjection.Project(
             CaptureSessionState.Idle(PreviewReadinessStatus.Ready("Ready", "HDR preview is ready.")),
@@ -83,9 +83,9 @@ public sealed class TrayMenuProjectionTests
             new StubAboutInfoProvider("Lumiere"));
 
         Assert.Equal("HDR Ready", projection.HdrStatusLabel);
-        Assert.Equal("Unvalidated", projection.FidelityClaimLabel);
-        Assert.Contains("No fidelity claim", projection.FidelityClaimDetail);
-        Assert.Equal(TrayMenuStatusSeverity.Error, projection.FidelityClaimSeverity);
+        Assert.Equal("Converted", projection.FidelityClaimLabel);
+        Assert.Contains("compatibility", projection.FidelityClaimDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(TrayMenuStatusSeverity.Warning, projection.FidelityClaimSeverity);
     }
 
     [Fact]

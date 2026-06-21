@@ -44,6 +44,29 @@ public static class PerfectHdrFidelityProjection
         return ProjectOutputProfileCore(contract, readiness);
     }
 
+    public static OutputProfileProjection ProjectOutputProfile(
+        OutputProfileContract contract,
+        PreviewReadinessStatus? readiness,
+        OutputProfileExecutionCapabilities executionCapabilities)
+    {
+        ArgumentNullException.ThrowIfNull(contract);
+        ArgumentNullException.ThrowIfNull(executionCapabilities);
+        var effectiveContract = executionCapabilities.SelectEffectiveProfile(contract);
+        var requestedProjection = ProjectOutputProfileCore(SelectRuntimeClaimContract(contract, effectiveContract), readiness);
+        if (effectiveContract.Kind == contract.Kind)
+        {
+            return requestedProjection;
+        }
+
+        var effectiveProjection = ProjectOutputProfileCore(effectiveContract, readiness);
+        return requestedProjection with
+        {
+            StatusLabel = "Fallback",
+            Detail = $"{requestedProjection.Detail} Runtime output uses {effectiveContract.Label} compatibility fallback because the selected profile is not executable in this build.",
+            FidelityClaim = effectiveProjection.FidelityClaim,
+        };
+    }
+
     private static OutputProfileProjection ProjectOutputProfileCore(
         OutputProfileContract contract,
         PreviewReadinessStatus? readiness)
@@ -92,6 +115,21 @@ public static class PerfectHdrFidelityProjection
             readiness);
     }
 
+    public static OutputProfileProjection ProjectOutputProfile(
+        OutputProfileContract contract,
+        IEnumerable<OutputValidationSessionArtifact> artifacts,
+        PreviewReadinessStatus? readiness,
+        OutputProfileExecutionCapabilities executionCapabilities)
+    {
+        ArgumentNullException.ThrowIfNull(contract);
+        ArgumentNullException.ThrowIfNull(artifacts);
+        ArgumentNullException.ThrowIfNull(executionCapabilities);
+        return ProjectOutputProfile(
+            OutputValidationSessionArtifact.ApplyAllTo(contract, artifacts),
+            readiness,
+            executionCapabilities);
+    }
+
     public static ValidationPanelProjection ProjectValidation(ValidationRecordProjection? record = null) =>
         ProjectValidation(OutputProfileContract.SrgbCompatibilityPng, record);
 
@@ -106,6 +144,22 @@ public static class PerfectHdrFidelityProjection
 
     public static ValidationPanelProjection ProjectValidation(
         OutputProfileContract outputProfile,
+        OutputProfileExecutionCapabilities executionCapabilities,
+        ValidationRecordProjection? record = null,
+        PreviewReadinessStatus? readiness = null)
+    {
+        ArgumentNullException.ThrowIfNull(outputProfile);
+        ArgumentNullException.ThrowIfNull(executionCapabilities);
+        var effectiveProfile = executionCapabilities.SelectEffectiveProfile(outputProfile);
+        return ProjectValidationCore(
+            SelectRuntimeClaimContract(outputProfile, effectiveProfile),
+            readiness,
+            targetHdrEvidence: null,
+            record);
+    }
+
+    public static ValidationPanelProjection ProjectValidation(
+        OutputProfileContract outputProfile,
         OutputValidationSessionArtifact artifact,
         ValidationRecordProjection? record = null,
         PreviewReadinessStatus? readiness = null)
@@ -114,6 +168,25 @@ public static class PerfectHdrFidelityProjection
         ArgumentNullException.ThrowIfNull(artifact);
         return ProjectValidationCore(
             artifact.ApplyTo(outputProfile),
+            readiness,
+            SelectCompleteTargetHdrEvidence([artifact]),
+            record);
+    }
+
+    public static ValidationPanelProjection ProjectValidation(
+        OutputProfileContract outputProfile,
+        OutputValidationSessionArtifact artifact,
+        OutputProfileExecutionCapabilities executionCapabilities,
+        ValidationRecordProjection? record = null,
+        PreviewReadinessStatus? readiness = null)
+    {
+        ArgumentNullException.ThrowIfNull(outputProfile);
+        ArgumentNullException.ThrowIfNull(artifact);
+        ArgumentNullException.ThrowIfNull(executionCapabilities);
+        var requestedProfile = artifact.ApplyTo(outputProfile);
+        var effectiveProfile = executionCapabilities.SelectEffectiveProfile(requestedProfile);
+        return ProjectValidationCore(
+            SelectRuntimeClaimContract(requestedProfile, effectiveProfile),
             readiness,
             SelectCompleteTargetHdrEvidence([artifact]),
             record);
@@ -134,6 +207,37 @@ public static class PerfectHdrFidelityProjection
             SelectCompleteTargetHdrEvidence(artifactArray),
             record);
     }
+
+    public static ValidationPanelProjection ProjectValidation(
+        OutputProfileContract outputProfile,
+        IEnumerable<OutputValidationSessionArtifact> artifacts,
+        OutputProfileExecutionCapabilities executionCapabilities,
+        ValidationRecordProjection? record = null,
+        PreviewReadinessStatus? readiness = null)
+    {
+        ArgumentNullException.ThrowIfNull(outputProfile);
+        ArgumentNullException.ThrowIfNull(artifacts);
+        ArgumentNullException.ThrowIfNull(executionCapabilities);
+        var artifactArray = artifacts.ToArray();
+        var requestedProfile = OutputValidationSessionArtifact.ApplyAllTo(outputProfile, artifactArray);
+        var effectiveProfile = executionCapabilities.SelectEffectiveProfile(requestedProfile);
+        return ProjectValidationCore(
+            SelectRuntimeClaimContract(requestedProfile, effectiveProfile),
+            readiness,
+            SelectCompleteTargetHdrEvidence(artifactArray),
+            record);
+    }
+
+    private static OutputProfileContract SelectRuntimeClaimContract(
+        OutputProfileContract requestedProfile,
+        OutputProfileContract effectiveProfile) =>
+        effectiveProfile.Kind == requestedProfile.Kind
+            ? effectiveProfile
+            : requestedProfile with
+            {
+                IsExecutable = false,
+                FidelityMode = OutputFidelityMode.Unvalidated,
+            };
 
     private static ValidationPanelProjection ProjectValidationCore(
         OutputProfileContract outputProfile,

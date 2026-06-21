@@ -1425,7 +1425,14 @@ public sealed partial class MainWindow : Window
 
     private TrayMenuSnapshot CreateTrayMenuSnapshot(CaptureSessionState state, OutputResult? outputResult = null)
     {
-        var projection = TrayMenuProjection.Project(state, settingsProvider, aboutInfoProvider, activeCaptureMode, outputResult, settingsProvider.HdrAlertsEnabled);
+        var projection = TrayMenuProjection.Project(
+            state,
+            settingsProvider,
+            aboutInfoProvider,
+            activeCaptureMode,
+            outputResult,
+            settingsProvider.HdrAlertsEnabled,
+            outputCapabilities);
         return new TrayMenuSnapshot(
             projection.AppName,
             projection.HdrStatusLabel,
@@ -1508,7 +1515,11 @@ public sealed partial class MainWindow : Window
 
     private void ApplySettingsProjection(CaptureSessionState state)
     {
-        var projection = SettingsPanelProjection.Project(settingsProvider, state, aboutInfoProvider);
+        var projection = SettingsPanelProjection.Project(
+            settingsProvider,
+            state,
+            aboutInfoProvider: aboutInfoProvider,
+            executionCapabilities: outputCapabilities);
 
         applyingSettingsProjection = true;
         try
@@ -1847,7 +1858,8 @@ public sealed partial class MainWindow : Window
             state,
             outputResult,
             settingsProvider.HdrAlertsEnabled,
-            settingsProvider.ExportColorFormat);
+            settingsProvider.ExportColorFormat,
+            executionCapabilities: outputCapabilities);
         var isIdle = state.Status is CaptureSessionStatus.Idle;
         var statusBrush = GetTrustStatusBrush(projection.TrustSeverity);
         var fidelityBrush = GetTrustStatusBrush(projection.FidelityClaim.Severity);
@@ -2286,7 +2298,7 @@ public sealed partial class MainWindow : Window
         var message = sessionState.UserFacingReason ?? string.Empty;
         var detail = sessionState.TechnicalDetail ?? string.Empty;
         var hdrAlertsEnabled = settingsProvider.HdrAlertsEnabled;
-        var fidelityCue = CreateOverlayFidelityCue(settingsProvider.ExportColorFormat);
+        var fidelityCue = CreateOverlayFidelityCue(settingsProvider.ExportColorFormat, outputCapabilities);
         return sessionState.Status switch
         {
             CaptureSessionStatus.Capturing => OverlayState.HdrReady(string.Empty, detail, fidelityCue),
@@ -2304,9 +2316,14 @@ public sealed partial class MainWindow : Window
         };
     }
 
-    private static OverlayFidelityCue CreateOverlayFidelityCue(string? exportColorFormat)
+    private static OverlayFidelityCue CreateOverlayFidelityCue(
+        string? exportColorFormat,
+        OutputProfileExecutionCapabilities executionCapabilities)
     {
-        var claim = PerfectHdrFidelityProjection.ProjectOutputProfile(exportColorFormat).FidelityClaim.Kind;
+        var claim = PerfectHdrFidelityProjection.ProjectOutputProfile(
+            OutputProfileContract.FromSettingsValue(exportColorFormat),
+            readiness: null,
+            executionCapabilities).FidelityClaim.Kind;
         var overlayClaim = claim switch
         {
             FidelityClaimKind.Converted => OverlayFidelityClaimKind.Converted,

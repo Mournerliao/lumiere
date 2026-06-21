@@ -488,6 +488,70 @@ public sealed class PerfectHdrFidelityProjectionTests
     }
 
     [Fact]
+    public void ProjectOutputProfile_RuntimeCapabilitiesBlockHdrPreservedClaimEvenWithCompleteArtifacts()
+    {
+        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(
+            OutputProfileContract.Hdr10Pq,
+            [
+                ArtifactFor("Microsoft Paint"),
+                ArtifactFor("Windows Photos"),
+                ArtifactFor("Chromium browsers"),
+            ],
+            readiness: null,
+            OutputProfileExecutionCapabilities.CompatibilityOnly);
+
+        Assert.Equal("HDR10", profile.Label);
+        Assert.Equal("Fallback", profile.StatusLabel);
+        Assert.Equal(FidelityClaimKind.Converted, profile.FidelityClaim.Kind);
+        Assert.Contains("compatibility fallback", profile.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("validated HDR-preserved", profile.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectOutputProfile_ClaimsHdrPreservedOnlyWhenArtifactsAndRuntimeCapabilitiesPass()
+    {
+        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(
+            OutputProfileContract.Hdr10Pq,
+            [
+                ArtifactWithFormatContract("Microsoft Paint"),
+                ArtifactWithFormatContract("Windows Photos"),
+                ArtifactWithFormatContract("Chromium browsers"),
+            ],
+            readiness: null,
+            OutputProfileExecutionCapabilities.Create(
+                OutputProfileExecutionCapability.SrgbCompatibility,
+                OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder));
+
+        Assert.Equal("HDR10", profile.Label);
+        Assert.Equal("Validate", profile.StatusLabel);
+        Assert.Equal(FidelityClaimKind.HdrPreserved, profile.FidelityClaim.Kind);
+        Assert.Contains("validated HDR-preserved", profile.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectValidation_RuntimeCapabilitiesKeepCompleteHdrArtifactsLimitedUntilExecutable()
+    {
+        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+            OutputProfileContract.Hdr10Pq,
+            [
+                ArtifactWithFormatContract("Microsoft Paint"),
+                ArtifactWithFormatContract("Windows Photos"),
+                ArtifactWithFormatContract("Chromium browsers"),
+            ],
+            OutputProfileExecutionCapabilities.CompatibilityOnly);
+        var profileRow = Assert.Single(
+            validation.Rows,
+            row => row.Label == "HDR-preserved profile");
+        var matrixRow = Assert.Single(
+            validation.Rows,
+            row => row.Label == "Target app matrix");
+
+        Assert.Equal(ValidationEvidenceStatus.Limited, profileRow.Status);
+        Assert.Contains("executable output", profileRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(ValidationEvidenceStatus.Pass, matrixRow.Status);
+    }
+
+    [Fact]
     public void ProjectValidationRecord_UsesBuildVersionAndKeepsManualValidationNotRun()
     {
         var record = PerfectHdrFidelityProjection.ProjectValidationRecord("v2.3.4");

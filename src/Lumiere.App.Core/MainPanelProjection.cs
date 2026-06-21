@@ -23,10 +23,12 @@ public sealed record MainPanelProjection(
         OutputResult? outputResult = null,
         bool hdrAlertsEnabled = false,
         string? exportColorFormat = null,
-        IEnumerable<OutputValidationSessionArtifact>? validationArtifacts = null)
+        IEnumerable<OutputValidationSessionArtifact>? validationArtifacts = null,
+        OutputProfileExecutionCapabilities? executionCapabilities = null)
     {
         ArgumentNullException.ThrowIfNull(state);
 
+        var capabilities = executionCapabilities ?? OutputProfileExecutionCapabilities.CompatibilityOnly;
         var canStartCapture = state.Status is CaptureSessionStatus.Idle
             or CaptureSessionStatus.Unsupported
             or CaptureSessionStatus.Failed;
@@ -46,8 +48,8 @@ public sealed record MainPanelProjection(
         var alertMessage = MapAlertMessage(state.Readiness, outputResult, hdrAlertsEnabled);
         var selectedContract = OutputProfileContract.FromSettingsValue(exportColorFormat);
         var outputProfile = validationArtifacts is null
-            ? PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, state.Readiness)
-            : PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, validationArtifacts, state.Readiness);
+            ? PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, state.Readiness, capabilities)
+            : PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, validationArtifacts, state.Readiness, capabilities);
         var outputResultProjection = outputResult is null
             ? OutputResultProjection.Project(outputResult, outputProfile.FidelityClaim)
             : OutputResultProjection.Project(outputResult);

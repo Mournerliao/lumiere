@@ -337,8 +337,10 @@ public sealed class SettingsPanelProjectionTests
         Assert.Equal("HDR10", projection.Output.ExportColorDisplayValue);
         Assert.True(projection.Output.ExportColorOptions[0].IsSelected);
         Assert.True(projection.Output.ExportColorOptions[0].IsReadOnly);
-        Assert.Equal(FidelityClaimKind.Unvalidated, projection.MainPanel.FidelityClaim.Kind);
-        Assert.Equal("Unvalidated", projection.MainPanel.FidelityClaim.Label);
+        Assert.Equal("Fallback", projection.MainPanel.OutputProfile.StatusLabel);
+        Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
+        Assert.Equal("Converted", projection.MainPanel.FidelityClaim.Label);
+        Assert.Contains("compatibility fallback", projection.MainPanel.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", projection.MainPanel.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -380,8 +382,10 @@ public sealed class SettingsPanelProjectionTests
 
         Assert.All(projection.Validation.ViewerMatrix, viewer => Assert.Equal(ValidationEvidenceStatus.Pass, viewer.Status));
         Assert.Equal("HDR10", projection.MainPanel.OutputProfile.Label);
-        Assert.Equal(FidelityClaimKind.Unvalidated, projection.MainPanel.FidelityClaim.Kind);
-        Assert.Contains("No fidelity claim", projection.MainPanel.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Fallback", projection.MainPanel.OutputProfile.StatusLabel);
+        Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
+        Assert.Contains("compatibility", projection.MainPanel.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("compatibility fallback", projection.MainPanel.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", projection.MainPanel.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -407,7 +411,7 @@ public sealed class SettingsPanelProjectionTests
         Assert.Contains("format contract evidence", profileRow.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("PQ ST.2084", projection.Output.SelectedProfileContract.TransferFunctionLabel);
         Assert.Equal("Attach HDR10 static metadata", projection.Output.SelectedProfileContract.MetadataPolicyLabel);
-        Assert.Equal(FidelityClaimKind.Unvalidated, projection.MainPanel.FidelityClaim.Kind);
+        Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
     }
 
     [Fact]
