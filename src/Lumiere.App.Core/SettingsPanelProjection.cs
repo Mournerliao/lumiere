@@ -25,11 +25,27 @@ public sealed record SettingsPanelProjection(
         CaptureSessionState sessionState,
         IAboutInfoProvider? aboutInfoProvider = null)
     {
+        return Project(
+            settingsProvider,
+            sessionState,
+            Array.Empty<OutputValidationSessionArtifact>(),
+            aboutInfoProvider);
+    }
+
+    public static SettingsPanelProjection Project(
+        ISettingsProvider settingsProvider,
+        CaptureSessionState sessionState,
+        IEnumerable<OutputValidationSessionArtifact> validationArtifacts,
+        IAboutInfoProvider? aboutInfoProvider = null)
+    {
         ArgumentNullException.ThrowIfNull(settingsProvider);
         ArgumentNullException.ThrowIfNull(sessionState);
+        ArgumentNullException.ThrowIfNull(validationArtifacts);
         aboutInfoProvider ??= AssemblyAboutInfoProvider.CreateFallback();
         var hotkeyPlan = GlobalHotkeyRegistrationPlan.Project(settingsProvider);
         var about = AboutInfoProjection.FromProvider(aboutInfoProvider);
+        var artifacts = validationArtifacts.ToArray();
+        var selectedProfileContract = OutputProfileContract.FromSettingsValue(settingsProvider.ExportColorFormat);
 
         return new SettingsPanelProjection(
             ShortcutSettingProjection.FromHotkeyBinding(
@@ -48,8 +64,11 @@ public sealed record SettingsPanelProjection(
                 settingsProvider.TimestampNaming,
                 settingsProvider.CopyAsImage,
                 settingsProvider.AfterCaptureBehavior,
-                settingsProvider.ExportColorFormat),
+                settingsProvider.ExportColorFormat,
+                artifacts),
             PerfectHdrFidelityProjection.ProjectValidation(
+                selectedProfileContract,
+                artifacts,
                 PerfectHdrFidelityProjection.ProjectValidationRecord(about.Version)),
             about,
             settingsProvider.TimestampNaming,
@@ -57,7 +76,8 @@ public sealed record SettingsPanelProjection(
             MainPanelProjection.Project(
                 sessionState,
                 hdrAlertsEnabled: settingsProvider.HdrAlertsEnabled,
-                exportColorFormat: settingsProvider.ExportColorFormat));
+                exportColorFormat: settingsProvider.ExportColorFormat,
+                validationArtifacts: artifacts));
     }
 }
 
@@ -184,7 +204,8 @@ public sealed record OutputSettingsProjection(
         bool timestampNaming,
         bool copyAsImage,
         AfterCaptureBehavior afterCaptureBehavior,
-        string? exportColorFormat = null)
+        string? exportColorFormat = null,
+        IEnumerable<OutputValidationSessionArtifact>? validationArtifacts = null)
     {
         var (displayValue, isClipboardSelected, isFolderSelected, isBothSelected) = outputTarget switch
         {
@@ -200,7 +221,10 @@ public sealed record OutputSettingsProjection(
         var (afterCaptureDisplayValue, afterCaptureHelpText, isAfterCaptureSelected) = ProjectAfterCapture(
             outputTarget,
             afterCaptureBehavior);
-        var selectedProfile = PerfectHdrFidelityProjection.ProjectOutputProfile(exportColorFormat);
+        var selectedContract = OutputProfileContract.FromSettingsValue(exportColorFormat);
+        var selectedProfile = validationArtifacts is null
+            ? PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract)
+            : PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, validationArtifacts);
         var exportColorOptions = CreateExportColorOptions(selectedProfile.Label);
 
         return new OutputSettingsProjection(

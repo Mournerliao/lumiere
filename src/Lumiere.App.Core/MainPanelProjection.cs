@@ -22,7 +22,8 @@ public sealed record MainPanelProjection(
         CaptureSessionState state,
         OutputResult? outputResult = null,
         bool hdrAlertsEnabled = false,
-        string? exportColorFormat = null)
+        string? exportColorFormat = null,
+        IEnumerable<OutputValidationSessionArtifact>? validationArtifacts = null)
     {
         ArgumentNullException.ThrowIfNull(state);
 
@@ -43,7 +44,10 @@ public sealed record MainPanelProjection(
 
         var trust = MapTrust(state.Readiness.State, outputResult);
         var alertMessage = MapAlertMessage(state.Readiness.State, outputResult, hdrAlertsEnabled);
-        var outputProfile = PerfectHdrFidelityProjection.ProjectOutputProfile(exportColorFormat);
+        var selectedContract = OutputProfileContract.FromSettingsValue(exportColorFormat);
+        var outputProfile = validationArtifacts is null
+            ? PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract)
+            : PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, validationArtifacts);
         var outputResultProjection = outputResult is null
             ? OutputResultProjection.Project(outputResult, outputProfile.FidelityClaim)
             : OutputResultProjection.Project(outputResult);
