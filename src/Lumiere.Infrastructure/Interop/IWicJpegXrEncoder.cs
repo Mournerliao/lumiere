@@ -15,7 +15,8 @@ public sealed record WicJpegXrEncodeRequest
         int width,
         int height,
         int strideBytes,
-        byte[] rgbaHalfPixels)
+        byte[] rgbaHalfPixels,
+        IReadOnlyList<WicJpegXrMetadataEntry>? metadata = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
@@ -34,6 +35,7 @@ public sealed record WicJpegXrEncodeRequest
         Height = height;
         StrideBytes = strideBytes;
         RgbaHalfPixels = rgbaHalfPixels;
+        Metadata = metadata?.ToArray() ?? [];
     }
 
     public int Width { get; }
@@ -43,6 +45,31 @@ public sealed record WicJpegXrEncodeRequest
     public int StrideBytes { get; }
 
     public byte[] RgbaHalfPixels { get; }
+
+    public IReadOnlyList<WicJpegXrMetadataEntry> Metadata { get; }
+}
+
+public sealed record WicJpegXrMetadataEntry
+{
+    public WicJpegXrMetadataEntry(string queryPath, string value)
+    {
+        if (string.IsNullOrWhiteSpace(queryPath))
+        {
+            throw new ArgumentException("WIC JPEG XR metadata query path must be provided.", nameof(queryPath));
+        }
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new ArgumentException("WIC JPEG XR metadata value must be provided.", nameof(value));
+        }
+
+        QueryPath = queryPath;
+        Value = value;
+    }
+
+    public string QueryPath { get; }
+
+    public string Value { get; }
 }
 
 public sealed record WicJpegXrEncoderReadiness(

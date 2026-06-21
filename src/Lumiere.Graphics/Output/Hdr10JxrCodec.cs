@@ -161,7 +161,8 @@ public sealed class WicHdr10JxrCodec : IHdr10JxrCodec
                     source.Width,
                     source.Height,
                     checked(source.Width * WicJpegXrEncodeRequest.RgbaHalfBytesPerPixel),
-                    source.PixelData));
+                    source.PixelData,
+                    CreateAuditMetadata(input.StaticMetadataPolicy)));
             return Task.FromResult(encoded);
         }
         catch (NativeInteropException exception)
@@ -170,4 +171,23 @@ public sealed class WicHdr10JxrCodec : IHdr10JxrCodec
                 $"HDR10 JXR WIC encoding failed. {exception.Message}");
         }
     }
+
+    private static IReadOnlyList<WicJpegXrMetadataEntry> CreateAuditMetadata(
+        Hdr10StaticMetadataPolicy policy) =>
+        [
+            new("/xmp/Lumiere:Hdr10MetadataSource", policy.Source.ToString()),
+            new("/xmp/Lumiere:RedPrimary", FormatChromaticity(policy.RedPrimary)),
+            new("/xmp/Lumiere:GreenPrimary", FormatChromaticity(policy.GreenPrimary)),
+            new("/xmp/Lumiere:BluePrimary", FormatChromaticity(policy.BluePrimary)),
+            new("/xmp/Lumiere:WhitePoint", FormatChromaticity(policy.WhitePoint)),
+            new("/xmp/Lumiere:MasteringLuminance", $"{policy.MasteringLuminance.MinNits:G17},{policy.MasteringLuminance.MaxNits:G17}"),
+            new("/xmp/Lumiere:MaxContentLightLevelNits", policy.MaxContentLightLevelNits.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            new("/xmp/Lumiere:MaxFrameAverageLightLevelNits", policy.MaxFrameAverageLightLevelNits.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            new("/xmp/Lumiere:MetadataPolicyDetail", policy.Detail),
+        ];
+
+    private static string FormatChromaticity(Hdr10Chromaticity chromaticity) =>
+        string.Create(
+            System.Globalization.CultureInfo.InvariantCulture,
+            $"{chromaticity.X:G17},{chromaticity.Y:G17}");
 }

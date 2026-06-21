@@ -225,6 +225,25 @@ public sealed class Hdr10JxrOutputEncoderTests
         Assert.Equal(1, nativeEncoder.Request.Height);
         Assert.Equal(16, nativeEncoder.Request.StrideBytes);
         Assert.Same(sourceBytes, nativeEncoder.Request.RgbaHalfPixels);
+        Assert.Contains(
+            nativeEncoder.Request.Metadata,
+            entry => entry.QueryPath == "/xmp/Lumiere:Hdr10MetadataSource"
+                && entry.Value == Hdr10StaticMetadataSource.Bt2020PqReference.ToString());
+        Assert.Contains(
+            nativeEncoder.Request.Metadata,
+            entry => entry.QueryPath == "/xmp/Lumiere:MaxContentLightLevelNits"
+                && entry.Value == "1000");
+        Assert.Contains(
+            nativeEncoder.Request.Metadata,
+            entry => entry.QueryPath == "/xmp/Lumiere:MetadataPolicyDetail"
+                && entry.Value.Contains("policy input", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void WicJpegXrMetadataEntry_RequiresQueryPathAndValue()
+    {
+        Assert.Throws<ArgumentException>(() => new WicJpegXrMetadataEntry("", "value"));
+        Assert.Throws<ArgumentException>(() => new WicJpegXrMetadataEntry("/xmp/Lumiere:Test", ""));
     }
 
     private static OutputFormatContract CompleteHdr10Contract { get; } =

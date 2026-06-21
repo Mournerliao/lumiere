@@ -120,6 +120,7 @@ public sealed class WindowsWicJpegXrEncoder : IWicJpegXrEncoder
             }
 
             WritePixels(frame, request);
+            WriteMetadata(frame, request.Metadata);
 
             ThrowIfFailed(
                 frame.Commit(),
@@ -145,6 +146,45 @@ public sealed class WindowsWicJpegXrEncoder : IWicJpegXrEncoder
             ReleaseComObject(stream);
             ReleaseComObject(factory);
         }
+    }
+
+    private static void WriteMetadata(
+        IWICBitmapFrameEncode frame,
+        IReadOnlyList<WicJpegXrMetadataEntry> metadata)
+    {
+        if (metadata.Count == 0)
+        {
+            return;
+        }
+
+        IWICMetadataQueryWriter? writer = null;
+        try
+        {
+            ThrowIfFailed(
+                frame.GetMetadataQueryWriter(out writer),
+                "GetMetadataQueryWriter",
+                "WIC JPEG XR frame did not provide a metadata query writer.");
+
+            foreach (var entry in metadata)
+            {
+                WriteStringMetadata(writer, entry);
+            }
+        }
+        finally
+        {
+            ReleaseComObject(writer);
+        }
+    }
+
+    private static void WriteStringMetadata(
+        IWICMetadataQueryWriter writer,
+        WicJpegXrMetadataEntry entry)
+    {
+        using var propVariant = PropVariantHandle.FromString(entry.Value);
+        ThrowIfFailed(
+            writer.SetMetadataByName(entry.QueryPath, propVariant.DangerousGetHandle()),
+            "SetMetadataByName",
+            $"WIC JPEG XR metadata writer failed for query path '{entry.QueryPath}'.");
     }
 
     private static void WritePixels(
@@ -341,5 +381,60 @@ public sealed class WindowsWicJpegXrEncoder : IWicJpegXrEncoder
 
         [PreserveSig]
         int Commit();
+
+        [PreserveSig]
+        int GetMetadataQueryWriter(
+            [MarshalAs(UnmanagedType.Interface)] out IWICMetadataQueryWriter metadataQueryWriter);
     }
+
+    [ComImport]
+    [Guid("A721791A-0DEF-4D06-BD91-2118BF1DB10B")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IWICMetadataQueryWriter
+    {
+        void GetContainerFormat();
+        void GetLocation();
+        void GetMetadataByName();
+        void GetEnumerator();
+
+        [PreserveSig]
+        int SetMetadataByName(
+            [MarshalAs(UnmanagedType.LPWStr)] string name,
+            IntPtr propVariant);
+    }
+
+    private sealed class PropVariantHandle : SafeHandle
+    {
+        private const ushort VtLpwstr = 31;
+
+        private PropVariantHandle()
+            : base(IntPtr.Zero, ownsHandle: true)
+        {
+        }
+
+        public override bool IsInvalid => handle == IntPtr.Zero;
+
+        public static PropVariantHandle FromString(string value)
+        {
+            var handle = new PropVariantHandle
+            {
+                handle = Marshal.AllocCoTaskMem(IntPtr.Size == 8 ? 24 : 16),
+            };
+            Span<byte> zero = stackalloc byte[IntPtr.Size == 8 ? 24 : 16];
+            Marshal.Copy(zero.ToArray(), 0, handle.handle, zero.Length);
+            Marshal.WriteInt16(handle.handle, unchecked((short)VtLpwstr));
+            Marshal.WriteIntPtr(handle.handle, IntPtr.Size == 8 ? 8 : 4, Marshal.StringToCoTaskMemUni(value));
+            return handle;
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            _ = PropVariantClear(handle);
+            Marshal.FreeCoTaskMem(handle);
+            return true;
+        }
+    }
+
+    [DllImport("ole32.dll", ExactSpelling = true)]
+    private static extern int PropVariantClear(IntPtr propVariant);
 }
