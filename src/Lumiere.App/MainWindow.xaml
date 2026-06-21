@@ -976,6 +976,108 @@
                         Foreground="{StaticResource MutedTextBrush}" />
                   </Grid>
                 </StackPanel>
+
+                <Border
+                    Height="1"
+                    Background="{StaticResource BorderBrush}" />
+
+                <StackPanel Spacing="6">
+                  <TextBlock
+                      FontSize="10"
+                      FontWeight="SemiBold"
+                      Foreground="{StaticResource TextBrush}"
+                      Text="Viewer compatibility" />
+                  <TextBlock
+                      x:Name="ValidationViewerMatrixSummaryText"
+                      FontSize="10"
+                      Foreground="{StaticResource MutedTextBrush}"
+                      Text="Named viewers must prove artifact handling, visual match, and fidelity separately."
+                      TextWrapping="WrapWholeWords" />
+                  <Grid
+                      MinHeight="34"
+                      ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="1">
+                      <TextBlock
+                          x:Name="ValidationViewerRow1Label"
+                          FontSize="10"
+                          FontWeight="SemiBold"
+                          Foreground="{StaticResource TextBrush}"
+                          Text="Microsoft Paint" />
+                      <TextBlock
+                          x:Name="ValidationViewerRow1Detail"
+                          FontSize="9"
+                          Foreground="{StaticResource MutedTextBrush}"
+                          TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+                    <TextBlock
+                        x:Name="ValidationViewerRow1Status"
+                        Grid.Column="1"
+                        VerticalAlignment="Top"
+                        FontSize="9"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource MutedTextBrush}" />
+                  </Grid>
+                  <Grid
+                      MinHeight="34"
+                      ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="1">
+                      <TextBlock
+                          x:Name="ValidationViewerRow2Label"
+                          FontSize="10"
+                          FontWeight="SemiBold"
+                          Foreground="{StaticResource TextBrush}"
+                          Text="Windows Photos" />
+                      <TextBlock
+                          x:Name="ValidationViewerRow2Detail"
+                          FontSize="9"
+                          Foreground="{StaticResource MutedTextBrush}"
+                          TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+                    <TextBlock
+                        x:Name="ValidationViewerRow2Status"
+                        Grid.Column="1"
+                        VerticalAlignment="Top"
+                        FontSize="9"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource MutedTextBrush}" />
+                  </Grid>
+                  <Grid
+                      MinHeight="34"
+                      ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="1">
+                      <TextBlock
+                          x:Name="ValidationViewerRow3Label"
+                          FontSize="10"
+                          FontWeight="SemiBold"
+                          Foreground="{StaticResource TextBrush}"
+                          Text="Chromium browsers" />
+                      <TextBlock
+                          x:Name="ValidationViewerRow3Detail"
+                          FontSize="9"
+                          Foreground="{StaticResource MutedTextBrush}"
+                          TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+                    <TextBlock
+                        x:Name="ValidationViewerRow3Status"
+                        Grid.Column="1"
+                        VerticalAlignment="Top"
+                        FontSize="9"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource MutedTextBrush}" />
+                  </Grid>
+                </StackPanel>
               </StackPanel>
             </Border>
           </StackPanel>

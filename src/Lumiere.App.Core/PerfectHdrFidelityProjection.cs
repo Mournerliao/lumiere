@@ -84,6 +84,21 @@ public static class PerfectHdrFidelityProjection
                     "Target app matrix",
                     ValidationEvidenceStatus.NotRun,
                     "Named viewers must separate artifact success from fidelity."),
+            ],
+            "Named viewers must prove artifact handling, visual match, and fidelity separately.",
+            [
+                new(
+                    "Microsoft Paint",
+                    ValidationEvidenceStatus.NotRun,
+                    "Paste/open artifact handling, visual match, and fidelity are not validated."),
+                new(
+                    "Windows Photos",
+                    ValidationEvidenceStatus.NotRun,
+                    "Open artifact handling, visual match, and fidelity are not validated."),
+                new(
+                    "Chromium browsers",
+                    ValidationEvidenceStatus.NotRun,
+                    "Paste/drop artifact handling, visual match, and fidelity are not validated."),
             ]);
 
     public static string NormalizeExportColorFormat(string? exportColorFormat)
@@ -136,10 +151,17 @@ public enum FidelityClaimKind
 public sealed record ValidationPanelProjection(
     string ReleaseTarget,
     string Summary,
-    IReadOnlyList<ValidationEvidenceRowProjection> Rows);
+    IReadOnlyList<ValidationEvidenceRowProjection> Rows,
+    string ViewerMatrixSummary,
+    IReadOnlyList<ValidationViewerMatrixRowProjection> ViewerMatrix);
 
 public sealed record ValidationEvidenceRowProjection(
     string Label,
+    ValidationEvidenceStatus Status,
+    string Detail);
+
+public sealed record ValidationViewerMatrixRowProjection(
+    string Name,
     ValidationEvidenceStatus Status,
     string Detail);
 

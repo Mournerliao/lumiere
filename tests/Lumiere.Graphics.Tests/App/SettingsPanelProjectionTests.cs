@@ -314,6 +314,10 @@ public sealed class SettingsPanelProjectionTests
         Assert.Equal(PerfectHdrFidelityProjection.ReleaseTarget, projection.Validation.ReleaseTarget);
         Assert.Contains(projection.Validation.Rows, row => row.Label == "Target-aware HDR");
         Assert.Contains(projection.Validation.Rows, row => row.Label == "HDR-preserved profile");
+        Assert.Contains("Named viewers", projection.Validation.ViewerMatrixSummary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(projection.Validation.ViewerMatrix, viewer => viewer.Name == "Microsoft Paint");
+        Assert.Contains(projection.Validation.ViewerMatrix, viewer => viewer.Name == "Windows Photos");
+        Assert.Contains(projection.Validation.ViewerMatrix, viewer => viewer.Name == "Chromium browsers");
     }
 
     [Fact]

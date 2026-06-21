@@ -1687,6 +1687,22 @@ public sealed partial class MainWindow : Window
         ApplyValidationRow(validation.Rows.ElementAtOrDefault(1), ValidationRow2Label, ValidationRow2Detail, ValidationRow2Status);
         ApplyValidationRow(validation.Rows.ElementAtOrDefault(2), ValidationRow3Label, ValidationRow3Detail, ValidationRow3Status);
         ApplyValidationRow(validation.Rows.ElementAtOrDefault(3), ValidationRow4Label, ValidationRow4Detail, ValidationRow4Status);
+        ValidationViewerMatrixSummaryText.Text = validation.ViewerMatrixSummary;
+        ApplyValidationViewerRow(
+            validation.ViewerMatrix.ElementAtOrDefault(0),
+            ValidationViewerRow1Label,
+            ValidationViewerRow1Detail,
+            ValidationViewerRow1Status);
+        ApplyValidationViewerRow(
+            validation.ViewerMatrix.ElementAtOrDefault(1),
+            ValidationViewerRow2Label,
+            ValidationViewerRow2Detail,
+            ValidationViewerRow2Status);
+        ApplyValidationViewerRow(
+            validation.ViewerMatrix.ElementAtOrDefault(2),
+            ValidationViewerRow3Label,
+            ValidationViewerRow3Detail,
+            ValidationViewerRow3Status);
     }
 
     private static void ApplyValidationRow(
@@ -1704,6 +1720,27 @@ public sealed partial class MainWindow : Window
         }
 
         label.Text = row.Label;
+        detail.Text = row.Detail;
+        status.Text = FormatValidationStatus(row.Status);
+        status.Foreground = GetValidationStatusBrush(row.Status);
+        AutomationProperties.SetHelpText(label, row.Detail);
+    }
+
+    private static void ApplyValidationViewerRow(
+        ValidationViewerMatrixRowProjection? row,
+        TextBlock label,
+        TextBlock detail,
+        TextBlock status)
+    {
+        if (row is null)
+        {
+            label.Text = string.Empty;
+            detail.Text = string.Empty;
+            status.Text = string.Empty;
+            return;
+        }
+
+        label.Text = row.Name;
         detail.Text = row.Detail;
         status.Text = FormatValidationStatus(row.Status);
         status.Foreground = GetValidationStatusBrush(row.Status);

@@ -68,4 +68,23 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Contains(validation.Rows, row => row.Label == "HDR-preserved profile" && row.Status == ValidationEvidenceStatus.NotRun);
         Assert.Contains(validation.Rows, row => row.Label == "Target app matrix" && row.Status == ValidationEvidenceStatus.NotRun);
     }
+
+    [Fact]
+    public void ProjectValidation_IncludesNamedViewerCompatibilityMatrix()
+    {
+        var validation = PerfectHdrFidelityProjection.ProjectValidation();
+
+        Assert.Contains("Named viewers", validation.ViewerMatrixSummary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(validation.ViewerMatrix, viewer => viewer.Name == "Microsoft Paint" && viewer.Status == ValidationEvidenceStatus.NotRun);
+        Assert.Contains(validation.ViewerMatrix, viewer => viewer.Name == "Windows Photos" && viewer.Status == ValidationEvidenceStatus.NotRun);
+        Assert.Contains(validation.ViewerMatrix, viewer => viewer.Name == "Chromium browsers" && viewer.Status == ValidationEvidenceStatus.NotRun);
+        Assert.All(
+            validation.ViewerMatrix,
+            viewer =>
+            {
+                Assert.Contains("artifact", viewer.Detail, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("fidelity", viewer.Detail, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("HDR-preserved", viewer.Detail, StringComparison.OrdinalIgnoreCase);
+            });
+    }
 }
