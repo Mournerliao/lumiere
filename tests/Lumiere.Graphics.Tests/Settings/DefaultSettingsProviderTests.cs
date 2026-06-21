@@ -9,7 +9,8 @@ public sealed class DefaultSettingsProviderTests
     [Fact]
     public void OutputTarget_ReturnsClipboard()
     {
-        var provider = new DefaultSettingsProvider();
+        using var fixture = new SettingsFileFixture();
+        var provider = new DefaultSettingsProvider(new LocalSettingsStore(fixture.SettingsPath));
 
         Assert.Equal(OutputTarget.Clipboard, provider.OutputTarget);
     }
@@ -17,7 +18,8 @@ public sealed class DefaultSettingsProviderTests
     [Fact]
     public void SavePath_ReturnsNull()
     {
-        var provider = new DefaultSettingsProvider();
+        using var fixture = new SettingsFileFixture();
+        var provider = new DefaultSettingsProvider(new LocalSettingsStore(fixture.SettingsPath));
 
         Assert.Null(provider.SavePath);
     }
@@ -25,7 +27,8 @@ public sealed class DefaultSettingsProviderTests
     [Fact]
     public void TimestampNaming_ReturnsTrue()
     {
-        var provider = new DefaultSettingsProvider();
+        using var fixture = new SettingsFileFixture();
+        var provider = new DefaultSettingsProvider(new LocalSettingsStore(fixture.SettingsPath));
 
         Assert.True(provider.TimestampNaming);
     }
@@ -33,7 +36,8 @@ public sealed class DefaultSettingsProviderTests
     [Fact]
     public void CopyAsImage_ReturnsTrue()
     {
-        var provider = new DefaultSettingsProvider();
+        using var fixture = new SettingsFileFixture();
+        var provider = new DefaultSettingsProvider(new LocalSettingsStore(fixture.SettingsPath));
 
         Assert.True(provider.CopyAsImage);
     }
@@ -50,7 +54,8 @@ public sealed class DefaultSettingsProviderTests
     [Fact]
     public void SetHdrAlertsEnabled_UpdatesInSessionPreference()
     {
-        var provider = new DefaultSettingsProvider();
+        using var fixture = new SettingsFileFixture();
+        var provider = new DefaultSettingsProvider(new LocalSettingsStore(fixture.SettingsPath));
 
         provider.SetHdrAlertsEnabled(false);
 
@@ -85,7 +90,8 @@ public sealed class DefaultSettingsProviderTests
     [Fact]
     public void SetOutputTarget_RejectsUndefinedTarget()
     {
-        var provider = new DefaultSettingsProvider();
+        using var fixture = new SettingsFileFixture();
+        var provider = new DefaultSettingsProvider(new LocalSettingsStore(fixture.SettingsPath));
 
         Assert.Throws<ArgumentOutOfRangeException>(() => provider.SetOutputTarget((OutputTarget)99));
     }
@@ -135,7 +141,8 @@ public sealed class DefaultSettingsProviderTests
     [Fact]
     public void FullscreenShortcut_ReturnsEmptyString()
     {
-        var provider = new DefaultSettingsProvider();
+        using var fixture = new SettingsFileFixture();
+        var provider = new DefaultSettingsProvider(new LocalSettingsStore(fixture.SettingsPath));
 
         Assert.Equal(string.Empty, provider.FullscreenShortcut);
     }
@@ -143,7 +150,8 @@ public sealed class DefaultSettingsProviderTests
     [Fact]
     public void RegionShortcut_ReturnsEmptyString()
     {
-        var provider = new DefaultSettingsProvider();
+        using var fixture = new SettingsFileFixture();
+        var provider = new DefaultSettingsProvider(new LocalSettingsStore(fixture.SettingsPath));
 
         Assert.Equal(string.Empty, provider.RegionShortcut);
     }
@@ -151,7 +159,8 @@ public sealed class DefaultSettingsProviderTests
     [Fact]
     public void ImplementsISettingsProvider()
     {
-        var provider = new DefaultSettingsProvider();
+        using var fixture = new SettingsFileFixture();
+        var provider = new DefaultSettingsProvider(new LocalSettingsStore(fixture.SettingsPath));
 
         Assert.IsAssignableFrom<ISettingsProvider>(provider);
         Assert.IsAssignableFrom<IHdrAlertSettingsWriter>(provider);
