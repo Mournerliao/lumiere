@@ -41,9 +41,12 @@ public partial class App : Application
             captureService = new CaptureService(deviceResources, borderOptions);
             var captureCommandCoordinator = new CaptureCommandCoordinator(captureService);
             clipboardOutputService = new ClipboardOutputService(deviceResources);
+            var folderArtifactEncoder = new CompositeOutputArtifactEncoder(
+                clipboardOutputService,
+                new Hdr10JxrOutputEncoder());
             configuredOutputService = new ConfiguredOutputService(
                 clipboardOutputService,
-                new FolderOutputService(clipboardOutputService));
+                new FolderOutputService(folderArtifactEncoder));
             outputService = new AfterCaptureOutputService(
                 configuredOutputService,
                 new WindowsArtifactShellAction());
