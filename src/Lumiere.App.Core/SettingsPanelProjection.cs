@@ -275,7 +275,10 @@ public sealed record OutputSettingsProjection(
         var selectedProfile = validationArtifacts is null
             ? PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, readiness: null, capabilities)
             : PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, validationArtifacts, readiness: null, capabilities);
-        var exportColorOptions = CreateExportColorOptions(selectedProfile.Label);
+        var exportColorOptions = CreateExportColorOptions(
+            selectedProfile.Label,
+            validationArtifacts,
+            capabilities);
 
         return new OutputSettingsProjection(
             displayValue,
@@ -304,18 +307,32 @@ public sealed record OutputSettingsProjection(
             exportColorOptions);
     }
 
-    private static IReadOnlyList<ExportColorOptionProjection> CreateExportColorOptions(string selectedLabel) =>
+    private static IReadOnlyList<ExportColorOptionProjection> CreateExportColorOptions(
+        string selectedLabel,
+        IEnumerable<OutputValidationSessionArtifact>? validationArtifacts,
+        OutputProfileExecutionCapabilities capabilities) =>
     [
         CreateExportColorOption(
-            PerfectHdrFidelityProjection.ProjectOutputProfile("HDR10"),
+            ProjectExportColorOptionProfile("HDR10", validationArtifacts, capabilities),
             selectedLabel),
         CreateExportColorOption(
-            PerfectHdrFidelityProjection.ProjectOutputProfile("P3"),
+            ProjectExportColorOptionProfile("P3", validationArtifacts, capabilities),
             selectedLabel),
         CreateExportColorOption(
-            PerfectHdrFidelityProjection.ProjectOutputProfile("sRGB"),
+            ProjectExportColorOptionProfile("sRGB", validationArtifacts, capabilities),
             selectedLabel),
     ];
+
+    private static OutputProfileProjection ProjectExportColorOptionProfile(
+        string exportColorFormat,
+        IEnumerable<OutputValidationSessionArtifact>? validationArtifacts,
+        OutputProfileExecutionCapabilities capabilities)
+    {
+        var contract = OutputProfileContract.FromSettingsValue(exportColorFormat);
+        return validationArtifacts is null
+            ? PerfectHdrFidelityProjection.ProjectOutputProfile(contract, readiness: null, capabilities)
+            : PerfectHdrFidelityProjection.ProjectOutputProfile(contract, validationArtifacts, readiness: null, capabilities);
+    }
 
     private static ExportColorOptionProjection CreateExportColorOption(
         OutputProfileProjection profile,

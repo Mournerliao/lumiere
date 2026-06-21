@@ -292,10 +292,21 @@ public sealed record OutputProfileEvidenceSummary(
     string HdrPreservedGateDetail);
 
 public sealed record OutputProfileExecutionCapabilities(
-    IReadOnlyList<OutputProfileExecutionCapability> Profiles)
+    IReadOnlyList<OutputProfileExecutionCapability> Profiles,
+    IReadOnlyList<OutputProfileExecutionGate> Gates)
 {
     public static OutputProfileExecutionCapabilities CompatibilityOnly { get; } =
-        new([OutputProfileExecutionCapability.SrgbCompatibility]);
+        CreateWithGates(
+            [OutputProfileExecutionCapability.SrgbCompatibility],
+            CreateDefaultGates(
+                hdr10Gate: new OutputProfileExecutionGate(
+                    OutputProfileKind.Hdr10Pq,
+                    OutputProfileGateStatus.PendingImplementation,
+                    "HDR10 stays on sRGB fallback until build prerequisites, metadata policy, and viewer validation gates are satisfied."),
+                p3Gate: new OutputProfileExecutionGate(
+                    OutputProfileKind.DisplayP3,
+                    OutputProfileGateStatus.PendingImplementation,
+                    "P3 stays validation-scoped until wide-gamut implementation and validation are complete.")));
 
     public static OutputProfileExecutionCapabilities Create(
         params OutputProfileExecutionCapability[] profiles)
@@ -303,7 +314,7 @@ public sealed record OutputProfileExecutionCapabilities(
         ArgumentNullException.ThrowIfNull(profiles);
         return profiles.Length == 0
             ? CompatibilityOnly
-            : new(profiles);
+            : CreateWithGates(profiles, CreateDefaultGates());
     }
 
     public static OutputProfileExecutionCapabilities FromHdr10JxrCodecReadiness(
@@ -311,10 +322,28 @@ public sealed record OutputProfileExecutionCapabilities(
     {
         ArgumentNullException.ThrowIfNull(readiness);
         return readiness.IsReady
-            ? Create(
+            ? CreateWithGates(
+                [
                 OutputProfileExecutionCapability.SrgbCompatibility,
-                OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder)
-            : CompatibilityOnly;
+                OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder,
+                ],
+                CreateDefaultGates(
+                    hdr10Gate: new OutputProfileExecutionGate(
+                        OutputProfileKind.Hdr10Pq,
+                        OutputProfileGateStatus.Available,
+                        "HDR10 codec readiness passed for this build."),
+                    p3Gate: new OutputProfileExecutionGate(
+                        OutputProfileKind.DisplayP3,
+                        OutputProfileGateStatus.PendingImplementation,
+                        "P3 stays validation-scoped until wide-gamut implementation and validation are complete.")))
+            : CreateWithGates(
+                [OutputProfileExecutionCapability.SrgbCompatibility],
+                CreateDefaultGates(
+                    hdr10Gate: CreateHdr10GateFromReadiness(readiness),
+                    p3Gate: new OutputProfileExecutionGate(
+                        OutputProfileKind.DisplayP3,
+                        OutputProfileGateStatus.PendingImplementation,
+                        "P3 stays validation-scoped until wide-gamut implementation and validation are complete.")));
     }
 
     public static OutputProfileExecutionCapabilities ResolveHdr10JxrReleaseCapabilities(
@@ -326,15 +355,46 @@ public sealed record OutputProfileExecutionCapabilities(
 
         if (!HasHdr10JxrImplementationReadiness(readiness))
         {
-            return CompatibilityOnly;
+            return CreateWithGates(
+                [OutputProfileExecutionCapability.SrgbCompatibility],
+                CreateDefaultGates(
+                    hdr10Gate: new OutputProfileExecutionGate(
+                        OutputProfileKind.Hdr10Pq,
+                        OutputProfileGateStatus.PendingImplementation,
+                        readiness.FormatBlockers()),
+                    p3Gate: new OutputProfileExecutionGate(
+                        OutputProfileKind.DisplayP3,
+                        OutputProfileGateStatus.PendingImplementation,
+                        "P3 stays validation-scoped until wide-gamut implementation and validation are complete.")));
         }
 
         var viewerEvidence = Hdr10JxrViewerValidationEvidence.FromArtifacts(validationArtifacts);
         return viewerEvidence.IsComplete
-            ? Create(
+            ? CreateWithGates(
+                [
                 OutputProfileExecutionCapability.SrgbCompatibility,
-                OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder)
-            : CompatibilityOnly;
+                OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder,
+                ],
+                CreateDefaultGates(
+                    hdr10Gate: new OutputProfileExecutionGate(
+                        OutputProfileKind.Hdr10Pq,
+                        OutputProfileGateStatus.Available,
+                        "HDR10 is executable for this validated session."),
+                    p3Gate: new OutputProfileExecutionGate(
+                        OutputProfileKind.DisplayP3,
+                        OutputProfileGateStatus.PendingImplementation,
+                        "P3 stays validation-scoped until wide-gamut implementation and validation are complete.")))
+            : CreateWithGates(
+                [OutputProfileExecutionCapability.SrgbCompatibility],
+                CreateDefaultGates(
+                    hdr10Gate: new OutputProfileExecutionGate(
+                        OutputProfileKind.Hdr10Pq,
+                        OutputProfileGateStatus.PendingValidation,
+                        string.Join(" ", viewerEvidence.Blockers)),
+                    p3Gate: new OutputProfileExecutionGate(
+                        OutputProfileKind.DisplayP3,
+                        OutputProfileGateStatus.PendingImplementation,
+                        "P3 stays validation-scoped until wide-gamut implementation and validation are complete.")));
     }
 
     public OutputProfileContract SelectEffectiveProfile(OutputProfileContract requestedProfile)
@@ -363,12 +423,50 @@ public sealed record OutputProfileExecutionCapabilities(
             : OutputProfileContract.SrgbCompatibilityPng;
     }
 
+    public OutputProfileExecutionGate DescribeGate(OutputProfileKind profileKind) =>
+        Gates.FirstOrDefault(gate => gate.ProfileKind == profileKind)
+        ?? new OutputProfileExecutionGate(
+            profileKind,
+            OutputProfileGateStatus.PendingImplementation,
+            "This profile is not executable in the current build.");
+
     private static bool HasHdr10JxrImplementationReadiness(Hdr10JxrCodecReadiness readiness) =>
         readiness.HasNativeWicJpegXrEncoder
         && readiness.AcceptsRgba16FloatSource
         && readiness.WritesAuditMetadata
         && readiness.HasArtifactAuditMetadataRoundTripEvidence
         && readiness.Hdr10StaticMetadataPolicy.IsComplete;
+
+    private static OutputProfileExecutionCapabilities CreateWithGates(
+        IReadOnlyList<OutputProfileExecutionCapability> profiles,
+        IReadOnlyList<OutputProfileExecutionGate> gates) =>
+        new(profiles, gates);
+
+    private static IReadOnlyList<OutputProfileExecutionGate> CreateDefaultGates(
+        OutputProfileExecutionGate? hdr10Gate = null,
+        OutputProfileExecutionGate? p3Gate = null) =>
+    [
+        new OutputProfileExecutionGate(
+            OutputProfileKind.SrgbCompatibilityPng,
+            OutputProfileGateStatus.Available,
+            "sRGB compatibility output is executable in the current build."),
+        hdr10Gate ?? new OutputProfileExecutionGate(
+            OutputProfileKind.Hdr10Pq,
+            OutputProfileGateStatus.PendingImplementation,
+            "HDR10 stays on sRGB fallback until build prerequisites, metadata policy, and viewer validation gates are satisfied."),
+        p3Gate ?? new OutputProfileExecutionGate(
+            OutputProfileKind.DisplayP3,
+            OutputProfileGateStatus.PendingImplementation,
+            "P3 stays validation-scoped until wide-gamut implementation and validation are complete."),
+    ];
+
+    private static OutputProfileExecutionGate CreateHdr10GateFromReadiness(Hdr10JxrCodecReadiness readiness) =>
+        new(
+            OutputProfileKind.Hdr10Pq,
+            HasHdr10JxrImplementationReadiness(readiness)
+                ? OutputProfileGateStatus.PendingValidation
+                : OutputProfileGateStatus.PendingImplementation,
+            readiness.FormatBlockers());
 }
 
 public sealed record OutputProfileExecutionCapability(
@@ -393,6 +491,18 @@ public sealed record OutputProfileExecutionCapability(
             OutputProfileKind.Hdr10Pq,
             OutputFidelityMode.HdrPreserved,
             OutputArtifactEncoderImplementation.Implemented);
+}
+
+public sealed record OutputProfileExecutionGate(
+    OutputProfileKind ProfileKind,
+    OutputProfileGateStatus Status,
+    string Detail);
+
+public enum OutputProfileGateStatus
+{
+    Available = 0,
+    PendingImplementation,
+    PendingValidation,
 }
 
 public sealed record OutputFormatContract(

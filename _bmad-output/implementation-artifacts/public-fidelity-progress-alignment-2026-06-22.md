@@ -62,6 +62,7 @@ Evidence:
 - HDR10 JXR codec seams, WIC JPEG XR adapter, FP16 source readback, audit metadata write/read, and codec readiness blockers exist.
 - `Hdr10JxrCodecReadiness` now covers implementation-level HDR10 JXR readiness, while runtime HDR10 execution is additionally gated on loaded manual validation artifacts.
 - `OutputProfileExecutionCapabilities.ResolveHdr10JxrReleaseCapabilities(...)` now keeps HDR10 on `sRGB` fallback unless both implementation readiness and complete manual output evidence pass.
+- Output-profile UI now distinguishes `Build`, `Validate`, and `Ready` states instead of collapsing every non-executable HDR10 path into one generic fallback label.
 
 Remaining blockers:
 
@@ -75,6 +76,7 @@ Evidence:
 - Viewer compatibility evidence is modeled separately for artifact handling, visual match, HDR preservation, and HDR10 metadata recognition.
 - Output validation artifacts can apply named viewer evidence to output contracts.
 - `Hdr10JxrViewerValidationEvidence` now participates in the runtime gate that decides whether HDR10 can become executable for the current validated session.
+- Settings and main-panel export-profile projection now surface whether HDR10 is blocked by implementation work or by missing Windows manual evidence.
 
 Remaining blockers:
 
@@ -134,6 +136,7 @@ Evidence:
 - Settings now use native `ToggleSwitch` semantics for live binary preferences instead of custom button-shaped switch visuals.
 - Output destination now uses a native single-choice control path instead of custom segmented buttons.
 - Export profile selection now uses native radio-button semantics, and the supported `sRGB` compatibility profile can be re-selected through the settings UI.
+- Export profile projection now keeps radio-button availability and gate-state copy aligned with real runtime capability rather than a static design-only projection.
 - Shortcut capture and save-path browsing rows now use standard `Button` activation rather than `Tapped`-only surfaces.
 - A focused implementation record exists at `_bmad-output/implementation-artifacts/13-2-harden-native-settings-and-accessibility-semantics.md`.
 

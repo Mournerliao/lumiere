@@ -52,17 +52,27 @@ public static class PerfectHdrFidelityProjection
         ArgumentNullException.ThrowIfNull(contract);
         ArgumentNullException.ThrowIfNull(executionCapabilities);
         var effectiveContract = executionCapabilities.SelectEffectiveProfile(contract);
-        var requestedProjection = ProjectOutputProfileCore(SelectRuntimeClaimContract(contract, effectiveContract), readiness);
+        var requestedContract = SelectRuntimeClaimContract(contract, effectiveContract);
+        var requestedProjection = ProjectOutputProfileCore(requestedContract, readiness);
+        var gate = executionCapabilities.DescribeGate(contract.Kind);
+        var gatePresentation = DescribeGatePresentation(contract.Kind, gate, effectiveContract.Kind == contract.Kind);
+
         if (effectiveContract.Kind == contract.Kind)
         {
-            return requestedProjection;
+            return requestedProjection with
+            {
+                StatusLabel = gatePresentation.StatusLabel,
+                Detail = gatePresentation.Detail,
+                IsReadOnly = gatePresentation.IsReadOnly,
+            };
         }
 
         var effectiveProjection = ProjectOutputProfileCore(effectiveContract, readiness);
         return requestedProjection with
         {
-            StatusLabel = "Fallback",
-            Detail = $"{requestedProjection.Detail} Runtime output uses {effectiveContract.Label} compatibility fallback because the selected profile is not executable in this build.",
+            StatusLabel = gatePresentation.StatusLabel,
+            Detail = $"{gatePresentation.Detail} Runtime output uses {effectiveContract.Label} compatibility fallback because the selected profile is not executable in this session.",
+            IsReadOnly = gatePresentation.IsReadOnly,
             FidelityClaim = effectiveProjection.FidelityClaim,
         };
     }
@@ -602,8 +612,46 @@ public static class PerfectHdrFidelityProjection
                 FidelityClaimKind.Unvalidated,
                 "Unvalidated",
                 evidence.HdrPreservedGateDetail,
-                MainPanelTrustIcon.ErrorCircle,
-                MainPanelTrustSeverity.Error);
+            MainPanelTrustIcon.ErrorCircle,
+            MainPanelTrustSeverity.Error);
+    }
+
+    private static (string StatusLabel, string Detail, bool IsReadOnly) DescribeGatePresentation(
+        OutputProfileKind profileKind,
+        OutputProfileExecutionGate gate,
+        bool isExecutableForSession)
+    {
+        return profileKind switch
+        {
+            OutputProfileKind.Hdr10Pq when isExecutableForSession => (
+                "Ready",
+                "HDR10 profile is executable for this validated session.",
+                false),
+            OutputProfileKind.Hdr10Pq when gate.Status is OutputProfileGateStatus.PendingValidation => (
+                "Validate",
+                $"HDR10 build prerequisites are ready, but Windows manual viewer evidence is still incomplete. {gate.Detail}",
+                true),
+            OutputProfileKind.Hdr10Pq => (
+                "Build",
+                $"HDR10 remains validation-scoped because implementation prerequisites, profile contract wiring, metadata policy work, or Windows validation are still incomplete. {gate.Detail}",
+                true),
+            OutputProfileKind.DisplayP3 when isExecutableForSession => (
+                "Ready",
+                "Wide-gamut output is executable for this validated session.",
+                false),
+            OutputProfileKind.DisplayP3 when gate.Status is OutputProfileGateStatus.PendingValidation => (
+                "Validate",
+                $"Wide-gamut output is implemented, but validation evidence is still incomplete. {gate.Detail}",
+                true),
+            OutputProfileKind.DisplayP3 => (
+                "Build",
+                $"Wide-gamut output is visible as intent, but implementation is still incomplete. {gate.Detail}",
+                true),
+            _ => (
+                "Compat",
+                "Compatibility output; useful fallback, not the public release target.",
+                false),
+        };
     }
 
     private static bool RequiresTargetAwareReadiness(PreviewReadinessStatus? readiness) =>

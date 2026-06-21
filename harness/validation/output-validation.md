@@ -41,6 +41,12 @@ As of the current implementation, Lumiere has a Windows WIC-backed JPEG XR adapt
 
 `Hdr10JxrViewerValidationEvidence` evaluates loaded output validation artifacts against the JXR viewer-facing gates. It requires complete target-aware HDR evidence, a complete HDR10 format contract, all named viewers to pass artifact handling, visual match, HDR preservation, and viewer-recognized HDR10 metadata status, and Windows manual evidence rather than automated-only evidence. The current app now combines this evaluator with codec implementation readiness when deciding whether HDR10 can become executable for the current session; artifacts alone are still not enough, and codec implementation alone is still not enough.
 
+In the current UI, these gate states appear as:
+
+- `Build` - implementation prerequisites, profile-contract wiring, metadata policy work, or Windows validation prerequisites are still incomplete
+- `Validate` - build prerequisites are ready, but Windows manual viewer evidence is still incomplete for the current session
+- `Ready` - the current session has both implementation readiness and complete loaded manual evidence
+
 ## Validation Artifact Loading
 
 During a local Windows validation run, Lumiere reads output validation session JSON files from `%LOCALAPPDATA%\Lumiere\validation\output\*.json`. Each file must use the `OutputValidationSessionArtifact` schema and include the manual evidence fields listed above, target-aware HDR evidence, per-viewer artifact handling, visual match, HDR preservation, and HDR10 metadata recognition status. Invalid JSON files are ignored for the session, logged as validation artifact load issues, and surfaced in the settings validation record so the tester can fix ignored evidence files; valid files are applied to the settings, main panel, tray, and output policy projections. Runtime HDR10 output still requires codec implementation readiness as well, so loading artifacts alone cannot enable HDR-preserved output.

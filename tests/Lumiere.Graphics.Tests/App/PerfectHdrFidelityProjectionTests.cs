@@ -501,9 +501,10 @@ public sealed class PerfectHdrFidelityProjectionTests
             OutputProfileExecutionCapabilities.CompatibilityOnly);
 
         Assert.Equal("HDR10", profile.Label);
-        Assert.Equal("Fallback", profile.StatusLabel);
+        Assert.Equal("Build", profile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, profile.FidelityClaim.Kind);
         Assert.Contains("compatibility fallback", profile.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("implementation prerequisites", profile.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("validated HDR-preserved", profile.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -518,12 +519,15 @@ public sealed class PerfectHdrFidelityProjectionTests
                 ArtifactWithFormatContract("Chromium browsers"),
             ],
             readiness: null,
-            OutputProfileExecutionCapabilities.Create(
-                OutputProfileExecutionCapability.SrgbCompatibility,
-                OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder));
+            ValidateOnlyHdr10Capabilities(
+                [
+                    ArtifactWithFormatContract("Microsoft Paint"),
+                    ArtifactWithFormatContract("Windows Photos"),
+                    ArtifactWithFormatContract("Chromium browsers"),
+                ]));
 
         Assert.Equal("HDR10", profile.Label);
-        Assert.Equal("Validate", profile.StatusLabel);
+        Assert.Equal("Ready", profile.StatusLabel);
         Assert.Equal(FidelityClaimKind.HdrPreserved, profile.FidelityClaim.Kind);
         Assert.Contains("validated HDR-preserved", profile.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
     }
@@ -700,4 +704,21 @@ public sealed class PerfectHdrFidelityProjectionTests
             HdrState: "Active",
             ColorSpace: "RgbFullG2084NoneP2020",
             Detail: "Validated target-aware HDR match evidence.");
+
+    private static OutputProfileExecutionCapabilities ValidateOnlyHdr10Capabilities(
+        IEnumerable<OutputValidationSessionArtifact> artifacts) =>
+        OutputProfileExecutionCapabilities.ResolveHdr10JxrReleaseCapabilities(
+            ReadyHdr10JxrReadiness,
+            artifacts);
+
+    private static Hdr10JxrCodecReadiness ReadyHdr10JxrReadiness { get; } =
+        new(
+            HasNativeWicJpegXrEncoder: true,
+            AcceptsRgba16FloatSource: true,
+            WritesAuditMetadata: true,
+            HasArtifactAuditMetadataRoundTripEvidence: true,
+            HasViewerRecognizedHdr10StaticMetadata: true,
+            Hdr10StaticMetadataPolicy: Hdr10StaticMetadataPolicy.Bt2020PqReference1000Nit,
+            HasWindowsManualViewerValidation: true,
+            Blockers: []);
 }

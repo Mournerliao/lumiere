@@ -305,7 +305,7 @@ public sealed class SettingsPanelProjectionTests
         Assert.False(projection.Output.IsExportColorReadOnly);
 
         Assert.Equal(["HDR10", "P3", "sRGB"], projection.Output.ExportColorOptions.Select(option => option.Label).ToArray());
-        Assert.Equal("Validate", projection.Output.ExportColorOptions[0].StatusLabel);
+        Assert.Equal("Build", projection.Output.ExportColorOptions[0].StatusLabel);
         Assert.Equal("Build", projection.Output.ExportColorOptions[1].StatusLabel);
         Assert.Equal("Compat", projection.Output.ExportColorOptions[2].StatusLabel);
         Assert.True(projection.Output.ExportColorOptions[0].IsReadOnly);
@@ -337,10 +337,11 @@ public sealed class SettingsPanelProjectionTests
         Assert.Equal("HDR10", projection.Output.ExportColorDisplayValue);
         Assert.True(projection.Output.ExportColorOptions[0].IsSelected);
         Assert.True(projection.Output.ExportColorOptions[0].IsReadOnly);
-        Assert.Equal("Fallback", projection.MainPanel.OutputProfile.StatusLabel);
+        Assert.Equal("Build", projection.MainPanel.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
         Assert.Equal("Converted", projection.MainPanel.FidelityClaim.Label);
         Assert.Contains("compatibility fallback", projection.MainPanel.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("implementation prerequisites", projection.MainPanel.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", projection.MainPanel.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -378,15 +379,50 @@ public sealed class SettingsPanelProjectionTests
                 ArtifactFor("Microsoft Paint"),
                 ArtifactFor("Windows Photos"),
                 ArtifactFor("Chromium browsers"),
-            ]);
+            ],
+            executionCapabilities: ValidateOnlyHdr10Capabilities(
+                [
+                    ArtifactFor("Microsoft Paint"),
+                    ArtifactFor("Windows Photos"),
+                    ArtifactFor("Chromium browsers"),
+                ]));
 
         Assert.All(projection.Validation.ViewerMatrix, viewer => Assert.Equal(ValidationEvidenceStatus.Pass, viewer.Status));
         Assert.Equal("HDR10", projection.MainPanel.OutputProfile.Label);
-        Assert.Equal("Fallback", projection.MainPanel.OutputProfile.StatusLabel);
+        Assert.Equal("Validate", projection.MainPanel.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
         Assert.Contains("compatibility", projection.MainPanel.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("compatibility fallback", projection.MainPanel.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("viewer evidence", projection.MainPanel.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", projection.MainPanel.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Project_EnablesHdr10OptionWhenRuntimeCapabilityAndManualEvidencePass()
+    {
+        var settings = new TestSettingsProvider
+        {
+            ExportColorFormat = "HDR10",
+        };
+
+        var projection = SettingsPanelProjection.Project(
+            settings,
+            CreateState(),
+            [
+                ArtifactWithFormatContract("Microsoft Paint"),
+                ArtifactWithFormatContract("Windows Photos"),
+                ArtifactWithFormatContract("Chromium browsers"),
+            ],
+            executionCapabilities: OutputProfileExecutionCapabilities.Create(
+                OutputProfileExecutionCapability.SrgbCompatibility,
+                OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder));
+
+        Assert.Equal("HDR10", projection.Output.ExportColorDisplayValue);
+        Assert.Equal("Ready", projection.Output.ExportColorOptions[0].StatusLabel);
+        Assert.False(projection.Output.ExportColorOptions[0].IsReadOnly);
+        Assert.True(projection.Output.ExportColorOptions[0].IsSelected);
+        Assert.Equal("Ready", projection.MainPanel.OutputProfile.StatusLabel);
+        Assert.Equal(FidelityClaimKind.HdrPreserved, projection.MainPanel.FidelityClaim.Kind);
     }
 
     [Fact]
@@ -783,6 +819,23 @@ public sealed class SettingsPanelProjectionTests
             HdrState: "Active",
             ColorSpace: "RgbFullG2084NoneP2020",
             Detail: "Validated target-aware HDR match evidence.");
+
+    private static OutputProfileExecutionCapabilities ValidateOnlyHdr10Capabilities(
+        IEnumerable<OutputValidationSessionArtifact> artifacts) =>
+        OutputProfileExecutionCapabilities.ResolveHdr10JxrReleaseCapabilities(
+            ReadyHdr10JxrReadiness,
+            artifacts);
+
+    private static Hdr10JxrCodecReadiness ReadyHdr10JxrReadiness { get; } =
+        new(
+            HasNativeWicJpegXrEncoder: true,
+            AcceptsRgba16FloatSource: true,
+            WritesAuditMetadata: true,
+            HasArtifactAuditMetadataRoundTripEvidence: true,
+            HasViewerRecognizedHdr10StaticMetadata: true,
+            Hdr10StaticMetadataPolicy: Hdr10StaticMetadataPolicy.Bt2020PqReference1000Nit,
+            HasWindowsManualViewerValidation: true,
+            Blockers: []);
 
     private sealed class TestSettingsProvider : ISettingsProvider
     {

@@ -75,7 +75,7 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Contains(projection.Validation.ViewerMatrix, viewer =>
             viewer.Name == "Windows Photos"
             && viewer.Status == ValidationEvidenceStatus.Pass);
-        Assert.Equal("Fallback", projection.MainPanel.OutputProfile.StatusLabel);
+        Assert.Equal("Build", projection.MainPanel.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
         Assert.DoesNotContain("HDR-preserved", projection.MainPanel.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
     }
@@ -103,7 +103,7 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Contains("bad.json", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Contains("JsonException", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Equal("harness/validation/output-validation.md", projection.Validation.Record.EvidenceDocumentPath);
-        Assert.Equal("Fallback", projection.MainPanel.OutputProfile.StatusLabel);
+        Assert.Equal("Build", projection.MainPanel.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
     }
 

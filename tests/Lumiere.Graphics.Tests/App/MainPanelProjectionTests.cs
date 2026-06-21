@@ -88,10 +88,11 @@ public sealed class MainPanelProjectionTests
 
         Assert.Equal("Output complete", projection.TrustLabel);
         Assert.Equal("HDR10", projection.OutputProfile.Label);
-        Assert.Equal("Fallback", projection.OutputProfile.StatusLabel);
+        Assert.Equal("Build", projection.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.FidelityClaim.Kind);
         Assert.Equal("Converted", projection.FidelityClaim.Label);
         Assert.Contains("compatibility fallback", projection.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("implementation prerequisites", projection.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("requested HDR10", projection.OutputResult.FidelityDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("using sRGB", projection.OutputResult.FidelityDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Fidelity claim: Converted", projection.OutputResult.FidelityDetail);
@@ -168,14 +169,16 @@ public sealed class MainPanelProjectionTests
             state,
             hdrAlertsEnabled: true,
             exportColorFormat: "HDR10",
-            validationArtifacts: artifacts);
+            validationArtifacts: artifacts,
+            executionCapabilities: ValidateOnlyHdr10Capabilities(artifacts));
 
         Assert.Equal("HDR10", projection.OutputProfile.Label);
-        Assert.Equal("Fallback", projection.OutputProfile.StatusLabel);
+        Assert.Equal("Validate", projection.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.FidelityClaim.Kind);
         Assert.Equal("Converted", projection.FidelityClaim.Label);
         Assert.Contains("compatibility", projection.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("compatibility fallback", projection.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("viewer evidence", projection.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("validated HDR-preserved", projection.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -531,4 +534,21 @@ public sealed class MainPanelProjectionTests
                         PassingHdrViewer(viewerName),
                     ]),
             ]);
+
+    private static OutputProfileExecutionCapabilities ValidateOnlyHdr10Capabilities(
+        IEnumerable<OutputValidationSessionArtifact> artifacts) =>
+        OutputProfileExecutionCapabilities.ResolveHdr10JxrReleaseCapabilities(
+            ReadyHdr10JxrReadiness,
+            artifacts);
+
+    private static Hdr10JxrCodecReadiness ReadyHdr10JxrReadiness { get; } =
+        new(
+            HasNativeWicJpegXrEncoder: true,
+            AcceptsRgba16FloatSource: true,
+            WritesAuditMetadata: true,
+            HasArtifactAuditMetadataRoundTripEvidence: true,
+            HasViewerRecognizedHdr10StaticMetadata: true,
+            Hdr10StaticMetadataPolicy: Hdr10StaticMetadataPolicy.Bt2020PqReference1000Nit,
+            HasWindowsManualViewerValidation: true,
+            Blockers: []);
 }
