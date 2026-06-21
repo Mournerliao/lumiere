@@ -122,6 +122,7 @@ public sealed record OutputSettingsProjection(
     string ExportColorDisplayValue,
     string ExportColorHelpText,
     bool IsExportColorReadOnly,
+    OutputProfileContractProjection SelectedProfileContract,
     IReadOnlyList<ExportColorOptionProjection> ExportColorOptions)
 {
     private const string OutputPolicyActiveReason = "Output target policy is active for clipboard, folder, and both targets";
@@ -176,6 +177,7 @@ public sealed record OutputSettingsProjection(
             selectedProfile.Label,
             ExportColorHelp,
             IsExportColorReadOnly: true,
+            selectedProfile.Contract,
             exportColorOptions);
     }
 

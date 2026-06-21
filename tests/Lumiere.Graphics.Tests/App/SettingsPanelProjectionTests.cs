@@ -274,6 +274,39 @@ public sealed class SettingsPanelProjectionTests
     }
 
     [Fact]
+    public void Project_SelectedHdr10ProfileSurfacesOutputContractPolicy()
+    {
+        var settings = new TestSettingsProvider
+        {
+            ExportColorFormat = "HDR10",
+        };
+
+        var projection = SettingsPanelProjection.Project(settings, CreateState());
+
+        Assert.Equal("FP16/scRGB capture source", projection.Output.SelectedProfileContract.SourcePolicy);
+        Assert.Equal("HDR10 output contract pending implementation", projection.Output.SelectedProfileContract.DestinationPolicy);
+        Assert.Contains("tone", projection.Output.SelectedProfileContract.ConversionPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("metadata", projection.Output.SelectedProfileContract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("target-app", projection.Output.SelectedProfileContract.ViewerCompatibilityPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR-preserved", projection.Output.SelectedProfileContract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR-preserved", projection.Output.SelectedProfileContract.ViewerCompatibilityPolicy, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Project_SelectedSrgbProfileSurfacesCompatibilityContractPolicy()
+    {
+        var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
+
+        Assert.Equal("FP16/scRGB capture source", projection.Output.SelectedProfileContract.SourcePolicy);
+        Assert.Equal("Compatibility-converted sRGB artifact", projection.Output.SelectedProfileContract.DestinationPolicy);
+        Assert.Contains("converted", projection.Output.SelectedProfileContract.ConversionPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("No HDR metadata", projection.Output.SelectedProfileContract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("compatibility", projection.Output.SelectedProfileContract.ViewerCompatibilityPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR-preserved", projection.Output.SelectedProfileContract.DestinationPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR-preserved", projection.Output.SelectedProfileContract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Project_IncludesValidationEvidencePanel()
     {
         var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());

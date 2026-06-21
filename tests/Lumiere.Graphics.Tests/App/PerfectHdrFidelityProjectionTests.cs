@@ -32,6 +32,11 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Equal(FidelityClaimKind.Unvalidated, profile.FidelityClaim.Kind);
         Assert.Equal("Unvalidated", profile.FidelityClaim.Label);
         Assert.Contains("No fidelity claim", profile.FidelityClaim.Detail);
+        Assert.Equal("FP16/scRGB capture source", profile.Contract.SourcePolicy);
+        Assert.Equal("HDR10 output contract pending implementation", profile.Contract.DestinationPolicy);
+        Assert.Contains("tone", profile.Contract.ConversionPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("metadata", profile.Contract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("target-app", profile.Contract.ViewerCompatibilityPolicy, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", profile.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -46,6 +51,8 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Equal(FidelityClaimKind.Converted, profile.FidelityClaim.Kind);
         Assert.Equal("Converted", profile.FidelityClaim.Label);
         Assert.Contains("compatibility", profile.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Compatibility-converted sRGB artifact", profile.Contract.DestinationPolicy);
+        Assert.Contains("no HDR metadata", profile.Contract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("public release target", profile.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
     }
 

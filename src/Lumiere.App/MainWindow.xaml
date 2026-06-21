@@ -718,6 +718,100 @@
                     Foreground="{StaticResource MutedTextBrush}"
                     Text="HDR-preserved options stay scoped until profile contract, metadata policy, viewer matrix, and Windows validation exist."
                     TextWrapping="WrapWholeWords" />
+                <StackPanel
+                    Margin="0,0,0,14"
+                    Spacing="6">
+                  <TextBlock
+                      FontSize="10"
+                      FontWeight="SemiBold"
+                      Foreground="{StaticResource TextBrush}"
+                      Text="Selected profile contract" />
+                  <Grid
+                      ColumnSpacing="10"
+                      RowSpacing="5">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="78" />
+                      <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                      <RowDefinition Height="Auto" />
+                      <RowDefinition Height="Auto" />
+                      <RowDefinition Height="Auto" />
+                      <RowDefinition Height="Auto" />
+                      <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock
+                        Grid.Row="0"
+                        FontSize="9"
+                        Foreground="{StaticResource SubtleTextBrush}"
+                        Text="Source" />
+                    <TextBlock
+                        x:Name="SettingsOutputContractSourceText"
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        FontSize="9"
+                        Foreground="{StaticResource MutedTextBrush}"
+                        Text="FP16/scRGB capture source"
+                        TextWrapping="WrapWholeWords" />
+
+                    <TextBlock
+                        Grid.Row="1"
+                        FontSize="9"
+                        Foreground="{StaticResource SubtleTextBrush}"
+                        Text="Destination" />
+                    <TextBlock
+                        x:Name="SettingsOutputContractDestinationText"
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        FontSize="9"
+                        Foreground="{StaticResource MutedTextBrush}"
+                        Text="Compatibility-converted sRGB artifact"
+                        TextWrapping="WrapWholeWords" />
+
+                    <TextBlock
+                        Grid.Row="2"
+                        FontSize="9"
+                        Foreground="{StaticResource SubtleTextBrush}"
+                        Text="Conversion" />
+                    <TextBlock
+                        x:Name="SettingsOutputContractConversionText"
+                        Grid.Row="2"
+                        Grid.Column="1"
+                        FontSize="9"
+                        Foreground="{StaticResource MutedTextBrush}"
+                        Text="Output is converted for common SDR destinations."
+                        TextWrapping="WrapWholeWords" />
+
+                    <TextBlock
+                        Grid.Row="3"
+                        FontSize="9"
+                        Foreground="{StaticResource SubtleTextBrush}"
+                        Text="Metadata" />
+                    <TextBlock
+                        x:Name="SettingsOutputContractMetadataText"
+                        Grid.Row="3"
+                        Grid.Column="1"
+                        FontSize="9"
+                        Foreground="{StaticResource MutedTextBrush}"
+                        Text="No HDR metadata is attached to the compatibility artifact."
+                        TextWrapping="WrapWholeWords" />
+
+                    <TextBlock
+                        Grid.Row="4"
+                        FontSize="9"
+                        Foreground="{StaticResource SubtleTextBrush}"
+                        Text="Viewer" />
+                    <TextBlock
+                        x:Name="SettingsOutputContractViewerText"
+                        Grid.Row="4"
+                        Grid.Column="1"
+                        FontSize="9"
+                        Foreground="{StaticResource MutedTextBrush}"
+                        Text="Compatibility-oriented target-app checks are still required."
+                        TextWrapping="WrapWholeWords" />
+                  </Grid>
+                </StackPanel>
               </StackPanel>
             </Border>
           </StackPanel>

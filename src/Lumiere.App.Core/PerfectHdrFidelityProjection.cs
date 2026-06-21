@@ -14,6 +14,12 @@ public static class PerfectHdrFidelityProjection
                 "Validate",
                 "Requires profile contract, metadata policy, supported viewer evidence, and Windows validation.",
                 IsReadOnly: true,
+                new OutputProfileContractProjection(
+                    "FP16/scRGB capture source",
+                    "HDR10 output contract pending implementation",
+                    "Transfer, tone mapping, and gamut mapping policy must be defined before use.",
+                    "HDR10 metadata policy is required before this profile can make a fidelity claim.",
+                    "Named target-app compatibility matrix is required."),
                 new FidelityClaimProjection(
                     FidelityClaimKind.Unvalidated,
                     "Unvalidated",
@@ -25,6 +31,12 @@ public static class PerfectHdrFidelityProjection
                 "Build",
                 "Wide-gamut output is visible as intent, but not selectable as a fidelity claim yet.",
                 IsReadOnly: true,
+                new OutputProfileContractProjection(
+                    "FP16/scRGB capture source",
+                    "Display P3 output contract pending implementation",
+                    "Wide-gamut conversion policy must be specified before use.",
+                    "Color profile and metadata attachment policy are not validated.",
+                    "Target-app compatibility matrix is not run."),
                 new FidelityClaimProjection(
                     FidelityClaimKind.Unvalidated,
                     "Unvalidated",
@@ -36,6 +48,12 @@ public static class PerfectHdrFidelityProjection
                 "Compat",
                 "Compatibility output; useful fallback, not the public release target.",
                 IsReadOnly: false,
+                new OutputProfileContractProjection(
+                    "FP16/scRGB capture source",
+                    "Compatibility-converted sRGB artifact",
+                    "Output is converted for common SDR destinations.",
+                    "No HDR metadata is attached to the compatibility artifact.",
+                    "Compatibility-oriented target-app checks are still required."),
                 new FidelityClaimProjection(
                     FidelityClaimKind.Converted,
                     "Converted",
@@ -90,7 +108,15 @@ public sealed record OutputProfileProjection(
     string StatusLabel,
     string Detail,
     bool IsReadOnly,
+    OutputProfileContractProjection Contract,
     FidelityClaimProjection FidelityClaim);
+
+public sealed record OutputProfileContractProjection(
+    string SourcePolicy,
+    string DestinationPolicy,
+    string ConversionPolicy,
+    string MetadataPolicy,
+    string ViewerCompatibilityPolicy);
 
 public sealed record FidelityClaimProjection(
     FidelityClaimKind Kind,

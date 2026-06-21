@@ -1620,6 +1620,7 @@ public sealed partial class MainWindow : Window
         AutomationProperties.SetHelpText(SettingsExportSegmentsPanel, output.ExportColorHelpText);
         ToolTipService.SetToolTip(SettingsExportSegmentsPanel, output.ExportColorHelpText);
         SettingsExportProfileHelpText.Text = output.ExportColorHelpText;
+        ApplyOutputProfileContractProjection(output.SelectedProfileContract);
 
         if (output.ExportColorOptions?.Count >= 3)
         {
@@ -1645,6 +1646,19 @@ public sealed partial class MainWindow : Window
             SettingsExportP3Segment.IsEnabled = false;
             SettingsExportSrgbSegment.IsEnabled = false;
         }
+    }
+
+    private void ApplyOutputProfileContractProjection(OutputProfileContractProjection contract)
+    {
+        SettingsOutputContractSourceText.Text = contract.SourcePolicy;
+        SettingsOutputContractDestinationText.Text = contract.DestinationPolicy;
+        SettingsOutputContractConversionText.Text = contract.ConversionPolicy;
+        SettingsOutputContractMetadataText.Text = contract.MetadataPolicy;
+        SettingsOutputContractViewerText.Text = contract.ViewerCompatibilityPolicy;
+        var contractSummary =
+            $"Selected profile contract. Source: {contract.SourcePolicy}. Destination: {contract.DestinationPolicy}. Conversion: {contract.ConversionPolicy}. Metadata: {contract.MetadataPolicy}. Viewer: {contract.ViewerCompatibilityPolicy}";
+        AutomationProperties.SetHelpText(SettingsExportSegmentsPanel, contractSummary);
+        ToolTipService.SetToolTip(SettingsExportProfileHelpText, contractSummary);
     }
 
     private void ApplyExportColorOption(
