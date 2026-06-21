@@ -115,12 +115,19 @@ Evidence:
 - Tests assert that unvalidated paths do not claim HDR-preserved behavior.
 - Validation panel wording keeps public release claims behind evidence gates.
 
-### 13-2 Harden Native Settings and Accessibility Semantics - backlog
+### 13-2 Harden Native Settings and Accessibility Semantics - in-progress
 
 Evidence:
 
-- Accessibility gaps remain tracked as future work in validation and deferred-work artifacts.
-- No focused public-release accessibility validation story has been completed.
+- Settings now use native `ToggleSwitch` semantics for live binary preferences instead of custom button-shaped switch visuals.
+- Output destination now uses a native single-choice control path instead of custom segmented buttons.
+- Shortcut capture and save-path browsing rows now use standard `Button` activation rather than `Tapped`-only surfaces.
+- A focused implementation record exists at `_bmad-output/implementation-artifacts/13-2-harden-native-settings-and-accessibility-semantics.md`.
+
+Remaining blockers:
+
+- Windows manual accessibility validation for keyboard, screen reader, high contrast, text scaling, and DPI is still required.
+- Export profile presentation may still need additional native-semantic hardening before public release.
 
 ## Resulting Sprint Status
 

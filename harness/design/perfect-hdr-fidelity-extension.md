@@ -242,7 +242,10 @@ Native implementation expectations:
 
 - Use WinUI controls before custom controls.
 - Use InfoBar, TeachingTip, Flyout, ContentDialog, CommandBar, ToggleSwitch, ComboBox, NumberBox, and standard settings rows where they fit.
+- Use ToggleSwitch for live binary settings such as HDR alerts, timestamp naming, copy-as-image, and after-capture behavior when those settings take effect immediately.
+- Use RadioButtons for mutually exclusive settings such as output destination when a native single-choice control can represent the behavior without inventing custom segments.
 - Avoid custom button-shaped toggles when native controls can express the behavior.
+- Use standard Button click paths for shortcut capture, folder picker, and other dialog-launching rows so keyboard and screen reader activation match native expectations.
 - Maintain visible focus and logical tab order.
 - Keep status updates perceivable without noisy repeated announcements.
 - Keep overlay cancel available through Escape and visible affordance.

@@ -462,25 +462,22 @@
                       FontWeight="SemiBold"
                       Foreground="{StaticResource TextBrush}"
                       Text="Full Screen" />
-                  <Border
-                      x:Name="SettingsFullscreenShortcutValuePill"
+                  <Button
+                      x:Name="SettingsFullscreenShortcutButton"
                       Grid.Column="1"
-                      MinWidth="96"
+                      MinWidth="108"
                       Padding="12,6"
                       VerticalAlignment="Center"
-                      Background="#241D2024"
-                      BorderBrush="{StaticResource BorderBrush}"
-                      BorderThickness="1"
-                      CornerRadius="8"
-                      Tapped="OnFullscreenShortcutTapped">
+                      AutomationProperties.HelpText="Choose the fullscreen capture shortcut."
+                      AutomationProperties.Name="Edit fullscreen shortcut"
+                      Click="OnFullscreenShortcutClick">
                     <TextBlock
                         x:Name="SettingsFullscreenShortcutValueText"
                         HorizontalAlignment="Center"
                         FontSize="12"
                         FontWeight="SemiBold"
-                        Foreground="{StaticResource MutedTextBrush}"
                         Text="Not assigned" />
-                  </Border>
+                  </Button>
                 </Grid>
                 <Border
                     Height="1"
@@ -498,25 +495,22 @@
                       FontWeight="SemiBold"
                       Foreground="{StaticResource TextBrush}"
                       Text="Region" />
-                  <Border
-                      x:Name="SettingsRegionShortcutValuePill"
+                  <Button
+                      x:Name="SettingsRegionShortcutButton"
                       Grid.Column="1"
-                      MinWidth="96"
+                      MinWidth="108"
                       Padding="12,6"
                       VerticalAlignment="Center"
-                      Background="#241D2024"
-                      BorderBrush="{StaticResource BorderBrush}"
-                      BorderThickness="1"
-                      CornerRadius="8"
-                      Tapped="OnRegionShortcutTapped">
+                      AutomationProperties.HelpText="Choose the region capture shortcut."
+                      AutomationProperties.Name="Edit region shortcut"
+                      Click="OnRegionShortcutClick">
                     <TextBlock
                         x:Name="SettingsRegionShortcutValueText"
                         HorizontalAlignment="Center"
                         FontSize="12"
                         FontWeight="SemiBold"
-                        Foreground="{StaticResource MutedTextBrush}"
                         Text="Not assigned" />
-                  </Border>
+                  </Button>
                 </Grid>
               </StackPanel>
             </Border>
@@ -549,29 +543,14 @@
                       FontWeight="SemiBold"
                       Foreground="{StaticResource TextBrush}"
                       Text="HDR alerts" />
-                  <Button
-                      x:Name="SettingsHdrAlertsButton"
+                  <ToggleSwitch
+                      x:Name="SettingsHdrAlertsToggleSwitch"
                       Grid.Column="1"
                       AutomationProperties.HelpText="Show warnings when HDR is unavailable, degraded, unsupported, or failed."
                       AutomationProperties.Name="HDR alerts"
-                      Click="OnSettingsHdrAlertsButtonClick"
-                      Style="{StaticResource SettingsSwitchButtonStyle}">
-                    <Border
-                        x:Name="SettingsHdrAlertsSwitchTrack"
-                        Width="48"
-                        Height="28"
-                        Background="{StaticResource SwitchTrackOffBrush}"
-                        CornerRadius="14">
-                      <Ellipse
-                          x:Name="SettingsHdrAlertsSwitchKnob"
-                          Width="20"
-                          Height="20"
-                          Margin="4"
-                          HorizontalAlignment="Left"
-                          VerticalAlignment="Center"
-                          Fill="{StaticResource SwitchKnobOffBrush}" />
-                    </Border>
-                  </Button>
+                      OffContent=""
+                      OnContent=""
+                      Toggled="OnSettingsHdrAlertsToggled" />
                 </Grid>
                 <Border
                     Height="1"
@@ -1228,71 +1207,21 @@
                       Foreground="{StaticResource MutedTextBrush}"
                       Text="DESTINATION" />
                   <Border
-                      Height="48"
-                      Padding="4"
+                      Padding="12,6"
                       AutomationProperties.HelpText="Choose where completed captures are written."
                       AutomationProperties.Name="Destination"
                       Background="#2217191C"
                       BorderBrush="{StaticResource BorderBrush}"
                       BorderThickness="1"
                       CornerRadius="10">
-                    <Grid ColumnSpacing="4">
-                      <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                      </Grid.ColumnDefinitions>
-                      <Button
-                          x:Name="SettingsDestinationClipboardSegment"
-                          Click="OnSettingsDestinationClipboardClick"
-                          Style="{StaticResource SegmentButtonStyle}">
-                        <StackPanel
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Spacing="0">
-                          <TextBlock
-                              x:Name="SettingsDestinationClipboardText"
-                              HorizontalAlignment="Center"
-                              FontSize="12"
-                              FontWeight="SemiBold"
-                              Text="Clipboard" />
-                        </StackPanel>
-                      </Button>
-                      <Button
-                          x:Name="SettingsDestinationFolderSegment"
-                          Grid.Column="1"
-                          Click="OnSettingsDestinationFolderClick"
-                          Style="{StaticResource SegmentButtonStyle}">
-                        <StackPanel
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Spacing="0">
-                          <TextBlock
-                              x:Name="SettingsDestinationFolderText"
-                              HorizontalAlignment="Center"
-                              FontSize="12"
-                              FontWeight="SemiBold"
-                              Text="Folder" />
-                        </StackPanel>
-                      </Button>
-                      <Button
-                          x:Name="SettingsDestinationBothSegment"
-                          Grid.Column="2"
-                          Click="OnSettingsDestinationBothClick"
-                          Style="{StaticResource SegmentButtonStyle}">
-                        <StackPanel
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Spacing="0">
-                          <TextBlock
-                              x:Name="SettingsDestinationBothText"
-                              HorizontalAlignment="Center"
-                              FontSize="12"
-                              FontWeight="SemiBold"
-                              Text="Both" />
-                        </StackPanel>
-                      </Button>
-                    </Grid>
+                    <RadioButtons
+                        x:Name="SettingsDestinationRadioButtons"
+                        MaxColumns="3"
+                        SelectionChanged="OnSettingsDestinationSelectionChanged">
+                      <x:String>Clipboard</x:String>
+                      <x:String>Folder</x:String>
+                      <x:String>Both</x:String>
+                    </RadioButtons>
                   </Border>
                 </StackPanel>
                 <Border
@@ -1335,18 +1264,15 @@
                         Padding="10,7"
                         HorizontalAlignment="Right"
                         AutomationProperties.Name="Browse for save folder"
-                        Style="{StaticResource SettingsSwitchButtonStyle}"
-                        Tapped="OnSettingsSavePathTapped">
+                        Click="OnSettingsSavePathBrowseClick">
                       <StackPanel Orientation="Horizontal" Spacing="6">
                         <FontIcon
                             FontFamily="Segoe Fluent Icons"
-                            Foreground="{StaticResource MutedTextBrush}"
                             FontSize="12"
                             Glyph="&#xE8B7;" />
                         <TextBlock
                             FontSize="11"
                             FontWeight="SemiBold"
-                            Foreground="{StaticResource MutedTextBrush}"
                             Text="Browse" />
                       </StackPanel>
                     </Button>
@@ -1366,29 +1292,14 @@
                       FontWeight="SemiBold"
                       Foreground="{StaticResource TextBrush}"
                       Text="Open after capture" />
-                  <Button
-                      x:Name="SettingsOpenAfterCaptureButton"
+                  <ToggleSwitch
+                      x:Name="SettingsOpenAfterCaptureToggleSwitch"
                       Grid.Column="1"
                       AutomationProperties.HelpText="Runs only when folder output produces a file artifact."
                       AutomationProperties.Name="After capture action"
-                      Click="OnSettingsAfterCaptureButtonClick"
-                      Style="{StaticResource SettingsSwitchButtonStyle}">
-                    <Border
-                        x:Name="SettingsOpenAfterCaptureSwitchTrack"
-                        Width="48"
-                        Height="28"
-                        Background="{StaticResource SwitchTrackOffBrush}"
-                        CornerRadius="14">
-                      <Ellipse
-                          x:Name="SettingsOpenAfterCaptureSwitchKnob"
-                          Width="20"
-                          Height="20"
-                          Margin="4"
-                          HorizontalAlignment="Left"
-                          VerticalAlignment="Center"
-                          Fill="{StaticResource SwitchKnobOffBrush}" />
-                    </Border>
-                  </Button>
+                      OffContent=""
+                      OnContent=""
+                      Toggled="OnSettingsAfterCaptureToggled" />
                 </Grid>
                 <Border
                     Height="1"
@@ -1404,29 +1315,14 @@
                       FontWeight="SemiBold"
                       Foreground="{StaticResource TextBrush}"
                       Text="Timestamp" />
-                  <Button
-                      x:Name="SettingsTimestampButton"
+                  <ToggleSwitch
+                      x:Name="SettingsTimestampToggleSwitch"
                       Grid.Column="1"
                       AutomationProperties.HelpText="Timestamp naming controls whether folder output uses safe invariant filenames."
                       AutomationProperties.Name="Timestamp naming"
-                      Click="OnSettingsTimestampButtonClick"
-                      Style="{StaticResource SettingsSwitchButtonStyle}">
-                    <Border
-                        x:Name="SettingsTimestampSwitchTrack"
-                        Width="48"
-                        Height="28"
-                        Background="{StaticResource SwitchTrackOffBrush}"
-                        CornerRadius="14">
-                      <Ellipse
-                          x:Name="SettingsTimestampSwitchKnob"
-                          Width="20"
-                          Height="20"
-                          Margin="4"
-                          HorizontalAlignment="Left"
-                          VerticalAlignment="Center"
-                          Fill="{StaticResource SwitchKnobOffBrush}" />
-                    </Border>
-                  </Button>
+                      OffContent=""
+                      OnContent=""
+                      Toggled="OnSettingsTimestampToggled" />
                 </Grid>
               </StackPanel>
             </Border>
@@ -1458,29 +1354,14 @@
                     FontWeight="SemiBold"
                     Foreground="{StaticResource TextBrush}"
                     Text="Copy as image" />
-                <Button
-                    x:Name="SettingsCopyAsImageButton"
+                <ToggleSwitch
+                    x:Name="SettingsCopyAsImageToggleSwitch"
                     Grid.Column="1"
                     AutomationProperties.HelpText="Copy-as-image controls basic clipboard usability and does not mean validated HDR preservation."
                     AutomationProperties.Name="Copy as image"
-                    Click="OnSettingsCopyAsImageButtonClick"
-                    Style="{StaticResource SettingsSwitchButtonStyle}">
-                  <Border
-                      x:Name="SettingsCopyAsImageSwitchTrack"
-                      Width="48"
-                      Height="28"
-                      Background="{StaticResource SwitchTrackOffBrush}"
-                      CornerRadius="14">
-                    <Ellipse
-                        x:Name="SettingsCopyAsImageSwitchKnob"
-                        Width="20"
-                        Height="20"
-                        Margin="4"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Center"
-                        Fill="{StaticResource SwitchKnobOffBrush}" />
-                  </Border>
-                </Button>
+                    OffContent=""
+                    OnContent=""
+                    Toggled="OnSettingsCopyAsImageToggled" />
               </Grid>
             </Border>
           </StackPanel>

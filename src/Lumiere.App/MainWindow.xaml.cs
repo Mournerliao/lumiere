@@ -278,14 +278,19 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void OnSettingsHdrAlertsButtonClick(object sender, RoutedEventArgs e)
+    private void OnSettingsHdrAlertsToggled(object sender, RoutedEventArgs e)
     {
         if (applyingSettingsProjection)
         {
             return;
         }
 
-        settingsWriter.SetHdrAlertsEnabled(!settingsProvider.HdrAlertsEnabled);
+        if (sender is not ToggleSwitch toggleSwitch)
+        {
+            return;
+        }
+
+        settingsWriter.SetHdrAlertsEnabled(toggleSwitch.IsOn);
         hdrAlertDismissed = false;
         var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
         ApplySettingsProjection(currentState);
@@ -296,14 +301,19 @@ public sealed partial class MainWindow : Window
             settingsProvider.HdrAlertsEnabled);
     }
 
-    private void OnSettingsTimestampButtonClick(object sender, RoutedEventArgs e)
+    private void OnSettingsTimestampToggled(object sender, RoutedEventArgs e)
     {
         if (applyingSettingsProjection)
         {
             return;
         }
 
-        settingsWriter.SetTimestampNaming(!settingsProvider.TimestampNaming);
+        if (sender is not ToggleSwitch toggleSwitch)
+        {
+            return;
+        }
+
+        settingsWriter.SetTimestampNaming(toggleSwitch.IsOn);
         var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
         ApplySettingsProjection(currentState);
         Logger.LogDebug(
@@ -311,7 +321,7 @@ public sealed partial class MainWindow : Window
             settingsProvider.TimestampNaming);
     }
 
-    private async void OnSettingsSavePathTapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+    private async void OnSettingsSavePathBrowseClick(object sender, RoutedEventArgs e)
     {
         if (applyingSettingsProjection)
         {
@@ -343,16 +353,21 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void OnSettingsAfterCaptureButtonClick(object sender, RoutedEventArgs e)
+    private void OnSettingsAfterCaptureToggled(object sender, RoutedEventArgs e)
     {
         if (applyingSettingsProjection)
         {
             return;
         }
 
-        var next = settingsProvider.AfterCaptureBehavior == AfterCaptureBehavior.Open
-            ? AfterCaptureBehavior.None
-            : AfterCaptureBehavior.Open;
+        if (sender is not ToggleSwitch toggleSwitch)
+        {
+            return;
+        }
+
+        var next = toggleSwitch.IsOn
+            ? AfterCaptureBehavior.Open
+            : AfterCaptureBehavior.None;
         settingsWriter.SetAfterCaptureBehavior(next);
         var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
         ApplySettingsProjection(currentState);
@@ -361,7 +376,7 @@ public sealed partial class MainWindow : Window
             settingsProvider.AfterCaptureBehavior);
     }
 
-    private async void OnFullscreenShortcutTapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+    private async void OnFullscreenShortcutClick(object sender, RoutedEventArgs e)
     {
         if (applyingSettingsProjection)
         {
@@ -378,7 +393,7 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private async void OnRegionShortcutTapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+    private async void OnRegionShortcutClick(object sender, RoutedEventArgs e)
     {
         if (applyingSettingsProjection)
         {
@@ -442,14 +457,22 @@ public sealed partial class MainWindow : Window
         return result;
     }
 
-    private void OnSettingsDestinationClipboardClick(object sender, RoutedEventArgs e) =>
-        SetOutputTargetFromSettings(OutputTarget.Clipboard);
+    private void OnSettingsDestinationSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (applyingSettingsProjection || sender is not RadioButtons radioButtons)
+        {
+            return;
+        }
 
-    private void OnSettingsDestinationFolderClick(object sender, RoutedEventArgs e) =>
-        SetOutputTargetFromSettings(OutputTarget.Folder);
+        var target = radioButtons.SelectedIndex switch
+        {
+            1 => OutputTarget.Folder,
+            2 => OutputTarget.Both,
+            _ => OutputTarget.Clipboard,
+        };
 
-    private void OnSettingsDestinationBothClick(object sender, RoutedEventArgs e) =>
-        SetOutputTargetFromSettings(OutputTarget.Both);
+        SetOutputTargetFromSettings(target);
+    }
 
     private void SetOutputTargetFromSettings(OutputTarget target)
     {
@@ -465,14 +488,19 @@ public sealed partial class MainWindow : Window
             settingsProvider.OutputTarget);
     }
 
-    private void OnSettingsCopyAsImageButtonClick(object sender, RoutedEventArgs e)
+    private void OnSettingsCopyAsImageToggled(object sender, RoutedEventArgs e)
     {
         if (applyingSettingsProjection)
         {
             return;
         }
 
-        settingsWriter.SetCopyAsImage(!settingsProvider.CopyAsImage);
+        if (sender is not ToggleSwitch toggleSwitch)
+        {
+            return;
+        }
+
+        settingsWriter.SetCopyAsImage(toggleSwitch.IsOn);
         ApplySettingsProjection(captureService?.CurrentSessionState ?? CaptureSessionState.Idle());
         Logger.LogDebug(
             "Copy-as-image preference updated in settings: enabled={CopyAsImage}",
@@ -1636,73 +1664,65 @@ public sealed partial class MainWindow : Window
         applyingSettingsProjection = true;
         try
         {
+            SettingsFullscreenShortcutButton.IsEnabled = !projection.FullscreenShortcut.IsReadOnly;
             SettingsFullscreenShortcutValueText.Text = projection.FullscreenShortcut.DisplayValue;
-            AutomationProperties.SetName(SettingsFullscreenShortcutValuePill, projection.FullscreenShortcut.Label);
-            AutomationProperties.SetHelpText(SettingsFullscreenShortcutValuePill, projection.FullscreenShortcut.HelpText);
-            ToolTipService.SetToolTip(SettingsFullscreenShortcutValuePill, projection.FullscreenShortcut.PendingReason);
+            AutomationProperties.SetName(SettingsFullscreenShortcutButton, projection.FullscreenShortcut.Label);
+            AutomationProperties.SetHelpText(SettingsFullscreenShortcutButton, projection.FullscreenShortcut.HelpText);
+            ToolTipService.SetToolTip(SettingsFullscreenShortcutButton, projection.FullscreenShortcut.PendingReason);
 
+            SettingsRegionShortcutButton.IsEnabled = !projection.RegionShortcut.IsReadOnly;
             SettingsRegionShortcutValueText.Text = projection.RegionShortcut.DisplayValue;
-            AutomationProperties.SetName(SettingsRegionShortcutValuePill, projection.RegionShortcut.Label);
-            AutomationProperties.SetHelpText(SettingsRegionShortcutValuePill, projection.RegionShortcut.HelpText);
-            ToolTipService.SetToolTip(SettingsRegionShortcutValuePill, projection.RegionShortcut.PendingReason);
+            AutomationProperties.SetName(SettingsRegionShortcutButton, projection.RegionShortcut.Label);
+            AutomationProperties.SetHelpText(SettingsRegionShortcutButton, projection.RegionShortcut.HelpText);
+            ToolTipService.SetToolTip(SettingsRegionShortcutButton, projection.RegionShortcut.PendingReason);
 
-            SettingsHdrAlertsButton.IsEnabled = !projection.IsHdrAlertsReadOnly;
-            ApplySwitchState(
-                SettingsHdrAlertsSwitchTrack,
-                SettingsHdrAlertsSwitchKnob,
-                projection.HdrAlertsEnabled,
-                projection.IsHdrAlertsReadOnly);
+            SettingsHdrAlertsToggleSwitch.IsEnabled = !projection.IsHdrAlertsReadOnly;
+            SettingsHdrAlertsToggleSwitch.IsOn = projection.HdrAlertsEnabled;
             AutomationProperties.SetName(
-                SettingsHdrAlertsButton,
+                SettingsHdrAlertsToggleSwitch,
                 projection.HdrAlertsEnabled ? "HDR alerts: on" : "HDR alerts: off");
-            AutomationProperties.SetHelpText(SettingsHdrAlertsButton, "Show warnings when HDR is unavailable, degraded, unsupported, or failed.");
+            AutomationProperties.SetHelpText(SettingsHdrAlertsToggleSwitch, "Show warnings when HDR is unavailable, degraded, unsupported, or failed.");
             SettingsTargetAwareStateLabel.Text = projection.TargetAwareStateLabel;
             SettingsTargetAwareStateHelpText.Text = projection.TargetAwareStateHelpText;
             AutomationProperties.SetName(SettingsTargetAwareStateLabel, $"Target-aware state: {projection.TargetAwareStateLabel}");
             AutomationProperties.SetHelpText(SettingsTargetAwareStateLabel, projection.TargetAwareStateHelpText);
             ApplyTargetEvidenceProjection(projection.TargetEvidence);
-            ApplyDestinationSegmentProjection(projection.Output);
+            ApplyDestinationSelectionProjection(projection.Output);
 
             var showSavePath = projection.Output.IsFolderSelected || projection.Output.IsBothSelected;
             SettingsSavePathRow.Visibility = showSavePath ? Visibility.Visible : Visibility.Collapsed;
 
             SettingsSavePathValueText.Text = projection.Output.SavePathDisplayValue;
             AutomationProperties.SetName(SettingsSavePathValueBorder, $"Save path: {projection.Output.SavePathDisplayValue}");
-            AutomationProperties.SetHelpText(SettingsSavePathValueBorder, "Select the folder for file output captures.");
+            AutomationProperties.SetHelpText(SettingsSavePathValueBorder, projection.Output.SavePathHelpText);
+            SettingsSavePathBrowseButton.IsEnabled = !projection.Output.IsSavePathReadOnly;
+            AutomationProperties.SetHelpText(SettingsSavePathBrowseButton, projection.Output.SavePathHelpText);
+            ToolTipService.SetToolTip(SettingsSavePathBrowseButton, projection.Output.SavePathHelpText);
 
             var showClipboard = projection.Output.IsClipboardSelected || projection.Output.IsBothSelected;
             SettingsClipboardSection.Visibility = showClipboard ? Visibility.Visible : Visibility.Collapsed;
 
-            SettingsOpenAfterCaptureButton.IsEnabled = !projection.Output.IsAfterCaptureReadOnly;
-            ApplySwitchState(
-                SettingsOpenAfterCaptureSwitchTrack,
-                SettingsOpenAfterCaptureSwitchKnob,
-                projection.Output.IsAfterCaptureSelected,
-                projection.Output.IsAfterCaptureReadOnly);
-            AutomationProperties.SetName(SettingsOpenAfterCaptureButton, $"Open after capture: {(projection.Output.IsAfterCaptureSelected ? "on" : "off")}");
-            AutomationProperties.SetHelpText(SettingsOpenAfterCaptureButton, "Open the saved file after folder output completes.");
+            SettingsOpenAfterCaptureToggleSwitch.IsEnabled = !projection.Output.IsAfterCaptureReadOnly;
+            SettingsOpenAfterCaptureToggleSwitch.IsOn = projection.Output.IsAfterCaptureSelected;
+            AutomationProperties.SetName(SettingsOpenAfterCaptureToggleSwitch, $"Open after capture: {(projection.Output.IsAfterCaptureSelected ? "on" : "off")}");
+            AutomationProperties.SetHelpText(SettingsOpenAfterCaptureToggleSwitch, projection.Output.AfterCaptureHelpText);
+            ToolTipService.SetToolTip(SettingsOpenAfterCaptureToggleSwitch, projection.Output.AfterCaptureHelpText);
 
-            SettingsTimestampButton.IsEnabled = !projection.Output.IsTimestampReadOnly;
-            ApplySwitchState(
-                SettingsTimestampSwitchTrack,
-                SettingsTimestampSwitchKnob,
-                projection.Output.TimestampNaming,
-                projection.Output.IsTimestampReadOnly);
+            SettingsTimestampToggleSwitch.IsEnabled = !projection.Output.IsTimestampReadOnly;
+            SettingsTimestampToggleSwitch.IsOn = projection.Output.TimestampNaming;
             AutomationProperties.SetName(
-                SettingsTimestampButton,
+                SettingsTimestampToggleSwitch,
                 projection.Output.TimestampNaming ? "Timestamp naming: on" : "Timestamp naming: off");
-            AutomationProperties.SetHelpText(SettingsTimestampButton, "Timestamp naming controls whether folder output uses safe invariant filenames.");
+            AutomationProperties.SetHelpText(SettingsTimestampToggleSwitch, projection.Output.TimestampHelpText);
+            ToolTipService.SetToolTip(SettingsTimestampToggleSwitch, projection.Output.TimestampHelpText);
 
-            SettingsCopyAsImageButton.IsEnabled = !projection.Output.IsCopyAsImageReadOnly;
-            ApplySwitchState(
-                SettingsCopyAsImageSwitchTrack,
-                SettingsCopyAsImageSwitchKnob,
-                projection.Output.CopyAsImage,
-                projection.Output.IsCopyAsImageReadOnly);
+            SettingsCopyAsImageToggleSwitch.IsEnabled = !projection.Output.IsCopyAsImageReadOnly;
+            SettingsCopyAsImageToggleSwitch.IsOn = projection.Output.CopyAsImage;
             AutomationProperties.SetName(
-                SettingsCopyAsImageButton,
+                SettingsCopyAsImageToggleSwitch,
                 projection.Output.CopyAsImage ? "Copy as image: on" : "Copy as image: off");
-            AutomationProperties.SetHelpText(SettingsCopyAsImageButton, "Copy-as-image controls basic clipboard usability.");
+            AutomationProperties.SetHelpText(SettingsCopyAsImageToggleSwitch, projection.Output.CopyAsImageHelpText);
+            ToolTipService.SetToolTip(SettingsCopyAsImageToggleSwitch, projection.Output.CopyAsImageHelpText);
 
             ApplyExportColorProjection(projection.Output);
             ApplyValidationProjection(projection.Validation);
@@ -1719,32 +1739,18 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void ApplyDestinationSegmentProjection(OutputSettingsProjection output)
+    private void ApplyDestinationSelectionProjection(OutputSettingsProjection output)
     {
-        ApplySegmentState(
-            SettingsDestinationClipboardSegment,
-            SettingsDestinationClipboardText,
-            output.IsClipboardSelected);
-        ApplySegmentState(
-            SettingsDestinationFolderSegment,
-            SettingsDestinationFolderText,
-            output.IsFolderSelected);
-        ApplySegmentState(
-            SettingsDestinationBothSegment,
-            SettingsDestinationBothText,
-            output.IsBothSelected);
-        AutomationProperties.SetHelpText(
-            SettingsDestinationClipboardSegment,
-            GetDestinationOptionHelpText("Clipboard", output.IsClipboardSelected, output.PendingReason));
-        AutomationProperties.SetHelpText(
-            SettingsDestinationFolderSegment,
-            GetDestinationOptionHelpText("Folder", output.IsFolderSelected, output.PendingReason));
-        AutomationProperties.SetHelpText(
-            SettingsDestinationBothSegment,
-            GetDestinationOptionHelpText("Both", output.IsBothSelected, output.PendingReason));
-        AutomationProperties.SetName(SettingsDestinationClipboardSegment, "Destination option: Clipboard");
-        AutomationProperties.SetName(SettingsDestinationFolderSegment, "Destination option: Folder");
-        AutomationProperties.SetName(SettingsDestinationBothSegment, "Destination option: Both");
+        SettingsDestinationRadioButtons.IsEnabled = !output.IsReadOnly;
+        SettingsDestinationRadioButtons.SelectedIndex = output.IsFolderSelected
+            ? 1
+            : output.IsBothSelected
+                ? 2
+                : 0;
+        var helpText = $"{output.PendingReason}. Current selection: {output.DisplayValue}.";
+        AutomationProperties.SetName(SettingsDestinationRadioButtons, "Destination");
+        AutomationProperties.SetHelpText(SettingsDestinationRadioButtons, helpText);
+        ToolTipService.SetToolTip(SettingsDestinationRadioButtons, helpText);
     }
 
     private void ApplyTargetEvidenceProjection(TargetEvidenceProjection evidence)
@@ -1934,12 +1940,6 @@ public sealed partial class MainWindow : Window
         return $"{option.Label} is {state} and {availability}. {option.HelpText}";
     }
 
-    private static string GetDestinationOptionHelpText(string option, bool isSelected, string pendingReason)
-    {
-        var state = isSelected ? "selected" : "not selected";
-        return $"{option} is {state}. {pendingReason}.";
-    }
-
     private void ApplySegmentState(Control segment, TextBlock label, bool isSelected)
     {
         segment.Background = isSelected
@@ -1950,18 +1950,6 @@ public sealed partial class MainWindow : Window
         label.Foreground = isSelected
             ? (Brush)Application.Current.Resources["TextBrush"]
             : (Brush)Application.Current.Resources["MutedTextBrush"];
-    }
-
-    private static void ApplySwitchState(Border track, Ellipse knob, bool isOn, bool isReadOnly)
-    {
-        track.Background = isOn
-            ? (Brush)Application.Current.Resources["SwitchTrackOnBrush"]
-            : (Brush)Application.Current.Resources["SwitchTrackOffBrush"];
-        knob.Fill = isOn
-            ? (Brush)Application.Current.Resources["SwitchKnobOnBrush"]
-            : (Brush)Application.Current.Resources["SwitchKnobOffBrush"];
-        knob.HorizontalAlignment = isOn ? HorizontalAlignment.Right : HorizontalAlignment.Left;
-        track.Opacity = isReadOnly ? 0.7 : 1.0;
     }
 
     private void UpdateMainPanelProjection(CaptureSessionState state, OutputResult? outputResult = null)
