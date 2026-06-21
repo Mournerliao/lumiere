@@ -69,6 +69,35 @@ public sealed class OutputProfileContractTests
         Assert.Equal(OutputMetadataPolicy.RequiredButUndefined, contract.FormatContract.MetadataPolicy);
         Assert.Equal(OutputConversionPolicy.RequiredButUndefined, contract.FormatContract.ConversionPolicy);
         Assert.Equal(OutputTargetAppAssumption.RequiresHdrViewerValidation, contract.FormatContract.TargetAppAssumption);
+        Assert.Null(contract.FormatContract.Hdr10StaticMetadataPolicy);
+    }
+
+    [Fact]
+    public void Hdr10StaticMetadataPolicy_RecordsAuditableBt2020PqReferenceValues()
+    {
+        var policy = Hdr10StaticMetadataPolicy.Bt2020PqReference1000Nit;
+
+        Assert.True(policy.IsComplete);
+        Assert.Equal(Hdr10StaticMetadataSource.Bt2020PqReference, policy.Source);
+        Assert.Equal(new Hdr10Chromaticity(0.708, 0.292), policy.RedPrimary);
+        Assert.Equal(new Hdr10Chromaticity(0.170, 0.797), policy.GreenPrimary);
+        Assert.Equal(new Hdr10Chromaticity(0.131, 0.046), policy.BluePrimary);
+        Assert.Equal(new Hdr10Chromaticity(0.3127, 0.3290), policy.WhitePoint);
+        Assert.Equal(new Hdr10MasteringLuminance(0.005, 1000), policy.MasteringLuminance);
+        Assert.Equal(1000, policy.MaxContentLightLevelNits);
+        Assert.Equal(400, policy.MaxFrameAverageLightLevelNits);
+        Assert.Contains("policy input", policy.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void OutputFormatContract_RequiresConcreteHdr10StaticMetadataPolicy()
+    {
+        var contract = CompleteHdr10Contract with
+        {
+            Hdr10StaticMetadataPolicy = Hdr10StaticMetadataPolicy.Undefined,
+        };
+
+        Assert.False(contract.IsComplete);
     }
 
     [Fact]
@@ -252,5 +281,6 @@ public sealed class OutputProfileContractTests
             OutputColorPrimaries.Bt2020,
             OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
             OutputMetadataPolicy.AttachHdr10StaticMetadata,
-            OutputTargetAppAssumption.RequiresHdrViewerValidation);
+            OutputTargetAppAssumption.RequiresHdrViewerValidation,
+            Hdr10StaticMetadataPolicy.Bt2020PqReference1000Nit);
 }

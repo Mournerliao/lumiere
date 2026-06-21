@@ -82,6 +82,8 @@ public sealed class Hdr10JxrOutputEncoderTests
         Assert.NotNull(codec.Input);
         Assert.Equal(OutputProfileKind.Hdr10Pq, codec.Input.OutputProfile.Kind);
         Assert.Equal(OutputPixelFormat.R16G16B16A16Float, codec.Input.Source.PixelFormat);
+        Assert.True(codec.Input.StaticMetadataPolicy.IsComplete);
+        Assert.Equal(Hdr10StaticMetadataSource.Bt2020PqReference, codec.Input.StaticMetadataPolicy.Source);
     }
 
     [Fact]
@@ -135,6 +137,22 @@ public sealed class Hdr10JxrOutputEncoderTests
     }
 
     [Fact]
+    public void CanEncode_RejectsHdr10ContractWithoutAuditableStaticMetadata()
+    {
+        var profile = OutputProfileContract.Hdr10Pq with
+        {
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+            FormatContract = CompleteHdr10Contract with
+            {
+                Hdr10StaticMetadataPolicy = Hdr10StaticMetadataPolicy.Undefined,
+            },
+        };
+
+        Assert.False(profile.HasCompleteFormatContract);
+        Assert.False(Hdr10JxrOutputEncoder.CanEncode(profile));
+    }
+
+    [Fact]
     public void PendingHdr10JxrCodec_ReadinessRecordsImplementationAndValidationBlockers()
     {
         var readiness = new PendingHdr10JxrCodec().Readiness;
@@ -157,7 +175,8 @@ public sealed class Hdr10JxrOutputEncoderTests
             OutputColorPrimaries.Bt2020,
             OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
             OutputMetadataPolicy.AttachHdr10StaticMetadata,
-            OutputTargetAppAssumption.RequiresHdrViewerValidation);
+            OutputTargetAppAssumption.RequiresHdrViewerValidation,
+            Hdr10StaticMetadataPolicy.Bt2020PqReference1000Nit);
 
     private sealed class TestCodec : IHdr10JxrCodec
     {
@@ -175,6 +194,7 @@ public sealed class Hdr10JxrOutputEncoderTests
                 HasNativeWicJpegXrEncoder: true,
                 AcceptsRgba16FloatSource: true,
                 WritesHdr10Metadata: true,
+                Hdr10StaticMetadataPolicy: Hdr10StaticMetadataPolicy.Bt2020PqReference1000Nit,
                 HasWindowsManualViewerValidation: true,
                 Blockers: []);
 

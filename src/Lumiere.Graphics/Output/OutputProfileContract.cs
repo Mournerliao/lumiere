@@ -370,7 +370,8 @@ public sealed record OutputFormatContract(
     OutputColorPrimaries ColorPrimaries,
     OutputConversionPolicy ConversionPolicy,
     OutputMetadataPolicy MetadataPolicy,
-    OutputTargetAppAssumption TargetAppAssumption)
+    OutputTargetAppAssumption TargetAppAssumption,
+    Hdr10StaticMetadataPolicy? Hdr10StaticMetadataPolicy = null)
 {
     public static OutputFormatContract SrgbCompatibility { get; } =
         new(
@@ -408,7 +409,71 @@ public sealed record OutputFormatContract(
         && TransferFunction is not OutputTransferFunction.NotDefined
         && ColorPrimaries is not OutputColorPrimaries.NotDefined
         && ConversionPolicy is not OutputConversionPolicy.RequiredButUndefined
-        && MetadataPolicy is not OutputMetadataPolicy.RequiredButUndefined;
+        && MetadataPolicy is not OutputMetadataPolicy.RequiredButUndefined
+        && (MetadataPolicy is not OutputMetadataPolicy.AttachHdr10StaticMetadata
+            || Hdr10StaticMetadataPolicy?.IsComplete == true);
+}
+
+public sealed record Hdr10StaticMetadataPolicy(
+    Hdr10StaticMetadataSource Source,
+    Hdr10Chromaticity RedPrimary,
+    Hdr10Chromaticity GreenPrimary,
+    Hdr10Chromaticity BluePrimary,
+    Hdr10Chromaticity WhitePoint,
+    Hdr10MasteringLuminance MasteringLuminance,
+    ushort MaxContentLightLevelNits,
+    ushort MaxFrameAverageLightLevelNits,
+    string Detail)
+{
+    public static Hdr10StaticMetadataPolicy Undefined { get; } =
+        new(
+            Hdr10StaticMetadataSource.NotDefined,
+            Hdr10Chromaticity.Undefined,
+            Hdr10Chromaticity.Undefined,
+            Hdr10Chromaticity.Undefined,
+            Hdr10Chromaticity.Undefined,
+            Hdr10MasteringLuminance.Undefined,
+            MaxContentLightLevelNits: 0,
+            MaxFrameAverageLightLevelNits: 0,
+            "HDR10 static metadata policy is not defined.");
+
+    public static Hdr10StaticMetadataPolicy Bt2020PqReference1000Nit { get; } =
+        new(
+            Hdr10StaticMetadataSource.Bt2020PqReference,
+            new Hdr10Chromaticity(0.708, 0.292),
+            new Hdr10Chromaticity(0.170, 0.797),
+            new Hdr10Chromaticity(0.131, 0.046),
+            new Hdr10Chromaticity(0.3127, 0.3290),
+            new Hdr10MasteringLuminance(0.005, 1000),
+            MaxContentLightLevelNits: 1000,
+            MaxFrameAverageLightLevelNits: 400,
+            "BT.2020/PQ HDR10 reference metadata for 1000-nit mastering. This is a policy input, not validation evidence by itself.");
+
+    public bool IsComplete =>
+        Source is not Hdr10StaticMetadataSource.NotDefined
+        && RedPrimary.IsDefined
+        && GreenPrimary.IsDefined
+        && BluePrimary.IsDefined
+        && WhitePoint.IsDefined
+        && MasteringLuminance.IsDefined
+        && MaxContentLightLevelNits > 0
+        && MaxFrameAverageLightLevelNits > 0
+        && MaxFrameAverageLightLevelNits <= MaxContentLightLevelNits
+        && !string.IsNullOrWhiteSpace(Detail);
+}
+
+public readonly record struct Hdr10Chromaticity(double X, double Y)
+{
+    public static Hdr10Chromaticity Undefined { get; } = new(0, 0);
+
+    public bool IsDefined => X > 0 && X < 1 && Y > 0 && Y < 1;
+}
+
+public readonly record struct Hdr10MasteringLuminance(double MinNits, double MaxNits)
+{
+    public static Hdr10MasteringLuminance Undefined { get; } = new(0, 0);
+
+    public bool IsDefined => MinNits > 0 && MaxNits > MinNits;
 }
 
 public sealed record OutputProfileValidationRecord(
@@ -503,6 +568,14 @@ public enum OutputTargetAppAssumption
     CompatibilityFirst = 0,
     RequiresHdrViewerValidation,
     RequiresWideGamutViewerValidation,
+}
+
+public enum Hdr10StaticMetadataSource
+{
+    NotDefined = 0,
+    Bt2020PqReference,
+    MeasuredTargetDisplay,
+    ValidationRecord,
 }
 
 public enum OutputValidationEvidenceSource

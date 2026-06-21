@@ -74,6 +74,7 @@ public sealed class Hdr10JxrOutputEncoder : IOutputPngEncoder
                 ConversionPolicy: OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
                 MetadataPolicy: OutputMetadataPolicy.AttachHdr10StaticMetadata,
                 TargetAppAssumption: OutputTargetAppAssumption.RequiresHdrViewerValidation,
+                Hdr10StaticMetadataPolicy.IsComplete: true,
             };
     }
 }

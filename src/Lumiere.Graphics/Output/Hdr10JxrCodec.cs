@@ -13,6 +13,7 @@ public sealed record Hdr10JxrCodecReadiness(
     bool HasNativeWicJpegXrEncoder,
     bool AcceptsRgba16FloatSource,
     bool WritesHdr10Metadata,
+    Hdr10StaticMetadataPolicy Hdr10StaticMetadataPolicy,
     bool HasWindowsManualViewerValidation,
     IReadOnlyList<string> Blockers)
 {
@@ -21,11 +22,12 @@ public sealed record Hdr10JxrCodecReadiness(
             HasNativeWicJpegXrEncoder: false,
             AcceptsRgba16FloatSource: true,
             WritesHdr10Metadata: false,
+            Hdr10StaticMetadataPolicy: Hdr10StaticMetadataPolicy.Undefined,
             HasWindowsManualViewerValidation: false,
             Blockers:
             [
                 "Native Windows WIC JPEG XR codec integration is not implemented.",
-                "HDR10 static metadata write policy is not implemented.",
+                "HDR10 static metadata write policy is not implemented or auditable.",
                 "Windows manual viewer validation for the emitted JXR artifact has not passed.",
             ]);
 
@@ -33,6 +35,7 @@ public sealed record Hdr10JxrCodecReadiness(
         HasNativeWicJpegXrEncoder
         && AcceptsRgba16FloatSource
         && WritesHdr10Metadata
+        && Hdr10StaticMetadataPolicy.IsComplete
         && HasWindowsManualViewerValidation
         && Blockers.Count == 0;
 
@@ -72,6 +75,11 @@ public sealed record Hdr10JxrCodecInput
     public CapturedFrameReadback Source { get; }
 
     public OutputProfileContract OutputProfile { get; }
+
+    public Hdr10StaticMetadataPolicy StaticMetadataPolicy =>
+        OutputProfile.FormatContract.Hdr10StaticMetadataPolicy
+        ?? throw new InvalidOperationException(
+            "HDR10 JXR codec input requires an auditable HDR10 static metadata policy.");
 }
 
 public sealed class PendingHdr10JxrCodec : IHdr10JxrCodec

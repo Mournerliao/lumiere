@@ -447,7 +447,8 @@ public sealed class OutputValidationSessionArtifactTests
             OutputColorPrimaries.Bt2020,
             OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
             OutputMetadataPolicy.AttachHdr10StaticMetadata,
-            OutputTargetAppAssumption.RequiresHdrViewerValidation);
+            OutputTargetAppAssumption.RequiresHdrViewerValidation,
+            Hdr10StaticMetadataPolicy.Bt2020PqReference1000Nit);
 
     private static TargetAwareHdrValidationEvidence CompleteTargetHdrEvidence { get; } =
         new(

@@ -251,6 +251,19 @@ public sealed class OutputPolicyTests
             profile => profile.ProfileKind is OutputProfileKind.Hdr10Pq).ArtifactEncoderImplementation);
     }
 
+    [Fact]
+    public void FromHdr10JxrCodecReadiness_KeepsCompatibilityOnlyWhenMetadataPolicyIsNotAuditable()
+    {
+        var readiness = ReadyHdr10JxrReadiness with
+        {
+            Hdr10StaticMetadataPolicy = Hdr10StaticMetadataPolicy.Undefined,
+        };
+
+        var capabilities = OutputProfileExecutionCapabilities.FromHdr10JxrCodecReadiness(readiness);
+
+        Assert.DoesNotContain(capabilities.Profiles, profile => profile.ProfileKind is OutputProfileKind.Hdr10Pq);
+    }
+
     private static OutputValidationSessionArtifact CompleteHdr10Artifact() =>
         new(
             Date: "2026-06-21",
@@ -303,7 +316,8 @@ public sealed class OutputPolicyTests
             OutputColorPrimaries.Bt2020,
             OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
             OutputMetadataPolicy.AttachHdr10StaticMetadata,
-            OutputTargetAppAssumption.RequiresHdrViewerValidation);
+            OutputTargetAppAssumption.RequiresHdrViewerValidation,
+            Hdr10StaticMetadataPolicy.Bt2020PqReference1000Nit);
 
     private static TargetAwareHdrValidationEvidence CompleteTargetHdrEvidence { get; } =
         new(
@@ -322,6 +336,7 @@ public sealed class OutputPolicyTests
             HasNativeWicJpegXrEncoder: true,
             AcceptsRgba16FloatSource: true,
             WritesHdr10Metadata: true,
+            Hdr10StaticMetadataPolicy: Hdr10StaticMetadataPolicy.Bt2020PqReference1000Nit,
             HasWindowsManualViewerValidation: true,
             Blockers: []);
 }
