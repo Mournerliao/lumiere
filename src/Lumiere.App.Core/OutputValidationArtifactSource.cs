@@ -40,9 +40,13 @@ public sealed record OutputValidationArtifactLoadIssue(
 public sealed record OutputValidationWorkspaceState(
     string DirectoryPath,
     string TemplatesDirectoryPath,
+    string GuidanceDirectoryPath,
     string EvidenceDirectoryPath,
     string GuidanceFilePath,
     string? SampleTemplatePath,
+    string? ReleaseChecklistPath,
+    string? HdrSdrScenariosPath,
+    string? SettingsAccessibilityGuidePath,
     string? ResourceTrendTemplatePath,
     string? ResourceTrendScriptPath,
     IReadOnlyList<OutputValidationWorkspaceIssue> Issues)
@@ -53,6 +57,10 @@ public sealed record OutputValidationWorkspaceState(
             string.Empty,
             string.Empty,
             string.Empty,
+            string.Empty,
+            null,
+            null,
+            null,
             null,
             null,
             null,
@@ -117,6 +125,9 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
 {
     internal const string WorkspaceReadmeFileName = "README.txt";
     internal const string SampleTemplateFileName = "output-validation-session.schema-v4.sample.json";
+    internal const string ReleaseChecklistFileName = "release-validation-checklist.md";
+    internal const string HdrSdrScenariosFileName = "hdr-sdr-validation-scenarios.md";
+    internal const string SettingsAccessibilityGuideFileName = "settings-accessibility-validation.md";
     internal const string ResourceTrendTemplateFileName = "resource-trend-session-template.md";
     internal const string ResourceTrendScriptFileName = "collect-resource-trend-samples.ps1";
 
@@ -345,21 +356,44 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
     private OutputValidationWorkspaceState EnsureWorkspace()
     {
         var templatesDirectoryPath = Path.Combine(directoryPath, "templates");
+        var guidanceDirectoryPath = Path.Combine(directoryPath, "guidance");
         var evidenceDirectoryPath = Path.Combine(directoryPath, "evidence");
         var guidanceFilePath = Path.Combine(directoryPath, WorkspaceReadmeFileName);
         var sampleTemplatePath = Path.Combine(templatesDirectoryPath, SampleTemplateFileName);
+        var releaseChecklistPath = Path.Combine(guidanceDirectoryPath, ReleaseChecklistFileName);
+        var hdrSdrScenariosPath = Path.Combine(guidanceDirectoryPath, HdrSdrScenariosFileName);
+        var settingsAccessibilityGuidePath = Path.Combine(guidanceDirectoryPath, SettingsAccessibilityGuideFileName);
         var resourceTrendTemplatePath = Path.Combine(templatesDirectoryPath, ResourceTrendTemplateFileName);
         var resourceTrendScriptPath = Path.Combine(directoryPath, ResourceTrendScriptFileName);
         var issues = new List<OutputValidationWorkspaceIssue>();
 
         EnsureDirectory(directoryPath, "Validation artifact directory could not be prepared.", issues);
         EnsureDirectory(templatesDirectoryPath, "Template directory could not be prepared.", issues);
+        EnsureDirectory(guidanceDirectoryPath, "Guidance directory could not be prepared.", issues);
         EnsureDirectory(evidenceDirectoryPath, "Evidence directory could not be prepared.", issues);
 
         if (issues.Count == 0)
         {
             EnsureGuidanceFile(guidanceFilePath, issues);
             EnsureSampleTemplate(sampleTemplatePath, issues);
+            EnsureSeededGuidance(
+                releaseChecklistPath,
+                "Lumiere.App.Validation.Guidance.release-validation-checklist.md",
+                "Release validation checklist source could not be loaded from the current build.",
+                "Release validation checklist could not be seeded.",
+                issues);
+            EnsureSeededGuidance(
+                hdrSdrScenariosPath,
+                "Lumiere.App.Validation.Guidance.hdr-sdr-validation-scenarios.md",
+                "HDR/SDR validation scenarios source could not be loaded from the current build.",
+                "HDR/SDR validation scenarios could not be seeded.",
+                issues);
+            EnsureSeededGuidance(
+                settingsAccessibilityGuidePath,
+                "Lumiere.App.Validation.Guidance.settings-accessibility-validation.md",
+                "Settings accessibility validation guide source could not be loaded from the current build.",
+                "Settings accessibility validation guide could not be seeded.",
+                issues);
             EnsureResourceTrendTemplate(resourceTrendTemplatePath, issues);
             EnsureResourceTrendScript(resourceTrendScriptPath, issues);
         }
@@ -367,9 +401,13 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         return new OutputValidationWorkspaceState(
             directoryPath,
             templatesDirectoryPath,
+            guidanceDirectoryPath,
             evidenceDirectoryPath,
             guidanceFilePath,
             fileExists(sampleTemplatePath) ? sampleTemplatePath : null,
+            fileExists(releaseChecklistPath) ? releaseChecklistPath : null,
+            fileExists(hdrSdrScenariosPath) ? hdrSdrScenariosPath : null,
+            fileExists(settingsAccessibilityGuidePath) ? settingsAccessibilityGuidePath : null,
             fileExists(resourceTrendTemplatePath) ? resourceTrendTemplatePath : null,
             fileExists(resourceTrendScriptPath) ? resourceTrendScriptPath : null,
             issues);
@@ -480,6 +518,37 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         }
     }
 
+    private void EnsureSeededGuidance(
+        string path,
+        string resourceName,
+        string missingSourceDetail,
+        string seedFailurePrefix,
+        ICollection<OutputValidationWorkspaceIssue> issues)
+    {
+        if (fileExists(path))
+        {
+            return;
+        }
+
+        var content = LoadEmbeddedText(resourceName);
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            issues.Add(new OutputValidationWorkspaceIssue(path, missingSourceDetail));
+            return;
+        }
+
+        try
+        {
+            writeAllText(path, content);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            issues.Add(new OutputValidationWorkspaceIssue(
+                path,
+                $"{seedFailurePrefix} {ex.GetType().Name}: {ex.Message}"));
+        }
+    }
+
     private void EnsureResourceTrendScript(
         string resourceTrendScriptPath,
         ICollection<OutputValidationWorkspaceIssue> issues)
@@ -536,18 +605,24 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
                 "- Keep draft templates under templates\\ so the runtime loader does not count them as evidence.",
                 "- Save supporting notes, screenshots, or logs under evidence\\ as needed.",
                 "- Seed long-run resource trend validation helpers next to the same workspace so Story 12-3 runs start from the app-local validation surface.",
+                "- Seed the current release checklist, HDR/SDR scenario guide, and settings accessibility workflow into guidance\\ for this machine.",
                 string.Empty,
                 "Workflow:",
                 "1. Copy templates\\output-validation-session.schema-v4.sample.json into this output\\ folder.",
                 "2. Or use Lumiere's Create draft action to generate a prefilled local draft in this folder.",
-                "3. Use templates\\resource-trend-session-template.md plus collect-resource-trend-samples.ps1 for Story 12-3 long-run validation sessions.",
-                "4. Rename or copy templates as needed, replace every REPLACE_WITH_* placeholder, and keep manual evidence honest.",
-                "5. Reload evidence from Lumiere after recording real observations.",
-                "6. Do not treat template files or incomplete sessions as passing release evidence.",
+                "3. Review guidance\\release-validation-checklist.md, guidance\\hdr-sdr-validation-scenarios.md, and guidance\\settings-accessibility-validation.md before counting Windows manual evidence toward public release.",
+                "4. Use templates\\resource-trend-session-template.md plus collect-resource-trend-samples.ps1 for Story 12-3 long-run validation sessions.",
+                "5. Rename or copy templates as needed, replace every REPLACE_WITH_* placeholder, and keep manual evidence honest.",
+                "6. Reload evidence from Lumiere after recording real observations.",
+                "7. Do not treat template files or incomplete sessions as passing release evidence.",
                 string.Empty,
-                "Reference docs:",
+                "Seeded local guides:",
+                "- guidance\\release-validation-checklist.md",
+                "- guidance\\hdr-sdr-validation-scenarios.md",
+                "- guidance\\settings-accessibility-validation.md",
+                string.Empty,
+                "Repo references:",
                 "- harness/validation/output-validation.md",
-                "- harness/validation/release-validation-checklist.md",
                 "- harness/validation/resource-trend-validation.md"]);
 
     private string AllocateDraftPath(string workspaceDirectoryPath, string fileNameStem)

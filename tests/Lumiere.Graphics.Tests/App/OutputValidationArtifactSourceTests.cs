@@ -78,15 +78,22 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.True(snapshot.Workspace.IsReady);
         Assert.Equal("C:\\Validation", snapshot.Workspace.DirectoryPath);
         Assert.Equal("C:\\Validation\\templates", snapshot.Workspace.TemplatesDirectoryPath);
+        Assert.Equal("C:\\Validation\\guidance", snapshot.Workspace.GuidanceDirectoryPath);
         Assert.Equal("C:\\Validation\\evidence", snapshot.Workspace.EvidenceDirectoryPath);
         Assert.Equal("C:\\Validation\\README.txt", snapshot.Workspace.GuidanceFilePath);
         Assert.Equal("C:\\Validation\\templates\\output-validation-session.schema-v4.sample.json", snapshot.Workspace.SampleTemplatePath);
+        Assert.Equal("C:\\Validation\\guidance\\release-validation-checklist.md", snapshot.Workspace.ReleaseChecklistPath);
+        Assert.Equal("C:\\Validation\\guidance\\hdr-sdr-validation-scenarios.md", snapshot.Workspace.HdrSdrScenariosPath);
+        Assert.Equal("C:\\Validation\\guidance\\settings-accessibility-validation.md", snapshot.Workspace.SettingsAccessibilityGuidePath);
         Assert.Equal("C:\\Validation\\templates\\resource-trend-session-template.md", snapshot.Workspace.ResourceTrendTemplatePath);
         Assert.Equal("C:\\Validation\\collect-resource-trend-samples.ps1", snapshot.Workspace.ResourceTrendScriptPath);
         Assert.Equal(templateJson, files[snapshot.Workspace.SampleTemplatePath!]);
+        Assert.Contains("Public perfect-HDR-fidelity", files[snapshot.Workspace.ReleaseChecklistPath!], StringComparison.Ordinal);
+        Assert.Contains("Standard Content Set", files[snapshot.Workspace.HdrSdrScenariosPath!], StringComparison.Ordinal);
+        Assert.Contains("Keyboard Validation", files[snapshot.Workspace.SettingsAccessibilityGuidePath!], StringComparison.Ordinal);
         Assert.Contains("Session Metadata", files[snapshot.Workspace.ResourceTrendTemplatePath!], StringComparison.Ordinal);
         Assert.Contains("Collects repeated resource trend samples", files[snapshot.Workspace.ResourceTrendScriptPath!], StringComparison.Ordinal);
-        Assert.Contains("Workflow:", files[snapshot.Workspace.GuidanceFilePath], StringComparison.Ordinal);
+        Assert.Contains("guidance\\release-validation-checklist.md", files[snapshot.Workspace.GuidanceFilePath], StringComparison.Ordinal);
     }
 
     [Fact]

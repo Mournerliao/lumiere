@@ -793,9 +793,13 @@ public static class PerfectHdrFidelityProjection
             workspace = new OutputValidationWorkspaceState(
                 "%LOCALAPPDATA%\\Lumiere\\validation\\output",
                 "%LOCALAPPDATA%\\Lumiere\\validation\\output\\templates",
+                "%LOCALAPPDATA%\\Lumiere\\validation\\output\\guidance",
                 "%LOCALAPPDATA%\\Lumiere\\validation\\output\\evidence",
                 "%LOCALAPPDATA%\\Lumiere\\validation\\output\\README.txt",
                 null,
+                "%LOCALAPPDATA%\\Lumiere\\validation\\output\\guidance\\release-validation-checklist.md",
+                "%LOCALAPPDATA%\\Lumiere\\validation\\output\\guidance\\hdr-sdr-validation-scenarios.md",
+                "%LOCALAPPDATA%\\Lumiere\\validation\\output\\guidance\\settings-accessibility-validation.md",
                 null,
                 null,
                 []);
@@ -805,6 +809,9 @@ public static class PerfectHdrFidelityProjection
         {
             ValidationWorkspacePath = string.IsNullOrWhiteSpace(workspace.DirectoryPath) ? null : workspace.DirectoryPath,
             ValidationTemplatePath = workspace.HasSampleTemplate ? workspace.SampleTemplatePath : null,
+            ReleaseChecklistPath = workspace.ReleaseChecklistPath,
+            HdrSdrScenariosPath = workspace.HdrSdrScenariosPath,
+            SettingsAccessibilityGuidePath = workspace.SettingsAccessibilityGuidePath,
             ResourceTrendTemplatePath = workspace.ResourceTrendTemplatePath,
             ResourceTrendScriptPath = workspace.ResourceTrendScriptPath,
         };
@@ -865,7 +872,7 @@ public static class PerfectHdrFidelityProjection
         }
 
         return workspace.HasSampleTemplate
-            ? $"Validation workspace: {workspace.DirectoryPath}. Seeded sample: {workspace.SampleTemplatePath}."
+            ? $"Validation workspace: {workspace.DirectoryPath}. Seeded sample: {workspace.SampleTemplatePath}. Local guides: release checklist, HDR/SDR scenarios, and settings accessibility workflow."
             : $"Validation workspace: {workspace.DirectoryPath}.";
     }
 
@@ -1847,6 +1854,12 @@ public sealed record ValidationRecordProjection(
 
     public string? ValidationTemplatePath { get; init; }
 
+    public string? ReleaseChecklistPath { get; init; }
+
+    public string? HdrSdrScenariosPath { get; init; }
+
+    public string? SettingsAccessibilityGuidePath { get; init; }
+
     public string? ResourceTrendTemplatePath { get; init; }
 
     public string? ResourceTrendScriptPath { get; init; }
@@ -1854,6 +1867,12 @@ public sealed record ValidationRecordProjection(
     public bool CanOpenValidationWorkspace => !string.IsNullOrWhiteSpace(ValidationWorkspacePath);
 
     public bool CanOpenValidationTemplate => !string.IsNullOrWhiteSpace(ValidationTemplatePath);
+
+    public bool CanOpenReleaseChecklist => !string.IsNullOrWhiteSpace(ReleaseChecklistPath);
+
+    public bool CanOpenHdrSdrScenarios => !string.IsNullOrWhiteSpace(HdrSdrScenariosPath);
+
+    public bool CanOpenSettingsAccessibilityGuide => !string.IsNullOrWhiteSpace(SettingsAccessibilityGuidePath);
 
     public bool CanOpenResourceTrendTemplate => !string.IsNullOrWhiteSpace(ResourceTrendTemplatePath);
 
@@ -1872,7 +1891,7 @@ public sealed record ValidationRecordProjection(
             ? EvidenceDocumentPath
             : string.IsNullOrWhiteSpace(ValidationTemplatePath)
                 ? $"Workspace: {ValidationWorkspacePath}"
-                : $"Workspace: {ValidationWorkspacePath} | Template: {ValidationTemplatePath}";
+                : $"Workspace: {ValidationWorkspacePath} | Template: {ValidationTemplatePath} | Guides: {ReleaseChecklistPath ?? HdrSdrScenariosPath ?? SettingsAccessibilityGuidePath ?? "not seeded"}";
 }
 
 public enum ValidationEvidenceStatus

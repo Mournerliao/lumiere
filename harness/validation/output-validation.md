@@ -74,12 +74,15 @@ During a local Windows validation run, Lumiere reads output validation session J
 On startup, Lumiere now also prepares the local validation workspace under `%LOCALAPPDATA%\Lumiere\validation\output\`. It seeds:
 
 - `templates\output-validation-session.schema-v4.sample.json` as the local copy-ready sample
+- `guidance\release-validation-checklist.md` as the local public-release gate checklist
+- `guidance\hdr-sdr-validation-scenarios.md` as the local standard fidelity scenario guide
+- `guidance\settings-accessibility-validation.md` as the local settings-shell accessibility workflow
 - `evidence\` as the default place for supporting screenshots, notes, or logs
 - `README.txt` with the short local workflow reminder
 
 The settings validation record now reports that workspace path and the seeded sample path for the current machine. Workspace readiness is not evidence by itself; it only reduces setup friction for real Windows manual validation.
 
-The settings validation section also exposes native `Create draft`, `Open workspace`, `Open template`, and `Reload evidence` actions so a Windows validator can jump directly into the local evidence flow, generate a session-local draft, edit local evidence, and refresh the current session without restarting Lumiere.
+The settings validation section also exposes native `Create draft`, `Open workspace`, `Open template`, `Release checklist`, `Scenario guide`, `A11y guide`, and `Reload evidence` actions so a Windows validator can jump directly into the local evidence flow, open the current public-release guides from the same workspace, generate a session-local draft, edit local evidence, and refresh the current session without restarting Lumiere.
 
 For Story `12-3`, the same settings surface now also exposes app-local resource-trend workflow helpers:
 
@@ -89,6 +92,8 @@ For Story `12-3`, the same settings surface now also exposes app-local resource-
 - `Copy trend cmd` copies a current-process sampler command that already points at Lumiere's seeded script, the current app PID, and the workspace-local `resource-trends` output folder.
 
 These actions reduce setup friction for long-run lifecycle validation, but they do not count as evidence by themselves. The generated draft is still a `NOT RUN` placeholder until a validator replaces its manual fields and observed results. The copied command is only a launch helper; Story `12-3` still requires real Windows `50+` or `100+` runs, captured CSV/summary artifacts, and an honest pass/fail/limitation record.
+
+The seeded guide actions also do not count as evidence by themselves. They only keep the release checklist, scenario set, and accessibility workflow close to the same local workspace that stores the JSON artifacts and long-run session notes.
 
 The same settings surface now also summarizes the currently loaded evidence for the active session instead of forcing the tester to infer everything from the lower gate rows alone. The loaded-evidence summary is intentionally compact and evidence-first:
 

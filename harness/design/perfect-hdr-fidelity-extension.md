@@ -174,6 +174,7 @@ Recommended native shape:
 - Viewer compatibility rows should keep category evidence explicit in readable text, separating artifact handling, visual match, HDR preservation, HDR10 metadata, target-app version evidence, and output target scope instead of compressing everything into one color-only badge or one opaque paragraph.
 
 Evidence surfaces must link back to `harness/validation/release-validation-checklist.md` in docs and release work. The app UI should summarize evidence; the docs remain the durable release record.
+When Lumiere prepares an app-local validation workspace, the same evidence surface should also expose direct access to the seeded release checklist and focused validation guides instead of forcing validators to browse the repo manually.
 
 ## Component And State Inventory
 

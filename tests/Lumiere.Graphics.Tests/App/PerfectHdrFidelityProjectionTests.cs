@@ -782,9 +782,13 @@ public sealed class PerfectHdrFidelityProjectionTests
             Workspace = new OutputValidationWorkspaceState(
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\evidence",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\README.txt",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\output-validation-session.schema-v4.sample.json",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\release-validation-checklist.md",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-sdr-validation-scenarios.md",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\settings-accessibility-validation.md",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\resource-trend-session-template.md",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\collect-resource-trend-samples.ps1",
                 []),
@@ -798,8 +802,14 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Contains("No output validation artifact is loaded", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output", record.ValidationWorkspacePath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\output-validation-session.schema-v4.sample.json", record.ValidationTemplatePath);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\release-validation-checklist.md", record.ReleaseChecklistPath);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-sdr-validation-scenarios.md", record.HdrSdrScenariosPath);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\settings-accessibility-validation.md", record.SettingsAccessibilityGuidePath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\resource-trend-session-template.md", record.ResourceTrendTemplatePath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\collect-resource-trend-samples.ps1", record.ResourceTrendScriptPath);
+        Assert.True(record.CanOpenReleaseChecklist);
+        Assert.True(record.CanOpenHdrSdrScenarios);
+        Assert.True(record.CanOpenSettingsAccessibilityGuide);
         Assert.True(record.CanOpenResourceTrendTemplate);
         Assert.True(record.CanOpenResourceTrendScript);
         Assert.True(record.CanCopyResourceTrendCommand);
@@ -814,9 +824,13 @@ public sealed class PerfectHdrFidelityProjectionTests
             Workspace = new OutputValidationWorkspaceState(
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\evidence",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\README.txt",
                 null,
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\release-validation-checklist.md",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-sdr-validation-scenarios.md",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\settings-accessibility-validation.md",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\resource-trend-session-template.md",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\collect-resource-trend-samples.ps1",
                 [new OutputValidationWorkspaceIssue(
@@ -832,8 +846,14 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Equal("harness/validation/output-validation.md", record.EvidenceDocumentPath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output", record.ValidationWorkspacePath);
         Assert.Null(record.ValidationTemplatePath);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\release-validation-checklist.md", record.ReleaseChecklistPath);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-sdr-validation-scenarios.md", record.HdrSdrScenariosPath);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\settings-accessibility-validation.md", record.SettingsAccessibilityGuidePath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\resource-trend-session-template.md", record.ResourceTrendTemplatePath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\collect-resource-trend-samples.ps1", record.ResourceTrendScriptPath);
+        Assert.True(record.CanOpenReleaseChecklist);
+        Assert.True(record.CanOpenHdrSdrScenarios);
+        Assert.True(record.CanOpenSettingsAccessibilityGuide);
         Assert.True(record.CanOpenResourceTrendTemplate);
         Assert.True(record.CanOpenResourceTrendScript);
         Assert.True(record.CanCopyResourceTrendCommand);
@@ -990,8 +1010,12 @@ public sealed class PerfectHdrFidelityProjectionTests
             Workspace = new OutputValidationWorkspaceState(
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\evidence",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\README.txt",
+                null,
+                null,
+                null,
                 null,
                 null,
                 null,

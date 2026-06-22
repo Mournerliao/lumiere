@@ -138,6 +138,9 @@ Evidence:
 - `harness/validation/hdr-sdr-validation-scenarios.md` now defines the standard content families, topology matrix, and session execution flow.
 - `harness/validation/settings-accessibility-validation.md` now gives Story 13-2 a focused Windows validation workflow tied back to the release checklist.
 - `harness/validation/templates/hdr-sdr-validation-session-template.md` now gives future sessions a consistent metadata/result record shape.
+- The app-local validation workspace now also seeds the current release checklist, HDR/SDR scenario guide, and settings accessibility workflow into a local `guidance` folder instead of leaving those core manual-validation references repo-only.
+- Settings > Validation now also exposes direct `Release checklist`, `Scenario guide`, and `A11y guide` actions so validators can stay inside one native evidence path while preparing real Windows sessions.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-seed-public-validation-guides-into-local-workspace.md`.
 
 Remaining blockers:
 
@@ -207,6 +210,7 @@ Evidence:
 - Those same viewer rows now also keep target-app version evidence inline with the named viewer, reducing cross-row inference during keyboard, screen-reader, and long-text validation review.
 - Those same viewer rows now also keep output target scope inline with the named viewer evidence, reducing another cross-row inference step during keyboard, screen-reader, and long-text validation review.
 - Main-panel output feedback now also keeps captured-target context visible after teardown, reducing ambiguity for post-capture review flows without inventing new non-native UI affordances.
+- Settings > Validation now also exposes direct native access to the seeded release checklist, scenario guide, and settings accessibility workflow, reducing the amount of manual repo navigation required during keyboard and screen-reader validation sessions.
 - A focused implementation record exists at `_bmad-output/implementation-artifacts/13-2-structure-viewer-compatibility-evidence-for-accessibility.md`.
 
 Remaining blockers:

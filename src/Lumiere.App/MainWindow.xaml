@@ -1471,6 +1471,81 @@
                       <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <Button
+                        x:Name="ValidationOpenReleaseChecklistButton"
+                        MinWidth="0"
+                        HorizontalAlignment="Stretch"
+                        AutomationProperties.Name="Open release validation checklist"
+                        AutomationProperties.HelpText="Open the seeded public release validation checklist for this machine."
+                        Click="OnValidationOpenReleaseChecklistClick"
+                        Padding="10,7">
+                      <StackPanel
+                          HorizontalAlignment="Center"
+                          Orientation="Horizontal"
+                          Spacing="6">
+                        <FontIcon
+                            FontFamily="Segoe Fluent Icons"
+                            FontSize="11"
+                            Glyph="&#xE8A7;" />
+                        <TextBlock
+                            FontSize="11"
+                            FontWeight="SemiBold"
+                            Text="Release checklist" />
+                      </StackPanel>
+                    </Button>
+                    <Button
+                        x:Name="ValidationOpenHdrSdrScenariosButton"
+                        Grid.Column="1"
+                        MinWidth="0"
+                        HorizontalAlignment="Stretch"
+                        AutomationProperties.Name="Open HDR SDR validation scenarios"
+                        AutomationProperties.HelpText="Open the seeded HDR and SDR validation scenario guide for this machine."
+                        Click="OnValidationOpenHdrSdrScenariosClick"
+                        Padding="10,7">
+                      <StackPanel
+                          HorizontalAlignment="Center"
+                          Orientation="Horizontal"
+                          Spacing="6">
+                        <FontIcon
+                            FontFamily="Segoe Fluent Icons"
+                            FontSize="11"
+                            Glyph="&#xE70F;" />
+                        <TextBlock
+                            FontSize="11"
+                            FontWeight="SemiBold"
+                            Text="Scenario guide" />
+                      </StackPanel>
+                    </Button>
+                    <Button
+                        x:Name="ValidationOpenSettingsAccessibilityGuideButton"
+                        Grid.Column="2"
+                        MinWidth="0"
+                        HorizontalAlignment="Stretch"
+                        AutomationProperties.Name="Open settings accessibility validation guide"
+                        AutomationProperties.HelpText="Open the seeded settings accessibility validation workflow for this machine."
+                        Click="OnValidationOpenSettingsAccessibilityGuideClick"
+                        Padding="10,7">
+                      <StackPanel
+                          HorizontalAlignment="Center"
+                          Orientation="Horizontal"
+                          Spacing="6">
+                        <FontIcon
+                            FontFamily="Segoe Fluent Icons"
+                            FontSize="11"
+                            Glyph="&#xE897;" />
+                        <TextBlock
+                            FontSize="11"
+                            FontWeight="SemiBold"
+                            Text="A11y guide" />
+                      </StackPanel>
+                    </Button>
+                  </Grid>
+                  <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Button
                         x:Name="ValidationOpenResourceTrendTemplateButton"
                         MinWidth="0"
                         HorizontalAlignment="Stretch"

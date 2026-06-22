@@ -1886,6 +1886,36 @@ public sealed partial class MainWindow : Window
         await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "resource trend template");
     }
 
+    private async void OnValidationOpenReleaseChecklistClick(object sender, RoutedEventArgs e)
+    {
+        var snapshot = LoadOutputValidationArtifacts();
+        var path = snapshot.Workspace.ReleaseChecklistPath
+            ?? PerfectHdrFidelityProjection.ProjectValidationRecord(
+                aboutInfoProvider.Version,
+                snapshot).ReleaseChecklistPath;
+        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "release validation checklist");
+    }
+
+    private async void OnValidationOpenHdrSdrScenariosClick(object sender, RoutedEventArgs e)
+    {
+        var snapshot = LoadOutputValidationArtifacts();
+        var path = snapshot.Workspace.HdrSdrScenariosPath
+            ?? PerfectHdrFidelityProjection.ProjectValidationRecord(
+                aboutInfoProvider.Version,
+                snapshot).HdrSdrScenariosPath;
+        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "HDR SDR validation scenarios");
+    }
+
+    private async void OnValidationOpenSettingsAccessibilityGuideClick(object sender, RoutedEventArgs e)
+    {
+        var snapshot = LoadOutputValidationArtifacts();
+        var path = snapshot.Workspace.SettingsAccessibilityGuidePath
+            ?? PerfectHdrFidelityProjection.ProjectValidationRecord(
+                aboutInfoProvider.Version,
+                snapshot).SettingsAccessibilityGuidePath;
+        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "settings accessibility validation guide");
+    }
+
     private async void OnValidationOpenResourceTrendScriptClick(object sender, RoutedEventArgs e)
     {
         var snapshot = LoadOutputValidationArtifacts();
@@ -2200,6 +2230,9 @@ public sealed partial class MainWindow : Window
         ValidationRecordEvidencePathText.Text = record.EvidenceDocumentPath;
         ValidationOpenWorkspaceButton.IsEnabled = record.CanOpenValidationWorkspace;
         ValidationOpenTemplateButton.IsEnabled = record.CanOpenValidationTemplate;
+        ValidationOpenReleaseChecklistButton.IsEnabled = record.CanOpenReleaseChecklist;
+        ValidationOpenHdrSdrScenariosButton.IsEnabled = record.CanOpenHdrSdrScenarios;
+        ValidationOpenSettingsAccessibilityGuideButton.IsEnabled = record.CanOpenSettingsAccessibilityGuide;
         ValidationOpenResourceTrendTemplateButton.IsEnabled = record.CanOpenResourceTrendTemplate;
         ValidationOpenResourceTrendScriptButton.IsEnabled = record.CanOpenResourceTrendScript;
         ValidationCopyResourceTrendCommandButton.IsEnabled = record.CanCopyResourceTrendCommand;
@@ -2215,6 +2248,21 @@ public sealed partial class MainWindow : Window
             record.CanOpenValidationTemplate
                 ? $"Open seeded validation template: {record.ValidationTemplatePath}"
                 : "Seeded validation template is not available for this session.");
+        ToolTipService.SetToolTip(
+            ValidationOpenReleaseChecklistButton,
+            record.CanOpenReleaseChecklist
+                ? $"Open seeded release validation checklist: {record.ReleaseChecklistPath}"
+                : "Seeded release validation checklist is not available for this session.");
+        ToolTipService.SetToolTip(
+            ValidationOpenHdrSdrScenariosButton,
+            record.CanOpenHdrSdrScenarios
+                ? $"Open seeded HDR/SDR validation scenarios: {record.HdrSdrScenariosPath}"
+                : "Seeded HDR/SDR validation scenarios are not available for this session.");
+        ToolTipService.SetToolTip(
+            ValidationOpenSettingsAccessibilityGuideButton,
+            record.CanOpenSettingsAccessibilityGuide
+                ? $"Open seeded settings accessibility validation guide: {record.SettingsAccessibilityGuidePath}"
+                : "Seeded settings accessibility validation guide is not available for this session.");
         ToolTipService.SetToolTip(
             ValidationCreateDraftButton,
             record.CanOpenValidationWorkspace
@@ -2250,6 +2298,21 @@ public sealed partial class MainWindow : Window
             record.CanOpenValidationTemplate
                 ? $"Open the seeded validation template at {record.ValidationTemplatePath}."
                 : "Seeded validation template is not available for this session.");
+        AutomationProperties.SetHelpText(
+            ValidationOpenReleaseChecklistButton,
+            record.CanOpenReleaseChecklist
+                ? $"Open the seeded release validation checklist at {record.ReleaseChecklistPath}."
+                : "Seeded release validation checklist is not available for this session.");
+        AutomationProperties.SetHelpText(
+            ValidationOpenHdrSdrScenariosButton,
+            record.CanOpenHdrSdrScenarios
+                ? $"Open the seeded HDR and SDR validation scenario guide at {record.HdrSdrScenariosPath}."
+                : "Seeded HDR and SDR validation scenario guide is not available for this session.");
+        AutomationProperties.SetHelpText(
+            ValidationOpenSettingsAccessibilityGuideButton,
+            record.CanOpenSettingsAccessibilityGuide
+                ? $"Open the seeded settings accessibility validation guide at {record.SettingsAccessibilityGuidePath}."
+                : "Seeded settings accessibility validation guide is not available for this session.");
         AutomationProperties.SetHelpText(
             ValidationCreateDraftButton,
             record.CanOpenValidationWorkspace
