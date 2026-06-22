@@ -16,6 +16,9 @@ public sealed record OutputValidationArtifactSnapshot(
     public static OutputValidationArtifactSnapshot Empty { get; } =
         new([], []);
 
+    public IReadOnlyList<OutputValidationArtifactReference> ArtifactReferences { get; init; } =
+        [];
+
     public OutputValidationWorkspaceState Workspace { get; init; } =
         OutputValidationWorkspaceState.Unavailable;
 
@@ -23,6 +26,10 @@ public sealed record OutputValidationArtifactSnapshot(
 
     public bool HasLoadIssues => LoadIssues.Count > 0;
 }
+
+public sealed record OutputValidationArtifactReference(
+    string Path,
+    OutputValidationSessionArtifact Artifact);
 
 public sealed record OutputValidationArtifactLoadIssue(
     string Path,
@@ -196,13 +203,16 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         }
 
         var artifacts = new List<OutputValidationSessionArtifact>();
+        var artifactReferences = new List<OutputValidationArtifactReference>();
         var issues = new List<OutputValidationArtifactLoadIssue>();
         foreach (var path in enumerateFiles(directoryPath, searchPattern)
             .Order(StringComparer.OrdinalIgnoreCase))
         {
             try
             {
-                artifacts.Add(OutputValidationSessionArtifact.FromJson(readAllText(path)));
+                var artifact = OutputValidationSessionArtifact.FromJson(readAllText(path));
+                artifacts.Add(artifact);
+                artifactReferences.Add(new OutputValidationArtifactReference(path, artifact));
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException or System.Text.Json.JsonException)
             {
@@ -212,6 +222,7 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
 
         return new OutputValidationArtifactSnapshot(artifacts, issues)
         {
+            ArtifactReferences = artifactReferences,
             Workspace = workspace,
         };
     }

@@ -661,7 +661,7 @@ public static class PerfectHdrFidelityProjection
         var artifactArray = artifacts.ToArray();
         return artifactArray.Length == 0
             ? ValidationEvidenceSummaryProjection.Empty
-            : CreateLoadedEvidenceSummary(artifactArray, loadIssues: []);
+            : CreateLoadedEvidenceSummary(artifactArray, loadIssues: [], artifactReferences: []);
     }
 
     public static ValidationEvidenceSummaryProjection ProjectValidationEvidenceSummary(
@@ -672,7 +672,10 @@ public static class PerfectHdrFidelityProjection
         var artifactArray = validationSnapshot.Artifacts.ToArray();
         if (artifactArray.Length > 0 || validationSnapshot.HasLoadIssues)
         {
-            return CreateLoadedEvidenceSummary(artifactArray, validationSnapshot.LoadIssues);
+            return CreateLoadedEvidenceSummary(
+                artifactArray,
+                validationSnapshot.LoadIssues,
+                validationSnapshot.ArtifactReferences);
         }
 
         var workspace = validationSnapshot.Workspace;
@@ -781,9 +784,11 @@ public static class PerfectHdrFidelityProjection
 
     private static ValidationEvidenceSummaryProjection CreateLoadedEvidenceSummary(
         IReadOnlyList<OutputValidationSessionArtifact> artifacts,
-        IReadOnlyList<OutputValidationArtifactLoadIssue> loadIssues)
+        IReadOnlyList<OutputValidationArtifactLoadIssue> loadIssues,
+        IReadOnlyList<OutputValidationArtifactReference> artifactReferences)
     {
         var latestArtifact = SelectLatestArtifact(artifacts);
+        var latestArtifactReference = SelectLatestArtifactReference(artifactReferences);
         var latestSummary = latestArtifact is null
             ? "No valid output validation artifact is loaded for this session."
             : $"Latest artifact: {FormatArtifactHeader(latestArtifact)}. {NormalizeSentence(latestArtifact.ResultSummary)}";
@@ -798,7 +803,10 @@ public static class PerfectHdrFidelityProjection
                 ? $"No valid output validation artifact is loaded for this session.{loadIssueSummary}"
                 : $"{artifacts.Count} artifact(s) loaded for this session. {latestSummary}{loadIssueSummary}",
             CreateCoverageDetail(artifacts),
-            CreateGapDetail(artifacts, loadIssues));
+            CreateGapDetail(artifacts, loadIssues))
+        {
+            LatestArtifactPath = latestArtifactReference?.Path,
+        };
     }
 
     private static OutputValidationSessionArtifact? SelectLatestArtifact(
@@ -806,6 +814,13 @@ public static class PerfectHdrFidelityProjection
         artifacts
             .OrderByDescending(artifact => ParseArtifactDate(artifact.Date))
             .ThenByDescending(artifact => NormalizeEvidenceField(artifact.BuildCommit, "unknown build"))
+            .FirstOrDefault();
+
+    private static OutputValidationArtifactReference? SelectLatestArtifactReference(
+        IEnumerable<OutputValidationArtifactReference> artifactReferences) =>
+        artifactReferences
+            .OrderByDescending(reference => ParseArtifactDate(reference.Artifact.Date))
+            .ThenByDescending(reference => NormalizeEvidenceField(reference.Artifact.BuildCommit, "unknown build"))
             .FirstOrDefault();
 
     private static DateOnly ParseArtifactDate(string? value) =>
@@ -1277,6 +1292,10 @@ public sealed record ValidationEvidenceSummaryProjection(
     string CoverageDetail,
     string GapDetail)
 {
+    public string? LatestArtifactPath { get; init; }
+
+    public bool CanOpenLatestArtifact => !string.IsNullOrWhiteSpace(LatestArtifactPath);
+
     public static ValidationEvidenceSummaryProjection Empty { get; } =
         new(
             "Loaded evidence",

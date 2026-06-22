@@ -1257,6 +1257,28 @@
                       Text="harness/validation/release-validation-checklist.md"
                       TextWrapping="WrapWholeWords" />
                   <Button
+                      x:Name="ValidationOpenLatestEvidenceButton"
+                      MinWidth="0"
+                      HorizontalAlignment="Stretch"
+                      AutomationProperties.Name="Open latest validation evidence"
+                      AutomationProperties.HelpText="Open the latest loaded validation evidence file for this session."
+                      Click="OnValidationOpenLatestEvidenceClick"
+                      Padding="10,7">
+                    <StackPanel
+                        HorizontalAlignment="Center"
+                        Orientation="Horizontal"
+                        Spacing="6">
+                      <FontIcon
+                          FontFamily="Segoe Fluent Icons"
+                          FontSize="11"
+                          Glyph="&#xE8A7;" />
+                      <TextBlock
+                          FontSize="11"
+                          FontWeight="SemiBold"
+                          Text="Open latest evidence" />
+                    </StackPanel>
+                  </Button>
+                  <Button
                       x:Name="ValidationCreateDraftButton"
                       MinWidth="0"
                       HorizontalAlignment="Stretch"

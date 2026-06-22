@@ -1897,6 +1897,15 @@ public sealed partial class MainWindow : Window
         await OpenValidationPathAsync(result.DraftPath, ArtifactShellActionKind.Open, "validation draft");
     }
 
+    private async void OnValidationOpenLatestEvidenceClick(object sender, RoutedEventArgs e)
+    {
+        var snapshot = LoadOutputValidationArtifacts();
+        var path = PerfectHdrFidelityProjection
+            .ProjectValidationEvidenceSummary(snapshot)
+            .LatestArtifactPath;
+        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "latest validation evidence");
+    }
+
     private void OnValidationReloadArtifactsClick(object sender, RoutedEventArgs e)
     {
         ReloadOutputValidationArtifacts();
@@ -1973,6 +1982,17 @@ public sealed partial class MainWindow : Window
         ValidationEvidenceSummaryStatus.Foreground = GetValidationStatusBrush(validation.EvidenceSummary.Status);
         ValidationEvidenceCoverageText.Text = validation.EvidenceSummary.CoverageDetail;
         ValidationEvidenceGapText.Text = validation.EvidenceSummary.GapDetail;
+        ValidationOpenLatestEvidenceButton.IsEnabled = validation.EvidenceSummary.CanOpenLatestArtifact;
+        ToolTipService.SetToolTip(
+            ValidationOpenLatestEvidenceButton,
+            validation.EvidenceSummary.CanOpenLatestArtifact
+                ? $"Open latest loaded validation evidence: {validation.EvidenceSummary.LatestArtifactPath}"
+                : "No loaded validation evidence file is available for this session.");
+        AutomationProperties.SetHelpText(
+            ValidationOpenLatestEvidenceButton,
+            validation.EvidenceSummary.CanOpenLatestArtifact
+                ? $"Open the latest loaded validation evidence file at {validation.EvidenceSummary.LatestArtifactPath}."
+                : "No loaded validation evidence file is available for this session.");
         AutomationProperties.SetHelpText(
             ValidationEvidenceSummaryHeadingText,
             $"{validation.EvidenceSummary.Summary} {validation.EvidenceSummary.CoverageDetail} {validation.EvidenceSummary.GapDetail}");

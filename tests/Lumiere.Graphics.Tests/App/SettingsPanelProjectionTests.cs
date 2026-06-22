@@ -722,7 +722,24 @@ public sealed class SettingsPanelProjectionTests
                     ResultSummary = "Windows Photos validation passed with pending Chromium follow-up.",
                 },
             ],
-            []);
+            [])
+        {
+            ArtifactReferences =
+            [
+                new OutputValidationArtifactReference(
+                    "C:\\Validation\\windows-photos.json",
+                    ArtifactWithFormatContract("Windows Photos") with
+                    {
+                        Date = "2026-06-22",
+                        OutputTargetsTested = ["Folder", "Both"],
+                        TargetAppsTested = ["Windows Photos", "Chromium browsers"],
+                        ChecklistIdsCovered = ["REL-OUT-01", "REL-HDR-04"],
+                        KnownLimitations = ["Chromium metadata recognition is still pending."],
+                        FollowUpIssuesOrStories = ["11-3"],
+                        ResultSummary = "Windows Photos validation passed with pending Chromium follow-up.",
+                    }),
+            ],
+        };
 
         var projection = SettingsPanelProjection.Project(
             new TestSettingsProvider
@@ -740,6 +757,8 @@ public sealed class SettingsPanelProjectionTests
         Assert.Contains("targets Folder, Both", projection.Validation.EvidenceSummary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Chromium metadata recognition", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Follow-up: 11-3", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.True(projection.Validation.EvidenceSummary.CanOpenLatestArtifact);
+        Assert.Equal("C:\\Validation\\windows-photos.json", projection.Validation.EvidenceSummary.LatestArtifactPath);
     }
 
     [Fact]

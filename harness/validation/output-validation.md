@@ -88,6 +88,7 @@ The same settings surface now also summarizes the currently loaded evidence for 
 - known limitations and follow-up stories/issues carried by the loaded artifacts
 - ignored-file warnings when invalid JSON or schema problems were skipped during load
 - workspace-readiness guidance when the local validation folder exists but is not yet usable
+- direct open access to the latest loaded evidence file when the current session has one
 
 This summary is not a release pass/fail dashboard. It is a review surface that helps a Windows validator answer "what evidence is actually loaded right now?" before interpreting `Build`, `Validate`, `Ready`, or lower validation rows.
 

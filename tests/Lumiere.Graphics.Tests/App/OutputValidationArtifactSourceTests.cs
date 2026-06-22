@@ -45,6 +45,9 @@ public sealed class OutputValidationArtifactSourceTests
         var snapshot = source.Load();
 
         Assert.Equal(["2026-06-21", "2026-06-22"], snapshot.Artifacts.Select(artifact => artifact.Date).ToArray());
+        Assert.Equal(
+            ["C:\\Validation\\a.json", "C:\\Validation\\b.json"],
+            snapshot.ArtifactReferences.Select(reference => reference.Path).ToArray());
         var issue = Assert.Single(snapshot.LoadIssues);
         Assert.Equal("C:\\Validation\\bad.json", issue.Path);
         Assert.Contains("JsonException", issue.Detail, StringComparison.Ordinal);

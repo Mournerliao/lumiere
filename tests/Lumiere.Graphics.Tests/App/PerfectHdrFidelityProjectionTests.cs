@@ -785,6 +785,15 @@ public sealed class PerfectHdrFidelityProjectionTests
         var snapshot = new OutputValidationArtifactSnapshot(
             [ArtifactFor("Windows Photos")],
             [new("C:\\Validation\\bad.json", "JsonException: invalid JSON")]);
+        snapshot = snapshot with
+        {
+            ArtifactReferences =
+            [
+                new OutputValidationArtifactReference(
+                    "C:\\Validation\\windows-photos.json",
+                    snapshot.Artifacts[0]),
+            ],
+        };
 
         var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(snapshot);
 
@@ -792,6 +801,8 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Contains("1 file", summary.Summary, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("bad.json", summary.Summary, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Ignored files must be fixed", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("C:\\Validation\\windows-photos.json", summary.LatestArtifactPath);
+        Assert.True(summary.CanOpenLatestArtifact);
     }
 
     [Fact]
