@@ -33,7 +33,7 @@ public static class OutputValidationDraftFactory
             WindowsVersion: CreateWindowsVersionPlaceholder(seed),
             Device: CreateDevicePlaceholder(seed),
             Gpu: CreateGpuPlaceholder(request.CurrentSessionHint, seed),
-            DisplaySetup: CreateDisplaySetupPlaceholder(request.SessionState.Target, seed),
+            DisplaySetup: CreateDisplaySetupPlaceholder(request.SessionState.Target, request.CurrentSessionHint, seed),
             HdrState: CreateHdrStatePlaceholder(request.SessionState.Readiness),
             DpiScales: CreateDpiScalePlaceholders(request.CurrentSessionHint, seed),
             EntryPointsTested: CreateEntryPointPlaceholders(seed),
@@ -151,17 +151,28 @@ public static class OutputValidationDraftFactory
         CaptureTarget? target,
         OutputValidationDraftSeed? seed)
     {
+        return CreateDisplaySetupPlaceholder(target, currentSessionHint: null, seed);
+    }
+
+    private static string CreateDisplaySetupPlaceholder(
+        CaptureTarget? target,
+        OutputValidationCurrentSessionHint? currentSessionHint,
+        OutputValidationDraftSeed? seed)
+    {
+        var currentSession = NormalizeHint(currentSessionHint?.DisplaySetup);
         var hint = NormalizeHint(seed?.DisplaySetup);
         if (target is null)
         {
-            return hint is null
-                ? "REPLACE_WITH_FULL_DISPLAY_SETUP"
-                : $"REPLACE_WITH_FULL_DISPLAY_SETUP (latest local artifact: {hint})";
+            return CreateDisplaySetupPlaceholder(
+                "REPLACE_WITH_FULL_DISPLAY_SETUP",
+                currentSession,
+                hint);
         }
 
-        return hint is null
-            ? $"REPLACE_WITH_FULL_DISPLAY_SETUP (active target: {target.DisplayName})"
-            : $"REPLACE_WITH_FULL_DISPLAY_SETUP (active target: {target.DisplayName}; latest local artifact: {hint})";
+        return CreateDisplaySetupPlaceholder(
+            $"REPLACE_WITH_FULL_DISPLAY_SETUP (active target: {target.DisplayName})",
+            currentSession,
+            hint);
     }
 
     private static string CreateHdrStatePlaceholder(PreviewReadinessStatus readiness)
@@ -314,6 +325,26 @@ public static class OutputValidationDraftFactory
             .ToArray();
         var sanitized = new string(characters).Trim('_');
         return string.IsNullOrWhiteSpace(sanitized) ? "APP" : sanitized;
+    }
+
+    private static string CreateDisplaySetupPlaceholder(
+        string placeholder,
+        string? currentSession,
+        string? latestArtifact)
+    {
+        if (currentSession is null && latestArtifact is null)
+        {
+            return placeholder;
+        }
+
+        if (currentSession is not null && latestArtifact is not null)
+        {
+            return $"{placeholder} (current session: {currentSession}; latest local artifact: {latestArtifact})";
+        }
+
+        return currentSession is not null
+            ? $"{placeholder} (current session: {currentSession})"
+            : $"{placeholder} (latest local artifact: {latestArtifact})";
     }
 
     private static string CreateTesterPlaceholder(OutputValidationDraftSeed? seed) =>

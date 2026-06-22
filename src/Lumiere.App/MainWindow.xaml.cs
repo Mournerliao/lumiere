@@ -1903,7 +1903,8 @@ public sealed partial class MainWindow : Window
     private OutputValidationCurrentSessionHint CreateCurrentSessionValidationHint() =>
         new(
             deviceResources.AdapterName,
-            CreateCurrentSessionDpiScales());
+            CreateCurrentSessionDpiScales(),
+            CreateCurrentSessionDisplaySetupHint());
 
     private IReadOnlyList<string> CreateCurrentSessionDpiScales()
     {
@@ -1917,6 +1918,36 @@ public sealed partial class MainWindow : Window
         [
             $"{(scale.Value * 100).ToString("0.##", CultureInfo.InvariantCulture)}%",
         ];
+    }
+
+    private string? CreateCurrentSessionDisplaySetupHint()
+    {
+        var target = captureService?.CurrentSessionState?.Target;
+        var areas = DisplayArea.FindAll();
+        var topology = areas.Count switch
+        {
+            <= 0 => null,
+            1 => "single display",
+            _ => $"{areas.Count} displays",
+        };
+
+        var targetHint = target?.DisplayIdentity is { Left: { } left, Top: { } top } identity
+            ? $"{target.DisplayName} at {left},{top} {identity.Width}x{identity.Height}"
+            : target is not null
+                ? $"{target.DisplayName} {target.Size.Width}x{target.Size.Height}"
+                : null;
+
+        if (topology is null && targetHint is null)
+        {
+            return null;
+        }
+
+        if (topology is not null && targetHint is not null)
+        {
+            return $"{topology}; active target {targetHint}";
+        }
+
+        return topology ?? $"active target {targetHint}";
     }
 
     private async void OnValidationOpenLatestEvidenceClick(object sender, RoutedEventArgs e)

@@ -260,7 +260,8 @@ public sealed class OutputValidationArtifactSourceTests
                         "Target-aware readiness passed.")),
                 new OutputValidationCurrentSessionHint(
                     "NVIDIA RTX 5080",
-                    ["175%"])));
+                    ["175%"],
+                    "2 displays; active target HDR Display at 0,0 3840x2160")));
 
         Assert.True(result.IsSuccess);
         var artifact = OutputValidationSessionArtifact.FromJson(files[result.DraftPath!]);
@@ -270,6 +271,10 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Equal(
             "REPLACE_WITH_GPU_MODEL_AND_DRIVER (current session: NVIDIA RTX 5080; latest local artifact: NVIDIA test GPU)",
             artifact.Gpu);
+        Assert.Contains(
+            "current session: 2 displays; active target HDR Display at 0,0 3840x2160",
+            artifact.DisplaySetup,
+            StringComparison.Ordinal);
         Assert.Contains("latest local artifact: HDR primary, SDR secondary", artifact.DisplaySetup, StringComparison.Ordinal);
         Assert.Equal(
             ["REPLACE_WITH_DPI_SCALE (current session: 175%; latest local artifact: 150%)"],

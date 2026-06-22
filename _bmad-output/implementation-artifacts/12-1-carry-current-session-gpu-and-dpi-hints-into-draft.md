@@ -1,11 +1,12 @@
-# 12-1 Carry Current Session GPU And DPI Hints Into Draft
+# 12-1 Carry Current Session GPU, DPI, And Display Setup Hints Into Draft
 
 ## Context
 
-`Create draft` had already learned how to reuse the latest compatible local artifact as a hint source, but two pieces of context were still unnecessarily indirect during real Windows manual validation:
+`Create draft` had already learned how to reuse the latest compatible local artifact as a hint source, but several pieces of current-session context were still unnecessarily indirect during real Windows manual validation:
 
 - the GPU actually backing the current Lumiere session
 - the current window DPI scale the validator is working under right now
+- the current display topology / active target context visible during the session
 
 Those values are especially useful when the team is trying to convert draft ergonomics into real Public perfect-HDR-fidelity evidence, because they reduce transcription friction without changing the release-evidence bar.
 
@@ -15,10 +16,12 @@ Those values are especially useful when the team is trying to convert draft ergo
 2. `MainWindow.OnValidationCreateDraftClick(...)` now packages:
    - the current `GraphicsDeviceResources` adapter label
    - the current `XamlRoot.RasterizationScale` as a percent-form DPI hint
+   - a current display-topology hint built from the active target plus current `DisplayArea.FindAll()` count
 3. `GraphicsDeviceProvider` now resolves the active DXGI adapter description once during device creation and stores it on `GraphicsDeviceResources` as a small read-only label seam.
 4. `OutputValidationDraftFactory` now folds those current-session hints into the existing manual placeholders for:
    - GPU
    - DPI scale
+   - display setup
 5. The draft remains evidence-honest:
    - `REPLACE_WITH_*` is still preserved
    - current-session values appear only as `current session: ...` hints
@@ -37,4 +40,4 @@ Those values are especially useful when the team is trying to convert draft ergo
 
 ## Status
 
-Story `12-1` remains `in-progress`: draft generation now carries current-session GPU and DPI hints, but Public perfect-HDR-fidelity still depends on real Windows manual validation sessions and current-build evidence.
+Story `12-1` remains `in-progress`: draft generation now carries current-session GPU, DPI, and display-setup hints, but Public perfect-HDR-fidelity still depends on real Windows manual validation sessions and current-build evidence.

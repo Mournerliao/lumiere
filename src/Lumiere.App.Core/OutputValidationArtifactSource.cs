@@ -75,7 +75,8 @@ public sealed record OutputValidationDraftRequest(
 
 public sealed record OutputValidationCurrentSessionHint(
     string? Gpu,
-    IReadOnlyList<string> DpiScales);
+    IReadOnlyList<string> DpiScales,
+    string? DisplaySetup = null);
 
 public sealed record OutputValidationDraftSeed(
     string? Tester,

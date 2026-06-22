@@ -118,11 +118,13 @@ For the HDR10 JXR release path, current-build alignment is now part of the runti
 - current capture-target display name and bounds when available
 - current graphics adapter label when the session can resolve it
 - current window DPI scale when the active XAML root can report it
+- current display-topology hint when the active session can summarize the current display setup
 
 The generated file still keeps manual-observation fields honest:
 
 - tester, Windows version, device, GPU, and DPI remain explicit placeholders
 - current-session GPU and DPI values may appear as `current session: ...` hints, but they still do not count as recorded manual evidence
+- current-session display-topology values may also appear as `current session: ...` hints, but they still do not count as recorded mixed-monitor validation evidence
 - when recent compatible local artifacts exist, Lumiere may append `latest local artifact: ...` hints to those placeholders so the validator can reuse stable machine context without losing the explicit manual-replacement prompt
 - if Lumiere cannot prove a comparable current build token, the draft keeps `REPLACE_WITH_GIT_COMMIT` instead of inventing one
 - target-app versions stay placeholders for any viewer/app Lumiere cannot identify locally, and even prefilled values still need the validator to confirm they match the actual tested app/session

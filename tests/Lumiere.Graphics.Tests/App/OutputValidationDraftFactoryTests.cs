@@ -177,7 +177,8 @@ public sealed class OutputValidationDraftFactoryTests
                 PreviewReadinessStatus.Ready("HDR-ready", "Target-aware readiness passed.")),
             new OutputValidationCurrentSessionHint(
                 "NVIDIA RTX 5080",
-                ["175%"]));
+                ["175%"],
+                "2 displays; active target HDR Display at 0,0 3840x2160"));
 
         var document = OutputValidationDraftFactory.Create(
             request,
@@ -199,6 +200,10 @@ public sealed class OutputValidationDraftFactoryTests
             "REPLACE_WITH_GPU_MODEL_AND_DRIVER (current session: NVIDIA RTX 5080; latest local artifact: NVIDIA RTX test driver)",
             document.Artifact.Gpu);
         Assert.Contains("active target: HDR Display", document.Artifact.DisplaySetup, StringComparison.Ordinal);
+        Assert.Contains(
+            "current session: 2 displays; active target HDR Display at 0,0 3840x2160",
+            document.Artifact.DisplaySetup,
+            StringComparison.Ordinal);
         Assert.Contains("latest local artifact: HDR primary, SDR secondary", document.Artifact.DisplaySetup, StringComparison.Ordinal);
         Assert.Equal(
             ["REPLACE_WITH_DPI_SCALE (current session: 175%; latest local artifact: 150%)"],

@@ -120,6 +120,7 @@ Evidence:
 - The current browser-side validation scope is now also fixed to `Microsoft Edge`, and the seeded sample/draft placeholders use that explicit target instead of a broad Chromium family label.
 - Draft generation can now also reuse stable local environment hints from the latest compatible artifact, keeping tester / Windows / device / GPU / DPI / entry-point context close at hand without silently converting older evidence into current proof.
 - Draft generation can now also carry current-session GPU and DPI hints directly from the active app session, so the validator sees both "current session" and "latest local artifact" context without losing the manual replacement prompt.
+- Draft generation can now also carry a current-session display-topology hint, giving the validator a session-local reminder of single-display vs multi-display context and active target bounds before real mixed-monitor evidence is recorded.
 - Settings validation now also surfaces a compact loaded-evidence summary so testers can review the latest loaded artifact, current coverage, known limitations, follow-up stories, and ignored-file warnings without leaving the app.
 - That same surface now also links directly to the latest loaded evidence file, reducing the gap between in-app review and the durable JSON artifact that release validation depends on.
 - The same validation surface now also calls out whether the latest loaded evidence matches the current build, is stale for the current build, or cannot yet be aligned to a comparable build token.
