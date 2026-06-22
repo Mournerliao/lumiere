@@ -2014,6 +2014,7 @@ public sealed partial class MainWindow : Window
         ApplyValidationRow(validation.Rows.ElementAtOrDefault(2), ValidationRow3Label, ValidationRow3Detail, ValidationRow3Status);
         ApplyValidationRow(validation.Rows.ElementAtOrDefault(3), ValidationRow4Label, ValidationRow4Detail, ValidationRow4Status);
         ApplyValidationRow(validation.Rows.ElementAtOrDefault(4), ValidationRow5Label, ValidationRow5Detail, ValidationRow5Status);
+        ApplyValidationRow(validation.Rows.ElementAtOrDefault(5), ValidationRow6Label, ValidationRow6Detail, ValidationRow6Status);
         ValidationViewerMatrixSummaryText.Text = validation.ViewerMatrixSummary;
         ApplyValidationViewerRow(
             validation.ViewerMatrix.ElementAtOrDefault(0),

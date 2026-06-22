@@ -183,6 +183,7 @@ Evidence:
 - Settings > Validation now includes a compact evidence-summary block that stays native and reviewable while making the currently loaded validation scope legible to keyboard and screen-reader users.
 - Settings > Validation now also exposes a direct `Open latest evidence` path so keyboard and screen-reader users can move from the summary surface to the current loaded artifact without manually browsing the workspace.
 - Settings > Validation now also surfaces `Current build evidence` as a first-class row, so validators do not need to infer stale-versus-current evidence by manually comparing JSON and About metadata.
+- The settings validation panel now also has enough native row capacity to render the full projected evidence set, so `Target app versions` and `Current build evidence` no longer compete for one truncated row slot in the desktop UI.
 
 Remaining blockers:
 

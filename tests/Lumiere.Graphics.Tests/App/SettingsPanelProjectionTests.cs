@@ -620,10 +620,12 @@ public sealed class SettingsPanelProjectionTests
         Assert.Equal(PerfectHdrFidelityProjection.ReleaseTarget, projection.Validation.ReleaseTarget);
         Assert.Equal("sRGB", projection.Validation.OutputProfileGate.ProfileLabel);
         Assert.Equal("Compat", projection.Validation.OutputProfileGate.StatusLabel);
+        Assert.Equal(6, projection.Validation.Rows.Count);
         Assert.Contains(projection.Validation.Rows, row => row.Label == "Target-aware HDR");
         Assert.Contains(projection.Validation.Rows, row => row.Label == "Visual-match output" && row.Status == ValidationEvidenceStatus.NotRun);
         Assert.Contains(projection.Validation.Rows, row => row.Label == "HDR-preserved profile");
         Assert.Contains(projection.Validation.Rows, row => row.Label == "Target app versions" && row.Status == ValidationEvidenceStatus.NotRun);
+        Assert.Contains(projection.Validation.Rows, row => row.Label == "Current build evidence" && row.Status == ValidationEvidenceStatus.NotRun);
         Assert.Contains("Named viewers", projection.Validation.ViewerMatrixSummary, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(projection.Validation.ViewerMatrix, viewer => viewer.Name == "Microsoft Paint");
         Assert.Contains(projection.Validation.ViewerMatrix, viewer => viewer.Name == "Windows Photos");
