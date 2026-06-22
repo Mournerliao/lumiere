@@ -716,6 +716,11 @@ public sealed class SettingsPanelProjectionTests
                     Date = "2026-06-22",
                     OutputTargetsTested = ["Folder", "Both"],
                     TargetAppsTested = ["Windows Photos", "Chromium browsers"],
+                    TargetAppVersions =
+                    [
+                        new OutputValidationTargetAppVersionRecord("Windows Photos", "2026.11040.12001.0"),
+                        new OutputValidationTargetAppVersionRecord("Chromium browsers", "138.0.7204.101"),
+                    ],
                     ChecklistIdsCovered = ["REL-OUT-01", "REL-HDR-04"],
                     KnownLimitations = ["Chromium metadata recognition is still pending."],
                     FollowUpIssuesOrStories = ["11-3"],
@@ -733,6 +738,11 @@ public sealed class SettingsPanelProjectionTests
                         Date = "2026-06-22",
                         OutputTargetsTested = ["Folder", "Both"],
                         TargetAppsTested = ["Windows Photos", "Chromium browsers"],
+                        TargetAppVersions =
+                        [
+                            new OutputValidationTargetAppVersionRecord("Windows Photos", "2026.11040.12001.0"),
+                            new OutputValidationTargetAppVersionRecord("Chromium browsers", "138.0.7204.101"),
+                        ],
                         ChecklistIdsCovered = ["REL-OUT-01", "REL-HDR-04"],
                         KnownLimitations = ["Chromium metadata recognition is still pending."],
                         FollowUpIssuesOrStories = ["11-3"],
@@ -755,6 +765,7 @@ public sealed class SettingsPanelProjectionTests
         Assert.Equal(ValidationEvidenceStatus.Limited, projection.Validation.EvidenceSummary.Status);
         Assert.Contains("Windows Photos validation passed", projection.Validation.EvidenceSummary.Summary, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("targets Folder, Both", projection.Validation.EvidenceSummary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("2026.11040.12001.0", projection.Validation.EvidenceSummary.CoverageDetail, StringComparison.Ordinal);
         Assert.Contains("Chromium metadata recognition", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Follow-up: 11-3", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.True(projection.Validation.EvidenceSummary.CanOpenLatestArtifact);

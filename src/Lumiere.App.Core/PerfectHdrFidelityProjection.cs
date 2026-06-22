@@ -893,6 +893,7 @@ public static class PerfectHdrFidelityProjection
         return
             $"Coverage: targets {FormatEvidenceList(artifacts.SelectMany(artifact => artifact.OutputTargetsTested), fallback: "none yet")}; "
             + $"viewers {FormatEvidenceList(artifacts.SelectMany(artifact => artifact.TargetAppsTested), fallback: "none yet")}; "
+            + $"viewer versions {FormatTargetAppVersionList(artifacts.SelectMany(artifact => artifact.TargetAppVersions), fallback: "none yet")}; "
             + $"checklist {FormatEvidenceList(artifacts.SelectMany(artifact => artifact.ChecklistIdsCovered), fallback: "none yet")}.";
     }
 
@@ -912,6 +913,16 @@ public static class PerfectHdrFidelityProjection
         if (followUps.Count > 0)
         {
             detailParts.Add($"Follow-up: {FormatEvidenceList(followUps, fallback: "none recorded") }.");
+        }
+
+        var hasTargetApps = artifacts.Any(artifact => artifact.TargetAppsTested.Count > 0);
+        var hasRecordedTargetAppVersions = artifacts.Any(artifact =>
+            artifact.TargetAppVersions.Any(record =>
+                IsRecordedEvidenceField(record.Name)
+                && IsRecordedEvidenceField(record.Version)));
+        if (hasTargetApps && !hasRecordedTargetAppVersions)
+        {
+            detailParts.Add("Target app versions are not recorded yet.");
         }
 
         if (loadIssues.Count > 0)
@@ -985,6 +996,37 @@ public static class PerfectHdrFidelityProjection
 
         return $"{string.Join(", ", distinctValues.Take(maxItems))}, +{distinctValues.Count - maxItems} more";
     }
+
+    private static string FormatTargetAppVersionList(
+        IEnumerable<OutputValidationTargetAppVersionRecord> values,
+        string fallback,
+        int maxItems = 3)
+    {
+        var distinctValues = values
+            .Where(value =>
+                IsRecordedEvidenceField(value.Name)
+                && IsRecordedEvidenceField(value.Version))
+            .Select(value => $"{value.Name} {value.Version}")
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (distinctValues.Length == 0)
+        {
+            return fallback;
+        }
+
+        if (distinctValues.Length <= maxItems)
+        {
+            return string.Join(", ", distinctValues);
+        }
+
+        return $"{string.Join(", ", distinctValues.Take(maxItems))}, +{distinctValues.Length - maxItems} more";
+    }
+
+    private static bool IsRecordedEvidenceField(string? value) =>
+        !string.Equals(
+            NormalizeEvidenceField(value, "unknown"),
+            "unknown",
+            StringComparison.Ordinal);
 
     private static string NormalizeSentence(string? value)
     {

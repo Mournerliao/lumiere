@@ -20,11 +20,13 @@ The local validation workspace and reload/open actions already reduced path-disc
    - selected output target
    - selected output profile
    - profile-specific viewer skeleton
+   - per-viewer target-app version placeholders
    - active capture target display name and bounds when available
 3. Kept manual evidence honest:
    - viewer statuses remain `NotRun`
    - tester/device/GPU/DPI/Windows-version fields remain placeholders
    - build commit stays a placeholder only when Lumiere cannot prove a comparable current build token
+   - target-app versions stay placeholders until the tested Windows machine records the actual viewer/app versions
    - target HDR detail still requires human validation notes
 4. Added a native `Create draft` action to the settings validation section.
 5. Kept the draft workflow non-deceptive:

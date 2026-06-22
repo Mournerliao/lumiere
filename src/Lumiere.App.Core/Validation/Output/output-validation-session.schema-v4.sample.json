@@ -24,6 +24,20 @@
     "Windows Photos",
     "Chromium browsers"
   ],
+  "targetAppVersions": [
+    {
+      "name": "Microsoft Paint",
+      "version": "REPLACE_WITH_MICROSOFT_PAINT_VERSION"
+    },
+    {
+      "name": "Windows Photos",
+      "version": "REPLACE_WITH_WINDOWS_PHOTOS_VERSION"
+    },
+    {
+      "name": "Chromium browsers",
+      "version": "REPLACE_WITH_CHROMIUM_BROWSERS_VERSION"
+    }
+  ],
   "checklistIdsCovered": [
     "REL-OUT-04",
     "REL-HDR-04"

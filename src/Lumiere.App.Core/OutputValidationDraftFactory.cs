@@ -68,6 +68,7 @@ public static class OutputValidationDraftFactory
                 CreateProfileRecord(profile, outputTarget),
             ])
         {
+            TargetAppVersions = CreateTargetAppVersionPlaceholders(targetApps),
             TargetHdrEvidence = CreateTargetHdrEvidence(request.SessionState),
         };
 
@@ -253,6 +254,14 @@ public static class OutputValidationDraftFactory
             : null;
     }
 
+    private static IReadOnlyList<OutputValidationTargetAppVersionRecord> CreateTargetAppVersionPlaceholders(
+        IReadOnlyList<string> targetApps) =>
+        targetApps
+            .Select(targetApp => new OutputValidationTargetAppVersionRecord(
+                targetApp,
+                $"REPLACE_WITH_{SanitizeIdentifier(targetApp)}_VERSION"))
+            .ToArray();
+
     private static string CreateFileNameStem(
         string date,
         string profileLabel,
@@ -276,6 +285,16 @@ public static class OutputValidationDraftFactory
             .ToArray();
         var sanitized = new string(characters).Trim('-');
         return string.IsNullOrWhiteSpace(sanitized) ? "draft" : sanitized;
+    }
+
+    private static string SanitizeIdentifier(string value)
+    {
+        var trimmed = value.Trim().ToUpperInvariant();
+        var characters = trimmed
+            .Select(character => char.IsLetterOrDigit(character) ? character : '_')
+            .ToArray();
+        var sanitized = new string(characters).Trim('_');
+        return string.IsNullOrWhiteSpace(sanitized) ? "APP" : sanitized;
     }
 }
 

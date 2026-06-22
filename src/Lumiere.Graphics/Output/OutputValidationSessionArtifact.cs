@@ -41,6 +41,9 @@ public sealed record OutputValidationSessionArtifact(
 
     public TargetAwareHdrValidationEvidence? TargetHdrEvidence { get; init; }
 
+    public IReadOnlyList<OutputValidationTargetAppVersionRecord> TargetAppVersions { get; init; } =
+        [];
+
     public bool CoversOutputTarget(OutputTarget target) => TargetsCover(OutputTargetsTested, target);
 
     public bool CoversProfileOutputTarget(OutputProfileKind profileKind, OutputTarget target) =>
@@ -294,6 +297,10 @@ public sealed record OutputValidationSessionArtifact(
         return false;
     }
 }
+
+public sealed record OutputValidationTargetAppVersionRecord(
+    string Name,
+    string Version);
 
 public sealed record TargetAwareHdrValidationEvidence(
     string TargetDisplayName,

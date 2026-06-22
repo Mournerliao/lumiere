@@ -775,6 +775,11 @@ public sealed class PerfectHdrFidelityProjectionTests
                     Date = "2026-06-22",
                     OutputTargetsTested = ["Folder", "Both"],
                     TargetAppsTested = ["Windows Photos", "Chromium browsers"],
+                    TargetAppVersions =
+                    [
+                        new OutputValidationTargetAppVersionRecord("Windows Photos", "2026.11040.12001.0"),
+                        new OutputValidationTargetAppVersionRecord("Chromium browsers", "138.0.7204.101"),
+                    ],
                     ChecklistIdsCovered = ["REL-OUT-01", "REL-HDR-04"],
                     KnownLimitations = ["Chromium metadata recognition is still pending."],
                     FollowUpIssuesOrStories = ["11-3", "12-1"],
@@ -788,10 +793,22 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Contains("Windows Photos validation passed", summary.Summary, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("targets Folder, Both", summary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Windows Photos", summary.CoverageDetail, StringComparison.Ordinal);
+        Assert.Contains("2026.11040.12001.0", summary.CoverageDetail, StringComparison.Ordinal);
         Assert.Contains("REL-HDR-04", summary.CoverageDetail, StringComparison.Ordinal);
         Assert.Contains("Known limitations", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Chromium metadata recognition", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Follow-up: 11-3, 12-1", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectValidationEvidenceSummary_CallsOutMissingTargetAppVersions()
+    {
+        var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(
+            [
+                ArtifactFor("Windows Photos"),
+            ]);
+
+        Assert.Contains("Target app versions are not recorded yet", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

@@ -43,6 +43,10 @@ public sealed class OutputValidationDraftFactoryTests
         Assert.Contains("Microsoft Paint", document.Artifact.TargetAppsTested);
         Assert.Contains("Windows Photos", document.Artifact.TargetAppsTested);
         Assert.Contains("Chromium browsers", document.Artifact.TargetAppsTested);
+        Assert.Contains(
+            document.Artifact.TargetAppVersions,
+            version => version.Name == "Windows Photos"
+                && version.Version == "REPLACE_WITH_WINDOWS_PHOTOS_VERSION");
         Assert.Contains("REPLACE_WITH_GIT_COMMIT", document.Artifact.BuildCommit, StringComparison.Ordinal);
         Assert.Contains("Lumiere v0.1.0", document.Artifact.BuildCommit, StringComparison.Ordinal);
         Assert.Equal("HDR Display", document.Artifact.TargetHdrEvidence!.TargetDisplayName);

@@ -43,6 +43,12 @@ public sealed class OutputValidationSessionArtifactTests
                     ]),
             ])
         {
+            TargetAppVersions =
+            [
+                new OutputValidationTargetAppVersionRecord(
+                    "Windows Photos",
+                    "2026.11040.12001.0"),
+            ],
             TargetHdrEvidence = CompleteTargetHdrEvidence,
         };
 
@@ -51,6 +57,9 @@ public sealed class OutputValidationSessionArtifactTests
         Assert.Equal("2026-06-21", roundTripped.Date);
         Assert.Equal(4, roundTripped.SchemaVersion);
         Assert.Equal("04a8dd6", roundTripped.BuildCommit);
+        var targetAppVersion = Assert.Single(roundTripped.TargetAppVersions);
+        Assert.Equal("Windows Photos", targetAppVersion.Name);
+        Assert.Equal("2026.11040.12001.0", targetAppVersion.Version);
         Assert.Equal(["REL-OUT-01"], roundTripped.ChecklistIdsCovered);
         Assert.Equal(["docs/validation/evidence/photos-hdr10.md"], roundTripped.EvidencePaths);
         Assert.NotNull(roundTripped.TargetHdrEvidence);
@@ -506,6 +515,12 @@ public sealed class OutputValidationSessionArtifactTests
             FollowUpIssuesOrStories: [],
             OutputProfileRecords: records)
         {
+            TargetAppVersions =
+            [
+                new OutputValidationTargetAppVersionRecord(
+                    "Windows Photos",
+                    "2026.11040.12001.0"),
+            ],
             TargetHdrEvidence = CompleteTargetHdrEvidence,
         };
 
