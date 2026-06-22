@@ -301,6 +301,12 @@ public sealed class PerfectHdrFidelityProjectionTests
                     ]),
             ])
         {
+            TargetAppVersions =
+            [
+                new OutputValidationTargetAppVersionRecord(
+                    "Windows Photos",
+                    "2026.11040.12001.0"),
+            ],
             TargetHdrEvidence = CompleteTargetHdrEvidence,
         };
 
@@ -805,7 +811,10 @@ public sealed class PerfectHdrFidelityProjectionTests
     {
         var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(
             [
-                ArtifactFor("Windows Photos"),
+                ArtifactFor("Windows Photos") with
+                {
+                    TargetAppVersions = [],
+                },
             ]);
 
         Assert.Contains("Target app versions are not recorded yet", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
@@ -948,6 +957,12 @@ public sealed class PerfectHdrFidelityProjectionTests
                     ]),
             ])
         {
+            TargetAppVersions =
+            [
+                new OutputValidationTargetAppVersionRecord(
+                    viewerName,
+                    $"{viewerName} 1.0"),
+            ],
             TargetHdrEvidence = CompleteTargetHdrEvidence,
         };
 
@@ -982,6 +997,12 @@ public sealed class PerfectHdrFidelityProjectionTests
                 },
             ])
         {
+            TargetAppVersions =
+            [
+                new OutputValidationTargetAppVersionRecord(
+                    viewerName,
+                    $"{viewerName} 1.0"),
+            ],
             TargetHdrEvidence = CompleteTargetHdrEvidence,
         };
 
@@ -1019,6 +1040,12 @@ public sealed class PerfectHdrFidelityProjectionTests
                 },
             ])
         {
+            TargetAppVersions =
+            [
+                new OutputValidationTargetAppVersionRecord(
+                    viewerName,
+                    $"{viewerName} 1.0"),
+            ],
             TargetHdrEvidence = CompleteTargetHdrEvidence,
         };
 
@@ -1055,6 +1082,12 @@ public sealed class PerfectHdrFidelityProjectionTests
                     ]),
             ])
         {
+            TargetAppVersions =
+            [
+                new OutputValidationTargetAppVersionRecord(
+                    viewerName,
+                    $"{viewerName} 1.0"),
+            ],
             TargetHdrEvidence = CompleteTargetHdrEvidence,
         };
 

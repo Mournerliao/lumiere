@@ -8,6 +8,7 @@ public sealed record Hdr10JxrViewerValidationEvidence(
     bool HasArtifacts,
     bool HasCurrentBuildAlignment,
     bool HasCompleteTargetAwareHdrEvidence,
+    bool HasCompleteTargetAppVersionEvidence,
     bool HasCompleteFormatContract,
     bool HasViewerRecognizedHdr10StaticMetadata,
     bool HasWindowsManualViewerValidation,
@@ -17,6 +18,7 @@ public sealed record Hdr10JxrViewerValidationEvidence(
         HasArtifacts
         && HasCurrentBuildAlignment
         && HasCompleteTargetAwareHdrEvidence
+        && HasCompleteTargetAppVersionEvidence
         && HasCompleteFormatContract
         && HasViewerRecognizedHdr10StaticMetadata
         && HasWindowsManualViewerValidation
@@ -45,6 +47,11 @@ public sealed record Hdr10JxrViewerValidationEvidence(
         var viewerEvidence = evaluatedProfile.ViewerEvidence.ToArray();
         var hasArtifacts = artifactArray.Length > 0;
         var hasCompleteTargetAwareHdrEvidence = artifactArray.Any(ArtifactHasCompleteTargetAwareHdrEvidence);
+        var missingTargetAppVersions = artifactArray
+            .SelectMany(artifact => artifact.GetMissingTargetAppVersions())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var hasCompleteTargetAppVersionEvidence = hasArtifacts && missingTargetAppVersions.Length == 0;
         var hasCompleteFormatContract = evaluatedProfile.HasCompleteFormatContract;
         var metadataBlockers = viewerEvidence
             .Where(viewer => viewer.Hdr10MetadataStatus is not OutputCompatibilityEvidenceStatus.Pass)
@@ -83,6 +90,13 @@ public sealed record Hdr10JxrViewerValidationEvidence(
             blockers.Add("Complete target-aware HDR evidence is missing.");
         }
 
+        if (!hasCompleteTargetAppVersionEvidence)
+        {
+            blockers.Add(hasArtifacts
+                ? $"Target app version evidence is missing for {FormatNames(missingTargetAppVersions)}."
+                : "Target app version evidence is missing.");
+        }
+
         if (!hasCompleteFormatContract)
         {
             blockers.Add("Complete HDR10 JXR format contract evidence is missing.");
@@ -102,6 +116,7 @@ public sealed record Hdr10JxrViewerValidationEvidence(
             hasArtifacts,
             hasCurrentBuildAlignment,
             hasCompleteTargetAwareHdrEvidence,
+            hasCompleteTargetAppVersionEvidence,
             hasCompleteFormatContract,
             metadataBlockers.Length == 0,
             manualViewerBlockers.Length == 0,

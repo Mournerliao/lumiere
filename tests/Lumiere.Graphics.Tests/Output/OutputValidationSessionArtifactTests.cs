@@ -383,6 +383,37 @@ public sealed class OutputValidationSessionArtifactTests
     }
 
     [Fact]
+    public void ApplyTo_TreatsMissingTargetAppVersionsAsIncompleteManualSession()
+    {
+        var artifact = CreateArtifact(
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer("Windows Photos"),
+                    ])
+                {
+                    FormatContract = CompleteHdr10Contract,
+                },
+            ]) with
+        {
+            TargetAppVersions = [],
+        };
+        var contract = OutputProfileContract.Hdr10Pq with
+        {
+            IsExecutable = true,
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+        };
+
+        var updated = artifact.ApplyTo(contract);
+
+        Assert.False(updated.HasCompleteFormatContract);
+        var viewer = Assert.Single(updated.ViewerEvidence, evidence => evidence.Name == "Windows Photos");
+        Assert.Equal(OutputCompatibilityEvidenceStatus.Limited, viewer.ArtifactHandlingStatus);
+        Assert.Contains("target app version for Windows Photos", viewer.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void ApplyTo_AllowsCompleteManualSessionToSatisfyEvidenceGate()
     {
         var artifact = CreateArtifact(

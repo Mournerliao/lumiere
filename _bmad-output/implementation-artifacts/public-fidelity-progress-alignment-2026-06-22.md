@@ -93,6 +93,7 @@ Evidence:
 - The same gate now also respects record-level target coverage when a mixed session validates different target semantics for different profiles, reducing ambiguity before real Windows manual artifacts are recorded.
 - Selected-profile projections now also respect the active output target. Folder-side HDR10 evidence can still advance `Folder` and `Both` sessions, but it no longer causes `Clipboard` sessions to present `Build` / `Validate` / `Ready` as though the clipboard path itself had become HDR-preserved.
 - HDR10 JXR runtime gating now also checks whether the loaded manual evidence aligns to the current build token before treating that evidence as executable release support. Stale evidence can remain reviewable, but it no longer unlocks `Ready`.
+- HDR10 JXR runtime gating now also requires recorded target-app versions for the named viewers under test. Viewer-status rows without matching app-version evidence no longer count as complete manual release proof.
 
 Remaining blockers:
 
@@ -109,6 +110,7 @@ Evidence:
 - The local validation workspace can now generate a prefilled draft artifact from the current session, reducing setup friction before real Windows manual evidence is recorded.
 - When the app informational version exposes a comparable build commit token, that same draft now pre-fills the current build commit instead of leaving the build field fully manual.
 - Output validation artifacts, templates, and generated drafts can now also carry target-app version records, and the in-app loaded-evidence summary can surface them directly.
+- Missing target-app versions now also downgrade the artifact to incomplete manual evidence, so the review summary warning and the runtime/manual-evidence semantics stay aligned.
 - Settings validation now also surfaces a compact loaded-evidence summary so testers can review the latest loaded artifact, current coverage, known limitations, follow-up stories, and ignored-file warnings without leaving the app.
 - That same surface now also links directly to the latest loaded evidence file, reducing the gap between in-app review and the durable JSON artifact that release validation depends on.
 - The same validation surface now also calls out whether the latest loaded evidence matches the current build, is stale for the current build, or cannot yet be aligned to a comparable build token.

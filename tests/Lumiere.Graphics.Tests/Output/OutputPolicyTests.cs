@@ -411,7 +411,7 @@ public sealed class OutputPolicyTests
             DpiScales: ["150%"],
             EntryPointsTested: ["Main panel"],
             OutputTargetsTested: ["Folder"],
-            TargetAppsTested: ["Windows Photos"],
+            TargetAppsTested: ["Microsoft Paint", "Windows Photos", "Chromium browsers"],
             ChecklistIdsCovered: ["REL-OUT-04"],
             ResultSummary: "HDR10 output profile validation passed.",
             EvidencePaths: ["docs/validation/evidence/hdr10-output.md"],
@@ -431,6 +431,12 @@ public sealed class OutputPolicyTests
                 },
             ])
         {
+            TargetAppVersions =
+            [
+                new OutputValidationTargetAppVersionRecord("Microsoft Paint", "11.2504.451.0"),
+                new OutputValidationTargetAppVersionRecord("Windows Photos", "2026.11040.12001.0"),
+                new OutputValidationTargetAppVersionRecord("Chromium browsers", "138.0.7204.101"),
+            ],
             TargetHdrEvidence = CompleteTargetHdrEvidence,
         };
 
@@ -447,7 +453,7 @@ public sealed class OutputPolicyTests
             DpiScales: ["150%"],
             EntryPointsTested: ["Main panel"],
             OutputTargetsTested: ["Folder"],
-            TargetAppsTested: ["Windows Photos"],
+            TargetAppsTested: ["Microsoft Paint", "Windows Photos", "Chromium browsers"],
             ChecklistIdsCovered: ["REL-OUT-04"],
             ResultSummary: "HDR10 output profile validation is incomplete.",
             EvidencePaths: ["docs/validation/evidence/hdr10-output-incomplete.md"],
@@ -470,6 +476,12 @@ public sealed class OutputPolicyTests
                 },
             ])
         {
+            TargetAppVersions =
+            [
+                new OutputValidationTargetAppVersionRecord("Microsoft Paint", "11.2504.451.0"),
+                new OutputValidationTargetAppVersionRecord("Windows Photos", "2026.11040.12001.0"),
+                new OutputValidationTargetAppVersionRecord("Chromium browsers", "138.0.7204.101"),
+            ],
             TargetHdrEvidence = CompleteTargetHdrEvidence,
         };
 

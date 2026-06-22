@@ -74,6 +74,9 @@ public sealed record OutputValidationSessionArtifact(
             .Aggregate(contract, (current, record) => current.ApplyValidationRecord(record));
     }
 
+    public IReadOnlyList<string> GetMissingTargetAppVersions() =>
+        GetMissingTargetAppVersionNames(TargetAppsTested, TargetAppVersions);
+
     public static OutputProfileContract ApplyAllTo(
         OutputProfileContract contract,
         IEnumerable<OutputValidationSessionArtifact> artifacts)
@@ -219,6 +222,14 @@ public sealed record OutputValidationSessionArtifact(
             yield return "target apps tested";
         }
 
+        var missingTargetAppVersions = GetMissingTargetAppVersions();
+        if (missingTargetAppVersions.Count > 0)
+        {
+            yield return missingTargetAppVersions.Count == 1
+                ? $"target app version for {missingTargetAppVersions[0]}"
+                : $"target app versions for {string.Join(", ", missingTargetAppVersions)}";
+        }
+
         if (IsMissing(ChecklistIdsCovered))
         {
             yield return "checklist IDs covered";
@@ -249,6 +260,35 @@ public sealed record OutputValidationSessionArtifact(
 
     private static bool IsMissing(IEnumerable<string> values) =>
         !values.Any(value => !OutputValidationManualEvidenceFields.IsMissing(value));
+
+    public static IReadOnlyList<string> GetMissingTargetAppVersionNames(
+        IEnumerable<string> targetApps,
+        IEnumerable<OutputValidationTargetAppVersionRecord> targetAppVersions)
+    {
+        ArgumentNullException.ThrowIfNull(targetApps);
+        ArgumentNullException.ThrowIfNull(targetAppVersions);
+
+        var requiredNames = targetApps
+            .Where(value => !OutputValidationManualEvidenceFields.IsMissing(value))
+            .Select(NormalizeTargetAppName)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (requiredNames.Length == 0)
+        {
+            return [];
+        }
+
+        var recordedNames = targetAppVersions
+            .Where(record =>
+                !OutputValidationManualEvidenceFields.IsMissing(record.Name)
+                && !OutputValidationManualEvidenceFields.IsMissing(record.Version))
+            .Select(record => NormalizeTargetAppName(record.Name))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return requiredNames
+            .Where(name => !recordedNames.Contains(name))
+            .ToArray();
+    }
 
     private bool RecordCoversOutputTarget(OutputProfileValidationRecord record, OutputTarget target)
     {
@@ -296,6 +336,8 @@ public sealed record OutputValidationSessionArtifact(
         target = default;
         return false;
     }
+
+    private static string NormalizeTargetAppName(string value) => value.Trim();
 }
 
 public sealed record OutputValidationTargetAppVersionRecord(

@@ -14,6 +14,7 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
         Assert.False(evidence.HasArtifacts);
         Assert.True(evidence.HasCurrentBuildAlignment);
         Assert.False(evidence.HasCompleteTargetAwareHdrEvidence);
+        Assert.False(evidence.HasCompleteTargetAppVersionEvidence);
         Assert.False(evidence.HasCompleteFormatContract);
         Assert.False(evidence.HasViewerRecognizedHdr10StaticMetadata);
         Assert.False(evidence.HasWindowsManualViewerValidation);
@@ -33,6 +34,7 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
 
         Assert.False(evidence.IsComplete);
         Assert.True(evidence.HasCompleteTargetAwareHdrEvidence);
+        Assert.True(evidence.HasCompleteTargetAppVersionEvidence);
         Assert.True(evidence.HasCompleteFormatContract);
         Assert.False(evidence.HasViewerRecognizedHdr10StaticMetadata);
         Assert.False(evidence.HasWindowsManualViewerValidation);
@@ -56,6 +58,7 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
         var evidence = Hdr10JxrViewerValidationEvidence.FromArtifacts(artifacts);
 
         Assert.False(evidence.IsComplete);
+        Assert.True(evidence.HasCompleteTargetAppVersionEvidence);
         Assert.False(evidence.HasCompleteFormatContract);
         Assert.False(evidence.HasViewerRecognizedHdr10StaticMetadata);
         Assert.False(evidence.HasWindowsManualViewerValidation);
@@ -78,6 +81,7 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
         Assert.True(evidence.IsComplete);
         Assert.True(evidence.HasArtifacts);
         Assert.True(evidence.HasCompleteTargetAwareHdrEvidence);
+        Assert.True(evidence.HasCompleteTargetAppVersionEvidence);
         Assert.True(evidence.HasCompleteFormatContract);
         Assert.True(evidence.HasViewerRecognizedHdr10StaticMetadata);
         Assert.True(evidence.HasWindowsManualViewerValidation);
@@ -137,6 +141,27 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
     }
 
     [Fact]
+    public void FromArtifacts_BlocksWhenTargetAppVersionsAreMissingForNamedViewers()
+    {
+        var artifacts = RequiredHdrViewers
+            .Select((viewer, index) => Hdr10Artifact(
+                viewer,
+                metadataStatus: OutputCompatibilityEvidenceStatus.Pass,
+                includeFormatContract: index == 0,
+                includeTargetAppVersion: viewer == "Windows Photos"))
+            .ToArray();
+
+        var evidence = Hdr10JxrViewerValidationEvidence.FromArtifacts(artifacts);
+
+        Assert.False(evidence.IsComplete);
+        Assert.False(evidence.HasCompleteTargetAppVersionEvidence);
+        Assert.Contains(evidence.Blockers, blocker =>
+            blocker.Contains("Target app version evidence", StringComparison.OrdinalIgnoreCase)
+            && blocker.Contains("Microsoft Paint", StringComparison.OrdinalIgnoreCase)
+            && blocker.Contains("Chromium browsers", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void FromArtifacts_UsesRecordLevelOutputTargetsWhenArtifactSessionCoversBoth()
     {
         var artifacts = RequiredHdrViewers
@@ -164,7 +189,8 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
         bool includeFormatContract,
         OutputValidationEvidenceSource evidenceSource = OutputValidationEvidenceSource.WindowsManual,
         string outputTarget = "Folder",
-        IReadOnlyList<string>? recordOutputTargetsCovered = null) =>
+        IReadOnlyList<string>? recordOutputTargetsCovered = null,
+        bool includeTargetAppVersion = true) =>
         new(
             Date: "2026-06-22",
             Tester: "QA",
@@ -205,6 +231,14 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
                 },
             ])
         {
+            TargetAppVersions = includeTargetAppVersion
+                ?
+                [
+                    new OutputValidationTargetAppVersionRecord(
+                        viewerName,
+                        $"{viewerName} 1.0"),
+                ]
+                : [],
             TargetHdrEvidence = CompleteTargetHdrEvidence,
         };
 

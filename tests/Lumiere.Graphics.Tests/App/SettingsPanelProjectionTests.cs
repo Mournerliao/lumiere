@@ -981,6 +981,12 @@ public sealed class SettingsPanelProjectionTests
                     ]),
             ])
         {
+            TargetAppVersions =
+            [
+                new OutputValidationTargetAppVersionRecord(
+                    viewerName,
+                    $"{viewerName} 1.0"),
+            ],
             TargetHdrEvidence = CompleteTargetHdrEvidence,
         };
 
@@ -1015,6 +1021,12 @@ public sealed class SettingsPanelProjectionTests
                 },
             ])
         {
+            TargetAppVersions =
+            [
+                new OutputValidationTargetAppVersionRecord(
+                    viewerName,
+                    $"{viewerName} 1.0"),
+            ],
             TargetHdrEvidence = CompleteTargetHdrEvidence,
         };
 
@@ -1052,6 +1064,12 @@ public sealed class SettingsPanelProjectionTests
                 },
             ])
         {
+            TargetAppVersions =
+            [
+                new OutputValidationTargetAppVersionRecord(
+                    viewerName,
+                    $"{viewerName} 1.0"),
+            ],
             TargetHdrEvidence = CompleteTargetHdrEvidence,
         };
 
@@ -1088,6 +1106,12 @@ public sealed class SettingsPanelProjectionTests
                     ]),
             ])
         {
+            TargetAppVersions =
+            [
+                new OutputValidationTargetAppVersionRecord(
+                    viewerName,
+                    $"{viewerName} 1.0"),
+            ],
             TargetHdrEvidence = CompleteTargetHdrEvidence,
         };
 
