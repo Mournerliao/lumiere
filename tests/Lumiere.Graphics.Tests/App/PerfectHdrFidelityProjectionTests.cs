@@ -745,6 +745,80 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Null(record.ValidationTemplatePath);
     }
 
+    [Fact]
+    public void ProjectValidationEvidenceSummary_WithArtifactsSurfacesLatestCoverageAndFollowUp()
+    {
+        var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(
+            [
+                ArtifactFor("Microsoft Paint") with
+                {
+                    Date = "2026-06-21",
+                    ResultSummary = "Paint validation passed.",
+                },
+                ArtifactFor("Windows Photos") with
+                {
+                    Date = "2026-06-22",
+                    OutputTargetsTested = ["Folder", "Both"],
+                    TargetAppsTested = ["Windows Photos", "Chromium browsers"],
+                    ChecklistIdsCovered = ["REL-OUT-01", "REL-HDR-04"],
+                    KnownLimitations = ["Chromium metadata recognition is still pending."],
+                    FollowUpIssuesOrStories = ["11-3", "12-1"],
+                    ResultSummary = "Windows Photos validation passed with pending Chromium follow-up.",
+                },
+            ]);
+
+        Assert.Equal(ValidationEvidenceStatus.Limited, summary.Status);
+        Assert.Contains("2 artifact", summary.Summary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("2026-06-22", summary.Summary, StringComparison.Ordinal);
+        Assert.Contains("Windows Photos validation passed", summary.Summary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("targets Folder, Both", summary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Windows Photos", summary.CoverageDetail, StringComparison.Ordinal);
+        Assert.Contains("REL-HDR-04", summary.CoverageDetail, StringComparison.Ordinal);
+        Assert.Contains("Known limitations", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Chromium metadata recognition", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Follow-up: 11-3, 12-1", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectValidationEvidenceSummary_WithSnapshotIssuesCallsOutIgnoredFiles()
+    {
+        var snapshot = new OutputValidationArtifactSnapshot(
+            [ArtifactFor("Windows Photos")],
+            [new("C:\\Validation\\bad.json", "JsonException: invalid JSON")]);
+
+        var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(snapshot);
+
+        Assert.Equal(ValidationEvidenceStatus.Limited, summary.Status);
+        Assert.Contains("1 file", summary.Summary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("bad.json", summary.Summary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Ignored files must be fixed", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectValidationEvidenceSummary_WithWorkspaceFailureKeepsCoverageEmpty()
+    {
+        var snapshot = new OutputValidationArtifactSnapshot([], [])
+        {
+            Workspace = new OutputValidationWorkspaceState(
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\evidence",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\README.txt",
+                null,
+                [new OutputValidationWorkspaceIssue(
+                    "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\output-validation-session.schema-v4.sample.json",
+                    "Validation sample template source could not be loaded from the current build.")]),
+        };
+
+        var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(snapshot);
+
+        Assert.Equal(ValidationEvidenceStatus.NotRun, summary.Status);
+        Assert.Contains("workspace is not ready", summary.Summary, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Coverage: none yet.", summary.CoverageDetail);
+        Assert.Contains("fix the local validation workspace", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("sample template source", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static OutputViewerCompatibilityEvidence PassingHdrViewer(string name) =>
         new(
             name,

@@ -81,6 +81,16 @@ The settings validation record now reports that workspace path and the seeded sa
 
 The settings validation section also exposes native `Create draft`, `Open workspace`, `Open template`, and `Reload evidence` actions so a Windows validator can jump directly into the local evidence flow, generate a session-local draft, edit local evidence, and refresh the current session without restarting Lumiere.
 
+The same settings surface now also summarizes the currently loaded evidence for the active session instead of forcing the tester to infer everything from the lower gate rows alone. The loaded-evidence summary is intentionally compact and evidence-first:
+
+- latest loaded artifact date, tester, build, and recorded result summary
+- current coverage across output targets, named viewers, and checklist IDs
+- known limitations and follow-up stories/issues carried by the loaded artifacts
+- ignored-file warnings when invalid JSON or schema problems were skipped during load
+- workspace-readiness guidance when the local validation folder exists but is not yet usable
+
+This summary is not a release pass/fail dashboard. It is a review surface that helps a Windows validator answer "what evidence is actually loaded right now?" before interpreting `Build`, `Validate`, `Ready`, or lower validation rows.
+
 `Create draft` is intentionally a workflow accelerator, not a release-evidence shortcut. Lumiere pre-fills only context it already knows for the current session, such as:
 
 - current app version

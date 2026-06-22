@@ -1,4 +1,5 @@
 using Lumiere.Capture;
+using Lumiere.Graphics.Hdr;
 using Lumiere.Graphics.Output;
 using Lumiere.Settings;
 
@@ -48,7 +49,15 @@ public sealed record SettingsPanelProjection(
             validationArtifacts,
             aboutInfoProvider,
             executionCapabilities,
-            validationRecordFactory: PerfectHdrFidelityProjection.ProjectValidationRecord);
+            validationRecordFactory: PerfectHdrFidelityProjection.ProjectValidationRecord,
+            validationProjectionFactory: (selectedProfileContract, artifacts, capabilities, record, readiness, outputTarget) =>
+                PerfectHdrFidelityProjection.ProjectValidation(
+                    selectedProfileContract,
+                    artifacts,
+                    capabilities,
+                    record,
+                    readiness,
+                    outputTarget));
     }
 
     public static SettingsPanelProjection Project(
@@ -65,7 +74,19 @@ public sealed record SettingsPanelProjection(
             validationSnapshot.Artifacts,
             aboutInfoProvider,
             executionCapabilities,
-            buildVersion => PerfectHdrFidelityProjection.ProjectValidationRecord(buildVersion, validationSnapshot));
+            buildVersion => PerfectHdrFidelityProjection.ProjectValidationRecord(buildVersion, validationSnapshot),
+            (selectedProfileContract, artifacts, capabilities, record, readiness, outputTarget) =>
+                PerfectHdrFidelityProjection.ProjectValidation(
+                    selectedProfileContract,
+                    artifacts,
+                    capabilities,
+                    record,
+                    readiness,
+                    outputTarget)
+                with
+                {
+                    EvidenceSummary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(validationSnapshot),
+                });
     }
 
     private static SettingsPanelProjection ProjectCore(
@@ -74,18 +95,21 @@ public sealed record SettingsPanelProjection(
         IEnumerable<OutputValidationSessionArtifact> validationArtifacts,
         IAboutInfoProvider? aboutInfoProvider,
         OutputProfileExecutionCapabilities? executionCapabilities,
-        Func<string?, ValidationRecordProjection> validationRecordFactory)
+        Func<string?, ValidationRecordProjection> validationRecordFactory,
+        Func<OutputProfileContract, IReadOnlyList<OutputValidationSessionArtifact>, OutputProfileExecutionCapabilities, ValidationRecordProjection, PreviewReadinessStatus?, OutputTarget, ValidationPanelProjection> validationProjectionFactory)
     {
         ArgumentNullException.ThrowIfNull(settingsProvider);
         ArgumentNullException.ThrowIfNull(sessionState);
         ArgumentNullException.ThrowIfNull(validationArtifacts);
         ArgumentNullException.ThrowIfNull(validationRecordFactory);
+        ArgumentNullException.ThrowIfNull(validationProjectionFactory);
         aboutInfoProvider ??= AssemblyAboutInfoProvider.CreateFallback();
         var capabilities = executionCapabilities ?? OutputProfileExecutionCapabilities.CompatibilityOnly;
         var hotkeyPlan = GlobalHotkeyRegistrationPlan.Project(settingsProvider);
         var about = AboutInfoProjection.FromProvider(aboutInfoProvider);
         var artifacts = validationArtifacts.ToArray();
         var selectedProfileContract = OutputProfileContract.FromSettingsValue(settingsProvider.ExportColorFormat);
+        var validationRecord = validationRecordFactory(about.Version);
 
         return new SettingsPanelProjection(
             ShortcutSettingProjection.FromHotkeyBinding(
@@ -107,13 +131,13 @@ public sealed record SettingsPanelProjection(
                 settingsProvider.ExportColorFormat,
                 artifacts,
                 capabilities),
-            PerfectHdrFidelityProjection.ProjectValidation(
+            validationProjectionFactory(
                 selectedProfileContract,
                 artifacts,
                 capabilities,
-                validationRecordFactory(about.Version),
-                readiness: sessionState.Readiness,
-                outputTarget: settingsProvider.OutputTarget),
+                validationRecord,
+                sessionState.Readiness,
+                settingsProvider.OutputTarget),
             about,
             settingsProvider.TimestampNaming,
             settingsProvider.CopyAsImage,

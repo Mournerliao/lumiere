@@ -1137,6 +1137,55 @@
                     Background="{StaticResource BorderBrush}" />
 
                 <StackPanel Spacing="6">
+                  <Grid
+                      MinHeight="34"
+                      ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="1">
+                      <TextBlock
+                          x:Name="ValidationEvidenceSummaryHeadingText"
+                          FontSize="10"
+                          FontWeight="SemiBold"
+                          Foreground="{StaticResource TextBrush}"
+                          Text="Loaded evidence" />
+                      <TextBlock
+                          x:Name="ValidationEvidenceSummaryText"
+                          FontSize="9"
+                          Foreground="{StaticResource MutedTextBrush}"
+                          Text="No output validation artifact is loaded for this session."
+                          TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+                    <TextBlock
+                        x:Name="ValidationEvidenceSummaryStatus"
+                        Grid.Column="1"
+                        VerticalAlignment="Top"
+                        FontSize="9"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource MutedTextBrush}"
+                        Text="NOT RUN" />
+                  </Grid>
+                  <TextBlock
+                      x:Name="ValidationEvidenceCoverageText"
+                      FontSize="9"
+                      Foreground="{StaticResource MutedTextBrush}"
+                      Text="Coverage: none yet."
+                      TextWrapping="WrapWholeWords" />
+                  <TextBlock
+                      x:Name="ValidationEvidenceGapText"
+                      FontSize="9"
+                      Foreground="{StaticResource MutedTextBrush}"
+                      Text="Next step: create or copy a validation artifact, replace placeholders with real Windows observations, then reload evidence."
+                      TextWrapping="WrapWholeWords" />
+                </StackPanel>
+
+                <Border
+                    Height="1"
+                    Background="{StaticResource BorderBrush}" />
+
+                <StackPanel Spacing="6">
                   <TextBlock
                       x:Name="ValidationRecordBuildText"
                       FontSize="10"

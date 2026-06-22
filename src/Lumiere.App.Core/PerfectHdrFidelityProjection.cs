@@ -257,6 +257,7 @@ public static class PerfectHdrFidelityProjection
             ProjectOutputProfile(outputProfile, readiness),
             readiness,
             targetHdrEvidence: null,
+            evidenceSummary: ValidationEvidenceSummaryProjection.Empty,
             record);
     }
 
@@ -275,6 +276,7 @@ public static class PerfectHdrFidelityProjection
             outputProfileProjection,
             readiness,
             targetHdrEvidence: null,
+            evidenceSummary: ValidationEvidenceSummaryProjection.Empty,
             record);
     }
 
@@ -292,6 +294,7 @@ public static class PerfectHdrFidelityProjection
             projectedProfile,
             readiness,
             SelectCompleteTargetHdrEvidence([artifact]),
+            ProjectValidationEvidenceSummary([artifact]),
             record);
     }
 
@@ -313,6 +316,7 @@ public static class PerfectHdrFidelityProjection
             projectedProfile,
             readiness,
             SelectCompleteTargetHdrEvidence([artifact]),
+            ProjectValidationEvidenceSummary([artifact]),
             record);
     }
 
@@ -331,6 +335,7 @@ public static class PerfectHdrFidelityProjection
             projectedProfile,
             readiness,
             SelectCompleteTargetHdrEvidence(artifactArray),
+            ProjectValidationEvidenceSummary(artifactArray),
             record);
     }
 
@@ -373,6 +378,7 @@ public static class PerfectHdrFidelityProjection
             projectedProfile,
             readiness,
             SelectCompleteTargetHdrEvidence(artifactArray),
+            ProjectValidationEvidenceSummary(artifactArray),
             record);
     }
 
@@ -401,6 +407,7 @@ public static class PerfectHdrFidelityProjection
         OutputProfileProjection outputProfileProjection,
         PreviewReadinessStatus? readiness,
         TargetAwareHdrValidationEvidence? targetHdrEvidence,
+        ValidationEvidenceSummaryProjection evidenceSummary,
         ValidationRecordProjection? record)
     {
         var viewerMatrix = outputProfile.ViewerEvidence.Select(ProjectViewerEvidence).ToArray();
@@ -416,7 +423,10 @@ public static class PerfectHdrFidelityProjection
             ],
             "Named viewers must prove artifact handling, visual match, and fidelity separately.",
             viewerMatrix,
-            record ?? ProjectValidationRecord(null));
+            record ?? ProjectValidationRecord(null))
+        {
+            EvidenceSummary = evidenceSummary,
+        };
     }
 
     private static ValidationGateProjection ProjectValidationGate(OutputProfileProjection outputProfileProjection) =>
@@ -643,6 +653,47 @@ public static class PerfectHdrFidelityProjection
             "harness/validation/release-validation-checklist.md");
     }
 
+    public static ValidationEvidenceSummaryProjection ProjectValidationEvidenceSummary(
+        IEnumerable<OutputValidationSessionArtifact> artifacts)
+    {
+        ArgumentNullException.ThrowIfNull(artifacts);
+
+        var artifactArray = artifacts.ToArray();
+        return artifactArray.Length == 0
+            ? ValidationEvidenceSummaryProjection.Empty
+            : CreateLoadedEvidenceSummary(artifactArray, loadIssues: []);
+    }
+
+    public static ValidationEvidenceSummaryProjection ProjectValidationEvidenceSummary(
+        OutputValidationArtifactSnapshot validationSnapshot)
+    {
+        ArgumentNullException.ThrowIfNull(validationSnapshot);
+
+        var artifactArray = validationSnapshot.Artifacts.ToArray();
+        if (artifactArray.Length > 0 || validationSnapshot.HasLoadIssues)
+        {
+            return CreateLoadedEvidenceSummary(artifactArray, validationSnapshot.LoadIssues);
+        }
+
+        var workspace = validationSnapshot.Workspace;
+        if (!workspace.IsReady && workspace.IsConfigured)
+        {
+            var issueSummary = workspace.Issues.Count == 0
+                ? "Validation workspace setup is still incomplete."
+                : string.Join(
+                    " ",
+                    workspace.Issues.Select(issue => $"{Path.GetFileName(issue.Path)}: {issue.Detail}"));
+            return new ValidationEvidenceSummaryProjection(
+                "Loaded evidence",
+                ValidationEvidenceStatus.NotRun,
+                "Validation workspace is not ready, so no output validation artifact is loaded for this session.",
+                "Coverage: none yet.",
+                $"Next step: fix the local validation workspace, then record a real Windows session and reload evidence. {issueSummary}");
+        }
+
+        return ValidationEvidenceSummaryProjection.Empty;
+    }
+
     public static ValidationRecordProjection ProjectValidationRecord(
         string? buildVersion,
         OutputValidationArtifactSnapshot validationSnapshot)
@@ -726,6 +777,156 @@ public static class PerfectHdrFidelityProjection
         return workspace.HasSampleTemplate
             ? $"Validation workspace: {workspace.DirectoryPath}. Seeded sample: {workspace.SampleTemplatePath}."
             : $"Validation workspace: {workspace.DirectoryPath}.";
+    }
+
+    private static ValidationEvidenceSummaryProjection CreateLoadedEvidenceSummary(
+        IReadOnlyList<OutputValidationSessionArtifact> artifacts,
+        IReadOnlyList<OutputValidationArtifactLoadIssue> loadIssues)
+    {
+        var latestArtifact = SelectLatestArtifact(artifacts);
+        var latestSummary = latestArtifact is null
+            ? "No valid output validation artifact is loaded for this session."
+            : $"Latest artifact: {FormatArtifactHeader(latestArtifact)}. {NormalizeSentence(latestArtifact.ResultSummary)}";
+        var loadIssueSummary = loadIssues.Count == 0
+            ? string.Empty
+            : $" {loadIssues.Count} file(s) were ignored during load. First issue: {Path.GetFileName(loadIssues[0].Path)}: {loadIssues[0].Detail}";
+
+        return new ValidationEvidenceSummaryProjection(
+            "Loaded evidence",
+            artifacts.Count == 0 ? ValidationEvidenceStatus.NotRun : ValidationEvidenceStatus.Limited,
+            artifacts.Count == 0
+                ? $"No valid output validation artifact is loaded for this session.{loadIssueSummary}"
+                : $"{artifacts.Count} artifact(s) loaded for this session. {latestSummary}{loadIssueSummary}",
+            CreateCoverageDetail(artifacts),
+            CreateGapDetail(artifacts, loadIssues));
+    }
+
+    private static OutputValidationSessionArtifact? SelectLatestArtifact(
+        IEnumerable<OutputValidationSessionArtifact> artifacts) =>
+        artifacts
+            .OrderByDescending(artifact => ParseArtifactDate(artifact.Date))
+            .ThenByDescending(artifact => NormalizeEvidenceField(artifact.BuildCommit, "unknown build"))
+            .FirstOrDefault();
+
+    private static DateOnly ParseArtifactDate(string? value) =>
+        DateOnly.TryParse(value, out var parsed)
+            ? parsed
+            : DateOnly.MinValue;
+
+    private static string CreateCoverageDetail(IReadOnlyList<OutputValidationSessionArtifact> artifacts)
+    {
+        if (artifacts.Count == 0)
+        {
+            return "Coverage: none yet.";
+        }
+
+        return
+            $"Coverage: targets {FormatEvidenceList(artifacts.SelectMany(artifact => artifact.OutputTargetsTested), fallback: "none yet")}; "
+            + $"viewers {FormatEvidenceList(artifacts.SelectMany(artifact => artifact.TargetAppsTested), fallback: "none yet")}; "
+            + $"checklist {FormatEvidenceList(artifacts.SelectMany(artifact => artifact.ChecklistIdsCovered), fallback: "none yet")}.";
+    }
+
+    private static string CreateGapDetail(
+        IReadOnlyList<OutputValidationSessionArtifact> artifacts,
+        IReadOnlyList<OutputValidationArtifactLoadIssue> loadIssues)
+    {
+        var limitations = CollectDistinctEvidenceValues(artifacts.SelectMany(artifact => artifact.KnownLimitations));
+        var followUps = CollectDistinctEvidenceValues(artifacts.SelectMany(artifact => artifact.FollowUpIssuesOrStories));
+        var detailParts = new List<string>();
+
+        if (limitations.Count > 0)
+        {
+            detailParts.Add($"Known limitations: {FormatEvidenceList(limitations, fallback: "none recorded") }.");
+        }
+
+        if (followUps.Count > 0)
+        {
+            detailParts.Add($"Follow-up: {FormatEvidenceList(followUps, fallback: "none recorded") }.");
+        }
+
+        if (loadIssues.Count > 0)
+        {
+            detailParts.Add("Ignored files must be fixed before counting this session as release evidence.");
+        }
+
+        if (detailParts.Count == 0)
+        {
+            return artifacts.Count == 0
+                ? "Next step: create or copy a validation artifact, replace placeholders with real Windows observations, then reload evidence."
+                : "Known limitations: none recorded. Follow-up: none recorded yet.";
+        }
+
+        return string.Join(" ", detailParts);
+    }
+
+    private static string FormatArtifactHeader(OutputValidationSessionArtifact artifact)
+    {
+        ArgumentNullException.ThrowIfNull(artifact);
+
+        var date = NormalizeEvidenceField(artifact.Date, "unknown date");
+        var tester = NormalizeEvidenceField(artifact.Tester, "unknown tester");
+        var build = NormalizeEvidenceField(artifact.BuildCommit, "unknown build");
+        return $"{date} by {tester} on build {build}";
+    }
+
+    private static string NormalizeEvidenceField(string? value, string fallback)
+    {
+        var trimmed = value?.Trim();
+        return string.IsNullOrWhiteSpace(trimmed)
+            || trimmed.Contains("REPLACE_WITH_", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("Template only", StringComparison.OrdinalIgnoreCase)
+                ? fallback
+                : trimmed;
+    }
+
+    private static IReadOnlyList<string> CollectDistinctEvidenceValues(IEnumerable<string> values)
+    {
+        var ordered = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var value in values)
+        {
+            var trimmed = value?.Trim();
+            if (string.IsNullOrWhiteSpace(trimmed))
+            {
+                continue;
+            }
+
+            if (seen.Add(trimmed))
+            {
+                ordered.Add(trimmed);
+            }
+        }
+
+        return ordered;
+    }
+
+    private static string FormatEvidenceList(IEnumerable<string> values, string fallback, int maxItems = 3)
+    {
+        var distinctValues = CollectDistinctEvidenceValues(values);
+        if (distinctValues.Count == 0)
+        {
+            return fallback;
+        }
+
+        if (distinctValues.Count <= maxItems)
+        {
+            return string.Join(", ", distinctValues);
+        }
+
+        return $"{string.Join(", ", distinctValues.Take(maxItems))}, +{distinctValues.Count - maxItems} more";
+    }
+
+    private static string NormalizeSentence(string? value)
+    {
+        var trimmed = value?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return "Result summary is not recorded yet.";
+        }
+
+        return trimmed.EndsWith('.')
+            ? trimmed
+            : $"{trimmed}.";
     }
 
     public static string NormalizeExportColorFormat(string? exportColorFormat)
@@ -1063,7 +1264,27 @@ public sealed record ValidationPanelProjection(
     IReadOnlyList<ValidationEvidenceRowProjection> Rows,
     string ViewerMatrixSummary,
     IReadOnlyList<ValidationViewerMatrixRowProjection> ViewerMatrix,
-    ValidationRecordProjection Record);
+    ValidationRecordProjection Record)
+{
+    public ValidationEvidenceSummaryProjection EvidenceSummary { get; init; } =
+        ValidationEvidenceSummaryProjection.Empty;
+}
+
+public sealed record ValidationEvidenceSummaryProjection(
+    string Heading,
+    ValidationEvidenceStatus Status,
+    string Summary,
+    string CoverageDetail,
+    string GapDetail)
+{
+    public static ValidationEvidenceSummaryProjection Empty { get; } =
+        new(
+            "Loaded evidence",
+            ValidationEvidenceStatus.NotRun,
+            "No output validation artifact is loaded for this session.",
+            "Coverage: none yet.",
+            "Next step: create or copy a validation artifact, replace placeholders with real Windows observations, then reload evidence.");
+}
 
 public sealed record ValidationGateProjection(
     string ProfileLabel,

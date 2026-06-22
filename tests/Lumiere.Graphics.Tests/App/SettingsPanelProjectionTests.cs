@@ -707,6 +707,42 @@ public sealed class SettingsPanelProjectionTests
     }
 
     [Fact]
+    public void Project_SnapshotValidationSurfacesLoadedEvidenceSummary()
+    {
+        var snapshot = new OutputValidationArtifactSnapshot(
+            [
+                ArtifactWithFormatContract("Windows Photos") with
+                {
+                    Date = "2026-06-22",
+                    OutputTargetsTested = ["Folder", "Both"],
+                    TargetAppsTested = ["Windows Photos", "Chromium browsers"],
+                    ChecklistIdsCovered = ["REL-OUT-01", "REL-HDR-04"],
+                    KnownLimitations = ["Chromium metadata recognition is still pending."],
+                    FollowUpIssuesOrStories = ["11-3"],
+                    ResultSummary = "Windows Photos validation passed with pending Chromium follow-up.",
+                },
+            ],
+            []);
+
+        var projection = SettingsPanelProjection.Project(
+            new TestSettingsProvider
+            {
+                ExportColorFormat = "HDR10",
+                OutputTarget = OutputTarget.Folder,
+            },
+            CreateState(),
+            snapshot,
+            executionCapabilities: OutputProfileExecutionCapabilities.CompatibilityOnly);
+
+        Assert.Equal("Loaded evidence", projection.Validation.EvidenceSummary.Heading);
+        Assert.Equal(ValidationEvidenceStatus.Limited, projection.Validation.EvidenceSummary.Status);
+        Assert.Contains("Windows Photos validation passed", projection.Validation.EvidenceSummary.Summary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("targets Folder, Both", projection.Validation.EvidenceSummary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Chromium metadata recognition", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Follow-up: 11-3", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Project_ReflectsAfterCaptureRevealForFolderArtifacts()
     {
         var settings = new TestSettingsProvider

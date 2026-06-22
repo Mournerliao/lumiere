@@ -106,6 +106,7 @@ Evidence:
 - Public release checklist defines the required HDR/SDR, mixed-display, target-app, DPI, and output evidence categories.
 - Output validation artifact schema/template defines required session evidence fields.
 - The local validation workspace can now generate a prefilled draft artifact from the current session, reducing setup friction before real Windows manual evidence is recorded.
+- Settings validation now also surfaces a compact loaded-evidence summary so testers can review the latest loaded artifact, current coverage, known limitations, follow-up stories, and ignored-file warnings without leaving the app.
 - `harness/validation/hdr-sdr-validation-scenarios.md` now defines the standard content families, topology matrix, and session execution flow.
 - `harness/validation/settings-accessibility-validation.md` now gives Story 13-2 a focused Windows validation workflow tied back to the release checklist.
 - `harness/validation/templates/hdr-sdr-validation-session-template.md` now gives future sessions a consistent metadata/result record shape.
@@ -162,6 +163,7 @@ Evidence:
 - A focused implementation record exists at `_bmad-output/implementation-artifacts/13-2-harden-native-settings-and-accessibility-semantics.md`.
 - Main-window shell sizing now uses a typed layout projection and reacts to alert visibility, reducing the risk that long HDR status text or `InfoBar` states squeeze compact utility content before manual DPI/text-scaling validation is run.
 - The compact main panel now uses a scroll boundary for its body content while keeping header, alert, and footer structure fixed, so layout pressure falls onto secondary summary content before primary capture actions become unreachable.
+- Settings > Validation now includes a compact evidence-summary block that stays native and reviewable while making the currently loaded validation scope legible to keyboard and screen-reader users.
 
 Remaining blockers:
 

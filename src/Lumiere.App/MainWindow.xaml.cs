@@ -1967,6 +1967,15 @@ public sealed partial class MainWindow : Window
             ValidationViewerRow3Label,
             ValidationViewerRow3Detail,
             ValidationViewerRow3Status);
+        ValidationEvidenceSummaryHeadingText.Text = validation.EvidenceSummary.Heading;
+        ValidationEvidenceSummaryText.Text = validation.EvidenceSummary.Summary;
+        ValidationEvidenceSummaryStatus.Text = FormatValidationStatus(validation.EvidenceSummary.Status);
+        ValidationEvidenceSummaryStatus.Foreground = GetValidationStatusBrush(validation.EvidenceSummary.Status);
+        ValidationEvidenceCoverageText.Text = validation.EvidenceSummary.CoverageDetail;
+        ValidationEvidenceGapText.Text = validation.EvidenceSummary.GapDetail;
+        AutomationProperties.SetHelpText(
+            ValidationEvidenceSummaryHeadingText,
+            $"{validation.EvidenceSummary.Summary} {validation.EvidenceSummary.CoverageDetail} {validation.EvidenceSummary.GapDetail}");
         ApplyValidationRecord(validation.Record);
     }
 
