@@ -57,7 +57,8 @@ public sealed record SettingsPanelProjection(
                     capabilities,
                     record,
                     readiness,
-                    outputTarget));
+                    outputTarget,
+                    sessionState.Target));
     }
 
     public static SettingsPanelProjection Project(
@@ -85,7 +86,8 @@ public sealed record SettingsPanelProjection(
                         capabilities,
                         record,
                         readiness,
-                        outputTarget),
+                        outputTarget,
+                        sessionState.Target),
                     PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(
                         validationSnapshot,
                         rawBuildVersion)));

@@ -1,6 +1,8 @@
 using Lumiere.App;
+using Lumiere.Capture;
 using Lumiere.Graphics.Hdr;
 using Lumiere.Graphics.Output;
+using Windows.Graphics;
 using Xunit;
 
 namespace Lumiere.Graphics.Tests.App;
@@ -174,6 +176,28 @@ public sealed class OutputResultProjectionTests
         Assert.Contains("Folder HDR10", projection.FidelityDetail, StringComparison.Ordinal);
         Assert.Contains("Per-target formats:", projection.FidelityDetail, StringComparison.Ordinal);
         Assert.Contains("Per-target viewer evidence:", projection.FidelityDetail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Project_FidelityDetailIncludesCapturedDisplayContextWhenProvided()
+    {
+        var output = OutputResult.ClipboardSuccess(1024)
+            .WithRequestedProfile(OutputProfileContract.FromSettingsValue("HDR10"));
+        var target = CaptureTarget.CreateForTest(
+            new SizeInt32
+            {
+                Width = 3840,
+                Height = 2160,
+            },
+            "HDR Display",
+            CaptureTargetKind.Display,
+            new DisplayOutputIdentity("\\\\.\\DISPLAY2", left: 3840, top: 0, width: 3840, height: 2160));
+
+        var projection = OutputResultProjection.Project(output, target);
+
+        Assert.Contains("Captured display: HDR Display", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("\\\\.\\DISPLAY2", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("desktop bounds 3840,0 3840x2160", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using Lumiere.Capture;
 using Lumiere.Graphics.Output;
 
 namespace Lumiere.App;
@@ -8,18 +9,24 @@ public sealed record OutputResultProjection(
     string FidelityDetail,
     OutputResultProjectionSeverity Severity)
 {
-    public static OutputResultProjection Project(OutputResult? outputResult, OutputProfileProjection profile)
+    public static OutputResultProjection Project(
+        OutputResult? outputResult,
+        OutputProfileProjection profile,
+        CaptureTarget? captureTarget = null)
     {
         ArgumentNullException.ThrowIfNull(profile);
 
         return new OutputResultProjection(
             ProjectTitle(outputResult),
             ProjectDetail(outputResult),
-            ProjectFidelityDetail(outputResult, profile.FidelityClaim, profile),
+            ProjectFidelityDetail(outputResult, profile.FidelityClaim, profile, captureTarget),
             ProjectSeverity(outputResult));
     }
 
-    public static OutputResultProjection Project(OutputResult? outputResult, FidelityClaimProjection fidelityClaim)
+    public static OutputResultProjection Project(
+        OutputResult? outputResult,
+        FidelityClaimProjection fidelityClaim,
+        CaptureTarget? captureTarget = null)
     {
         ArgumentNullException.ThrowIfNull(fidelityClaim);
 
@@ -29,15 +36,16 @@ public sealed record OutputResultProjection(
         return new OutputResultProjection(
             ProjectTitle(outputResult),
             ProjectDetail(outputResult),
-            ProjectFidelityDetail(outputResult, fidelityClaim, profile),
+            ProjectFidelityDetail(outputResult, fidelityClaim, profile, captureTarget),
             ProjectSeverity(outputResult));
     }
 
-    public static OutputResultProjection Project(OutputResult? outputResult) =>
+    public static OutputResultProjection Project(OutputResult? outputResult, CaptureTarget? captureTarget = null) =>
         Project(
             outputResult,
             PerfectHdrFidelityProjection.ProjectOutputProfile(outputResult?.EffectiveProfile
-                ?? OutputProfileContract.SrgbCompatibilityPng).FidelityClaim);
+                ?? OutputProfileContract.SrgbCompatibilityPng).FidelityClaim,
+            captureTarget);
 
     private static string ProjectTitle(OutputResult? outputResult)
     {
@@ -99,8 +107,10 @@ public sealed record OutputResultProjection(
     private static string ProjectFidelityDetail(
         OutputResult? outputResult,
         FidelityClaimProjection fidelityClaim,
-        OutputProfileProjection? profile)
+        OutputProfileProjection? profile,
+        CaptureTarget? captureTarget)
     {
+        var targetPrefix = CaptureTargetScopeProjection.PrefixOutputDetail(captureTarget, null);
         var gatePrefix = profile is null
             ? string.Empty
             : $"Selected profile gate: {profile.StatusLabel}. {profile.Detail} ";
@@ -122,7 +132,10 @@ public sealed record OutputResultProjection(
                 ? $" Per-target formats: {FormatPerTargetFormatContracts(outputResult!)}."
             : $" Effective format: {FormatFormatContract(profile.Contract)}.";
 
-        return $"{gatePrefix}{profilePrefix} Fidelity claim: {fidelityClaim.Label}. {fidelityClaim.Detail}{formatContract}{viewerEvidence}";
+        var detail = $"{gatePrefix}{profilePrefix} Fidelity claim: {fidelityClaim.Label}. {fidelityClaim.Detail}{formatContract}{viewerEvidence}";
+        return string.IsNullOrWhiteSpace(targetPrefix)
+            ? detail
+            : $"{targetPrefix} {detail}";
     }
 
     private static bool HasMixedTargetProfiles(OutputResult? outputResult) =>

@@ -60,6 +60,7 @@ public sealed partial class MainWindow : Window
     private PreviewFramePresenter? previewFramePresenter;
     private SwapChainResources? swapChainResources;
     private CaptureTarget? activeCaptureTarget;
+    private CaptureTarget? lastOutputTarget;
     private CaptureCommandMode? activeCaptureMode;
     private OverlayPreviewFreezeController? overlayPreviewFreezeController;
     private CapturedFrameTexture? latestOutputFrameSnapshot;
@@ -1038,6 +1039,7 @@ public sealed partial class MainWindow : Window
         }
 
         lastOutputResult = null;
+        lastOutputTarget = null;
         var requestedMode = activeCaptureMode;
         StopPreview(reportStopped: false);
         activeCaptureMode = requestedMode ?? CaptureCommandMode.Region;
@@ -1617,7 +1619,8 @@ public sealed partial class MainWindow : Window
             outputResult,
             settingsProvider.HdrAlertsEnabled,
             validation.Artifacts,
-            outputCapabilities);
+            outputCapabilities,
+            lastOutputTarget);
         return new TrayMenuSnapshot(
             projection.AppName,
             projection.HdrStatusLabel,
@@ -2220,7 +2223,8 @@ public sealed partial class MainWindow : Window
             settingsProvider.ExportColorFormat,
             validation.Artifacts,
             executionCapabilities: outputCapabilities,
-            outputTarget: settingsProvider.OutputTarget);
+            outputTarget: settingsProvider.OutputTarget,
+            outputContextTarget: lastOutputTarget);
         var isIdle = state.Status is CaptureSessionStatus.Idle;
         var statusBrush = GetTrustStatusBrush(projection.TrustSeverity);
         var fidelityBrush = GetTrustStatusBrush(projection.FidelityClaim.Severity);
@@ -2495,6 +2499,7 @@ public sealed partial class MainWindow : Window
         CropPixelRect? cropRegion,
         string sourceDescription)
     {
+        var outputTarget = activeCaptureTarget;
         using var outputFrame = CloneLatestOutputFrameSnapshot();
         if (outputFrame is null)
         {
@@ -2532,6 +2537,7 @@ public sealed partial class MainWindow : Window
 
             var result = await outputService.ExecuteOutputAsync(request);
             lastOutputResult = result;
+            lastOutputTarget = outputTarget;
 
             Logger.Log(
                 result.IsSuccess ? LogLevel.Information : LogLevel.Warning,

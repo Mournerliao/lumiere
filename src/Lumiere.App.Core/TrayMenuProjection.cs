@@ -1,8 +1,8 @@
-using Lumiere.Capture;
 using Lumiere.Graphics.Hdr;
 using Lumiere.Graphics.Output;
 using Lumiere.Infrastructure.Interop;
 using Lumiere.Settings;
+using Lumiere.Capture;
 
 namespace Lumiere.App;
 
@@ -33,7 +33,8 @@ public sealed record TrayMenuProjection(
         OutputResult? outputResult = null,
         bool hdrAlertsEnabled = false,
         IEnumerable<OutputValidationSessionArtifact>? validationArtifacts = null,
-        OutputProfileExecutionCapabilities? executionCapabilities = null)
+        OutputProfileExecutionCapabilities? executionCapabilities = null,
+        CaptureTarget? outputContextTarget = null)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(settingsProvider);
@@ -46,7 +47,8 @@ public sealed record TrayMenuProjection(
             settingsProvider.ExportColorFormat,
             validationArtifacts,
             executionCapabilities: executionCapabilities,
-            outputTarget: settingsProvider.OutputTarget);
+            outputTarget: settingsProvider.OutputTarget,
+            outputContextTarget: outputContextTarget);
         var appName = string.IsNullOrWhiteSpace(aboutInfoProvider.AppName)
             ? "Lumiere"
             : aboutInfoProvider.AppName;

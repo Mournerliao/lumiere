@@ -25,7 +25,8 @@ public sealed record MainPanelProjection(
         string? exportColorFormat = null,
         IEnumerable<OutputValidationSessionArtifact>? validationArtifacts = null,
         OutputProfileExecutionCapabilities? executionCapabilities = null,
-        OutputTarget outputTarget = OutputTarget.Folder)
+        OutputTarget outputTarget = OutputTarget.Folder,
+        CaptureTarget? outputContextTarget = null)
     {
         ArgumentNullException.ThrowIfNull(state);
 
@@ -51,9 +52,10 @@ public sealed record MainPanelProjection(
         var outputProfile = validationArtifacts is null
             ? PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, state.Readiness, capabilities, outputTarget)
             : PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, validationArtifacts, state.Readiness, capabilities, outputTarget);
+        var resolvedOutputContextTarget = outputContextTarget ?? state.Target;
         var outputResultProjection = outputResult is null
-            ? OutputResultProjection.Project(outputResult, outputProfile.FidelityClaim)
-            : OutputResultProjection.Project(outputResult, outputProfile);
+            ? OutputResultProjection.Project(outputResult, outputProfile.FidelityClaim, resolvedOutputContextTarget)
+            : OutputResultProjection.Project(outputResult, outputProfile, resolvedOutputContextTarget);
 
         return new MainPanelProjection(
             canStartCapture,

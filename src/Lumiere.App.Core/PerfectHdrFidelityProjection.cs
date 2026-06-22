@@ -1,3 +1,4 @@
+using Lumiere.Capture;
 using Lumiere.Graphics.Hdr;
 using Lumiere.Graphics.Output;
 
@@ -249,13 +250,15 @@ public static class PerfectHdrFidelityProjection
     public static ValidationPanelProjection ProjectValidation(
         OutputProfileContract outputProfile,
         ValidationRecordProjection? record = null,
-        PreviewReadinessStatus? readiness = null)
+        PreviewReadinessStatus? readiness = null,
+        CaptureTarget? captureTarget = null)
     {
         ArgumentNullException.ThrowIfNull(outputProfile);
         return ProjectValidationCore(
             outputProfile,
             ProjectOutputProfile(outputProfile, readiness),
             readiness,
+            captureTarget,
             targetHdrEvidence: null,
             evidenceSummary: ValidationEvidenceSummaryProjection.Empty,
             record);
@@ -265,7 +268,8 @@ public static class PerfectHdrFidelityProjection
         OutputProfileContract outputProfile,
         OutputProfileExecutionCapabilities executionCapabilities,
         ValidationRecordProjection? record = null,
-        PreviewReadinessStatus? readiness = null)
+        PreviewReadinessStatus? readiness = null,
+        CaptureTarget? captureTarget = null)
     {
         ArgumentNullException.ThrowIfNull(outputProfile);
         ArgumentNullException.ThrowIfNull(executionCapabilities);
@@ -275,6 +279,7 @@ public static class PerfectHdrFidelityProjection
             SelectRuntimeClaimContract(outputProfile, effectiveProfile),
             outputProfileProjection,
             readiness,
+            captureTarget,
             targetHdrEvidence: null,
             evidenceSummary: ValidationEvidenceSummaryProjection.Empty,
             record);
@@ -284,7 +289,8 @@ public static class PerfectHdrFidelityProjection
         OutputProfileContract outputProfile,
         OutputValidationSessionArtifact artifact,
         ValidationRecordProjection? record = null,
-        PreviewReadinessStatus? readiness = null)
+        PreviewReadinessStatus? readiness = null,
+        CaptureTarget? captureTarget = null)
     {
         ArgumentNullException.ThrowIfNull(outputProfile);
         ArgumentNullException.ThrowIfNull(artifact);
@@ -293,6 +299,7 @@ public static class PerfectHdrFidelityProjection
             artifact.ApplyTo(outputProfile),
             projectedProfile,
             readiness,
+            captureTarget,
             SelectCompleteTargetHdrEvidence([artifact]),
             ProjectValidationEvidenceSummary([artifact]),
             record);
@@ -303,7 +310,8 @@ public static class PerfectHdrFidelityProjection
         OutputValidationSessionArtifact artifact,
         OutputProfileExecutionCapabilities executionCapabilities,
         ValidationRecordProjection? record = null,
-        PreviewReadinessStatus? readiness = null)
+        PreviewReadinessStatus? readiness = null,
+        CaptureTarget? captureTarget = null)
     {
         ArgumentNullException.ThrowIfNull(outputProfile);
         ArgumentNullException.ThrowIfNull(artifact);
@@ -315,6 +323,7 @@ public static class PerfectHdrFidelityProjection
             SelectRuntimeClaimContract(requestedProfile, effectiveProfile),
             projectedProfile,
             readiness,
+            captureTarget,
             SelectCompleteTargetHdrEvidence([artifact]),
             ProjectValidationEvidenceSummary([artifact]),
             record);
@@ -324,7 +333,8 @@ public static class PerfectHdrFidelityProjection
         OutputProfileContract outputProfile,
         IEnumerable<OutputValidationSessionArtifact> artifacts,
         ValidationRecordProjection? record = null,
-        PreviewReadinessStatus? readiness = null)
+        PreviewReadinessStatus? readiness = null,
+        CaptureTarget? captureTarget = null)
     {
         ArgumentNullException.ThrowIfNull(outputProfile);
         ArgumentNullException.ThrowIfNull(artifacts);
@@ -334,6 +344,7 @@ public static class PerfectHdrFidelityProjection
             OutputValidationSessionArtifact.ApplyAllTo(outputProfile, artifactArray),
             projectedProfile,
             readiness,
+            captureTarget,
             SelectCompleteTargetHdrEvidence(artifactArray),
             ProjectValidationEvidenceSummary(artifactArray),
             record);
@@ -344,14 +355,16 @@ public static class PerfectHdrFidelityProjection
         IEnumerable<OutputValidationSessionArtifact> artifacts,
         OutputProfileExecutionCapabilities executionCapabilities,
         ValidationRecordProjection? record = null,
-        PreviewReadinessStatus? readiness = null)
+        PreviewReadinessStatus? readiness = null,
+        CaptureTarget? captureTarget = null)
         => ProjectValidation(
             outputProfile,
             artifacts,
             executionCapabilities,
             record,
             readiness,
-            OutputTarget.Folder);
+            OutputTarget.Folder,
+            captureTarget);
 
     public static ValidationPanelProjection ProjectValidation(
         OutputProfileContract outputProfile,
@@ -359,7 +372,8 @@ public static class PerfectHdrFidelityProjection
         OutputProfileExecutionCapabilities executionCapabilities,
         ValidationRecordProjection? record,
         PreviewReadinessStatus? readiness,
-        OutputTarget outputTarget)
+        OutputTarget outputTarget,
+        CaptureTarget? captureTarget = null)
     {
         ArgumentNullException.ThrowIfNull(outputProfile);
         ArgumentNullException.ThrowIfNull(artifacts);
@@ -377,6 +391,7 @@ public static class PerfectHdrFidelityProjection
             SelectRuntimeClaimContract(requestedProfile, effectiveProfile),
             projectedProfile,
             readiness,
+            captureTarget,
             SelectCompleteTargetHdrEvidence(artifactArray),
             ProjectValidationEvidenceSummary(artifactArray),
             record);
@@ -406,6 +421,7 @@ public static class PerfectHdrFidelityProjection
         OutputProfileContract outputProfile,
         OutputProfileProjection outputProfileProjection,
         PreviewReadinessStatus? readiness,
+        CaptureTarget? captureTarget,
         TargetAwareHdrValidationEvidence? targetHdrEvidence,
         ValidationEvidenceSummaryProjection evidenceSummary,
         ValidationRecordProjection? record)
@@ -416,7 +432,7 @@ public static class PerfectHdrFidelityProjection
             ReleaseTarget,
             "Public release waits for evidence; SDR compatibility remains fallback only.",
             ProjectValidationGate(outputProfileProjection),
-            CreateValidationRows(outputProfile, readiness, targetHdrEvidence, viewerMatrix, evidenceSummary),
+            CreateValidationRows(outputProfile, readiness, captureTarget, targetHdrEvidence, viewerMatrix, evidenceSummary),
             "Named viewers must prove artifact handling, visual match, and fidelity separately.",
             viewerMatrix,
             effectiveRecord)
@@ -567,22 +583,25 @@ public static class PerfectHdrFidelityProjection
 
     private static ValidationEvidenceRowProjection ProjectTargetAwareHdrRow(
         PreviewReadinessStatus? readiness,
+        CaptureTarget? captureTarget,
         TargetAwareHdrValidationEvidence? targetHdrEvidence)
     {
+        var runtimeContext = DescribeCaptureTargetContext(captureTarget);
+
         if (targetHdrEvidence is not null)
         {
             return new ValidationEvidenceRowProjection(
                 "Target-aware HDR",
                 ValidationEvidenceStatus.Limited,
-                $"Target-aware HDR artifact evidence is present (match={targetHdrEvidence.MatchKind}, state={targetHdrEvidence.HdrState}); Windows manual validation across mixed HDR/SDR monitor setups is still required.");
+                $"Target-aware HDR artifact evidence is present (match={targetHdrEvidence.MatchKind}, state={targetHdrEvidence.HdrState}). {runtimeContext} Windows manual validation across mixed HDR/SDR monitor setups is still required.");
         }
 
         if (readiness?.Reason is PreviewReadinessReason.TargetDisplayUnresolved)
         {
             var matchEvidence = ExtractDisplayMatchEvidence(readiness.TechnicalDetail);
             var detail = string.IsNullOrEmpty(matchEvidence)
-                ? "HDR readiness is unvalidated for the selected capture target because display capability could not be matched to a DXGI output; mixed HDR/SDR monitor evidence is still required."
-                : $"HDR readiness is unvalidated for the selected capture target because display capability could not be matched to a DXGI output ({matchEvidence}); mixed HDR/SDR monitor evidence is still required.";
+                ? $"HDR readiness is unvalidated for the selected capture target because display capability could not be matched to a DXGI output. {runtimeContext} Mixed HDR/SDR monitor evidence is still required."
+                : $"HDR readiness is unvalidated for the selected capture target because display capability could not be matched to a DXGI output ({matchEvidence}). {runtimeContext} Mixed HDR/SDR monitor evidence is still required.";
 
             return new ValidationEvidenceRowProjection(
                 "Target-aware HDR",
@@ -596,13 +615,50 @@ public static class PerfectHdrFidelityProjection
             return new ValidationEvidenceRowProjection(
                 "Target-aware HDR",
                 ValidationEvidenceStatus.Limited,
-                $"Target-aware display output evidence is present ({resolvedMatchEvidence}); Windows manual validation across mixed HDR/SDR monitor setups is still required.");
+                $"Target-aware display output evidence is present ({resolvedMatchEvidence}). {runtimeContext} Windows manual validation across mixed HDR/SDR monitor setups is still required.");
         }
 
         return new ValidationEvidenceRowProjection(
             "Target-aware HDR",
             ValidationEvidenceStatus.NotRun,
-            "Mixed HDR/SDR monitor evidence is required.");
+            $"{runtimeContext} Mixed HDR/SDR monitor evidence is required.");
+    }
+
+    private static string DescribeCaptureTargetContext(CaptureTarget? captureTarget)
+    {
+        if (captureTarget is null)
+        {
+            return "Current runtime target: unresolved.";
+        }
+
+        var targetLabel = string.IsNullOrWhiteSpace(captureTarget.DisplayName)
+            ? "Capture target"
+            : captureTarget.DisplayName.Trim();
+
+        return captureTarget.Kind switch
+        {
+            CaptureTargetKind.Display => DescribeDisplayTargetContext(targetLabel, captureTarget.DisplayIdentity, captureTarget.Size),
+            CaptureTargetKind.Window => $"Current runtime target: window \"{targetLabel}\" still depends on display mapping before it can count as target-aware HDR evidence.",
+            _ => $"Current runtime target: \"{targetLabel}\" has unresolved target kind, so target-aware HDR evidence still needs a concrete display mapping.",
+        };
+    }
+
+    private static string DescribeDisplayTargetContext(
+        string targetLabel,
+        DisplayOutputIdentity? displayIdentity,
+        Windows.Graphics.SizeInt32 targetSize)
+    {
+        if (displayIdentity is { Left: { } left, Top: { } top })
+        {
+            return $"Current runtime target: display \"{targetLabel}\" ({displayIdentity.DeviceName}) at desktop bounds {left},{top} {displayIdentity.Width}x{displayIdentity.Height}.";
+        }
+
+        if (displayIdentity is not null)
+        {
+            return $"Current runtime target: display \"{targetLabel}\" ({displayIdentity.DeviceName}) at {displayIdentity.Width}x{displayIdentity.Height}.";
+        }
+
+        return $"Current runtime target: display \"{targetLabel}\" at {targetSize.Width}x{targetSize.Height}, but display identity is not recorded yet.";
     }
 
     private static string ExtractDisplayMatchEvidence(string? technicalDetail)
@@ -850,11 +906,12 @@ public static class PerfectHdrFidelityProjection
     private static IReadOnlyList<ValidationEvidenceRowProjection> CreateValidationRows(
         OutputProfileContract outputProfile,
         PreviewReadinessStatus? readiness,
+        CaptureTarget? captureTarget,
         TargetAwareHdrValidationEvidence? targetHdrEvidence,
         IReadOnlyList<ValidationViewerMatrixRowProjection> viewerMatrix,
         ValidationEvidenceSummaryProjection evidenceSummary) =>
         [
-            ProjectTargetAwareHdrRow(readiness, targetHdrEvidence),
+            ProjectTargetAwareHdrRow(readiness, captureTarget, targetHdrEvidence),
             ProjectVisualMatchRow(outputProfile),
             ProjectHdrPreservedProfileRow(outputProfile),
             ProjectTargetAppMatrixRow(viewerMatrix),

@@ -39,6 +39,10 @@ Evidence:
 - Settings, main panel, tray, overlay, and validation projections expose target-aware evidence.
 - `harness/validation/target-aware-hdr-validation.md` now defines the focused Windows manual workflow for proving that trust state follows the active capture target across single-display and mixed-display topologies.
 - Main-panel, tray, and overlay trust detail now prefix the active capture target directly, so mixed-monitor validation is no longer forced to infer which display the current HDR state refers to.
+- Settings > Validation `Target-aware HDR` row now also names the current runtime target directly, including display identity / desktop bounds when available, so mixed-monitor review no longer depends on inferring which active display the validation row refers to.
+- A focused implementation record exists at `_bmad-output/implementation-artifacts/10-3-surface-active-target-context-in-validation-row.md`.
+- Output feedback now also preserves the captured target context after the live session returns to `Idle`, so post-capture fidelity/result review no longer drops target identity exactly when the artifact result is shown.
+- A focused implementation record exists at `_bmad-output/implementation-artifacts/10-3-carry-captured-target-context-into-output-feedback.md`.
 
 Remaining blockers:
 
@@ -184,6 +188,8 @@ Evidence:
 - Settings > Validation now also exposes a direct `Open latest evidence` path so keyboard and screen-reader users can move from the summary surface to the current loaded artifact without manually browsing the workspace.
 - Settings > Validation now also surfaces `Current build evidence` as a first-class row, so validators do not need to infer stale-versus-current evidence by manually comparing JSON and About metadata.
 - The settings validation panel now also has enough native row capacity to render the full projected evidence set, so `Target app versions` and `Current build evidence` no longer compete for one truncated row slot in the desktop UI.
+- That same validation surface now also carries current active target context inside the `Target-aware HDR` row, reducing ambiguity for keyboard, screen-reader, and manual-validation review flows when mixed-monitor setups are under test.
+- Main-panel output feedback now also keeps captured-target context visible after teardown, reducing ambiguity for post-capture review flows without inventing new non-native UI affordances.
 
 Remaining blockers:
 

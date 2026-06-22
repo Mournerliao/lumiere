@@ -652,6 +652,7 @@ public sealed class SettingsPanelProjectionTests
         Assert.Contains("selected capture target", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("DXGI output", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("NotMatched", targetAwareRow.Detail, StringComparison.Ordinal);
+        Assert.Contains("Test Display", targetAwareRow.Detail, StringComparison.Ordinal);
         Assert.Contains("mixed HDR/SDR", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Enable HDR", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
     }
@@ -673,6 +674,7 @@ public sealed class SettingsPanelProjectionTests
 
         Assert.Equal(ValidationEvidenceStatus.Limited, targetAwareRow.Status);
         Assert.Contains("DesktopBounds", targetAwareRow.Detail, StringComparison.Ordinal);
+        Assert.Contains("Test Display", targetAwareRow.Detail, StringComparison.Ordinal);
         Assert.Contains("Windows manual validation", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR Ready", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
     }
@@ -696,7 +698,64 @@ public sealed class SettingsPanelProjectionTests
         Assert.Equal(ValidationEvidenceStatus.Limited, targetAwareRow.Status);
         Assert.Contains("DesktopBounds", targetAwareRow.Detail, StringComparison.Ordinal);
         Assert.Contains("artifact", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Test Display", targetAwareRow.Detail, StringComparison.Ordinal);
         Assert.Contains("Windows manual validation", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Project_ValidationTargetAwareRowNamesDisplayDeviceAndBoundsForRuntimeContext()
+    {
+        var target = CaptureTarget.CreateForTest(
+            new SizeInt32
+            {
+                Width = 3840,
+                Height = 2160,
+            },
+            "HDR Display",
+            CaptureTargetKind.Display,
+            new DisplayOutputIdentity("\\\\.\\DISPLAY2", left: 3840, top: 0, width: 3840, height: 2160));
+        var state = CaptureSessionState.Capturing(
+            target,
+            PreviewReadinessStatus.Initializing(
+                PreviewReadinessStage.Presentation,
+                "Preview presentation is configured for HDR; live capture still needs validation.",
+                "IDXGISwapChain3.CheckColorSpaceSupport returned Present; IDXGISwapChain3.SetColorSpace1 set RgbFullG10NoneP709; display match=DesktopBounds."));
+
+        var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), state);
+        var targetAwareRow = Assert.Single(
+            projection.Validation.Rows,
+            row => row.Label == "Target-aware HDR");
+
+        Assert.Contains("HDR Display", targetAwareRow.Detail, StringComparison.Ordinal);
+        Assert.Contains("\\\\.\\DISPLAY2", targetAwareRow.Detail, StringComparison.Ordinal);
+        Assert.Contains("desktop bounds 3840,0 3840x2160", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Project_ValidationTargetAwareRowKeepsWindowTargetAsRuntimeContextOnly()
+    {
+        var state = CaptureSessionState.Capturing(
+            CaptureTarget.CreateForTest(
+                new SizeInt32
+                {
+                    Width = 1280,
+                    Height = 720,
+                },
+                "Test Window",
+                CaptureTargetKind.Window),
+            PreviewReadinessStatus.Initializing(
+                PreviewReadinessStage.Presentation,
+                "Preview presentation is configured for HDR; live capture still needs validation.",
+                "IDXGISwapChain3.CheckColorSpaceSupport returned Present."));
+
+        var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), state);
+        var targetAwareRow = Assert.Single(
+            projection.Validation.Rows,
+            row => row.Label == "Target-aware HDR");
+
+        Assert.Contains("window \"Test Window\"", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("depends on display mapping", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("runtime target", targetAwareRow.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

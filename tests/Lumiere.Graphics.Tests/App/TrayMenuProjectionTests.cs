@@ -66,10 +66,12 @@ public sealed class TrayMenuProjectionTests
             CaptureSessionState.Idle(PreviewReadinessStatus.Ready("Ready", "HDR preview is ready.")),
             new StubSettingsProvider("Ctrl+Shift+F", "Ctrl+Shift+R"),
             new StubAboutInfoProvider("Lumiere"),
-            outputResult: OutputResult.ClipboardSuccess(2048));
+            outputResult: OutputResult.ClipboardSuccess(2048),
+            outputContextTarget: CreateTarget());
 
         Assert.Equal("Output complete", projection.HdrStatusLabel);
         Assert.Equal("Converted", projection.FidelityClaimLabel);
+        Assert.Contains("compatibility", projection.FidelityClaimDetail, StringComparison.OrdinalIgnoreCase);
         Assert.True(projection.FullscreenCapture.IsEnabled);
         Assert.True(projection.RegionCapture.IsEnabled);
     }
@@ -118,9 +120,9 @@ public sealed class TrayMenuProjectionTests
                 OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder));
 
         Assert.Equal("HDR10", projection.OutputProfileLabel);
-        Assert.Equal("Ready", projection.OutputProfileStatusLabel);
-        Assert.Equal(TrayMenuStatusSeverity.Success, projection.OutputProfileSeverity);
-        Assert.Contains("validated session", projection.OutputProfileDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Build", projection.OutputProfileStatusLabel);
+        Assert.Equal(TrayMenuStatusSeverity.Warning, projection.OutputProfileSeverity);
+        Assert.Contains("implementation prerequisites", projection.OutputProfileDetail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

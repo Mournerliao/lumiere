@@ -102,6 +102,24 @@ public sealed class MainPanelProjectionTests
     }
 
     [Fact]
+    public void ProjectStatus_OutputResultKeepsCapturedTargetContextAfterSessionReturnsIdle()
+    {
+        var outputResult = OutputResult.ClipboardSuccess(1024)
+            .WithRequestedProfile(OutputProfileContract.FromSettingsValue("sRGB"));
+        var idleState = CaptureSessionState.Idle();
+        var target = CreateTarget();
+
+        var projection = MainPanelProjection.Project(
+            idleState,
+            outputResult,
+            outputContextTarget: target);
+
+        Assert.Equal("Output complete", projection.TrustLabel);
+        Assert.Contains("Captured display: Test Display.", projection.OutputResult.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("Fidelity claim: Converted", projection.OutputResult.FidelityDetail, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ProjectStatus_DefaultOutputProfileIsCompatibilityConvertedFallback()
     {
         var state = CreateState(PreviewReadinessState.Ready);
