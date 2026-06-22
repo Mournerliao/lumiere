@@ -105,6 +105,7 @@ Evidence:
 
 - Public release checklist defines the required HDR/SDR, mixed-display, target-app, DPI, and output evidence categories.
 - Output validation artifact schema/template defines required session evidence fields.
+- The local validation workspace can now generate a prefilled draft artifact from the current session, reducing setup friction before real Windows manual evidence is recorded.
 - `harness/validation/hdr-sdr-validation-scenarios.md` now defines the standard content families, topology matrix, and session execution flow.
 - `harness/validation/settings-accessibility-validation.md` now gives Story 13-2 a focused Windows validation workflow tied back to the release checklist.
 - `harness/validation/templates/hdr-sdr-validation-session-template.md` now gives future sessions a consistent metadata/result record shape.

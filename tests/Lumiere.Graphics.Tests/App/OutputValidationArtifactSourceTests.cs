@@ -114,6 +114,87 @@ public sealed class OutputValidationArtifactSourceTests
     }
 
     [Fact]
+    public void CreateDraft_WritesPrefilledDraftIntoWorkspaceRoot()
+    {
+        var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var source = new FileOutputValidationArtifactSource(
+            "C:\\Validation",
+            "*.json",
+            directoryExists: directories.Contains,
+            fileExists: files.ContainsKey,
+            createDirectory: path => directories.Add(path),
+            enumerateFiles: (_, _) => Array.Empty<string>(),
+            readAllText: path => files[path],
+            writeAllText: (path, content) => files[path] = content,
+            resolveTemplateSourceText: () => "{ \"schemaVersion\": 4 }",
+            getNow: () => new DateTimeOffset(2026, 06, 22, 10, 30, 00, TimeSpan.FromHours(8)),
+            prepareWorkspace: true);
+
+        var result = source.CreateDraft(
+            new OutputValidationDraftRequest(
+                "0.1.0",
+                OutputTarget.Folder,
+                OutputProfileContract.Hdr10Pq,
+                CaptureSessionState.Capturing(
+                    CaptureTarget.CreateForTest(
+                        new Windows.Graphics.SizeInt32
+                        {
+                            Width = 3840,
+                            Height = 2160,
+                        },
+                        "HDR Display",
+                        CaptureTargetKind.Display,
+                        new DisplayOutputIdentity("\\\\.\\DISPLAY1", left: 0, top: 0, width: 3840, height: 2160)),
+                    Lumiere.Graphics.Hdr.PreviewReadinessStatus.Ready(
+                        "HDR preview path is validated.",
+                        "IDXGISwapChain3.SetColorSpace1 set RgbFullG2084NoneP2020; display match=DesktopBounds."))));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("C:\\Validation\\output-validation-draft-2026-06-22-hdr10-folder.json", result.DraftPath);
+        Assert.True(files.ContainsKey(result.DraftPath!));
+        var artifact = OutputValidationSessionArtifact.FromJson(files[result.DraftPath!]);
+        Assert.Equal(["Folder"], artifact.OutputTargetsTested);
+        Assert.Equal("HDR Display", artifact.TargetHdrEvidence!.TargetDisplayName);
+        Assert.Contains("REL-HDR-04", artifact.ChecklistIdsCovered);
+    }
+
+    [Fact]
+    public void CreateDraft_FailsWhenWorkspaceIsNotReady()
+    {
+        var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "C:\\Validation",
+            "C:\\Validation\\templates",
+            "C:\\Validation\\evidence",
+        };
+        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var source = new FileOutputValidationArtifactSource(
+            "C:\\Validation",
+            "*.json",
+            directoryExists: directories.Contains,
+            fileExists: files.ContainsKey,
+            createDirectory: path => directories.Add(path),
+            enumerateFiles: (_, _) => Array.Empty<string>(),
+            readAllText: path => files[path],
+            writeAllText: (path, content) => files[path] = content,
+            resolveTemplateSourceText: () => null,
+            getNow: () => new DateTimeOffset(2026, 06, 22, 10, 30, 00, TimeSpan.FromHours(8)),
+            prepareWorkspace: true);
+
+        var result = source.CreateDraft(
+            new OutputValidationDraftRequest(
+                "0.1.0",
+                OutputTarget.Folder,
+                OutputProfileContract.Hdr10Pq,
+                CaptureSessionState.Idle()));
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("template", result.TechnicalDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(result.DraftPath);
+    }
+
+    [Fact]
     public void LoadedArtifactsCanFeedSettingsProjectionWithoutBypassingRuntimeCapabilities()
     {
         var source = new FileOutputValidationArtifactSource(

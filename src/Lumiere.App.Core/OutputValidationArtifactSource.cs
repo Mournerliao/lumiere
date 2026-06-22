@@ -5,6 +5,8 @@ namespace Lumiere.App;
 public interface IOutputValidationArtifactSource
 {
     OutputValidationArtifactSnapshot Load();
+
+    OutputValidationDraftResult CreateDraft(OutputValidationDraftRequest request);
 }
 
 public sealed record OutputValidationArtifactSnapshot(
@@ -57,6 +59,24 @@ public sealed record OutputValidationWorkspaceIssue(
     string Path,
     string Detail);
 
+public sealed record OutputValidationDraftRequest(
+    string? BuildVersion,
+    OutputTarget OutputTarget,
+    OutputProfileContract RequestedProfile,
+    Lumiere.Capture.CaptureSessionState SessionState);
+
+public sealed record OutputValidationDraftResult(
+    bool IsSuccess,
+    string? DraftPath,
+    string? TechnicalDetail)
+{
+    public static OutputValidationDraftResult Success(string draftPath) =>
+        new(true, draftPath, null);
+
+    public static OutputValidationDraftResult Failed(string technicalDetail) =>
+        new(false, null, technicalDetail);
+}
+
 public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifactSource
 {
     internal const string WorkspaceReadmeFileName = "README.txt";
@@ -71,6 +91,7 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
     private readonly Func<string, string> readAllText;
     private readonly Action<string, string> writeAllText;
     private readonly Func<string?> resolveTemplateSourceText;
+    private readonly Func<DateTimeOffset> getNow;
     private readonly bool prepareWorkspace;
 
     public FileOutputValidationArtifactSource(string directoryPath, string searchPattern = "*.json")
@@ -84,6 +105,7 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
             File.ReadAllText,
             File.WriteAllText,
             LoadEmbeddedTemplateText,
+            () => DateTimeOffset.Now,
             prepareWorkspace: true)
     {
     }
@@ -104,6 +126,7 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
             readAllText,
             (_, _) => { },
             () => null,
+            () => DateTimeOffset.Now,
             prepareWorkspace: false)
     {
     }
@@ -118,6 +141,7 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         Func<string, string> readAllText,
         Action<string, string> writeAllText,
         Func<string?>? resolveTemplateSourceText = null,
+        Func<DateTimeOffset>? getNow = null,
         bool prepareWorkspace = false)
     {
         if (string.IsNullOrWhiteSpace(directoryPath))
@@ -139,6 +163,7 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         this.readAllText = readAllText ?? throw new ArgumentNullException(nameof(readAllText));
         this.writeAllText = writeAllText ?? throw new ArgumentNullException(nameof(writeAllText));
         this.resolveTemplateSourceText = resolveTemplateSourceText ?? LoadEmbeddedTemplateText;
+        this.getNow = getNow ?? (() => DateTimeOffset.Now);
         this.prepareWorkspace = prepareWorkspace;
     }
 
@@ -189,6 +214,35 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         {
             Workspace = workspace,
         };
+    }
+
+    public OutputValidationDraftResult CreateDraft(OutputValidationDraftRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var workspace = prepareWorkspace
+            ? EnsureWorkspace()
+            : OutputValidationWorkspaceState.Unavailable;
+        if (!workspace.IsReady)
+        {
+            var detail = workspace.Issues.Count == 0
+                ? "Validation workspace is not ready on this machine."
+                : string.Join(" ", workspace.Issues.Select(issue => issue.Detail));
+            return OutputValidationDraftResult.Failed(detail);
+        }
+
+        try
+        {
+            var now = getNow();
+            var draft = OutputValidationDraftFactory.Create(request, now);
+            var filePath = AllocateDraftPath(workspace.DirectoryPath, draft.FileNameStem);
+            writeAllText(filePath, draft.Artifact.ToJson());
+            return OutputValidationDraftResult.Success(filePath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+        {
+            return OutputValidationDraftResult.Failed($"{ex.GetType().Name}: {ex.Message}");
+        }
     }
 
     private OutputValidationWorkspaceState EnsureWorkspace()
@@ -319,11 +373,32 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
                 string.Empty,
                 "Workflow:",
                 "1. Copy templates\\output-validation-session.schema-v4.sample.json into this output\\ folder.",
-                "2. Rename it for the session, replace every REPLACE_WITH_* placeholder, and keep viewer evidence honest.",
-                "3. Restart Lumiere or reopen the settings validation panel to reload the artifact.",
-                "4. Do not treat template files or incomplete sessions as passing release evidence.",
+                "2. Or use Lumiere's Create draft action to generate a prefilled local draft in this folder.",
+                "3. Rename it for the session if needed, replace every REPLACE_WITH_* placeholder, and keep viewer evidence honest.",
+                "4. Reload evidence from Lumiere after recording real observations.",
+                "5. Do not treat template files or incomplete sessions as passing release evidence.",
                 string.Empty,
                 "Reference docs:",
                 "- harness/validation/output-validation.md",
                 "- harness/validation/release-validation-checklist.md"]);
+
+    private string AllocateDraftPath(string workspaceDirectoryPath, string fileNameStem)
+    {
+        var candidate = Path.Combine(workspaceDirectoryPath, $"{fileNameStem}.json");
+        if (!fileExists(candidate))
+        {
+            return candidate;
+        }
+
+        for (var suffix = 2; suffix < 1000; suffix++)
+        {
+            candidate = Path.Combine(workspaceDirectoryPath, $"{fileNameStem}-{suffix}.json");
+            if (!fileExists(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        throw new InvalidOperationException("Could not allocate a unique validation draft file name.");
+    }
 }

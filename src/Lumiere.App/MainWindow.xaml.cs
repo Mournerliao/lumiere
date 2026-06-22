@@ -1870,6 +1870,33 @@ public sealed partial class MainWindow : Window
         await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "validation template");
     }
 
+    private async void OnValidationCreateDraftClick(object sender, RoutedEventArgs e)
+    {
+        var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
+        var requestedProfile = OutputProfileContract.FromSettingsValue(settingsProvider.ExportColorFormat);
+        var result = outputValidationArtifactSource.CreateDraft(
+            new OutputValidationDraftRequest(
+                aboutInfoProvider.Version,
+                settingsProvider.OutputTarget,
+                requestedProfile,
+                currentState));
+
+        if (!result.IsSuccess)
+        {
+            Logger.LogWarning(
+                "operation=ValidationWorkspace, stage=CreateDraftFailed, detail={Detail}",
+                result.TechnicalDetail);
+            return;
+        }
+
+        Logger.LogInformation(
+            "operation=ValidationWorkspace, stage=CreateDraftSucceeded, path={Path}, outputTarget={OutputTarget}, profile={Profile}",
+            result.DraftPath,
+            settingsProvider.OutputTarget,
+            requestedProfile.Label);
+        await OpenValidationPathAsync(result.DraftPath, ArtifactShellActionKind.Open, "validation draft");
+    }
+
     private void OnValidationReloadArtifactsClick(object sender, RoutedEventArgs e)
     {
         ReloadOutputValidationArtifacts();
@@ -1997,6 +2024,7 @@ public sealed partial class MainWindow : Window
         ValidationRecordEvidencePathText.Text = record.EvidenceDocumentPath;
         ValidationOpenWorkspaceButton.IsEnabled = record.CanOpenValidationWorkspace;
         ValidationOpenTemplateButton.IsEnabled = record.CanOpenValidationTemplate;
+        ValidationCreateDraftButton.IsEnabled = record.CanOpenValidationWorkspace;
         ToolTipService.SetToolTip(
             ValidationOpenWorkspaceButton,
             record.CanOpenValidationWorkspace
@@ -2007,6 +2035,11 @@ public sealed partial class MainWindow : Window
             record.CanOpenValidationTemplate
                 ? $"Open seeded validation template: {record.ValidationTemplatePath}"
                 : "Seeded validation template is not available for this session.");
+        ToolTipService.SetToolTip(
+            ValidationCreateDraftButton,
+            record.CanOpenValidationWorkspace
+                ? $"Create a local validation draft in {record.ValidationWorkspacePath} using the current output target and selected profile."
+                : "Local validation workspace is not available for this session.");
         AutomationProperties.SetHelpText(
             ValidationOpenWorkspaceButton,
             record.CanOpenValidationWorkspace
@@ -2017,6 +2050,11 @@ public sealed partial class MainWindow : Window
             record.CanOpenValidationTemplate
                 ? $"Open the seeded validation template at {record.ValidationTemplatePath}."
                 : "Seeded validation template is not available for this session.");
+        AutomationProperties.SetHelpText(
+            ValidationCreateDraftButton,
+            record.CanOpenValidationWorkspace
+                ? $"Create a local validation draft in {record.ValidationWorkspacePath} using the current output target and selected profile."
+                : "Local validation workspace is not available for this session.");
         AutomationProperties.SetHelpText(
             ValidationRecordBuildText,
             $"{record.BuildLabel}. {record.AutomatedEvidenceDetail} {record.WindowsManualValidationDetail} Evidence document: {record.EvidenceDocumentPath}. {record.WorkspaceSummary}");

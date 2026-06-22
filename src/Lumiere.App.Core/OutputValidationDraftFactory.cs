@@ -1,0 +1,251 @@
+using Lumiere.Capture;
+using Lumiere.Graphics.Hdr;
+using Lumiere.Graphics.Output;
+
+namespace Lumiere.App;
+
+public static class OutputValidationDraftFactory
+{
+    public static OutputValidationDraftDocument Create(
+        OutputValidationDraftRequest request,
+        DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var localNow = now.ToLocalTime();
+        var date = localNow.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+        var profile = request.RequestedProfile ?? throw new ArgumentNullException(nameof(request.RequestedProfile));
+        var outputTarget = request.OutputTarget;
+        var targetApps = profile.ViewerEvidence
+            .Select(viewer => viewer.Name)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var buildLabel = NormalizeBuildVersion(request.BuildVersion);
+        var artifact = new OutputValidationSessionArtifact(
+            Date: date,
+            Tester: "REPLACE_WITH_TESTER_NAME",
+            BuildCommit: $"REPLACE_WITH_GIT_COMMIT (app version {buildLabel})",
+            WindowsVersion: $"REPLACE_WITH_WINDOWS_VERSION (current session: {Environment.OSVersion.VersionString})",
+            Device: "REPLACE_WITH_DEVICE_MODEL",
+            Gpu: "REPLACE_WITH_GPU_MODEL_AND_DRIVER",
+            DisplaySetup: CreateDisplaySetupPlaceholder(request.SessionState.Target),
+            HdrState: CreateHdrStatePlaceholder(request.SessionState.Readiness),
+            DpiScales:
+            [
+                "REPLACE_WITH_DPI_SCALE",
+            ],
+            EntryPointsTested:
+            [
+                "REPLACE_WITH_ENTRY_POINT (for example: Main panel, Tray menu, Global hotkey)",
+            ],
+            OutputTargetsTested:
+            [
+                FormatOutputTarget(outputTarget),
+            ],
+            TargetAppsTested: targetApps,
+            ChecklistIdsCovered: CreateSuggestedChecklistIds(outputTarget, profile.Kind),
+            ResultSummary: $"REPLACE_WITH_VALIDATION_RESULT_SUMMARY. Draft for {profile.Label} on {FormatOutputTarget(outputTarget)} generated from {buildLabel}.",
+            EvidencePaths:
+            [
+                $@"evidence\{CreateFileNameStem(date, profile.Label, outputTarget)}-REPLACE_WITH_SESSION_NOTES.md",
+            ],
+            KnownLimitations:
+            [
+                "Draft created from current Lumiere session context. Replace this line with observed limitations after Windows manual validation.",
+            ],
+            FollowUpIssuesOrStories:
+            [
+                "11-3",
+                "12-1",
+                "10-3",
+                "13-2",
+            ],
+            OutputProfileRecords:
+            [
+                CreateProfileRecord(profile, outputTarget),
+            ])
+        {
+            TargetHdrEvidence = CreateTargetHdrEvidence(request.SessionState),
+        };
+
+        return new OutputValidationDraftDocument(
+            artifact,
+            CreateFileNameStem(date, profile.Label, outputTarget));
+    }
+
+    private static OutputProfileValidationRecord CreateProfileRecord(
+        OutputProfileContract profile,
+        OutputTarget outputTarget)
+    {
+        var formatContract = profile.Kind switch
+        {
+            OutputProfileKind.Hdr10Pq => new OutputFormatContract(
+                OutputPixelFormat.R16G16B16A16Float,
+                OutputPixelFormat.R16G16B16A16Float,
+                OutputTransferFunction.PqSt2084,
+                OutputColorPrimaries.Bt2020,
+                OutputConversionPolicy.PreserveHdrWithDefinedToneMapping,
+                OutputMetadataPolicy.AttachHdr10StaticMetadata,
+                OutputTargetAppAssumption.RequiresHdrViewerValidation,
+                Hdr10StaticMetadataPolicy.Bt2020PqReference1000Nit),
+            OutputProfileKind.SrgbCompatibilityPng => OutputFormatContract.SrgbCompatibility,
+            _ => null,
+        };
+
+        return new OutputProfileValidationRecord(
+            profile.Kind,
+            profile.ViewerEvidence)
+        {
+            FormatContract = formatContract,
+            OutputTargetsCovered =
+            [
+                FormatOutputTarget(outputTarget),
+            ],
+        };
+    }
+
+    private static TargetAwareHdrValidationEvidence CreateTargetHdrEvidence(CaptureSessionState sessionState)
+    {
+        ArgumentNullException.ThrowIfNull(sessionState);
+
+        var target = sessionState.Target;
+        var displayIdentity = target?.DisplayIdentity;
+        return new TargetAwareHdrValidationEvidence(
+            target?.DisplayName ?? "REPLACE_WITH_TARGET_DISPLAY_NAME",
+            displayIdentity?.Left,
+            displayIdentity?.Top,
+            displayIdentity?.Width ?? target?.Size.Width ?? 0,
+            displayIdentity?.Height ?? target?.Size.Height ?? 0,
+            CreateMatchKind(displayIdentity),
+            CreateObservedHdrStatePlaceholder(sessionState.Readiness),
+            CreateObservedColorSpace(sessionState.Readiness),
+            CreateTargetDetailPlaceholder(sessionState.Readiness, target));
+    }
+
+    private static string[] CreateSuggestedChecklistIds(
+        OutputTarget outputTarget,
+        OutputProfileKind profileKind)
+    {
+        string[] checklistIds = outputTarget switch
+        {
+            OutputTarget.Clipboard => ["REL-OUT-01", "REL-OUT-02", "REL-OUT-03"],
+            OutputTarget.Folder => ["REL-OUT-04"],
+            OutputTarget.Both => ["REL-OUT-05"],
+            _ => ["REL-OUT-04"],
+        };
+
+        if (profileKind is OutputProfileKind.Hdr10Pq or OutputProfileKind.DisplayP3)
+        {
+            return [.. checklistIds, "REL-HDR-04"];
+        }
+
+        return checklistIds;
+    }
+
+    private static string CreateDisplaySetupPlaceholder(CaptureTarget? target)
+    {
+        if (target is null)
+        {
+            return "REPLACE_WITH_FULL_DISPLAY_SETUP";
+        }
+
+        return $"REPLACE_WITH_FULL_DISPLAY_SETUP (active target: {target.DisplayName})";
+    }
+
+    private static string CreateHdrStatePlaceholder(PreviewReadinessStatus readiness)
+    {
+        ArgumentNullException.ThrowIfNull(readiness);
+        return $"REPLACE_WITH_OBSERVED_WINDOWS_HDR_STATE (current session: {readiness.UserMessage})";
+    }
+
+    private static string CreateObservedHdrStatePlaceholder(PreviewReadinessStatus readiness)
+    {
+        ArgumentNullException.ThrowIfNull(readiness);
+        return $"REPLACE_WITH_OBSERVED_TARGET_HDR_STATE (current session: {readiness.UserMessage})";
+    }
+
+    private static string? CreateObservedColorSpace(PreviewReadinessStatus readiness)
+    {
+        ArgumentNullException.ThrowIfNull(readiness);
+
+        var detail = readiness.TechnicalDetail;
+        if (string.IsNullOrWhiteSpace(detail))
+        {
+            return null;
+        }
+
+        var marker = "set ";
+        var markerIndex = detail.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (markerIndex < 0)
+        {
+            return null;
+        }
+
+        var tail = detail[(markerIndex + marker.Length)..];
+        var colorSpace = new string(tail.TakeWhile(char.IsLetterOrDigit).ToArray());
+        return string.IsNullOrWhiteSpace(colorSpace) ? null : colorSpace;
+    }
+
+    private static string CreateTargetDetailPlaceholder(
+        PreviewReadinessStatus readiness,
+        CaptureTarget? target)
+    {
+        ArgumentNullException.ThrowIfNull(readiness);
+
+        var targetLabel = target?.DisplayName ?? "selected target";
+        var technicalDetail = string.IsNullOrWhiteSpace(readiness.TechnicalDetail)
+            ? "No additional session detail was available."
+            : readiness.TechnicalDetail.Trim();
+        return $"REPLACE_WITH_TARGET_HDR_VALIDATION_DETAIL. Current session for {targetLabel}: {readiness.UserMessage} {technicalDetail}";
+    }
+
+    private static string CreateMatchKind(DisplayOutputIdentity? displayIdentity) =>
+        displayIdentity switch
+        {
+            { Left: not null, Top: not null } => "DesktopBounds",
+            not null => "REPLACE_WITH_TARGET_MATCH_KIND (current session matched a display target)",
+            _ => "REPLACE_WITH_TARGET_MATCH_KIND",
+        };
+
+    private static string NormalizeBuildVersion(string? buildVersion)
+    {
+        var trimmed = buildVersion?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return "Lumiere unknown build";
+        }
+
+        return trimmed.StartsWith("v", StringComparison.OrdinalIgnoreCase)
+            ? $"Lumiere {trimmed}"
+            : $"Lumiere v{trimmed}";
+    }
+
+    private static string CreateFileNameStem(
+        string date,
+        string profileLabel,
+        OutputTarget outputTarget) =>
+        $"output-validation-draft-{date}-{SanitizeSegment(profileLabel)}-{SanitizeSegment(FormatOutputTarget(outputTarget))}";
+
+    private static string FormatOutputTarget(OutputTarget outputTarget) =>
+        outputTarget switch
+        {
+            OutputTarget.Clipboard => "Clipboard",
+            OutputTarget.Folder => "Folder",
+            OutputTarget.Both => "Both",
+            _ => "Folder",
+        };
+
+    private static string SanitizeSegment(string value)
+    {
+        var trimmed = value.Trim().ToLowerInvariant();
+        var characters = trimmed
+            .Select(character => char.IsLetterOrDigit(character) ? character : '-')
+            .ToArray();
+        var sanitized = new string(characters).Trim('-');
+        return string.IsNullOrWhiteSpace(sanitized) ? "draft" : sanitized;
+    }
+}
+
+public sealed record OutputValidationDraftDocument(
+    OutputValidationSessionArtifact Artifact,
+    string FileNameStem);
