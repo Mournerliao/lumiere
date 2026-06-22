@@ -93,6 +93,8 @@ The same settings surface now also summarizes the currently loaded evidence for 
 
 This summary is not a release pass/fail dashboard. It is a review surface that helps a Windows validator answer "what evidence is actually loaded right now?" before interpreting `Build`, `Validate`, `Ready`, or lower validation rows.
 
+The validation rows now also surface target-app version evidence as a first-class item instead of leaving it only inside the loaded-evidence summary. This keeps the review UI aligned with the runtime HDR10 JXR gate: if a named viewer/app is missing a concrete recorded version, the review surface should say so directly and the runtime gate should remain blocked.
+
 Build alignment is intentionally strict:
 
 - Lumiere may only call loaded evidence "matched" when the current app build exposes a comparable commit token and the latest artifact records the same token.

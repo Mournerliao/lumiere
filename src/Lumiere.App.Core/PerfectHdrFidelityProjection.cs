@@ -434,7 +434,7 @@ public static class PerfectHdrFidelityProjection
 
         return validation with
         {
-            Rows = ReplaceCurrentBuildEvidenceRow(validation.Rows, evidenceSummary.BuildAlignment),
+            Rows = ReplaceEvidenceReviewRows(validation.Rows, evidenceSummary),
             EvidenceSummary = evidenceSummary,
         };
     }
@@ -829,6 +829,7 @@ public static class PerfectHdrFidelityProjection
         {
             LatestArtifactPath = latestArtifactReference?.Path,
             BuildAlignment = buildAlignment,
+            TargetAppVersionEvidence = EvaluateTargetAppVersionEvidence(artifacts),
         };
     }
 
@@ -838,6 +839,13 @@ public static class PerfectHdrFidelityProjection
             "Current build evidence",
             buildAlignment.Status,
             buildAlignment.Detail);
+
+    private static ValidationEvidenceRowProjection ProjectTargetAppVersionEvidenceRow(
+        ValidationEvidenceTargetAppVersionProjection targetAppVersionEvidence) =>
+        new(
+            targetAppVersionEvidence.Label,
+            targetAppVersionEvidence.Status,
+            targetAppVersionEvidence.Detail);
 
     private static IReadOnlyList<ValidationEvidenceRowProjection> CreateValidationRows(
         OutputProfileContract outputProfile,
@@ -850,17 +858,21 @@ public static class PerfectHdrFidelityProjection
             ProjectVisualMatchRow(outputProfile),
             ProjectHdrPreservedProfileRow(outputProfile),
             ProjectTargetAppMatrixRow(viewerMatrix),
+            ProjectTargetAppVersionEvidenceRow(evidenceSummary.TargetAppVersionEvidence),
             ProjectCurrentBuildEvidenceRow(evidenceSummary.BuildAlignment),
         ];
 
-    private static IReadOnlyList<ValidationEvidenceRowProjection> ReplaceCurrentBuildEvidenceRow(
+    private static IReadOnlyList<ValidationEvidenceRowProjection> ReplaceEvidenceReviewRows(
         IReadOnlyList<ValidationEvidenceRowProjection> rows,
-        ValidationEvidenceBuildAlignmentProjection buildAlignment)
+        ValidationEvidenceSummaryProjection evidenceSummary)
     {
         var updatedRows = rows
-            .Where(row => !string.Equals(row.Label, "Current build evidence", StringComparison.Ordinal))
+            .Where(row =>
+                !string.Equals(row.Label, "Current build evidence", StringComparison.Ordinal)
+                && !string.Equals(row.Label, "Target app versions", StringComparison.Ordinal))
             .ToList();
-        updatedRows.Add(ProjectCurrentBuildEvidenceRow(buildAlignment));
+        updatedRows.Add(ProjectTargetAppVersionEvidenceRow(evidenceSummary.TargetAppVersionEvidence));
+        updatedRows.Add(ProjectCurrentBuildEvidenceRow(evidenceSummary.BuildAlignment));
         return updatedRows;
     }
 
@@ -915,14 +927,10 @@ public static class PerfectHdrFidelityProjection
             detailParts.Add($"Follow-up: {FormatEvidenceList(followUps, fallback: "none recorded") }.");
         }
 
-        var hasTargetApps = artifacts.Any(artifact => artifact.TargetAppsTested.Count > 0);
-        var hasRecordedTargetAppVersions = artifacts.Any(artifact =>
-            artifact.TargetAppVersions.Any(record =>
-                IsRecordedEvidenceField(record.Name)
-                && IsRecordedEvidenceField(record.Version)));
-        if (hasTargetApps && !hasRecordedTargetAppVersions)
+        var missingTargetAppVersions = CollectMissingTargetAppVersions(artifacts);
+        if (missingTargetAppVersions.Count > 0)
         {
-            detailParts.Add("Target app versions are not recorded yet.");
+            detailParts.Add($"Target app versions are still missing for {FormatEvidenceList(missingTargetAppVersions, fallback: "named target apps")}.");
         }
 
         if (loadIssues.Count > 0)
@@ -939,6 +947,44 @@ public static class PerfectHdrFidelityProjection
 
         return string.Join(" ", detailParts);
     }
+
+    private static ValidationEvidenceTargetAppVersionProjection EvaluateTargetAppVersionEvidence(
+        IReadOnlyList<OutputValidationSessionArtifact> artifacts)
+    {
+        if (artifacts.Count == 0)
+        {
+            return ValidationEvidenceTargetAppVersionProjection.Empty;
+        }
+
+        var namedTargetApps = CollectDistinctEvidenceValues(artifacts.SelectMany(artifact => artifact.TargetAppsTested));
+        if (namedTargetApps.Count == 0)
+        {
+            return new ValidationEvidenceTargetAppVersionProjection(
+                "Target app versions",
+                ValidationEvidenceStatus.NotRun,
+                "Named target apps must be recorded before target-app version evidence can pass.");
+        }
+
+        var missingTargetAppVersions = CollectMissingTargetAppVersions(artifacts);
+        return missingTargetAppVersions.Count == 0
+            ? new ValidationEvidenceTargetAppVersionProjection(
+                "Target app versions",
+                ValidationEvidenceStatus.Pass,
+                "All named target apps in the loaded evidence are tied to concrete recorded app versions.")
+            : new ValidationEvidenceTargetAppVersionProjection(
+                "Target app versions",
+                ValidationEvidenceStatus.Limited,
+                $"Target app version evidence is missing for {FormatEvidenceList(missingTargetAppVersions, fallback: "named target apps")}.");
+    }
+
+    private static IReadOnlyList<string> CollectMissingTargetAppVersions(
+        IEnumerable<OutputValidationSessionArtifact> artifacts) =>
+        artifacts
+            .SelectMany(artifact => artifact.GetMissingTargetAppVersions())
+            .Where(IsRecordedEvidenceField)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
     private static string FormatArtifactHeader(OutputValidationSessionArtifact artifact)
     {
@@ -1465,6 +1511,9 @@ public sealed record ValidationEvidenceSummaryProjection(
     public ValidationEvidenceBuildAlignmentProjection BuildAlignment { get; init; } =
         ValidationEvidenceBuildAlignmentProjection.Empty;
 
+    public ValidationEvidenceTargetAppVersionProjection TargetAppVersionEvidence { get; init; } =
+        ValidationEvidenceTargetAppVersionProjection.Empty;
+
     public bool CanOpenLatestArtifact => !string.IsNullOrWhiteSpace(LatestArtifactPath);
 
     public static ValidationEvidenceSummaryProjection Empty { get; } =
@@ -1474,6 +1523,18 @@ public sealed record ValidationEvidenceSummaryProjection(
             "No output validation artifact is loaded for this session.",
             "Coverage: none yet.",
             "Next step: create or copy a validation artifact, replace placeholders with real Windows observations, then reload evidence.");
+}
+
+public sealed record ValidationEvidenceTargetAppVersionProjection(
+    string Label,
+    ValidationEvidenceStatus Status,
+    string Detail)
+{
+    public static ValidationEvidenceTargetAppVersionProjection Empty { get; } =
+        new(
+            "Target app versions",
+            ValidationEvidenceStatus.NotRun,
+            "Named target apps must be tied to concrete recorded app versions before release evidence can pass.");
 }
 
 public sealed record ValidationEvidenceBuildAlignmentProjection(

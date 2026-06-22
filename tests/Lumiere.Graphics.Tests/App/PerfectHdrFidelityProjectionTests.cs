@@ -195,6 +195,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Contains(validation.Rows, row => row.Label == "Visual-match output" && row.Status == ValidationEvidenceStatus.NotRun);
         Assert.Contains(validation.Rows, row => row.Label == "HDR-preserved profile" && row.Status == ValidationEvidenceStatus.NotRun);
         Assert.Contains(validation.Rows, row => row.Label == "Target app matrix" && row.Status == ValidationEvidenceStatus.NotRun);
+        Assert.Contains(validation.Rows, row => row.Label == "Target app versions" && row.Status == ValidationEvidenceStatus.NotRun);
     }
 
     [Fact]
@@ -367,11 +368,16 @@ public sealed class PerfectHdrFidelityProjectionTests
         var matrixRow = Assert.Single(
             validation.Rows,
             row => row.Label == "Target app matrix");
+        var versionRow = Assert.Single(
+            validation.Rows,
+            row => row.Label == "Target app versions");
 
         Assert.Equal(ValidationEvidenceStatus.Pass, profileRow.Status);
         Assert.Contains("HDR10 metadata", profileRow.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(ValidationEvidenceStatus.Pass, matrixRow.Status);
         Assert.Contains("All named target apps", matrixRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(ValidationEvidenceStatus.Pass, versionRow.Status);
+        Assert.Contains("concrete recorded app versions", versionRow.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -385,10 +391,35 @@ public sealed class PerfectHdrFidelityProjectionTests
         var matrixRow = Assert.Single(
             validation.Rows,
             row => row.Label == "Target app matrix");
+        var versionRow = Assert.Single(
+            validation.Rows,
+            row => row.Label == "Target app versions");
 
         Assert.Equal(ValidationEvidenceStatus.Limited, matrixRow.Status);
         Assert.Contains("Windows Photos", matrixRow.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Chromium browsers", matrixRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(ValidationEvidenceStatus.Pass, versionRow.Status);
+    }
+
+    [Fact]
+    public void ProjectValidation_ReportsTargetAppVersionsLimitedWhenNamedVersionEvidenceIsMissing()
+    {
+        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+            OutputProfileContract.Hdr10Pq,
+            [
+                ArtifactFor("Microsoft Paint") with
+                {
+                    TargetAppVersions = [],
+                },
+                ArtifactFor("Windows Photos"),
+                ArtifactFor("Chromium browsers"),
+            ]);
+        var versionRow = Assert.Single(
+            validation.Rows,
+            row => row.Label == "Target app versions");
+
+        Assert.Equal(ValidationEvidenceStatus.Limited, versionRow.Status);
+        Assert.Contains("Microsoft Paint", versionRow.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -817,7 +848,7 @@ public sealed class PerfectHdrFidelityProjectionTests
                 },
             ]);
 
-        Assert.Contains("Target app versions are not recorded yet", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Target app versions are still missing for Windows Photos", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

@@ -559,6 +559,10 @@ public sealed class SettingsPanelProjectionTests
 
         Assert.Equal(ValidationEvidenceStatus.Limited, profileRow.Status);
         Assert.Contains("format contract evidence", profileRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(
+            projection.Validation.Rows,
+            row => row.Label == "Target app versions"
+                && row.Status == ValidationEvidenceStatus.Pass);
         Assert.Equal("PQ ST.2084", projection.Output.SelectedProfileContract.TransferFunctionLabel);
         Assert.Equal("Attach HDR10 static metadata", projection.Output.SelectedProfileContract.MetadataPolicyLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
@@ -581,6 +585,10 @@ public sealed class SettingsPanelProjectionTests
 
         Assert.Equal(ValidationEvidenceStatus.Pass, visualRow.Status);
         Assert.Contains("visual-match evidence passed", visualRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(
+            projection.Validation.Rows,
+            row => row.Label == "Target app versions"
+                && row.Status == ValidationEvidenceStatus.Pass);
         Assert.All(
             projection.Validation.ViewerMatrix,
             viewer =>
@@ -615,6 +623,7 @@ public sealed class SettingsPanelProjectionTests
         Assert.Contains(projection.Validation.Rows, row => row.Label == "Target-aware HDR");
         Assert.Contains(projection.Validation.Rows, row => row.Label == "Visual-match output" && row.Status == ValidationEvidenceStatus.NotRun);
         Assert.Contains(projection.Validation.Rows, row => row.Label == "HDR-preserved profile");
+        Assert.Contains(projection.Validation.Rows, row => row.Label == "Target app versions" && row.Status == ValidationEvidenceStatus.NotRun);
         Assert.Contains("Named viewers", projection.Validation.ViewerMatrixSummary, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(projection.Validation.ViewerMatrix, viewer => viewer.Name == "Microsoft Paint");
         Assert.Contains(projection.Validation.ViewerMatrix, viewer => viewer.Name == "Windows Photos");
