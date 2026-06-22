@@ -72,6 +72,15 @@ public sealed record OutputValidationDraftRequest(
     OutputProfileContract RequestedProfile,
     Lumiere.Capture.CaptureSessionState SessionState);
 
+public sealed record OutputValidationDraftSeed(
+    string? Tester,
+    string? WindowsVersion,
+    string? Device,
+    string? Gpu,
+    string? DisplaySetup,
+    IReadOnlyList<string> DpiScales,
+    IReadOnlyList<string> EntryPointsTested);
+
 public sealed record OutputValidationDraftResult(
     bool IsSuccess,
     string? DraftPath,
@@ -199,6 +208,45 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
             };
         }
 
+        return LoadArtifactsFromWorkspace(workspace);
+    }
+
+    public OutputValidationDraftResult CreateDraft(OutputValidationDraftRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var workspace = prepareWorkspace
+            ? EnsureWorkspace()
+            : OutputValidationWorkspaceState.Unavailable;
+        if (!workspace.IsReady)
+        {
+            var detail = workspace.Issues.Count == 0
+                ? "Validation workspace is not ready on this machine."
+                : string.Join(" ", workspace.Issues.Select(issue => issue.Detail));
+            return OutputValidationDraftResult.Failed(detail);
+        }
+
+        try
+        {
+            var snapshot = LoadArtifactsFromWorkspace(workspace);
+            var now = getNow();
+            var draft = OutputValidationDraftFactory.Create(
+                request,
+                now,
+                targetAppVersionPrefillProvider,
+                SelectDraftSeed(snapshot.Artifacts, request));
+            var filePath = AllocateDraftPath(workspace.DirectoryPath, draft.FileNameStem);
+            writeAllText(filePath, draft.Artifact.ToJson());
+            return OutputValidationDraftResult.Success(filePath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+        {
+            return OutputValidationDraftResult.Failed($"{ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private OutputValidationArtifactSnapshot LoadArtifactsFromWorkspace(OutputValidationWorkspaceState workspace)
+    {
         if (!directoryExists(directoryPath))
         {
             return OutputValidationArtifactSnapshot.Empty with
@@ -230,38 +278,6 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
             ArtifactReferences = artifactReferences,
             Workspace = workspace,
         };
-    }
-
-    public OutputValidationDraftResult CreateDraft(OutputValidationDraftRequest request)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        var workspace = prepareWorkspace
-            ? EnsureWorkspace()
-            : OutputValidationWorkspaceState.Unavailable;
-        if (!workspace.IsReady)
-        {
-            var detail = workspace.Issues.Count == 0
-                ? "Validation workspace is not ready on this machine."
-                : string.Join(" ", workspace.Issues.Select(issue => issue.Detail));
-            return OutputValidationDraftResult.Failed(detail);
-        }
-
-        try
-        {
-            var now = getNow();
-            var draft = OutputValidationDraftFactory.Create(
-                request,
-                now,
-                targetAppVersionPrefillProvider);
-            var filePath = AllocateDraftPath(workspace.DirectoryPath, draft.FileNameStem);
-            writeAllText(filePath, draft.Artifact.ToJson());
-            return OutputValidationDraftResult.Success(filePath);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
-        {
-            return OutputValidationDraftResult.Failed($"{ex.GetType().Name}: {ex.Message}");
-        }
     }
 
     private OutputValidationWorkspaceState EnsureWorkspace()
@@ -419,5 +435,50 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         }
 
         throw new InvalidOperationException("Could not allocate a unique validation draft file name.");
+    }
+
+    private static OutputValidationDraftSeed? SelectDraftSeed(
+        IEnumerable<OutputValidationSessionArtifact> artifacts,
+        OutputValidationDraftRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(artifacts);
+        ArgumentNullException.ThrowIfNull(request);
+
+        var selected = artifacts
+            .OrderByDescending(artifact => ScoreSeedCompatibility(artifact, request))
+            .ThenByDescending(artifact => artifact.Date, StringComparer.Ordinal)
+            .FirstOrDefault();
+
+        return selected is null
+            ? null
+            : new OutputValidationDraftSeed(
+                selected.Tester,
+                selected.WindowsVersion,
+                selected.Device,
+                selected.Gpu,
+                selected.DisplaySetup,
+                selected.DpiScales,
+                selected.EntryPointsTested);
+    }
+
+    private static int ScoreSeedCompatibility(
+        OutputValidationSessionArtifact artifact,
+        OutputValidationDraftRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(artifact);
+        ArgumentNullException.ThrowIfNull(request);
+
+        var score = 0;
+        if (artifact.CoversOutputTarget(request.OutputTarget))
+        {
+            score += 2;
+        }
+
+        if (artifact.OutputProfileRecords.Any(record => record.ProfileKind == request.RequestedProfile.Kind))
+        {
+            score += 2;
+        }
+
+        return score;
     }
 }

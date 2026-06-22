@@ -212,6 +212,69 @@ public sealed class OutputValidationArtifactSourceTests
     }
 
     [Fact]
+    public void CreateDraft_CarriesLatestCompatibleArtifactContextIntoManualPlaceholders()
+    {
+        var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["C:\\Validation\\existing.json"] = CreateArtifact("2026-06-22", "Windows Photos") with
+            {
+                Tester = "QA",
+                WindowsVersion = "Windows 11 24H2",
+                Device = "HDR workstation",
+                Gpu = "NVIDIA test GPU",
+                DisplaySetup = "HDR primary, SDR secondary",
+                DpiScales = ["150%"],
+                EntryPointsTested = ["Tray menu"],
+            }.ToJson(),
+        };
+        var source = new FileOutputValidationArtifactSource(
+            "C:\\Validation",
+            "*.json",
+            directoryExists: path => directories.Contains(path) || path == "C:\\Validation",
+            fileExists: files.ContainsKey,
+            createDirectory: path => directories.Add(path),
+            enumerateFiles: (_, _) => ["C:\\Validation\\existing.json"],
+            readAllText: path => files[path],
+            writeAllText: (path, content) => files[path] = content,
+            resolveTemplateSourceText: () => "{ \"schemaVersion\": 4 }",
+            getNow: () => new DateTimeOffset(2026, 06, 22, 10, 30, 00, TimeSpan.FromHours(8)),
+            prepareWorkspace: true);
+
+        var result = source.CreateDraft(
+            new OutputValidationDraftRequest(
+                "0.1.0",
+                OutputTarget.Folder,
+                OutputProfileContract.Hdr10Pq,
+                CaptureSessionState.Capturing(
+                    CaptureTarget.CreateForTest(
+                        new Windows.Graphics.SizeInt32
+                        {
+                            Width = 3840,
+                            Height = 2160,
+                        },
+                        "HDR Display",
+                        CaptureTargetKind.Display),
+                    Lumiere.Graphics.Hdr.PreviewReadinessStatus.Ready(
+                        "HDR preview path is validated.",
+                        "Target-aware readiness passed."))));
+
+        Assert.True(result.IsSuccess);
+        var artifact = OutputValidationSessionArtifact.FromJson(files[result.DraftPath!]);
+        Assert.Equal("REPLACE_WITH_TESTER_NAME (latest local artifact: QA)", artifact.Tester);
+        Assert.Contains("Windows 11 24H2", artifact.WindowsVersion, StringComparison.Ordinal);
+        Assert.Equal("REPLACE_WITH_DEVICE_MODEL (latest local artifact: HDR workstation)", artifact.Device);
+        Assert.Equal("REPLACE_WITH_GPU_MODEL_AND_DRIVER (latest local artifact: NVIDIA test GPU)", artifact.Gpu);
+        Assert.Contains("latest local artifact: HDR primary, SDR secondary", artifact.DisplaySetup, StringComparison.Ordinal);
+        Assert.Equal(
+            ["REPLACE_WITH_DPI_SCALE (latest local artifact: 150%)"],
+            artifact.DpiScales);
+        Assert.Equal(
+            ["REPLACE_WITH_ENTRY_POINT (for example: Main panel, Tray menu, Global hotkey; latest local artifact: Tray menu)"],
+            artifact.EntryPointsTested);
+    }
+
+    [Fact]
     public void LoadedArtifactsCanFeedSettingsProjectionWithoutBypassingRuntimeCapabilities()
     {
         var source = new FileOutputValidationArtifactSource(

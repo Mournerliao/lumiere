@@ -118,6 +118,7 @@ Evidence:
 - The validation panel now also exposes that same target-app-version completeness as a first-class row, keeping the review surface aligned with the stricter runtime/manual evidence rules.
 - Generated drafts now also attempt to prefill known Windows packaged target-app versions when the current machine can identify them, while leaving unsupported or unknown viewers on explicit placeholders.
 - The current browser-side validation scope is now also fixed to `Microsoft Edge`, and the seeded sample/draft placeholders use that explicit target instead of a broad Chromium family label.
+- Draft generation can now also reuse stable local environment hints from the latest compatible artifact, keeping tester / Windows / device / GPU / DPI / entry-point context close at hand without silently converting older evidence into current proof.
 - Settings validation now also surfaces a compact loaded-evidence summary so testers can review the latest loaded artifact, current coverage, known limitations, follow-up stories, and ignored-file warnings without leaving the app.
 - That same surface now also links directly to the latest loaded evidence file, reducing the gap between in-app review and the durable JSON artifact that release validation depends on.
 - The same validation surface now also calls out whether the latest loaded evidence matches the current build, is stale for the current build, or cannot yet be aligned to a comparable build token.

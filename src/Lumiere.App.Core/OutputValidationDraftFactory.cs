@@ -9,7 +9,8 @@ public static class OutputValidationDraftFactory
     public static OutputValidationDraftDocument Create(
         OutputValidationDraftRequest request,
         DateTimeOffset now,
-        ITargetAppVersionPrefillProvider? targetAppVersionPrefillProvider = null)
+        ITargetAppVersionPrefillProvider? targetAppVersionPrefillProvider = null,
+        OutputValidationDraftSeed? seed = null)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -25,23 +26,17 @@ public static class OutputValidationDraftFactory
         var buildCommit = ExtractBuildCommit(request.BuildVersion);
         var artifact = new OutputValidationSessionArtifact(
             Date: date,
-            Tester: "REPLACE_WITH_TESTER_NAME",
+            Tester: CreateTesterPlaceholder(seed),
             BuildCommit: buildCommit is null
                 ? $"REPLACE_WITH_GIT_COMMIT (app version {buildLabel})"
                 : $"{buildCommit} (app version {buildLabel})",
-            WindowsVersion: $"REPLACE_WITH_WINDOWS_VERSION (current session: {Environment.OSVersion.VersionString})",
-            Device: "REPLACE_WITH_DEVICE_MODEL",
-            Gpu: "REPLACE_WITH_GPU_MODEL_AND_DRIVER",
-            DisplaySetup: CreateDisplaySetupPlaceholder(request.SessionState.Target),
+            WindowsVersion: CreateWindowsVersionPlaceholder(seed),
+            Device: CreateDevicePlaceholder(seed),
+            Gpu: CreateGpuPlaceholder(seed),
+            DisplaySetup: CreateDisplaySetupPlaceholder(request.SessionState.Target, seed),
             HdrState: CreateHdrStatePlaceholder(request.SessionState.Readiness),
-            DpiScales:
-            [
-                "REPLACE_WITH_DPI_SCALE",
-            ],
-            EntryPointsTested:
-            [
-                "REPLACE_WITH_ENTRY_POINT (for example: Main panel, Tray menu, Global hotkey)",
-            ],
+            DpiScales: CreateDpiScalePlaceholders(seed),
+            EntryPointsTested: CreateEntryPointPlaceholders(seed),
             OutputTargetsTested:
             [
                 FormatOutputTarget(outputTarget),
@@ -150,13 +145,23 @@ public static class OutputValidationDraftFactory
     }
 
     private static string CreateDisplaySetupPlaceholder(CaptureTarget? target)
+        => CreateDisplaySetupPlaceholder(target, null);
+
+    private static string CreateDisplaySetupPlaceholder(
+        CaptureTarget? target,
+        OutputValidationDraftSeed? seed)
     {
+        var hint = NormalizeHint(seed?.DisplaySetup);
         if (target is null)
         {
-            return "REPLACE_WITH_FULL_DISPLAY_SETUP";
+            return hint is null
+                ? "REPLACE_WITH_FULL_DISPLAY_SETUP"
+                : $"REPLACE_WITH_FULL_DISPLAY_SETUP (latest local artifact: {hint})";
         }
 
-        return $"REPLACE_WITH_FULL_DISPLAY_SETUP (active target: {target.DisplayName})";
+        return hint is null
+            ? $"REPLACE_WITH_FULL_DISPLAY_SETUP (active target: {target.DisplayName})"
+            : $"REPLACE_WITH_FULL_DISPLAY_SETUP (active target: {target.DisplayName}; latest local artifact: {hint})";
     }
 
     private static string CreateHdrStatePlaceholder(PreviewReadinessStatus readiness)
@@ -309,6 +314,86 @@ public static class OutputValidationDraftFactory
             .ToArray();
         var sanitized = new string(characters).Trim('_');
         return string.IsNullOrWhiteSpace(sanitized) ? "APP" : sanitized;
+    }
+
+    private static string CreateTesterPlaceholder(OutputValidationDraftSeed? seed) =>
+        AppendLatestArtifactHint("REPLACE_WITH_TESTER_NAME", seed?.Tester);
+
+    private static string CreateWindowsVersionPlaceholder(OutputValidationDraftSeed? seed)
+    {
+        var currentSession = $"current session: {Environment.OSVersion.VersionString}";
+        var latestArtifact = NormalizeHint(seed?.WindowsVersion);
+        return latestArtifact is null
+            ? $"REPLACE_WITH_WINDOWS_VERSION ({currentSession})"
+            : $"REPLACE_WITH_WINDOWS_VERSION ({currentSession}; latest local artifact: {latestArtifact})";
+    }
+
+    private static string CreateDevicePlaceholder(OutputValidationDraftSeed? seed) =>
+        AppendLatestArtifactHint("REPLACE_WITH_DEVICE_MODEL", seed?.Device);
+
+    private static string CreateGpuPlaceholder(OutputValidationDraftSeed? seed) =>
+        AppendLatestArtifactHint("REPLACE_WITH_GPU_MODEL_AND_DRIVER", seed?.Gpu);
+
+    private static IReadOnlyList<string> CreateDpiScalePlaceholders(OutputValidationDraftSeed? seed)
+    {
+        var latestArtifact = JoinMeaningfulValues(seed?.DpiScales);
+        return
+        [
+            latestArtifact is null
+                ? "REPLACE_WITH_DPI_SCALE"
+                : $"REPLACE_WITH_DPI_SCALE (latest local artifact: {latestArtifact})",
+        ];
+    }
+
+    private static IReadOnlyList<string> CreateEntryPointPlaceholders(OutputValidationDraftSeed? seed)
+    {
+        var latestArtifact = JoinMeaningfulValues(seed?.EntryPointsTested);
+        return
+        [
+            latestArtifact is null
+                ? "REPLACE_WITH_ENTRY_POINT (for example: Main panel, Tray menu, Global hotkey)"
+                : $"REPLACE_WITH_ENTRY_POINT (for example: Main panel, Tray menu, Global hotkey; latest local artifact: {latestArtifact})",
+        ];
+    }
+
+    private static string AppendLatestArtifactHint(string placeholder, string? hint)
+    {
+        var normalized = NormalizeHint(hint);
+        return normalized is null
+            ? placeholder
+            : $"{placeholder} (latest local artifact: {normalized})";
+    }
+
+    private static string? JoinMeaningfulValues(IEnumerable<string>? values)
+    {
+        if (values is null)
+        {
+            return null;
+        }
+
+        var normalized = values
+            .Select(NormalizeHint)
+            .Where(value => value is not null)
+            .Cast<string>()
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        return normalized.Length == 0
+            ? null
+            : string.Join(", ", normalized);
+    }
+
+    private static string? NormalizeHint(string? value)
+    {
+        var trimmed = value?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return null;
+        }
+
+        return trimmed.Contains("REPLACE_WITH_", StringComparison.OrdinalIgnoreCase)
+               || trimmed.StartsWith("Template only", StringComparison.OrdinalIgnoreCase)
+            ? null
+            : trimmed;
     }
 }
 

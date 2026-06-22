@@ -158,6 +158,51 @@ public sealed class OutputValidationDraftFactoryTests
                 && version.Version == "138.0.7204.101");
     }
 
+    [Fact]
+    public void Create_CarriesLatestLocalArtifactHintsWhileKeepingManualPlaceholdersExplicit()
+    {
+        var request = new OutputValidationDraftRequest(
+            "0.1.0",
+            OutputTarget.Folder,
+            OutputProfileContract.Hdr10Pq,
+            CaptureSessionState.Capturing(
+                CaptureTarget.CreateForTest(
+                    new SizeInt32
+                    {
+                        Width = 3840,
+                        Height = 2160,
+                    },
+                    "HDR Display",
+                    CaptureTargetKind.Display),
+                PreviewReadinessStatus.Ready("HDR-ready", "Target-aware readiness passed.")));
+
+        var document = OutputValidationDraftFactory.Create(
+            request,
+            new DateTimeOffset(2026, 06, 22, 10, 30, 00, TimeSpan.FromHours(8)),
+            seed: new OutputValidationDraftSeed(
+                Tester: "QA",
+                WindowsVersion: "Windows 11 24H2",
+                Device: "HDR workstation",
+                Gpu: "NVIDIA RTX test driver",
+                DisplaySetup: "HDR primary, SDR secondary",
+                DpiScales: ["150%"],
+                EntryPointsTested: ["Main panel", "Tray menu"]));
+
+        Assert.Equal("REPLACE_WITH_TESTER_NAME (latest local artifact: QA)", document.Artifact.Tester);
+        Assert.Contains("current session:", document.Artifact.WindowsVersion, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Windows 11 24H2", document.Artifact.WindowsVersion, StringComparison.Ordinal);
+        Assert.Equal("REPLACE_WITH_DEVICE_MODEL (latest local artifact: HDR workstation)", document.Artifact.Device);
+        Assert.Equal("REPLACE_WITH_GPU_MODEL_AND_DRIVER (latest local artifact: NVIDIA RTX test driver)", document.Artifact.Gpu);
+        Assert.Contains("active target: HDR Display", document.Artifact.DisplaySetup, StringComparison.Ordinal);
+        Assert.Contains("latest local artifact: HDR primary, SDR secondary", document.Artifact.DisplaySetup, StringComparison.Ordinal);
+        Assert.Equal(
+            ["REPLACE_WITH_DPI_SCALE (latest local artifact: 150%)"],
+            document.Artifact.DpiScales);
+        Assert.Equal(
+            ["REPLACE_WITH_ENTRY_POINT (for example: Main panel, Tray menu, Global hotkey; latest local artifact: Main panel, Tray menu)"],
+            document.Artifact.EntryPointsTested);
+    }
+
     private sealed class StubTargetAppVersionPrefillProvider(
         IReadOnlyDictionary<string, string> values) : ITargetAppVersionPrefillProvider
     {
