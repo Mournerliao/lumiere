@@ -41,7 +41,7 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
         Assert.Contains(evidence.Blockers, blocker =>
             blocker.Contains("Windows Photos", StringComparison.OrdinalIgnoreCase)
             && blocker.Contains("Microsoft Paint", StringComparison.OrdinalIgnoreCase)
-            && blocker.Contains("Chromium browsers", StringComparison.OrdinalIgnoreCase));
+            && blocker.Contains("Microsoft Edge", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -158,7 +158,7 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
         Assert.Contains(evidence.Blockers, blocker =>
             blocker.Contains("Target app version evidence", StringComparison.OrdinalIgnoreCase)
             && blocker.Contains("Microsoft Paint", StringComparison.OrdinalIgnoreCase)
-            && blocker.Contains("Chromium browsers", StringComparison.OrdinalIgnoreCase));
+            && blocker.Contains("Microsoft Edge", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -181,7 +181,7 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
     }
 
     private static IReadOnlyList<string> RequiredHdrViewers { get; } =
-        ["Microsoft Paint", "Windows Photos", "Chromium browsers"];
+        ["Microsoft Paint", "Windows Photos", "Microsoft Edge"];
 
     private static OutputValidationSessionArtifact Hdr10Artifact(
         string viewerName,

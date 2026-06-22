@@ -132,7 +132,7 @@ Missing target-app versions now also count as incomplete manual evidence, not on
 
 ## Manual Validation Scenarios
 
-1. Clipboard output to Paint, Photos, and at least one Chromium-based app.
+1. Clipboard output to Paint, Photos, and Microsoft Edge.
 2. Folder output to a normal user-writable directory.
 3. Folder output with missing, inaccessible, read-only, and long-path-adjacent save paths.
 4. Both-target output with clipboard success plus file failure, then file success plus clipboard failure.

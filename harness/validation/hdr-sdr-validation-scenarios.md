@@ -131,7 +131,7 @@ Minimum target apps:
 
 - Microsoft Paint
 - Windows Photos
-- One Chromium-based app
+- Microsoft Edge
 
 Optional additions when relevant:
 

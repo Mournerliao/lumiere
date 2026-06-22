@@ -19,7 +19,7 @@ public sealed class OverlayFidelityProjectionTests
         [
             ArtifactWithFormatContract("Microsoft Paint"),
             ArtifactWithFormatContract("Windows Photos"),
-            ArtifactWithFormatContract("Chromium browsers"),
+            ArtifactWithFormatContract("Microsoft Edge"),
         ];
 
         var cue = OverlayFidelityProjection.Project(
@@ -29,7 +29,7 @@ public sealed class OverlayFidelityProjectionTests
             ValidateOnlyHdr10Capabilities(artifacts));
 
         Assert.Equal(OverlayFidelityClaimProjection.Unvalidated, cue.Kind);
-        Assert.Equal("HDR10 · Ready", cue.Label);
+        Assert.Equal("HDR10 路 Ready", cue.Label);
         Assert.Contains("target-aware HDR readiness is unvalidated", cue.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -41,7 +41,7 @@ public sealed class OverlayFidelityProjectionTests
         [
             ArtifactWithFormatContract("Microsoft Paint"),
             ArtifactWithFormatContract("Windows Photos"),
-            ArtifactWithFormatContract("Chromium browsers"),
+            ArtifactWithFormatContract("Microsoft Edge"),
         ];
 
         var cue = OverlayFidelityProjection.Project(
@@ -51,7 +51,7 @@ public sealed class OverlayFidelityProjectionTests
             ValidateOnlyHdr10Capabilities(artifacts));
 
         Assert.Equal(OverlayFidelityClaimProjection.HdrPreserved, cue.Kind);
-        Assert.Equal("HDR10 · Ready", cue.Label);
+        Assert.Equal("HDR10 路 Ready", cue.Label);
         Assert.Contains("validated session", cue.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("HDR-preserved", cue.Detail, StringComparison.OrdinalIgnoreCase);
     }
@@ -64,7 +64,7 @@ public sealed class OverlayFidelityProjectionTests
         [
             ArtifactWithIncompleteViewerEvidence("Microsoft Paint"),
             ArtifactWithIncompleteViewerEvidence("Windows Photos"),
-            ArtifactWithIncompleteViewerEvidence("Chromium browsers"),
+            ArtifactWithIncompleteViewerEvidence("Microsoft Edge"),
         ];
 
         var cue = OverlayFidelityProjection.Project(
@@ -74,7 +74,7 @@ public sealed class OverlayFidelityProjectionTests
             ValidateOnlyHdr10Capabilities(artifacts));
 
         Assert.Equal(OverlayFidelityClaimProjection.Converted, cue.Kind);
-        Assert.Equal("HDR10 · Validate", cue.Label);
+        Assert.Equal("HDR10 路 Validate", cue.Label);
         Assert.Contains("Windows manual viewer evidence", cue.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("sRGB compatibility fallback", cue.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Converted output", cue.Detail, StringComparison.OrdinalIgnoreCase);
@@ -90,7 +90,7 @@ public sealed class OverlayFidelityProjectionTests
             OutputProfileExecutionCapabilities.CompatibilityOnly);
 
         Assert.Equal(OverlayFidelityClaimProjection.Converted, cue.Kind);
-        Assert.Equal("sRGB · Compat", cue.Label);
+        Assert.Equal("sRGB 路 Compat", cue.Label);
         Assert.Contains("Compatibility output", cue.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Converted output", cue.Detail, StringComparison.OrdinalIgnoreCase);
     }
@@ -103,7 +103,7 @@ public sealed class OverlayFidelityProjectionTests
         [
             ArtifactWithFormatContract("Microsoft Paint"),
             ArtifactWithFormatContract("Windows Photos"),
-            ArtifactWithFormatContract("Chromium browsers"),
+            ArtifactWithFormatContract("Microsoft Edge"),
         ];
 
         var cue = OverlayFidelityProjection.Project(
@@ -114,7 +114,7 @@ public sealed class OverlayFidelityProjectionTests
             OutputTarget.Clipboard);
 
         Assert.Equal(OverlayFidelityClaimProjection.Converted, cue.Kind);
-        Assert.Equal("HDR10 · Compat", cue.Label);
+        Assert.Equal("HDR10 路 Compat", cue.Label);
         Assert.Contains("clipboard output stays on sRGB compatibility output", cue.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -126,7 +126,7 @@ public sealed class OverlayFidelityProjectionTests
         [
             ArtifactWithFormatContract("Microsoft Paint"),
             ArtifactWithFormatContract("Windows Photos"),
-            ArtifactWithFormatContract("Chromium browsers"),
+            ArtifactWithFormatContract("Microsoft Edge"),
         ];
 
         var cue = OverlayFidelityProjection.Project(
@@ -137,7 +137,7 @@ public sealed class OverlayFidelityProjectionTests
             OutputTarget.Both);
 
         Assert.Equal(OverlayFidelityClaimProjection.Converted, cue.Kind);
-        Assert.Equal("HDR10 · Ready", cue.Label);
+        Assert.Equal("HDR10 路 Ready", cue.Label);
         Assert.Contains("Both-target output still keeps clipboard on sRGB compatibility fallback", cue.Detail, StringComparison.OrdinalIgnoreCase);
     }
 

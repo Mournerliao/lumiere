@@ -96,6 +96,8 @@ Evidence:
 - HDR10 JXR runtime gating now also requires recorded target-app versions for the named viewers under test. Viewer-status rows without matching app-version evidence no longer count as complete manual release proof.
 - Settings > Validation now also surfaces target-app version evidence as a dedicated validation row, so validators do not need to infer missing viewer/app versions only from the compact loaded-evidence summary.
 - The draft-generation workflow can now also prefill known Windows packaged target-app versions for supported viewers such as Microsoft Paint and Windows Photos, reducing target-app evidence friction before the manual session is finalized.
+- The browser-side validation target is now explicitly `Microsoft Edge` instead of a generic Chromium bucket, so runtime gates, templates, UI wording, and target-app version evidence all refer to one concrete browser target.
+- That same draft-generation workflow can now also resolve the local Microsoft Edge version through the `msedge.exe` executable path, keeping the named browser target as concrete evidence instead of a broad browser-family placeholder.
 
 Remaining blockers:
 
@@ -115,6 +117,7 @@ Evidence:
 - Missing target-app versions now also downgrade the artifact to incomplete manual evidence, so the review summary warning and the runtime/manual-evidence semantics stay aligned.
 - The validation panel now also exposes that same target-app-version completeness as a first-class row, keeping the review surface aligned with the stricter runtime/manual evidence rules.
 - Generated drafts now also attempt to prefill known Windows packaged target-app versions when the current machine can identify them, while leaving unsupported or unknown viewers on explicit placeholders.
+- The current browser-side validation scope is now also fixed to `Microsoft Edge`, and the seeded sample/draft placeholders use that explicit target instead of a broad Chromium family label.
 - Settings validation now also surfaces a compact loaded-evidence summary so testers can review the latest loaded artifact, current coverage, known limitations, follow-up stories, and ignored-file warnings without leaving the app.
 - That same surface now also links directly to the latest loaded evidence file, reducing the gap between in-app review and the durable JSON artifact that release validation depends on.
 - The same validation surface now also calls out whether the latest loaded evidence matches the current build, is stale for the current build, or cannot yet be aligned to a comparable build token.

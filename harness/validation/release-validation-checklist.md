@@ -83,7 +83,7 @@ These gates apply to the fixed public release target. They are stricter than the
 |---|---|---|---|---|---|
 | REL-OUT-01 | Clipboard output, paste into Paint. | Pasted image appears; dimensions roughly match expected crop/fullscreen output. | NOT RUN |  | Clipboard encoder/output pipeline change. |
 | REL-OUT-02 | Clipboard output, paste into Photos or another image consumer. | Target app accepts the output or limitation is recorded. | NOT RUN |  | Clipboard format change. |
-| REL-OUT-03 | Clipboard output, paste into Chromium-based app. | Target app accepts the output or limitation is recorded. | NOT RUN |  | Clipboard format change. |
+| REL-OUT-03 | Clipboard output, paste into Microsoft Edge. | Target app accepts the output or limitation is recorded. | NOT RUN |  | Clipboard format change. |
 | REL-OUT-04 | Folder output to normal user-writable directory. | PNG is written with expected name; file opens. | NOT RUN |  | Folder output, naming, save path change. |
 | REL-OUT-05 | Both-target output. | Clipboard and file results are both reported; partial failures are clear. | NOT RUN |  | Output orchestration or result model change. |
 | REL-OUT-06 | Open after capture. | Saved file opens only when a file artifact exists. | NOT RUN |  | After-capture behavior change. |
@@ -164,4 +164,3 @@ When a feature changes or a new feature is added:
 3. If the feature touches WGC, DXGI, D3D11, HDR, multi-monitor behavior, clipboard, filesystem, tray, hotkeys, or packaging, require Windows manual validation.
 4. Link detailed workflows to focused documents such as `target-aware-hdr-validation.md`, `overlay-validation.md`, `output-validation.md`, `lifecycle-validation.md`, `hdr-sdr-validation-scenarios.md`, and `settings-accessibility-validation.md` instead of duplicating every step here.
 5. Update `history/foundation-validation-snapshot-2026-06-03.md` only when a new point-in-time snapshot is intentionally recorded.
-

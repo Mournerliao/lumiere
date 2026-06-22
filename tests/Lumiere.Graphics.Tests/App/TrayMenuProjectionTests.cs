@@ -111,7 +111,7 @@ public sealed class TrayMenuProjectionTests
             [
                 ArtifactWithFormatContract("Microsoft Paint"),
                 ArtifactWithFormatContract("Windows Photos"),
-                ArtifactWithFormatContract("Chromium browsers"),
+                ArtifactWithFormatContract("Microsoft Edge"),
             ],
             executionCapabilities: OutputProfileExecutionCapabilities.Create(
                 OutputProfileExecutionCapability.SrgbCompatibility,
@@ -138,7 +138,7 @@ public sealed class TrayMenuProjectionTests
             [
                 ArtifactWithFormatContract("Microsoft Paint"),
                 ArtifactWithFormatContract("Windows Photos"),
-                ArtifactWithFormatContract("Chromium browsers"),
+                ArtifactWithFormatContract("Microsoft Edge"),
             ],
             executionCapabilities: OutputProfileExecutionCapabilities.Create(
                 OutputProfileExecutionCapability.SrgbCompatibility,

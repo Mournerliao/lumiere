@@ -175,7 +175,7 @@ public sealed class MainPanelProjectionTests
         {
             ArtifactFor("Microsoft Paint"),
             ArtifactFor("Windows Photos"),
-            ArtifactFor("Chromium browsers"),
+            ArtifactFor("Microsoft Edge"),
         };
 
         var projection = MainPanelProjection.Project(
@@ -205,7 +205,7 @@ public sealed class MainPanelProjectionTests
         {
             ArtifactFor("Microsoft Paint"),
             ArtifactFor("Windows Photos"),
-            ArtifactFor("Chromium browsers"),
+            ArtifactFor("Microsoft Edge"),
         };
 
         var projection = MainPanelProjection.Project(

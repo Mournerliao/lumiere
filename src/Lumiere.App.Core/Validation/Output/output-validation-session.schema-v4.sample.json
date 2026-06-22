@@ -22,7 +22,7 @@
   "targetAppsTested": [
     "Microsoft Paint",
     "Windows Photos",
-    "Chromium browsers"
+    "Microsoft Edge"
   ],
   "targetAppVersions": [
     {
@@ -34,8 +34,8 @@
       "version": "REPLACE_WITH_WINDOWS_PHOTOS_VERSION"
     },
     {
-      "name": "Chromium browsers",
-      "version": "REPLACE_WITH_CHROMIUM_BROWSERS_VERSION"
+      "name": "Microsoft Edge",
+      "version": "REPLACE_WITH_MICROSOFT_EDGE_VERSION"
     }
   ],
   "checklistIdsCovered": [
@@ -113,7 +113,7 @@
           "detail": "Replace with observed artifact handling, visual match, HDR preservation, and HDR10 metadata recognition results."
         },
         {
-          "name": "Chromium browsers",
+          "name": "Microsoft Edge",
           "artifactHandlingStatus": "NotRun",
           "visualMatchStatus": "NotRun",
           "hdrPreservationStatus": "NotRun",

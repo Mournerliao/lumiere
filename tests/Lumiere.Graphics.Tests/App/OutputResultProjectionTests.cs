@@ -67,7 +67,7 @@ public sealed class OutputResultProjectionTests
         Assert.Contains("NOT RUN", projection.FidelityDetail, StringComparison.Ordinal);
         Assert.Contains("Microsoft Paint", projection.FidelityDetail, StringComparison.Ordinal);
         Assert.Contains("Windows Photos", projection.FidelityDetail, StringComparison.Ordinal);
-        Assert.Contains("Chromium", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("Microsoft Edge", projection.FidelityDetail, StringComparison.Ordinal);
         Assert.DoesNotContain("HDR-preserved", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -94,7 +94,7 @@ public sealed class OutputResultProjectionTests
         [
             ArtifactFor("Microsoft Paint"),
             ArtifactFor("Windows Photos"),
-            ArtifactFor("Chromium browsers"),
+            ArtifactFor("Microsoft Edge"),
         ];
         var selectedProfile = PerfectHdrFidelityProjection.ProjectOutputProfile(
             OutputProfileContract.FromSettingsValue("HDR10"),
@@ -254,7 +254,7 @@ public sealed class OutputResultProjectionTests
                     [
                         PassingHdrViewer("Microsoft Paint"),
                         PassingHdrViewer("Windows Photos"),
-                        PassingHdrViewer("Chromium browsers"),
+                        PassingHdrViewer("Microsoft Edge"),
                     ])
                 {
                     FormatContract = CompleteHdr10Contract,

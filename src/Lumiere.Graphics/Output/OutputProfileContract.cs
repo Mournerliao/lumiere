@@ -27,7 +27,7 @@ public sealed record OutputProfileContract(
             "Compatibility-converted sRGB artifact",
             "scRGB linear values are converted into SDR-compatible sRGB for common destinations.",
             "No HDR metadata is attached to the compatibility artifact.",
-            "Paint, Photos, and Chromium compatibility still require Windows validation.",
+            "Paint, Photos, and Microsoft Edge compatibility still require Windows validation.",
             CreateCompatibilityViewerEvidence());
 
     public static OutputProfileContract Hdr10Pq { get; } =
@@ -267,21 +267,21 @@ public sealed record OutputProfileContract(
     [
         OutputViewerCompatibilityEvidence.ForSdrCompatibility("Microsoft Paint"),
         OutputViewerCompatibilityEvidence.ForSdrCompatibility("Windows Photos"),
-        OutputViewerCompatibilityEvidence.ForSdrCompatibility("Chromium browsers"),
+        OutputViewerCompatibilityEvidence.ForSdrCompatibility("Microsoft Edge"),
     ];
 
     private static IReadOnlyList<OutputViewerCompatibilityEvidence> CreateHdrViewerEvidence() =>
     [
         OutputViewerCompatibilityEvidence.ForHdrProfile("Microsoft Paint"),
         OutputViewerCompatibilityEvidence.ForHdrProfile("Windows Photos"),
-        OutputViewerCompatibilityEvidence.ForHdrProfile("Chromium browsers"),
+        OutputViewerCompatibilityEvidence.ForHdrProfile("Microsoft Edge"),
     ];
 
     private static IReadOnlyList<OutputViewerCompatibilityEvidence> CreateWideGamutViewerEvidence() =>
     [
         OutputViewerCompatibilityEvidence.ForWideGamutProfile("Microsoft Paint"),
         OutputViewerCompatibilityEvidence.ForWideGamutProfile("Windows Photos"),
-        OutputViewerCompatibilityEvidence.ForWideGamutProfile("Chromium browsers"),
+        OutputViewerCompatibilityEvidence.ForWideGamutProfile("Microsoft Edge"),
     ];
 }
 

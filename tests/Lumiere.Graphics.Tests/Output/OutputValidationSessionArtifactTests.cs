@@ -25,7 +25,7 @@ public sealed class OutputValidationSessionArtifactTests
             ResultSummary: "Windows Photos preserved the HDR10 output path.",
             EvidencePaths: ["docs/validation/evidence/photos-hdr10.md"],
             KnownLimitations: ["Paint not yet validated"],
-            FollowUpIssuesOrStories: ["Validate Paint and Chromium viewers"],
+            FollowUpIssuesOrStories: ["Validate Paint and Microsoft Edge viewers"],
             OutputProfileRecords:
             [
                 new(
@@ -214,7 +214,7 @@ public sealed class OutputValidationSessionArtifactTests
                     [
                         PassingHdrViewer("Microsoft Paint"),
                         PassingHdrViewer("Windows Photos"),
-                        PassingHdrViewer("Chromium browsers"),
+                        PassingHdrViewer("Microsoft Edge"),
                     ])
                 {
                     FormatContract = CompleteHdr10Contract,
@@ -238,7 +238,7 @@ public sealed class OutputValidationSessionArtifactTests
                     [
                         PassingHdrViewer("Microsoft Paint"),
                         PassingHdrViewer("Windows Photos"),
-                        PassingHdrViewer("Chromium browsers"),
+                        PassingHdrViewer("Microsoft Edge"),
                     ])
                 {
                     FormatContract = CompleteHdr10Contract,
@@ -266,7 +266,7 @@ public sealed class OutputValidationSessionArtifactTests
                     [
                         PassingHdrViewer("Microsoft Paint"),
                         PassingHdrViewer("Windows Photos"),
-                        PassingHdrViewer("Chromium browsers"),
+                        PassingHdrViewer("Microsoft Edge"),
                     ])
                 {
                     FormatContract = CompleteHdr10Contract,
@@ -315,7 +315,7 @@ public sealed class OutputValidationSessionArtifactTests
                     [
                         PassingHdrViewer("Microsoft Paint"),
                         PassingHdrViewer("Windows Photos"),
-                        PassingHdrViewer("Chromium browsers"),
+                        PassingHdrViewer("Microsoft Edge"),
                     ]),
             ]) with
         {
@@ -355,7 +355,7 @@ public sealed class OutputValidationSessionArtifactTests
                     [
                         PassingHdrViewer("Microsoft Paint"),
                         PassingHdrViewer("Windows Photos"),
-                        PassingHdrViewer("Chromium browsers"),
+                        PassingHdrViewer("Microsoft Edge"),
                     ])
                 {
                     FormatContract = CompleteHdr10Contract,
@@ -423,7 +423,7 @@ public sealed class OutputValidationSessionArtifactTests
                     [
                         PassingHdrViewer("Microsoft Paint"),
                         PassingHdrViewer("Windows Photos"),
-                        PassingHdrViewer("Chromium browsers"),
+                        PassingHdrViewer("Microsoft Edge"),
                     ]),
             ]);
         var contract = OutputProfileContract.Hdr10Pq with
@@ -450,7 +450,7 @@ public sealed class OutputValidationSessionArtifactTests
                     [
                         PassingHdrViewer("Microsoft Paint"),
                         PassingHdrViewer("Windows Photos"),
-                        PassingHdrViewer("Chromium browsers"),
+                        PassingHdrViewer("Microsoft Edge"),
                     ]),
             ]);
         var incomplete = CreateArtifact(
@@ -491,7 +491,7 @@ public sealed class OutputValidationSessionArtifactTests
                     [
                         PassingHdrViewer("Microsoft Paint"),
                         PassingHdrViewer("Windows Photos"),
-                        PassingHdrViewer("Chromium browsers"),
+                        PassingHdrViewer("Microsoft Edge"),
                     ]),
             ]);
         var failed = CreateArtifact(

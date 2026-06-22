@@ -1,5 +1,6 @@
 using Windows.ApplicationModel;
 using Windows.Management.Deployment;
+using System.Diagnostics;
 
 namespace Lumiere.App;
 
@@ -12,19 +13,24 @@ public sealed class WindowsTargetAppVersionPrefillProvider : ITargetAppVersionPr
 {
     private const string MicrosoftPaintFamilyName = "Microsoft.Paint_8wekyb3d8bbwe";
     private const string WindowsPhotosFamilyName = "Microsoft.Windows.Photos_8wekyb3d8bbwe";
+    private const string MicrosoftEdgeExecutableName = "msedge.exe";
 
     private readonly Func<string, string?> tryGetPackageVersionByFamilyName;
+    private readonly Func<string, string?> tryGetExecutableVersionByName;
 
     public WindowsTargetAppVersionPrefillProvider()
-        : this(TryGetInstalledPackageVersionByFamilyName)
+        : this(TryGetInstalledPackageVersionByFamilyName, TryGetInstalledExecutableVersionByName)
     {
     }
 
     internal WindowsTargetAppVersionPrefillProvider(
-        Func<string, string?> tryGetPackageVersionByFamilyName)
+        Func<string, string?> tryGetPackageVersionByFamilyName,
+        Func<string, string?> tryGetExecutableVersionByName)
     {
         this.tryGetPackageVersionByFamilyName =
             tryGetPackageVersionByFamilyName ?? throw new ArgumentNullException(nameof(tryGetPackageVersionByFamilyName));
+        this.tryGetExecutableVersionByName =
+            tryGetExecutableVersionByName ?? throw new ArgumentNullException(nameof(tryGetExecutableVersionByName));
     }
 
     public string? TryGetVersion(string targetAppName)
@@ -38,6 +44,7 @@ public sealed class WindowsTargetAppVersionPrefillProvider : ITargetAppVersionPr
         {
             "Microsoft Paint" => tryGetPackageVersionByFamilyName(MicrosoftPaintFamilyName),
             "Windows Photos" => tryGetPackageVersionByFamilyName(WindowsPhotosFamilyName),
+            "Microsoft Edge" => tryGetExecutableVersionByName(MicrosoftEdgeExecutableName),
             _ => null,
         };
     }
@@ -73,4 +80,48 @@ public sealed class WindowsTargetAppVersionPrefillProvider : ITargetAppVersionPr
 
     private static string FormatVersion(PackageVersion version) =>
         $"{version.Major}.{version.Minor}.{version.Build}.{version.Revision}";
+
+    private static string? TryGetInstalledExecutableVersionByName(string executableName)
+    {
+        foreach (var path in EnumerateKnownExecutablePaths(executableName))
+        {
+            try
+            {
+                if (!File.Exists(path))
+                {
+                    continue;
+                }
+
+                var version = FileVersionInfo.GetVersionInfo(path).FileVersion?.Trim();
+                if (!string.IsNullOrWhiteSpace(version))
+                {
+                    return version;
+                }
+            }
+            catch (Exception ex) when (ex is InvalidOperationException
+                                       or UnauthorizedAccessException
+                                       or ArgumentException
+                                       or FileNotFoundException
+                                       or System.ComponentModel.Win32Exception)
+            {
+                continue;
+            }
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<string> EnumerateKnownExecutablePaths(string executableName)
+    {
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+
+        return
+        [
+            Path.Combine(programFilesX86, "Microsoft", "Edge", "Application", executableName),
+            Path.Combine(programFiles, "Microsoft", "Edge", "Application", executableName),
+            Path.Combine(localAppData, "Microsoft", "Edge", "Application", executableName),
+        ];
+    }
 }

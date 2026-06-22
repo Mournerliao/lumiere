@@ -96,7 +96,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         {
             ArtifactWithIncompleteViewerEvidence("Microsoft Paint"),
             ArtifactWithIncompleteViewerEvidence("Windows Photos"),
-            ArtifactWithIncompleteViewerEvidence("Chromium browsers"),
+            ArtifactWithIncompleteViewerEvidence("Microsoft Edge"),
         };
 
         var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(
@@ -142,7 +142,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             [
                 PassingHdrViewer("Microsoft Paint"),
                 PassingHdrViewer("Windows Photos"),
-                PassingHdrViewer("Chromium browsers"),
+                PassingHdrViewer("Microsoft Edge"),
             ],
         };
 
@@ -164,7 +164,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             [
                 PassingHdrViewer("Microsoft Paint"),
                 PassingHdrViewer("Windows Photos"),
-                PassingHdrViewer("Chromium browsers"),
+                PassingHdrViewer("Microsoft Edge"),
             ],
         };
         var readiness = PreviewReadinessStatus.Degraded(
@@ -206,7 +206,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Contains("Named viewers", validation.ViewerMatrixSummary, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(validation.ViewerMatrix, viewer => viewer.Name == "Microsoft Paint" && viewer.Status == ValidationEvidenceStatus.NotRun);
         Assert.Contains(validation.ViewerMatrix, viewer => viewer.Name == "Windows Photos" && viewer.Status == ValidationEvidenceStatus.NotRun);
-        Assert.Contains(validation.ViewerMatrix, viewer => viewer.Name == "Chromium browsers" && viewer.Status == ValidationEvidenceStatus.NotRun);
+        Assert.Contains(validation.ViewerMatrix, viewer => viewer.Name == "Microsoft Edge" && viewer.Status == ValidationEvidenceStatus.NotRun);
         Assert.All(
             validation.ViewerMatrix,
             viewer =>
@@ -291,7 +291,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: "Windows Photos HDR validation passed.",
             EvidencePaths: ["docs/validation/evidence/photos.md"],
-            KnownLimitations: ["Paint and Chromium not yet validated"],
+            KnownLimitations: ["Paint and Microsoft Edge not yet validated"],
             FollowUpIssuesOrStories: ["Validate remaining viewers"],
             OutputProfileRecords:
             [
@@ -318,7 +318,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             viewer.Name == "Windows Photos"
             && viewer.Status == ValidationEvidenceStatus.Pass);
         Assert.Contains(validation.ViewerMatrix, viewer =>
-            viewer.Name == "Chromium browsers"
+            viewer.Name == "Microsoft Edge"
             && viewer.Status == ValidationEvidenceStatus.NotRun);
         Assert.Equal(FidelityClaimKind.Unvalidated, profile.FidelityClaim.Kind);
     }
@@ -338,7 +338,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             [
                 ArtifactFor("Microsoft Paint"),
                 ArtifactFor("Windows Photos"),
-                ArtifactFor("Chromium browsers"),
+                ArtifactFor("Microsoft Edge"),
             ]);
 
         Assert.All(validation.ViewerMatrix, viewer => Assert.Equal(ValidationEvidenceStatus.Pass, viewer.Status));
@@ -359,7 +359,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             [
                 ArtifactFor("Microsoft Paint"),
                 ArtifactFor("Windows Photos"),
-                ArtifactFor("Chromium browsers"),
+                ArtifactFor("Microsoft Edge"),
             ]);
 
         var profileRow = Assert.Single(
@@ -397,7 +397,7 @@ public sealed class PerfectHdrFidelityProjectionTests
 
         Assert.Equal(ValidationEvidenceStatus.Limited, matrixRow.Status);
         Assert.Contains("Windows Photos", matrixRow.Detail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Chromium browsers", matrixRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Microsoft Edge", matrixRow.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(ValidationEvidenceStatus.Pass, versionRow.Status);
     }
 
@@ -412,7 +412,7 @@ public sealed class PerfectHdrFidelityProjectionTests
                     TargetAppVersions = [],
                 },
                 ArtifactFor("Windows Photos"),
-                ArtifactFor("Chromium browsers"),
+                ArtifactFor("Microsoft Edge"),
             ]);
         var versionRow = Assert.Single(
             validation.Rows,
@@ -437,7 +437,7 @@ public sealed class PerfectHdrFidelityProjectionTests
                 {
                     Hdr10MetadataStatus = OutputCompatibilityEvidenceStatus.Fail,
                 },
-                PassingHdrViewer("Chromium browsers"),
+                PassingHdrViewer("Microsoft Edge"),
             ],
         };
 
@@ -463,7 +463,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             [
                 SdrArtifactFor("Microsoft Paint"),
                 SdrArtifactFor("Windows Photos"),
-                SdrArtifactFor("Chromium browsers"),
+                SdrArtifactFor("Microsoft Edge"),
             ]);
         var visualRow = Assert.Single(
             validation.Rows,
@@ -488,7 +488,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Equal(ValidationEvidenceStatus.Limited, visualRow.Status);
         Assert.Contains("missing", visualRow.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Windows Photos", visualRow.Detail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Chromium browsers", visualRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Microsoft Edge", visualRow.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -546,7 +546,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             [
                 ArtifactFor("Microsoft Paint"),
                 ArtifactFor("Windows Photos"),
-                ArtifactFor("Chromium browsers"),
+                ArtifactFor("Microsoft Edge"),
             ]);
 
         Assert.Equal(FidelityClaimKind.HdrPreserved, profile.FidelityClaim.Kind);
@@ -560,7 +560,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             [
                 ArtifactFor("Microsoft Paint"),
                 ArtifactFor("Windows Photos"),
-                ArtifactFor("Chromium browsers"),
+                ArtifactFor("Microsoft Edge"),
             ],
             readiness: null,
             OutputProfileExecutionCapabilities.CompatibilityOnly);
@@ -580,7 +580,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         [
             ArtifactWithFormatContract("Microsoft Paint"),
             ArtifactWithFormatContract("Windows Photos"),
-            ArtifactWithFormatContract("Chromium browsers"),
+            ArtifactWithFormatContract("Microsoft Edge"),
         ];
 
         var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(
@@ -605,7 +605,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         [
             ArtifactWithFormatContract("Microsoft Paint"),
             ArtifactWithFormatContract("Windows Photos"),
-            ArtifactWithFormatContract("Chromium browsers"),
+            ArtifactWithFormatContract("Microsoft Edge"),
         ];
 
         var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(
@@ -630,14 +630,14 @@ public sealed class PerfectHdrFidelityProjectionTests
             [
                 ArtifactWithFormatContract("Microsoft Paint"),
                 ArtifactWithFormatContract("Windows Photos"),
-                ArtifactWithFormatContract("Chromium browsers"),
+                ArtifactWithFormatContract("Microsoft Edge"),
             ],
             readiness: null,
             ValidateOnlyHdr10Capabilities(
                 [
                     ArtifactWithFormatContract("Microsoft Paint"),
                     ArtifactWithFormatContract("Windows Photos"),
-                    ArtifactWithFormatContract("Chromium browsers"),
+                    ArtifactWithFormatContract("Microsoft Edge"),
                 ]));
 
         Assert.Equal("HDR10", profile.Label);
@@ -658,7 +658,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             [
                 ArtifactWithFormatContract("Microsoft Paint"),
                 ArtifactWithFormatContract("Windows Photos"),
-                ArtifactWithFormatContract("Chromium browsers"),
+                ArtifactWithFormatContract("Microsoft Edge"),
             ],
             OutputProfileExecutionCapabilities.CompatibilityOnly);
         var profileRow = Assert.Single(
@@ -683,7 +683,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         [
             ArtifactFor("Microsoft Paint"),
             ArtifactFor("Windows Photos"),
-            ArtifactFor("Chromium browsers"),
+            ArtifactFor("Microsoft Edge"),
         ];
 
         var validation = PerfectHdrFidelityProjection.ProjectValidation(
@@ -705,7 +705,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             [
                 ArtifactWithFormatContract("Microsoft Paint"),
                 ArtifactWithFormatContract("Windows Photos"),
-                ArtifactWithFormatContract("Chromium browsers"),
+                ArtifactWithFormatContract("Microsoft Edge"),
             ],
             OutputProfileExecutionCapabilities.Create(
                 OutputProfileExecutionCapability.SrgbCompatibility,
@@ -811,16 +811,16 @@ public sealed class PerfectHdrFidelityProjectionTests
                 {
                     Date = "2026-06-22",
                     OutputTargetsTested = ["Folder", "Both"],
-                    TargetAppsTested = ["Windows Photos", "Chromium browsers"],
+                    TargetAppsTested = ["Windows Photos", "Microsoft Edge"],
                     TargetAppVersions =
                     [
                         new OutputValidationTargetAppVersionRecord("Windows Photos", "2026.11040.12001.0"),
-                        new OutputValidationTargetAppVersionRecord("Chromium browsers", "138.0.7204.101"),
+                        new OutputValidationTargetAppVersionRecord("Microsoft Edge", "138.0.7204.101"),
                     ],
                     ChecklistIdsCovered = ["REL-OUT-01", "REL-HDR-04"],
-                    KnownLimitations = ["Chromium metadata recognition is still pending."],
+                    KnownLimitations = ["Microsoft Edge metadata recognition is still pending."],
                     FollowUpIssuesOrStories = ["11-3", "12-1"],
-                    ResultSummary = "Windows Photos validation passed with pending Chromium follow-up.",
+                    ResultSummary = "Windows Photos validation passed with pending Microsoft Edge follow-up.",
                 },
             ]);
 
@@ -833,7 +833,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Contains("2026.11040.12001.0", summary.CoverageDetail, StringComparison.Ordinal);
         Assert.Contains("REL-HDR-04", summary.CoverageDetail, StringComparison.Ordinal);
         Assert.Contains("Known limitations", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Chromium metadata recognition", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Microsoft Edge metadata recognition", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Follow-up: 11-3, 12-1", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
     }
 

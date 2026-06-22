@@ -10,7 +10,7 @@ public sealed class OutputProfileContractTests
     {
         var contract = OutputProfileContract.SrgbCompatibilityPng;
 
-        Assert.Equal(["Microsoft Paint", "Windows Photos", "Chromium browsers"], contract.ViewerEvidence.Select(viewer => viewer.Name).ToArray());
+        Assert.Equal(["Microsoft Paint", "Windows Photos", "Microsoft Edge"], contract.ViewerEvidence.Select(viewer => viewer.Name).ToArray());
         Assert.All(
             contract.ViewerEvidence,
             viewer =>
@@ -120,7 +120,7 @@ public sealed class OutputProfileContractTests
             [
                 PassingSdrViewer("Microsoft Paint"),
                 PassingSdrViewer("Windows Photos"),
-                PassingSdrViewer("Chromium browsers"),
+                PassingSdrViewer("Microsoft Edge"),
             ],
         };
 
@@ -144,7 +144,7 @@ public sealed class OutputProfileContractTests
             [
                 PassingHdrViewer("Microsoft Paint"),
                 PassingHdrViewer("Windows Photos"),
-                PassingHdrViewer("Chromium browsers"),
+                PassingHdrViewer("Microsoft Edge"),
             ],
         };
 
@@ -170,7 +170,7 @@ public sealed class OutputProfileContractTests
                     Hdr10MetadataStatus = OutputCompatibilityEvidenceStatus.NotRun,
                 },
                 PassingHdrViewer("Windows Photos"),
-                PassingHdrViewer("Chromium browsers"),
+                PassingHdrViewer("Microsoft Edge"),
             ],
         };
 
@@ -192,7 +192,7 @@ public sealed class OutputProfileContractTests
             [
                 PassingHdrViewer("Microsoft Paint"),
                 PassingHdrViewer("Windows Photos"),
-                PassingHdrViewer("Chromium browsers"),
+                PassingHdrViewer("Microsoft Edge"),
             ],
         };
 
@@ -235,7 +235,7 @@ public sealed class OutputProfileContractTests
         var summary = updated.EvaluateEvidence();
         Assert.False(summary.AllowsHdrPreservedClaim);
         Assert.Contains("Microsoft Paint", summary.HdrPreservedGateDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Chromium browsers", summary.HdrPreservedGateDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Microsoft Edge", summary.HdrPreservedGateDetail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Windows Photos", summary.HdrPreservedGateDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(updated.ViewerEvidence, viewer =>
             viewer.Name == "Microsoft Paint"
@@ -266,7 +266,7 @@ public sealed class OutputProfileContractTests
             [
                 PassingSdrViewer("Microsoft Paint"),
                 PassingSdrViewer("Windows Photos"),
-                PassingSdrViewer("Chromium browsers"),
+                PassingSdrViewer("Microsoft Edge"),
             ])
         {
             EvidenceSource = OutputValidationEvidenceSource.Automated,

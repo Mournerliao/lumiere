@@ -10,7 +10,7 @@ The validation workflow had already grown support for target-app version evidenc
 2. Production draft generation now uses a Windows-backed provider that can prefill known packaged-app versions for supported viewers such as:
    - `Microsoft Paint`
    - `Windows Photos`
-3. Unknown or unsupported viewers, such as the generic `Chromium browsers` bucket, still stay on explicit `REPLACE_WITH_*` placeholders.
+3. Unsupported viewers still stay on explicit `REPLACE_WITH_*` placeholders until Lumiere has a real local version-resolution path for them.
 4. Artifact-source draft creation now passes that provider through the normal workspace workflow instead of requiring UI-layer logic.
 
 ## Why This Matters

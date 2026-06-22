@@ -39,7 +39,7 @@ public sealed class OutputValidationDocumentationTests
         Assert.NotNull(artifact.TargetHdrEvidence);
         Assert.Contains("REPLACE_WITH_TARGET_DISPLAY_NAME", artifact.TargetHdrEvidence.TargetDisplayName);
         Assert.Equal(
-            ["Microsoft Paint", "Windows Photos", "Chromium browsers"],
+            ["Microsoft Paint", "Windows Photos", "Microsoft Edge"],
             artifact.OutputProfileRecords.Single().ViewerEvidence.Select(viewer => viewer.Name).ToArray());
 
         var updated = artifact.ApplyTo(OutputProfileContract.Hdr10Pq with

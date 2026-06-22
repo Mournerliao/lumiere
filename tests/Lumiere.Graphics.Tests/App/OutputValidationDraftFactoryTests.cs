@@ -42,7 +42,7 @@ public sealed class OutputValidationDraftFactoryTests
         Assert.Contains("REL-HDR-04", document.Artifact.ChecklistIdsCovered);
         Assert.Contains("Microsoft Paint", document.Artifact.TargetAppsTested);
         Assert.Contains("Windows Photos", document.Artifact.TargetAppsTested);
-        Assert.Contains("Chromium browsers", document.Artifact.TargetAppsTested);
+        Assert.Contains("Microsoft Edge", document.Artifact.TargetAppsTested);
         Assert.Contains(
             document.Artifact.TargetAppVersions,
             version => version.Name == "Windows Photos"
@@ -141,6 +141,7 @@ public sealed class OutputValidationDraftFactoryTests
                 {
                     ["Microsoft Paint"] = "11.2504.451.0",
                     ["Windows Photos"] = "2026.11040.12001.0",
+                    ["Microsoft Edge"] = "138.0.7204.101",
                 }));
 
         Assert.Contains(
@@ -153,8 +154,8 @@ public sealed class OutputValidationDraftFactoryTests
                 && version.Version == "2026.11040.12001.0");
         Assert.Contains(
             document.Artifact.TargetAppVersions,
-            version => version.Name == "Chromium browsers"
-                && version.Version == "REPLACE_WITH_CHROMIUM_BROWSERS_VERSION");
+            version => version.Name == "Microsoft Edge"
+                && version.Version == "138.0.7204.101");
     }
 
     private sealed class StubTargetAppVersionPrefillProvider(

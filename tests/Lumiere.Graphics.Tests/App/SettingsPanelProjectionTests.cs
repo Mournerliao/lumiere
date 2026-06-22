@@ -369,7 +369,7 @@ public sealed class SettingsPanelProjectionTests
         [
             ArtifactWithFormatContract("Microsoft Paint"),
             ArtifactWithFormatContract("Windows Photos"),
-            ArtifactWithFormatContract("Chromium browsers"),
+            ArtifactWithFormatContract("Microsoft Edge"),
         ];
 
         var projection = SettingsPanelProjection.Project(
@@ -397,7 +397,7 @@ public sealed class SettingsPanelProjectionTests
         [
             ArtifactWithFormatContract("Microsoft Paint"),
             ArtifactWithFormatContract("Windows Photos"),
-            ArtifactWithFormatContract("Chromium browsers"),
+            ArtifactWithFormatContract("Microsoft Edge"),
         ];
 
         var projection = SettingsPanelProjection.Project(
@@ -448,13 +448,13 @@ public sealed class SettingsPanelProjectionTests
             [
                 ArtifactWithIncompleteViewerEvidence("Microsoft Paint"),
                 ArtifactWithIncompleteViewerEvidence("Windows Photos"),
-                ArtifactWithIncompleteViewerEvidence("Chromium browsers"),
+                ArtifactWithIncompleteViewerEvidence("Microsoft Edge"),
             ],
             executionCapabilities: ValidateOnlyHdr10Capabilities(
                 [
                     ArtifactWithIncompleteViewerEvidence("Microsoft Paint"),
                     ArtifactWithIncompleteViewerEvidence("Windows Photos"),
-                    ArtifactWithIncompleteViewerEvidence("Chromium browsers"),
+                    ArtifactWithIncompleteViewerEvidence("Microsoft Edge"),
                 ]));
 
         Assert.All(projection.Validation.ViewerMatrix, viewer => Assert.Equal(ValidationEvidenceStatus.NotRun, viewer.Status));
@@ -492,7 +492,7 @@ public sealed class SettingsPanelProjectionTests
             [
                 ArtifactFor("Microsoft Paint"),
                 ArtifactFor("Windows Photos"),
-                ArtifactFor("Chromium browsers"),
+                ArtifactFor("Microsoft Edge"),
             ]);
 
         Assert.Equal("Build", projection.Validation.OutputProfileGate.StatusLabel);
@@ -517,7 +517,7 @@ public sealed class SettingsPanelProjectionTests
             [
                 ArtifactWithFormatContract("Microsoft Paint"),
                 ArtifactWithFormatContract("Windows Photos"),
-                ArtifactWithFormatContract("Chromium browsers"),
+                ArtifactWithFormatContract("Microsoft Edge"),
             ],
             executionCapabilities: OutputProfileExecutionCapabilities.Create(
                 OutputProfileExecutionCapability.SrgbCompatibility,
@@ -577,7 +577,7 @@ public sealed class SettingsPanelProjectionTests
             [
                 SdrArtifactFor("Microsoft Paint"),
                 SdrArtifactFor("Windows Photos"),
-                SdrArtifactFor("Chromium browsers"),
+                SdrArtifactFor("Microsoft Edge"),
             ]);
         var visualRow = Assert.Single(
             projection.Validation.Rows,
@@ -627,7 +627,7 @@ public sealed class SettingsPanelProjectionTests
         Assert.Contains("Named viewers", projection.Validation.ViewerMatrixSummary, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(projection.Validation.ViewerMatrix, viewer => viewer.Name == "Microsoft Paint");
         Assert.Contains(projection.Validation.ViewerMatrix, viewer => viewer.Name == "Windows Photos");
-        Assert.Contains(projection.Validation.ViewerMatrix, viewer => viewer.Name == "Chromium browsers");
+        Assert.Contains(projection.Validation.ViewerMatrix, viewer => viewer.Name == "Microsoft Edge");
     }
 
     [Fact]
@@ -724,16 +724,16 @@ public sealed class SettingsPanelProjectionTests
                 {
                     Date = "2026-06-22",
                     OutputTargetsTested = ["Folder", "Both"],
-                    TargetAppsTested = ["Windows Photos", "Chromium browsers"],
+                    TargetAppsTested = ["Windows Photos", "Microsoft Edge"],
                     TargetAppVersions =
                     [
                         new OutputValidationTargetAppVersionRecord("Windows Photos", "2026.11040.12001.0"),
-                        new OutputValidationTargetAppVersionRecord("Chromium browsers", "138.0.7204.101"),
+                        new OutputValidationTargetAppVersionRecord("Microsoft Edge", "138.0.7204.101"),
                     ],
                     ChecklistIdsCovered = ["REL-OUT-01", "REL-HDR-04"],
-                    KnownLimitations = ["Chromium metadata recognition is still pending."],
+                    KnownLimitations = ["Microsoft Edge metadata recognition is still pending."],
                     FollowUpIssuesOrStories = ["11-3"],
-                    ResultSummary = "Windows Photos validation passed with pending Chromium follow-up.",
+                    ResultSummary = "Windows Photos validation passed with pending Microsoft Edge follow-up.",
                 },
             ],
             [])
@@ -746,16 +746,16 @@ public sealed class SettingsPanelProjectionTests
                     {
                         Date = "2026-06-22",
                         OutputTargetsTested = ["Folder", "Both"],
-                        TargetAppsTested = ["Windows Photos", "Chromium browsers"],
+                        TargetAppsTested = ["Windows Photos", "Microsoft Edge"],
                         TargetAppVersions =
                         [
                             new OutputValidationTargetAppVersionRecord("Windows Photos", "2026.11040.12001.0"),
-                            new OutputValidationTargetAppVersionRecord("Chromium browsers", "138.0.7204.101"),
+                            new OutputValidationTargetAppVersionRecord("Microsoft Edge", "138.0.7204.101"),
                         ],
                         ChecklistIdsCovered = ["REL-OUT-01", "REL-HDR-04"],
-                        KnownLimitations = ["Chromium metadata recognition is still pending."],
+                        KnownLimitations = ["Microsoft Edge metadata recognition is still pending."],
                         FollowUpIssuesOrStories = ["11-3"],
-                        ResultSummary = "Windows Photos validation passed with pending Chromium follow-up.",
+                        ResultSummary = "Windows Photos validation passed with pending Microsoft Edge follow-up.",
                     }),
             ],
         };
@@ -775,7 +775,7 @@ public sealed class SettingsPanelProjectionTests
         Assert.Contains("Windows Photos validation passed", projection.Validation.EvidenceSummary.Summary, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("targets Folder, Both", projection.Validation.EvidenceSummary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("2026.11040.12001.0", projection.Validation.EvidenceSummary.CoverageDetail, StringComparison.Ordinal);
-        Assert.Contains("Chromium metadata recognition", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Microsoft Edge metadata recognition", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Follow-up: 11-3", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.True(projection.Validation.EvidenceSummary.CanOpenLatestArtifact);
         Assert.Equal("C:\\Validation\\windows-photos.json", projection.Validation.EvidenceSummary.LatestArtifactPath);

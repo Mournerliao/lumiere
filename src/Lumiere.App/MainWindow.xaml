@@ -1142,7 +1142,7 @@
                           FontSize="10"
                           FontWeight="SemiBold"
                           Foreground="{StaticResource TextBrush}"
-                          Text="Chromium browsers" />
+                          Text="Microsoft Edge" />
                       <TextBlock
                           x:Name="ValidationViewerRow3Detail"
                           FontSize="9"
@@ -1635,4 +1635,3 @@
     </Grid>
   </Grid>
 </Window>
-
