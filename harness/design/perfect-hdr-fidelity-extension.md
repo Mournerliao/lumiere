@@ -171,6 +171,7 @@ Recommended native shape:
 - Settings > About > Validation details.
 - Rows for capture target, preview path, output profile, compatibility matrix, last validation build/date, and known limitations.
 - Each row uses `Validated`, `Validated with limitation`, `Not run`, `Failed`, or `Not applicable`.
+- Viewer compatibility rows should keep category evidence explicit in readable text, separating artifact handling, visual match, HDR preservation, and HDR10 metadata instead of compressing everything into one color-only badge or one opaque paragraph.
 
 Evidence surfaces must link back to `harness/validation/release-validation-checklist.md` in docs and release work. The app UI should summarize evidence; the docs remain the durable release record.
 

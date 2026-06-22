@@ -1482,12 +1482,11 @@ public static class PerfectHdrFidelityProjection
             MapEvidenceStatus(evidence.VisualMatchStatus),
             MapEvidenceStatus(evidence.HdrPreservationStatus),
             MapEvidenceStatus(evidence.Hdr10MetadataStatus),
-            $"Artifact: {FormatEvidenceStatus(evidence.ArtifactHandlingStatus)}. "
-                + $"Visual match: {FormatEvidenceStatus(evidence.VisualMatchStatus)}. "
-                + $"HDR preservation: {FormatEvidenceStatus(evidence.HdrPreservationStatus)}. "
-                + $"HDR10 metadata: {FormatEvidenceStatus(evidence.Hdr10MetadataStatus)}. "
-                + "Fidelity evidence is separated by category. "
-                + evidence.Detail);
+            $"Artifact handling: {FormatEvidenceStatus(evidence.ArtifactHandlingStatus)} · "
+                + $"Visual match: {FormatEvidenceStatus(evidence.VisualMatchStatus)} · "
+                + $"HDR preservation: {FormatEvidenceStatus(evidence.HdrPreservationStatus)} · "
+                + $"HDR10 metadata: {FormatEvidenceStatus(evidence.Hdr10MetadataStatus)}",
+            $"Fidelity evidence is separated by category. {evidence.Detail}");
 
     private static ValidationEvidenceStatus MapEvidenceStatus(OutputCompatibilityEvidenceStatus status) =>
         status switch
@@ -1633,10 +1632,13 @@ public sealed record ValidationViewerMatrixRowProjection(
     ValidationEvidenceStatus VisualMatchStatus,
     ValidationEvidenceStatus HdrPreservationStatus,
     ValidationEvidenceStatus Hdr10MetadataStatus,
+    string StatusBreakdown,
     string Detail)
 {
     public ValidationEvidenceStatus Status =>
         CombineStatus(ArtifactHandlingStatus, VisualMatchStatus, HdrPreservationStatus, Hdr10MetadataStatus);
+
+    public string AutomationSummary => $"{StatusBreakdown}. {Detail}";
 
     private static ValidationEvidenceStatus CombineStatus(params ValidationEvidenceStatus[] statuses)
     {

@@ -2104,16 +2104,19 @@ public sealed partial class MainWindow : Window
         ApplyValidationViewerRow(
             validation.ViewerMatrix.ElementAtOrDefault(0),
             ValidationViewerRow1Label,
+            ValidationViewerRow1Breakdown,
             ValidationViewerRow1Detail,
             ValidationViewerRow1Status);
         ApplyValidationViewerRow(
             validation.ViewerMatrix.ElementAtOrDefault(1),
             ValidationViewerRow2Label,
+            ValidationViewerRow2Breakdown,
             ValidationViewerRow2Detail,
             ValidationViewerRow2Status);
         ApplyValidationViewerRow(
             validation.ViewerMatrix.ElementAtOrDefault(2),
             ValidationViewerRow3Label,
+            ValidationViewerRow3Breakdown,
             ValidationViewerRow3Detail,
             ValidationViewerRow3Status);
         ValidationEvidenceSummaryHeadingText.Text = validation.EvidenceSummary.Heading;
@@ -2163,22 +2166,26 @@ public sealed partial class MainWindow : Window
     private static void ApplyValidationViewerRow(
         ValidationViewerMatrixRowProjection? row,
         TextBlock label,
+        TextBlock breakdown,
         TextBlock detail,
         TextBlock status)
     {
         if (row is null)
         {
             label.Text = string.Empty;
+            breakdown.Text = string.Empty;
             detail.Text = string.Empty;
             status.Text = string.Empty;
             return;
         }
 
         label.Text = row.Name;
+        breakdown.Text = row.StatusBreakdown;
         detail.Text = row.Detail;
         status.Text = FormatValidationStatus(row.Status);
         status.Foreground = GetValidationStatusBrush(row.Status);
-        AutomationProperties.SetHelpText(label, row.Detail);
+        AutomationProperties.SetHelpText(label, row.AutomationSummary);
+        AutomationProperties.SetHelpText(breakdown, row.AutomationSummary);
     }
 
     private void ApplyValidationRecord(ValidationRecordProjection record)

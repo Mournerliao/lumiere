@@ -102,6 +102,7 @@ Evidence:
 - The draft-generation workflow can now also prefill known Windows packaged target-app versions for supported viewers such as Microsoft Paint and Windows Photos, reducing target-app evidence friction before the manual session is finalized.
 - The browser-side validation target is now explicitly `Microsoft Edge` instead of a generic Chromium bucket, so runtime gates, templates, UI wording, and target-app version evidence all refer to one concrete browser target.
 - That same draft-generation workflow can now also resolve the local Microsoft Edge version through the `msedge.exe` executable path, keeping the named browser target as concrete evidence instead of a broad browser-family placeholder.
+- Settings > Validation viewer rows now also separate aggregate viewer status from category-by-category evidence breakdown text, so target-app review no longer depends on parsing one dense paragraph to understand artifact handling, visual match, HDR preservation, and HDR10 metadata state.
 
 Remaining blockers:
 
@@ -196,7 +197,9 @@ Evidence:
 - Settings > Validation now also surfaces `Current build evidence` as a first-class row, so validators do not need to infer stale-versus-current evidence by manually comparing JSON and About metadata.
 - The settings validation panel now also has enough native row capacity to render the full projected evidence set, so `Target app versions` and `Current build evidence` no longer compete for one truncated row slot in the desktop UI.
 - That same validation surface now also carries current active target context inside the `Target-aware HDR` row, reducing ambiguity for keyboard, screen-reader, and manual-validation review flows when mixed-monitor setups are under test.
+- Settings > Validation viewer rows now also render an explicit category-by-category evidence breakdown ahead of the narrative guidance detail, reducing dependence on color and improving screen-reader/long-text review for target-app compatibility states.
 - Main-panel output feedback now also keeps captured-target context visible after teardown, reducing ambiguity for post-capture review flows without inventing new non-native UI affordances.
+- A focused implementation record exists at `_bmad-output/implementation-artifacts/13-2-structure-viewer-compatibility-evidence-for-accessibility.md`.
 
 Remaining blockers:
 

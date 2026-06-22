@@ -211,8 +211,10 @@ public sealed class PerfectHdrFidelityProjectionTests
             validation.ViewerMatrix,
             viewer =>
             {
-                Assert.Contains("artifact", viewer.Detail, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("artifact handling", viewer.StatusBreakdown, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("visual match", viewer.StatusBreakdown, StringComparison.OrdinalIgnoreCase);
                 Assert.Contains("fidelity", viewer.Detail, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("HDR-preserved", viewer.StatusBreakdown, StringComparison.OrdinalIgnoreCase);
                 Assert.DoesNotContain("HDR-preserved", viewer.Detail, StringComparison.OrdinalIgnoreCase);
             });
     }
@@ -230,10 +232,11 @@ public sealed class PerfectHdrFidelityProjectionTests
                 Assert.Equal(ValidationEvidenceStatus.NotRun, viewer.VisualMatchStatus);
                 Assert.Equal(ValidationEvidenceStatus.NotApplicable, viewer.HdrPreservationStatus);
                 Assert.Equal(ValidationEvidenceStatus.NotApplicable, viewer.Hdr10MetadataStatus);
-                Assert.Contains("Artifact", viewer.Detail, StringComparison.OrdinalIgnoreCase);
-                Assert.Contains("visual", viewer.Detail, StringComparison.OrdinalIgnoreCase);
-                Assert.Contains("HDR preservation: N/A", viewer.Detail, StringComparison.OrdinalIgnoreCase);
-                Assert.Contains("HDR10 metadata: N/A", viewer.Detail, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("Artifact handling: NOT RUN", viewer.StatusBreakdown, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("Visual match: NOT RUN", viewer.StatusBreakdown, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("HDR preservation: N/A", viewer.StatusBreakdown, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("HDR10 metadata: N/A", viewer.StatusBreakdown, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("Fidelity evidence is separated by category", viewer.Detail, StringComparison.OrdinalIgnoreCase);
             });
     }
 

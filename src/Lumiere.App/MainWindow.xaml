@@ -1115,6 +1115,11 @@
                           Foreground="{StaticResource TextBrush}"
                           Text="Microsoft Paint" />
                       <TextBlock
+                          x:Name="ValidationViewerRow1Breakdown"
+                          FontSize="9"
+                          Foreground="{StaticResource SubtleTextBrush}"
+                          TextWrapping="WrapWholeWords" />
+                      <TextBlock
                           x:Name="ValidationViewerRow1Detail"
                           FontSize="9"
                           Foreground="{StaticResource MutedTextBrush}"
@@ -1143,6 +1148,11 @@
                           Foreground="{StaticResource TextBrush}"
                           Text="Windows Photos" />
                       <TextBlock
+                          x:Name="ValidationViewerRow2Breakdown"
+                          FontSize="9"
+                          Foreground="{StaticResource SubtleTextBrush}"
+                          TextWrapping="WrapWholeWords" />
+                      <TextBlock
                           x:Name="ValidationViewerRow2Detail"
                           FontSize="9"
                           Foreground="{StaticResource MutedTextBrush}"
@@ -1170,6 +1180,11 @@
                           FontWeight="SemiBold"
                           Foreground="{StaticResource TextBrush}"
                           Text="Microsoft Edge" />
+                      <TextBlock
+                          x:Name="ValidationViewerRow3Breakdown"
+                          FontSize="9"
+                          Foreground="{StaticResource SubtleTextBrush}"
+                          TextWrapping="WrapWholeWords" />
                       <TextBlock
                           x:Name="ValidationViewerRow3Detail"
                           FontSize="9"
