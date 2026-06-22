@@ -103,6 +103,8 @@ Evidence:
 - The browser-side validation target is now explicitly `Microsoft Edge` instead of a generic Chromium bucket, so runtime gates, templates, UI wording, and target-app version evidence all refer to one concrete browser target.
 - That same draft-generation workflow can now also resolve the local Microsoft Edge version through the `msedge.exe` executable path, keeping the named browser target as concrete evidence instead of a broad browser-family placeholder.
 - Settings > Validation viewer rows now also separate aggregate viewer status from category-by-category evidence breakdown text, so target-app review no longer depends on parsing one dense paragraph to understand artifact handling, visual match, HDR preservation, and HDR10 metadata state.
+- Those same viewer rows now also carry target-app version evidence inline, including recorded version detail or missing-version blockers for the named viewer under review instead of leaving app-version context only in a summary row.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/11-3-carry-target-app-version-evidence-into-viewer-rows.md`.
 
 Remaining blockers:
 
@@ -198,6 +200,7 @@ Evidence:
 - The settings validation panel now also has enough native row capacity to render the full projected evidence set, so `Target app versions` and `Current build evidence` no longer compete for one truncated row slot in the desktop UI.
 - That same validation surface now also carries current active target context inside the `Target-aware HDR` row, reducing ambiguity for keyboard, screen-reader, and manual-validation review flows when mixed-monitor setups are under test.
 - Settings > Validation viewer rows now also render an explicit category-by-category evidence breakdown ahead of the narrative guidance detail, reducing dependence on color and improving screen-reader/long-text review for target-app compatibility states.
+- Those same viewer rows now also keep target-app version evidence inline with the named viewer, reducing cross-row inference during keyboard, screen-reader, and long-text validation review.
 - Main-panel output feedback now also keeps captured-target context visible after teardown, reducing ambiguity for post-capture review flows without inventing new non-native UI affordances.
 - A focused implementation record exists at `_bmad-output/implementation-artifacts/13-2-structure-viewer-compatibility-evidence-for-accessibility.md`.
 

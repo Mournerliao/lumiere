@@ -213,6 +213,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             {
                 Assert.Contains("artifact handling", viewer.StatusBreakdown, StringComparison.OrdinalIgnoreCase);
                 Assert.Contains("visual match", viewer.StatusBreakdown, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("target app version", viewer.StatusBreakdown, StringComparison.OrdinalIgnoreCase);
                 Assert.Contains("fidelity", viewer.Detail, StringComparison.OrdinalIgnoreCase);
                 Assert.DoesNotContain("HDR-preserved", viewer.StatusBreakdown, StringComparison.OrdinalIgnoreCase);
                 Assert.DoesNotContain("HDR-preserved", viewer.Detail, StringComparison.OrdinalIgnoreCase);
@@ -232,10 +233,12 @@ public sealed class PerfectHdrFidelityProjectionTests
                 Assert.Equal(ValidationEvidenceStatus.NotRun, viewer.VisualMatchStatus);
                 Assert.Equal(ValidationEvidenceStatus.NotApplicable, viewer.HdrPreservationStatus);
                 Assert.Equal(ValidationEvidenceStatus.NotApplicable, viewer.Hdr10MetadataStatus);
+                Assert.Equal(ValidationEvidenceStatus.NotRun, viewer.TargetAppVersionStatus);
                 Assert.Contains("Artifact handling: NOT RUN", viewer.StatusBreakdown, StringComparison.OrdinalIgnoreCase);
                 Assert.Contains("Visual match: NOT RUN", viewer.StatusBreakdown, StringComparison.OrdinalIgnoreCase);
                 Assert.Contains("HDR preservation: N/A", viewer.StatusBreakdown, StringComparison.OrdinalIgnoreCase);
                 Assert.Contains("HDR10 metadata: N/A", viewer.StatusBreakdown, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("Target app version: NOT RUN", viewer.StatusBreakdown, StringComparison.OrdinalIgnoreCase);
                 Assert.Contains("Fidelity evidence is separated by category", viewer.Detail, StringComparison.OrdinalIgnoreCase);
             });
     }
@@ -262,6 +265,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             && viewer.VisualMatchStatus == ValidationEvidenceStatus.Pass
             && viewer.HdrPreservationStatus == ValidationEvidenceStatus.Pass
             && viewer.Hdr10MetadataStatus == ValidationEvidenceStatus.Pass
+            && viewer.TargetAppVersionStatus == ValidationEvidenceStatus.NotApplicable
             && viewer.Status == ValidationEvidenceStatus.Pass);
         Assert.Contains(validation.ViewerMatrix, viewer =>
             viewer.Name == "Microsoft Paint"
@@ -319,6 +323,8 @@ public sealed class PerfectHdrFidelityProjectionTests
 
         Assert.Contains(validation.ViewerMatrix, viewer =>
             viewer.Name == "Windows Photos"
+            && viewer.TargetAppVersionStatus == ValidationEvidenceStatus.Pass
+            && viewer.Detail.Contains("Recorded version:", StringComparison.OrdinalIgnoreCase)
             && viewer.Status == ValidationEvidenceStatus.Pass);
         Assert.Contains(validation.ViewerMatrix, viewer =>
             viewer.Name == "Microsoft Edge"
@@ -420,9 +426,14 @@ public sealed class PerfectHdrFidelityProjectionTests
         var versionRow = Assert.Single(
             validation.Rows,
             row => row.Label == "Target app versions");
+        var missingVersionViewer = Assert.Single(
+            validation.ViewerMatrix,
+            viewer => viewer.Name == "Microsoft Paint");
 
         Assert.Equal(ValidationEvidenceStatus.Limited, versionRow.Status);
         Assert.Contains("Microsoft Paint", versionRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(ValidationEvidenceStatus.Limited, missingVersionViewer.TargetAppVersionStatus);
+        Assert.Contains("still missing", missingVersionViewer.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

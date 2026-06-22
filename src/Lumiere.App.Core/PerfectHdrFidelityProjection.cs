@@ -260,6 +260,7 @@ public static class PerfectHdrFidelityProjection
             readiness,
             captureTarget,
             targetHdrEvidence: null,
+            artifacts: [],
             evidenceSummary: ValidationEvidenceSummaryProjection.Empty,
             record);
     }
@@ -281,6 +282,7 @@ public static class PerfectHdrFidelityProjection
             readiness,
             captureTarget,
             targetHdrEvidence: null,
+            artifacts: [],
             evidenceSummary: ValidationEvidenceSummaryProjection.Empty,
             record);
     }
@@ -301,6 +303,7 @@ public static class PerfectHdrFidelityProjection
             readiness,
             captureTarget,
             SelectCompleteTargetHdrEvidence([artifact]),
+            [artifact],
             ProjectValidationEvidenceSummary([artifact]),
             record);
     }
@@ -325,6 +328,7 @@ public static class PerfectHdrFidelityProjection
             readiness,
             captureTarget,
             SelectCompleteTargetHdrEvidence([artifact]),
+            [artifact],
             ProjectValidationEvidenceSummary([artifact]),
             record);
     }
@@ -346,6 +350,7 @@ public static class PerfectHdrFidelityProjection
             readiness,
             captureTarget,
             SelectCompleteTargetHdrEvidence(artifactArray),
+            artifactArray,
             ProjectValidationEvidenceSummary(artifactArray),
             record);
     }
@@ -393,6 +398,7 @@ public static class PerfectHdrFidelityProjection
             readiness,
             captureTarget,
             SelectCompleteTargetHdrEvidence(artifactArray),
+            artifactArray,
             ProjectValidationEvidenceSummary(artifactArray),
             record);
     }
@@ -423,10 +429,11 @@ public static class PerfectHdrFidelityProjection
         PreviewReadinessStatus? readiness,
         CaptureTarget? captureTarget,
         TargetAwareHdrValidationEvidence? targetHdrEvidence,
+        IReadOnlyList<OutputValidationSessionArtifact> artifacts,
         ValidationEvidenceSummaryProjection evidenceSummary,
         ValidationRecordProjection? record)
     {
-        var viewerMatrix = outputProfile.ViewerEvidence.Select(ProjectViewerEvidence).ToArray();
+        var viewerMatrix = CreateViewerMatrix(outputProfile, artifacts);
         var effectiveRecord = record ?? ProjectValidationRecord(null);
         return new(
             ReleaseTarget,
@@ -936,6 +943,15 @@ public static class PerfectHdrFidelityProjection
         updatedRows.Add(ProjectCurrentBuildEvidenceRow(evidenceSummary.BuildAlignment));
         return updatedRows;
     }
+
+    private static IReadOnlyList<ValidationViewerMatrixRowProjection> CreateViewerMatrix(
+        OutputProfileContract outputProfile,
+        IReadOnlyList<OutputValidationSessionArtifact> artifacts) =>
+        outputProfile.ViewerEvidence
+            .Select(evidence => ProjectViewerEvidence(
+                evidence,
+                ProjectViewerTargetAppVersionEvidence(evidence, artifacts)))
+            .ToArray();
 
     private static OutputValidationSessionArtifact? SelectLatestArtifact(
         IEnumerable<OutputValidationSessionArtifact> artifacts) =>
@@ -1475,18 +1491,82 @@ public static class PerfectHdrFidelityProjection
             _ => "Not defined",
         };
 
-    private static ValidationViewerMatrixRowProjection ProjectViewerEvidence(OutputViewerCompatibilityEvidence evidence) =>
+    private static ValidationViewerMatrixRowProjection ProjectViewerEvidence(
+        OutputViewerCompatibilityEvidence evidence,
+        ViewerTargetAppVersionEvidence targetAppVersionEvidence) =>
         new(
             evidence.Name,
             MapEvidenceStatus(evidence.ArtifactHandlingStatus),
             MapEvidenceStatus(evidence.VisualMatchStatus),
             MapEvidenceStatus(evidence.HdrPreservationStatus),
             MapEvidenceStatus(evidence.Hdr10MetadataStatus),
+            targetAppVersionEvidence.Status,
             $"Artifact handling: {FormatEvidenceStatus(evidence.ArtifactHandlingStatus)} · "
                 + $"Visual match: {FormatEvidenceStatus(evidence.VisualMatchStatus)} · "
                 + $"HDR preservation: {FormatEvidenceStatus(evidence.HdrPreservationStatus)} · "
-                + $"HDR10 metadata: {FormatEvidenceStatus(evidence.Hdr10MetadataStatus)}",
-            $"Fidelity evidence is separated by category. {evidence.Detail}");
+                + $"HDR10 metadata: {FormatEvidenceStatus(evidence.Hdr10MetadataStatus)} · "
+                + $"Target app version: {FormatValidationEvidenceStatus(targetAppVersionEvidence.Status)}",
+            $"{targetAppVersionEvidence.Detail} Fidelity evidence is separated by category. {evidence.Detail}");
+
+    private static ViewerTargetAppVersionEvidence ProjectViewerTargetAppVersionEvidence(
+        OutputViewerCompatibilityEvidence evidence,
+        IReadOnlyList<OutputValidationSessionArtifact> artifacts)
+    {
+        var viewerName = evidence.Name;
+        if (artifacts.Count == 0)
+        {
+            return new(
+                HasAppliedViewerEvidence(evidence)
+                    ? ValidationEvidenceStatus.NotApplicable
+                    : ValidationEvidenceStatus.NotRun,
+                HasAppliedViewerEvidence(evidence)
+                    ? "Target app version is not projected here because no loaded validation artifact is backing this viewer row yet."
+                    : "Target app version is not recorded yet for this viewer.");
+        }
+
+        var targetedArtifacts = artifacts
+            .Where(artifact => artifact.TargetAppsTested.Any(name => NamesMatch(name, viewerName)))
+            .ToArray();
+        if (targetedArtifacts.Length == 0)
+        {
+            return new(
+                ValidationEvidenceStatus.NotRun,
+                "Target app version is not recorded yet because this viewer is not covered in the loaded evidence.");
+        }
+
+        var recordedVersions = CollectDistinctEvidenceValues(
+            targetedArtifacts
+                .SelectMany(artifact => artifact.TargetAppVersions)
+                .Where(record =>
+                    NamesMatch(record.Name, viewerName)
+                    && IsRecordedEvidenceField(record.Version))
+                .Select(record => record.Version));
+        var missingVersion = targetedArtifacts.Any(artifact =>
+            OutputValidationSessionArtifact.GetMissingTargetAppVersionNames([viewerName], artifact.TargetAppVersions).Count > 0);
+        if (recordedVersions.Count == 0)
+        {
+            return new(
+                ValidationEvidenceStatus.Limited,
+                "Target app version is still missing for this viewer in the loaded evidence.");
+        }
+
+        var recordedVersionDetail = recordedVersions.Count == 1
+            ? $"Recorded version: {recordedVersions[0]}."
+            : $"Recorded versions: {FormatEvidenceList(recordedVersions, fallback: "none yet")}.";
+        return missingVersion
+            ? new(
+                ValidationEvidenceStatus.Limited,
+                $"{recordedVersionDetail} At least one loaded session for this viewer still misses a concrete recorded app version.")
+            : new(
+                ValidationEvidenceStatus.Pass,
+                recordedVersionDetail);
+    }
+
+    private static bool HasAppliedViewerEvidence(OutputViewerCompatibilityEvidence evidence) =>
+        evidence.ArtifactHandlingStatus is not OutputCompatibilityEvidenceStatus.NotRun
+        || evidence.VisualMatchStatus is not OutputCompatibilityEvidenceStatus.NotRun
+        || evidence.HdrPreservationStatus is not OutputCompatibilityEvidenceStatus.NotRun and not OutputCompatibilityEvidenceStatus.NotApplicable
+        || evidence.Hdr10MetadataStatus is not OutputCompatibilityEvidenceStatus.NotRun and not OutputCompatibilityEvidenceStatus.NotApplicable;
 
     private static ValidationEvidenceStatus MapEvidenceStatus(OutputCompatibilityEvidenceStatus status) =>
         status switch
@@ -1507,6 +1587,23 @@ public static class PerfectHdrFidelityProjection
             OutputCompatibilityEvidenceStatus.NotApplicable => "N/A",
             _ => "NOT RUN",
         };
+
+    private static string FormatValidationEvidenceStatus(ValidationEvidenceStatus status) =>
+        status switch
+        {
+            ValidationEvidenceStatus.Pass => "PASS",
+            ValidationEvidenceStatus.Limited => "LIMITED",
+            ValidationEvidenceStatus.Fail => "FAIL",
+            ValidationEvidenceStatus.NotApplicable => "N/A",
+            _ => "NOT RUN",
+        };
+
+    private static bool NamesMatch(string? left, string? right) =>
+        string.Equals(left?.Trim(), right?.Trim(), StringComparison.OrdinalIgnoreCase);
+
+    private sealed record ViewerTargetAppVersionEvidence(
+        ValidationEvidenceStatus Status,
+        string Detail);
 }
 
 public sealed record OutputProfileProjection(
@@ -1632,11 +1729,12 @@ public sealed record ValidationViewerMatrixRowProjection(
     ValidationEvidenceStatus VisualMatchStatus,
     ValidationEvidenceStatus HdrPreservationStatus,
     ValidationEvidenceStatus Hdr10MetadataStatus,
+    ValidationEvidenceStatus TargetAppVersionStatus,
     string StatusBreakdown,
     string Detail)
 {
     public ValidationEvidenceStatus Status =>
-        CombineStatus(ArtifactHandlingStatus, VisualMatchStatus, HdrPreservationStatus, Hdr10MetadataStatus);
+        CombineStatus(ArtifactHandlingStatus, VisualMatchStatus, HdrPreservationStatus, Hdr10MetadataStatus, TargetAppVersionStatus);
 
     public string AutomationSummary => $"{StatusBreakdown}. {Detail}";
 
