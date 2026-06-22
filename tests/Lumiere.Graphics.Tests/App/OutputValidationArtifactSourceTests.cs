@@ -216,6 +216,55 @@ public sealed class OutputValidationArtifactSourceTests
     }
 
     [Fact]
+    public void CreateResourceTrendDraft_WritesPrefilledMarkdownIntoWorkspaceRoot()
+    {
+        var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var source = new FileOutputValidationArtifactSource(
+            "C:\\Validation",
+            "*.json",
+            directoryExists: directories.Contains,
+            fileExists: files.ContainsKey,
+            createDirectory: path => directories.Add(path),
+            enumerateFiles: (_, _) => Array.Empty<string>(),
+            readAllText: path => files[path],
+            writeAllText: (path, content) => files[path] = content,
+            resolveTemplateSourceText: () => "{ \"schemaVersion\": 4 }",
+            getNow: () => new DateTimeOffset(2026, 06, 23, 11, 30, 00, TimeSpan.FromHours(8)),
+            prepareWorkspace: true);
+
+        var result = source.CreateResourceTrendDraft(
+            new ResourceTrendValidationDraftRequest(
+                "2.3.4+72c3be7",
+                OutputTarget.Both,
+                CaptureSessionState.Capturing(
+                    CaptureTarget.CreateForTest(
+                        new Windows.Graphics.SizeInt32
+                        {
+                            Width = 3840,
+                            Height = 2160,
+                        },
+                        "HDR Display",
+                        CaptureTargetKind.Display),
+                    Lumiere.Graphics.Hdr.PreviewReadinessStatus.Ready(
+                        "HDR preview path is validated.",
+                        "Target-aware readiness passed.")),
+                4242,
+                "& \"C:\\Validation\\collect-resource-trend-samples.ps1\" -ProcessId 4242 -DurationSeconds 900 -SampleIntervalSeconds 5 -OutputDirectory \"C:\\Validation\\resource-trends\"",
+                new OutputValidationCurrentSessionHint(
+                    "NVIDIA RTX 5080",
+                    ["150%"],
+                    "2 displays; active target HDR Display at 0,0 3840x2160")));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("C:\\Validation\\resource-trend-session-2026-06-23.md", result.DraftPath);
+        Assert.True(files.ContainsKey(result.DraftPath!));
+        Assert.Contains("- Output configuration: Both", files[result.DraftPath!], StringComparison.Ordinal);
+        Assert.Contains("- Lumiere process ID: 4242 (current session)", files[result.DraftPath!], StringComparison.Ordinal);
+        Assert.Contains("resource-trend-Lumiere.App-pid4242-REPLACE_WITH_TIMESTAMP.csv", files[result.DraftPath!], StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void CreateDraft_CarriesLatestCompatibleArtifactContextIntoManualPlaceholders()
     {
         var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

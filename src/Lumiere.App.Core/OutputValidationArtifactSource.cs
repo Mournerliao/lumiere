@@ -7,6 +7,8 @@ public interface IOutputValidationArtifactSource
     OutputValidationArtifactSnapshot Load();
 
     OutputValidationDraftResult CreateDraft(OutputValidationDraftRequest request);
+
+    OutputValidationDraftResult CreateResourceTrendDraft(ResourceTrendValidationDraftRequest request);
 }
 
 public sealed record OutputValidationArtifactSnapshot(
@@ -102,6 +104,14 @@ public sealed record OutputValidationDraftResult(
     public static OutputValidationDraftResult Failed(string technicalDetail) =>
         new(false, null, technicalDetail);
 }
+
+public sealed record ResourceTrendValidationDraftRequest(
+    string? BuildVersion,
+    OutputTarget OutputTarget,
+    Lumiere.Capture.CaptureSessionState SessionState,
+    int ProcessId,
+    string? ResourceTrendCommand = null,
+    OutputValidationCurrentSessionHint? CurrentSessionHint = null);
 
 public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifactSource
 {
@@ -249,6 +259,46 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
                 SelectDraftSeed(snapshot.Artifacts, request));
             var filePath = AllocateDraftPath(workspace.DirectoryPath, draft.FileNameStem);
             writeAllText(filePath, draft.Artifact.ToJson());
+            return OutputValidationDraftResult.Success(filePath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+        {
+            return OutputValidationDraftResult.Failed($"{ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    public OutputValidationDraftResult CreateResourceTrendDraft(ResourceTrendValidationDraftRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var workspace = prepareWorkspace
+            ? EnsureWorkspace()
+            : OutputValidationWorkspaceState.Unavailable;
+        if (!workspace.IsReady)
+        {
+            var detail = workspace.Issues.Count == 0
+                ? "Validation workspace is not ready on this machine."
+                : string.Join(" ", workspace.Issues.Select(issue => issue.Detail));
+            return OutputValidationDraftResult.Failed(detail);
+        }
+
+        if (string.IsNullOrWhiteSpace(workspace.ResourceTrendTemplatePath)
+            || !fileExists(workspace.ResourceTrendTemplatePath))
+        {
+            return OutputValidationDraftResult.Failed("Resource trend session template is not available in the local validation workspace.");
+        }
+
+        try
+        {
+            var template = readAllText(workspace.ResourceTrendTemplatePath);
+            var now = getNow();
+            var content = ResourceTrendValidationDraftFactory.Create(
+                request,
+                workspace.DirectoryPath,
+                now,
+                template);
+            var filePath = AllocateResourceTrendDraftPath(workspace.DirectoryPath, now);
+            writeAllText(filePath, content);
             return OutputValidationDraftResult.Success(filePath);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
@@ -518,6 +568,27 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         }
 
         throw new InvalidOperationException("Could not allocate a unique validation draft file name.");
+    }
+
+    private string AllocateResourceTrendDraftPath(string workspaceDirectoryPath, DateTimeOffset now)
+    {
+        var stem = $"resource-trend-session-{now.ToLocalTime():yyyy-MM-dd}";
+        var candidate = Path.Combine(workspaceDirectoryPath, $"{stem}.md");
+        if (!fileExists(candidate))
+        {
+            return candidate;
+        }
+
+        for (var suffix = 2; suffix < 1000; suffix++)
+        {
+            candidate = Path.Combine(workspaceDirectoryPath, $"{stem}-{suffix}.md");
+            if (!fileExists(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        throw new InvalidOperationException("Could not allocate a unique resource trend draft file name.");
     }
 
     private static OutputValidationDraftSeed? SelectDraftSeed(

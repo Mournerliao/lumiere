@@ -761,6 +761,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.True(record.CanOpenResourceTrendTemplate);
         Assert.True(record.CanOpenResourceTrendScript);
         Assert.True(record.CanCopyResourceTrendCommand);
+        Assert.True(record.CanCreateResourceTrendDraft);
     }
 
     [Fact]
@@ -794,6 +795,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.True(record.CanOpenResourceTrendTemplate);
         Assert.True(record.CanOpenResourceTrendScript);
         Assert.True(record.CanCopyResourceTrendCommand);
+        Assert.True(record.CanCreateResourceTrendDraft);
     }
 
     [Fact]

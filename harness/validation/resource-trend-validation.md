@@ -46,11 +46,12 @@ Record all of the following for each run:
 
 Lumiere's Settings > Validation surface can now help with this setup directly:
 
+- `Create trend draft` generates a session-local markdown record in the validation workspace with the current PID, output configuration, seeded sampler command, and current-session context hints already filled in.
 - `Trend template` opens the seeded session template in the local validation workspace.
 - `Trend script` opens the seeded sampler script in the same workspace.
 - `Copy trend cmd` copies a current-process PowerShell command that already targets the running Lumiere PID and the workspace-local `resource-trends` folder.
 
-Use these helpers to start a run faster, but still review the copied command before execution and still record the real resulting artifacts in the session notes.
+Use these helpers to start a run faster, but still review the copied command before execution and still record the real resulting artifacts in the session notes. A generated draft is only a structured starting point; it does not count toward Story `12-3` or the public release gate until its placeholders are replaced with real Windows manual observations.
 
 ## Sampler Command
 

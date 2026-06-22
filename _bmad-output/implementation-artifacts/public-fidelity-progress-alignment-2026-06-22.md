@@ -153,8 +153,11 @@ Evidence:
 - `harness/validation/lifecycle-validation.md`, `harness/validation/release-validation-checklist.md`, and `harness/validation/index.md` now route long-run resource evidence through the new workflow.
 - The app-local validation workspace now also seeds the same resource-trend session template and sampler script next to the output-validation workflow instead of keeping Story `12-3` only in repo docs.
 - Settings > Validation now exposes native `Trend template`, `Trend script`, and `Copy trend cmd` actions so a Windows validator can open the seeded helpers and copy a current-process sampler command without manually rebuilding the PowerShell invocation.
+- Settings > Validation now also exposes `Create trend draft`, which writes a session-local long-run markdown record prefilled with the current process ID, output configuration, current-session hints, and workspace-local sampler command instead of leaving Story `12-3` at template-only readiness.
 - `ResourceTrendValidationCommandProjection` now centralizes that copied command behind one narrow seam, keeping the current PID, workspace path, output folder, and default duration/interval policy out of the view layer.
+- `ResourceTrendValidationDraftFactory` now centralizes long-run session draft content behind one narrow seam, keeping the WinUI layer limited to request assembly and file-open behavior.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-3-surface-resource-trend-workflow-in-settings.md`.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-3-create-resource-trend-draft-from-current-session.md`.
 
 Remaining blockers:
 

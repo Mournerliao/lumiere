@@ -1348,10 +1348,32 @@
                           FontFamily="Segoe Fluent Icons"
                           FontSize="11"
                           Glyph="&#xE70F;" />
+                        <TextBlock
+                            FontSize="11"
+                            FontWeight="SemiBold"
+                            Text="Create draft" />
+                      </StackPanel>
+                  </Button>
+                  <Button
+                      x:Name="ValidationCreateResourceTrendDraftButton"
+                      MinWidth="0"
+                      HorizontalAlignment="Stretch"
+                      AutomationProperties.Name="Create resource trend draft"
+                      AutomationProperties.HelpText="Create a local long-run resource trend session draft prefilled with the current Lumiere session context."
+                      Click="OnValidationCreateResourceTrendDraftClick"
+                      Padding="10,7">
+                    <StackPanel
+                        HorizontalAlignment="Center"
+                        Orientation="Horizontal"
+                        Spacing="6">
+                      <FontIcon
+                          FontFamily="Segoe Fluent Icons"
+                          FontSize="11"
+                          Glyph="&#xE70F;" />
                       <TextBlock
                           FontSize="11"
                           FontWeight="SemiBold"
-                          Text="Create draft" />
+                          Text="Create trend draft" />
                     </StackPanel>
                   </Button>
                   <Button

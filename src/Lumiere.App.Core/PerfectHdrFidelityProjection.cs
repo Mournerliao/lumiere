@@ -1692,6 +1692,10 @@ public sealed record ValidationRecordProjection(
         !string.IsNullOrWhiteSpace(ValidationWorkspacePath)
         && !string.IsNullOrWhiteSpace(ResourceTrendScriptPath);
 
+    public bool CanCreateResourceTrendDraft =>
+        CanCopyResourceTrendCommand
+        && !string.IsNullOrWhiteSpace(ResourceTrendTemplatePath);
+
     public string WorkspaceSummary =>
         string.IsNullOrWhiteSpace(ValidationWorkspacePath)
             ? EvidenceDocumentPath

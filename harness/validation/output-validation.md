@@ -83,11 +83,12 @@ The settings validation section also exposes native `Create draft`, `Open worksp
 
 For Story `12-3`, the same settings surface now also exposes app-local resource-trend workflow helpers:
 
+- `Create trend draft` generates a workspace-local long-run session markdown draft prefilled with the current process ID, output target, current-session hints, and a seeded sampler command.
 - `Trend template` opens the seeded long-run session record template from the local validation workspace.
 - `Trend script` opens the seeded PowerShell sampler script from the local validation workspace.
 - `Copy trend cmd` copies a current-process sampler command that already points at Lumiere's seeded script, the current app PID, and the workspace-local `resource-trends` output folder.
 
-These actions reduce setup friction for long-run lifecycle validation, but they do not count as evidence by themselves. The copied command is only a launch helper; Story `12-3` still requires real Windows `50+` or `100+` runs, captured CSV/summary artifacts, and an honest pass/fail/limitation record.
+These actions reduce setup friction for long-run lifecycle validation, but they do not count as evidence by themselves. The generated draft is still a `NOT RUN` placeholder until a validator replaces its manual fields and observed results. The copied command is only a launch helper; Story `12-3` still requires real Windows `50+` or `100+` runs, captured CSV/summary artifacts, and an honest pass/fail/limitation record.
 
 The same settings surface now also summarizes the currently loaded evidence for the active session instead of forcing the tester to infer everything from the lower gate rows alone. The loaded-evidence summary is intentionally compact and evidence-first:
 

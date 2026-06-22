@@ -1950,6 +1950,41 @@ public sealed partial class MainWindow : Window
         await OpenValidationPathAsync(result.DraftPath, ArtifactShellActionKind.Open, "validation draft");
     }
 
+    private async void OnValidationCreateResourceTrendDraftClick(object sender, RoutedEventArgs e)
+    {
+        var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
+        var snapshot = LoadOutputValidationArtifacts();
+        var record = PerfectHdrFidelityProjection.ProjectValidationRecord(
+            aboutInfoProvider.Version,
+            snapshot);
+        var result = outputValidationArtifactSource.CreateResourceTrendDraft(
+            new ResourceTrendValidationDraftRequest(
+                aboutInfoProvider.Version,
+                settingsProvider.OutputTarget,
+                currentState,
+                Process.GetCurrentProcess().Id,
+                ResourceTrendValidationCommandProjection.Create(
+                    record.ResourceTrendScriptPath,
+                    record.ValidationWorkspacePath,
+                    Process.GetCurrentProcess().Id),
+                CreateCurrentSessionValidationHint()));
+
+        if (!result.IsSuccess)
+        {
+            Logger.LogWarning(
+                "operation=ValidationWorkspace, stage=CreateTrendDraftFailed, detail={Detail}",
+                result.TechnicalDetail);
+            return;
+        }
+
+        Logger.LogInformation(
+            "operation=ValidationWorkspace, stage=CreateTrendDraftSucceeded, path={Path}, outputTarget={OutputTarget}, processId={ProcessId}",
+            result.DraftPath,
+            settingsProvider.OutputTarget,
+            Process.GetCurrentProcess().Id);
+        await OpenValidationPathAsync(result.DraftPath, ArtifactShellActionKind.Open, "resource trend draft");
+    }
+
     private OutputValidationCurrentSessionHint CreateCurrentSessionValidationHint() =>
         new(
             deviceResources.AdapterName,
@@ -2162,6 +2197,7 @@ public sealed partial class MainWindow : Window
         ValidationOpenResourceTrendScriptButton.IsEnabled = record.CanOpenResourceTrendScript;
         ValidationCopyResourceTrendCommandButton.IsEnabled = record.CanCopyResourceTrendCommand;
         ValidationCreateDraftButton.IsEnabled = record.CanOpenValidationWorkspace;
+        ValidationCreateResourceTrendDraftButton.IsEnabled = record.CanCreateResourceTrendDraft;
         ToolTipService.SetToolTip(
             ValidationOpenWorkspaceButton,
             record.CanOpenValidationWorkspace
@@ -2177,6 +2213,11 @@ public sealed partial class MainWindow : Window
             record.CanOpenValidationWorkspace
                 ? $"Create a local validation draft in {record.ValidationWorkspacePath} using the current output target and selected profile."
                 : "Local validation workspace is not available for this session.");
+        ToolTipService.SetToolTip(
+            ValidationCreateResourceTrendDraftButton,
+            record.CanCreateResourceTrendDraft
+                ? $"Create a long-run resource trend session draft in {record.ValidationWorkspacePath} using the current session PID and workspace-local sampler command."
+                : "Resource trend draft creation is unavailable until the workspace, template, and sampler script are ready.");
         ToolTipService.SetToolTip(
             ValidationOpenResourceTrendTemplateButton,
             record.CanOpenResourceTrendTemplate
@@ -2207,6 +2248,11 @@ public sealed partial class MainWindow : Window
             record.CanOpenValidationWorkspace
                 ? $"Create a local validation draft in {record.ValidationWorkspacePath} using the current output target and selected profile."
                 : "Local validation workspace is not available for this session.");
+        AutomationProperties.SetHelpText(
+            ValidationCreateResourceTrendDraftButton,
+            record.CanCreateResourceTrendDraft
+                ? "Create a long-run resource trend session draft using the current process ID, output configuration, and app-local validation workspace."
+                : "Resource trend draft creation is unavailable until the workspace, template, and sampler script are ready.");
         AutomationProperties.SetHelpText(
             ValidationOpenResourceTrendTemplateButton,
             record.CanOpenResourceTrendTemplate
