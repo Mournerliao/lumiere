@@ -108,6 +108,7 @@ For the HDR10 JXR release path, current-build alignment is now part of the runti
 `Create draft` is intentionally a workflow accelerator, not a release-evidence shortcut. Lumiere pre-fills only context it already knows for the current session, such as:
 
 - current app version
+- current build commit token when the informational version exposes one
 - selected output target
 - selected output profile
 - named viewer skeleton for that profile
@@ -116,6 +117,7 @@ For the HDR10 JXR release path, current-build alignment is now part of the runti
 The generated file still keeps manual-observation fields honest:
 
 - tester, Windows version, device, GPU, and DPI remain explicit placeholders
+- if Lumiere cannot prove a comparable current build token, the draft keeps `REPLACE_WITH_GIT_COMMIT` instead of inventing one
 - viewer artifact handling, visual match, HDR preservation, and HDR10 metadata recognition stay `NotRun` until observed
 - the draft is written into `%LOCALAPPDATA%\Lumiere\validation\output\` as a normal artifact file, but it should not be counted as passing evidence until the placeholders and observed results are replaced with real Windows manual validation data
 - Lumiere does not auto-reload the draft after creation, so an untouched draft does not immediately change the current evidence gate view

@@ -43,6 +43,7 @@ public sealed class OutputValidationDraftFactoryTests
         Assert.Contains("Microsoft Paint", document.Artifact.TargetAppsTested);
         Assert.Contains("Windows Photos", document.Artifact.TargetAppsTested);
         Assert.Contains("Chromium browsers", document.Artifact.TargetAppsTested);
+        Assert.Contains("REPLACE_WITH_GIT_COMMIT", document.Artifact.BuildCommit, StringComparison.Ordinal);
         Assert.Contains("Lumiere v0.1.0", document.Artifact.BuildCommit, StringComparison.Ordinal);
         Assert.Equal("HDR Display", document.Artifact.TargetHdrEvidence!.TargetDisplayName);
         Assert.Equal(0, document.Artifact.TargetHdrEvidence.Left);
@@ -99,5 +100,23 @@ public sealed class OutputValidationDraftFactoryTests
                 Assert.Equal(OutputCompatibilityEvidenceStatus.NotApplicable, viewer.HdrPreservationStatus);
                 Assert.Equal(OutputCompatibilityEvidenceStatus.NotApplicable, viewer.Hdr10MetadataStatus);
             });
+    }
+
+    [Fact]
+    public void Create_PrefillsComparableBuildCommitWhenInformationalVersionCarriesIt()
+    {
+        var request = new OutputValidationDraftRequest(
+            "2.3.4+72c3be7",
+            OutputTarget.Folder,
+            OutputProfileContract.Hdr10Pq,
+            CaptureSessionState.Idle());
+
+        var document = OutputValidationDraftFactory.Create(
+            request,
+            new DateTimeOffset(2026, 06, 22, 10, 30, 00, TimeSpan.FromHours(8)));
+
+        Assert.StartsWith("72c3be7", document.Artifact.BuildCommit, StringComparison.Ordinal);
+        Assert.Contains("Lumiere v2.3.4+72c3be7", document.Artifact.BuildCommit, StringComparison.Ordinal);
+        Assert.DoesNotContain("REPLACE_WITH_GIT_COMMIT", document.Artifact.BuildCommit, StringComparison.Ordinal);
     }
 }

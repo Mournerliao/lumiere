@@ -107,6 +107,7 @@ Evidence:
 - Public release checklist defines the required HDR/SDR, mixed-display, target-app, DPI, and output evidence categories.
 - Output validation artifact schema/template defines required session evidence fields.
 - The local validation workspace can now generate a prefilled draft artifact from the current session, reducing setup friction before real Windows manual evidence is recorded.
+- When the app informational version exposes a comparable build commit token, that same draft now pre-fills the current build commit instead of leaving the build field fully manual.
 - Settings validation now also surfaces a compact loaded-evidence summary so testers can review the latest loaded artifact, current coverage, known limitations, follow-up stories, and ignored-file warnings without leaving the app.
 - That same surface now also links directly to the latest loaded evidence file, reducing the gap between in-app review and the durable JSON artifact that release validation depends on.
 - The same validation surface now also calls out whether the latest loaded evidence matches the current build, is stale for the current build, or cannot yet be aligned to a comparable build token.

@@ -16,6 +16,7 @@ The local validation workspace and reload/open actions already reduced path-disc
    - create a new prefilled validation draft in the workspace root
 2. Added `OutputValidationDraftFactory` to generate a session-local `OutputValidationSessionArtifact` draft from current runtime context:
    - current app version
+   - current build commit token when the informational version exposes one
    - selected output target
    - selected output profile
    - profile-specific viewer skeleton
@@ -23,6 +24,7 @@ The local validation workspace and reload/open actions already reduced path-disc
 3. Kept manual evidence honest:
    - viewer statuses remain `NotRun`
    - tester/device/GPU/DPI/Windows-version fields remain placeholders
+   - build commit stays a placeholder only when Lumiere cannot prove a comparable current build token
    - target HDR detail still requires human validation notes
 4. Added a native `Create draft` action to the settings validation section.
 5. Kept the draft workflow non-deceptive:

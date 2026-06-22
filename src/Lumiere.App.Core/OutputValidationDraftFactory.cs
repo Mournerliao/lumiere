@@ -21,10 +21,13 @@ public static class OutputValidationDraftFactory
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
         var buildLabel = NormalizeBuildVersion(request.BuildVersion);
+        var buildCommit = ExtractBuildCommit(request.BuildVersion);
         var artifact = new OutputValidationSessionArtifact(
             Date: date,
             Tester: "REPLACE_WITH_TESTER_NAME",
-            BuildCommit: $"REPLACE_WITH_GIT_COMMIT (app version {buildLabel})",
+            BuildCommit: buildCommit is null
+                ? $"REPLACE_WITH_GIT_COMMIT (app version {buildLabel})"
+                : $"{buildCommit} (app version {buildLabel})",
             WindowsVersion: $"REPLACE_WITH_WINDOWS_VERSION (current session: {Environment.OSVersion.VersionString})",
             Device: "REPLACE_WITH_DEVICE_MODEL",
             Gpu: "REPLACE_WITH_GPU_MODEL_AND_DRIVER",
@@ -218,6 +221,36 @@ public static class OutputValidationDraftFactory
         return trimmed.StartsWith("v", StringComparison.OrdinalIgnoreCase)
             ? $"Lumiere {trimmed}"
             : $"Lumiere v{trimmed}";
+    }
+
+    private static string? ExtractBuildCommit(string? buildVersion)
+    {
+        var trimmed = buildVersion?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return null;
+        }
+
+        var plusIndex = trimmed.IndexOf('+');
+        if (plusIndex >= 0 && plusIndex < trimmed.Length - 1)
+        {
+            return NormalizeCommitToken(trimmed[(plusIndex + 1)..]);
+        }
+
+        return null;
+    }
+
+    private static string? NormalizeCommitToken(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var filtered = new string(value.Trim().Where(Uri.IsHexDigit).ToArray());
+        return filtered.Length >= 7
+            ? filtered.ToLowerInvariant()
+            : null;
     }
 
     private static string CreateFileNameStem(
