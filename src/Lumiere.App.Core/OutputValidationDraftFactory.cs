@@ -32,10 +32,10 @@ public static class OutputValidationDraftFactory
                 : $"{buildCommit} (app version {buildLabel})",
             WindowsVersion: CreateWindowsVersionPlaceholder(seed),
             Device: CreateDevicePlaceholder(seed),
-            Gpu: CreateGpuPlaceholder(seed),
+            Gpu: CreateGpuPlaceholder(request.CurrentSessionHint, seed),
             DisplaySetup: CreateDisplaySetupPlaceholder(request.SessionState.Target, seed),
             HdrState: CreateHdrStatePlaceholder(request.SessionState.Readiness),
-            DpiScales: CreateDpiScalePlaceholders(seed),
+            DpiScales: CreateDpiScalePlaceholders(request.CurrentSessionHint, seed),
             EntryPointsTested: CreateEntryPointPlaceholders(seed),
             OutputTargetsTested:
             [
@@ -331,18 +331,54 @@ public static class OutputValidationDraftFactory
     private static string CreateDevicePlaceholder(OutputValidationDraftSeed? seed) =>
         AppendLatestArtifactHint("REPLACE_WITH_DEVICE_MODEL", seed?.Device);
 
-    private static string CreateGpuPlaceholder(OutputValidationDraftSeed? seed) =>
-        AppendLatestArtifactHint("REPLACE_WITH_GPU_MODEL_AND_DRIVER", seed?.Gpu);
-
-    private static IReadOnlyList<string> CreateDpiScalePlaceholders(OutputValidationDraftSeed? seed)
+    private static string CreateGpuPlaceholder(
+        OutputValidationCurrentSessionHint? currentSessionHint,
+        OutputValidationDraftSeed? seed)
     {
+        var currentSession = NormalizeHint(currentSessionHint?.Gpu);
+        var latestArtifact = NormalizeHint(seed?.Gpu);
+        if (currentSession is null && latestArtifact is null)
+        {
+            return "REPLACE_WITH_GPU_MODEL_AND_DRIVER";
+        }
+
+        if (currentSession is not null && latestArtifact is not null)
+        {
+            return $"REPLACE_WITH_GPU_MODEL_AND_DRIVER (current session: {currentSession}; latest local artifact: {latestArtifact})";
+        }
+
+        return currentSession is not null
+            ? $"REPLACE_WITH_GPU_MODEL_AND_DRIVER (current session: {currentSession})"
+            : $"REPLACE_WITH_GPU_MODEL_AND_DRIVER (latest local artifact: {latestArtifact})";
+    }
+
+    private static IReadOnlyList<string> CreateDpiScalePlaceholders(
+        OutputValidationCurrentSessionHint? currentSessionHint,
+        OutputValidationDraftSeed? seed)
+    {
+        var currentSession = JoinMeaningfulValues(currentSessionHint?.DpiScales);
         var latestArtifact = JoinMeaningfulValues(seed?.DpiScales);
         return
         [
-            latestArtifact is null
-                ? "REPLACE_WITH_DPI_SCALE"
-                : $"REPLACE_WITH_DPI_SCALE (latest local artifact: {latestArtifact})",
+            CreateDpiScalePlaceholder(currentSession, latestArtifact),
         ];
+    }
+
+    private static string CreateDpiScalePlaceholder(string? currentSession, string? latestArtifact)
+    {
+        if (currentSession is null && latestArtifact is null)
+        {
+            return "REPLACE_WITH_DPI_SCALE";
+        }
+
+        if (currentSession is not null && latestArtifact is not null)
+        {
+            return $"REPLACE_WITH_DPI_SCALE (current session: {currentSession}; latest local artifact: {latestArtifact})";
+        }
+
+        return currentSession is not null
+            ? $"REPLACE_WITH_DPI_SCALE (current session: {currentSession})"
+            : $"REPLACE_WITH_DPI_SCALE (latest local artifact: {latestArtifact})";
     }
 
     private static IReadOnlyList<string> CreateEntryPointPlaceholders(OutputValidationDraftSeed? seed)

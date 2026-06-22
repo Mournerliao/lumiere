@@ -30,6 +30,7 @@ public sealed class GraphicsDeviceProvider
         ID3D11Device? device = null;
         ID3D11DeviceContext? immediateContext = null;
         IDXGIDevice? dxgiDevice = null;
+        IDXGIAdapter? adapter = null;
 
         try
         {
@@ -39,6 +40,8 @@ public sealed class GraphicsDeviceProvider
             var selectedFeatureLevel = device.FeatureLevel;
             immediateContext = device.ImmediateContext;
             dxgiDevice = device.QueryInterface<IDXGIDevice>();
+            dxgiDevice.GetAdapter(out adapter);
+            var adapterName = adapter?.Description.Description;
 
             Logger.LogDebug("D3D11Device created: featureLevel={FeatureLevel}, flags={Flags}", selectedFeatureLevel, creationFlags);
 
@@ -50,11 +53,13 @@ public sealed class GraphicsDeviceProvider
                 device,
                 immediateContext,
                 dxgiDevice,
+                adapterName,
                 selectedFeatureLevel,
                 evidence);
         }
         catch (Exception exception) when (exception is not GraphicsDeviceException)
         {
+            adapter?.Dispose();
             dxgiDevice?.Dispose();
             immediateContext?.Dispose();
             device?.Dispose();
@@ -67,6 +72,10 @@ public sealed class GraphicsDeviceProvider
             diagnostic.LogTo(Logger);
 
             throw CreateFailure(FormatExceptionDetail(exception), exception);
+        }
+        finally
+        {
+            adapter?.Dispose();
         }
     }
 

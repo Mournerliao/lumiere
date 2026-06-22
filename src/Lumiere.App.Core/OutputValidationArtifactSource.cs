@@ -70,7 +70,12 @@ public sealed record OutputValidationDraftRequest(
     string? BuildVersion,
     OutputTarget OutputTarget,
     OutputProfileContract RequestedProfile,
-    Lumiere.Capture.CaptureSessionState SessionState);
+    Lumiere.Capture.CaptureSessionState SessionState,
+    OutputValidationCurrentSessionHint? CurrentSessionHint = null);
+
+public sealed record OutputValidationCurrentSessionHint(
+    string? Gpu,
+    IReadOnlyList<string> DpiScales);
 
 public sealed record OutputValidationDraftSeed(
     string? Tester,

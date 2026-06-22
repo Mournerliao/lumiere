@@ -13,12 +13,14 @@ public sealed class GraphicsDeviceResources : IDisposable
         ID3D11Device device,
         ID3D11DeviceContext immediateContext,
         IDXGIDevice dxgiDevice,
+        string? adapterName,
         FeatureLevel featureLevel,
         PreviewReadinessStatus initializationEvidence)
     {
         Device = device ?? throw new ArgumentNullException(nameof(device));
         ImmediateContext = immediateContext ?? throw new ArgumentNullException(nameof(immediateContext));
         DxgiDevice = dxgiDevice ?? throw new ArgumentNullException(nameof(dxgiDevice));
+        AdapterName = string.IsNullOrWhiteSpace(adapterName) ? null : adapterName.Trim();
         FeatureLevel = featureLevel;
         InitializationEvidence = initializationEvidence ?? throw new ArgumentNullException(nameof(initializationEvidence));
     }
@@ -28,6 +30,8 @@ public sealed class GraphicsDeviceResources : IDisposable
     public ID3D11DeviceContext ImmediateContext { get; }
 
     public IDXGIDevice DxgiDevice { get; }
+
+    public string? AdapterName { get; }
 
     public FeatureLevel FeatureLevel { get; }
 

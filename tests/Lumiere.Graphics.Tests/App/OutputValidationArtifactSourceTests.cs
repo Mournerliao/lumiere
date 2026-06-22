@@ -217,7 +217,7 @@ public sealed class OutputValidationArtifactSourceTests
         var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["C:\\Validation\\existing.json"] = CreateArtifact("2026-06-22", "Windows Photos") with
+            ["C:\\Validation\\existing.json"] = (CreateArtifact("2026-06-22", "Windows Photos") with
             {
                 Tester = "QA",
                 WindowsVersion = "Windows 11 24H2",
@@ -226,7 +226,7 @@ public sealed class OutputValidationArtifactSourceTests
                 DisplaySetup = "HDR primary, SDR secondary",
                 DpiScales = ["150%"],
                 EntryPointsTested = ["Tray menu"],
-            }.ToJson(),
+            }).ToJson(),
         };
         var source = new FileOutputValidationArtifactSource(
             "C:\\Validation",
@@ -257,17 +257,22 @@ public sealed class OutputValidationArtifactSourceTests
                         CaptureTargetKind.Display),
                     Lumiere.Graphics.Hdr.PreviewReadinessStatus.Ready(
                         "HDR preview path is validated.",
-                        "Target-aware readiness passed."))));
+                        "Target-aware readiness passed.")),
+                new OutputValidationCurrentSessionHint(
+                    "NVIDIA RTX 5080",
+                    ["175%"])));
 
         Assert.True(result.IsSuccess);
         var artifact = OutputValidationSessionArtifact.FromJson(files[result.DraftPath!]);
         Assert.Equal("REPLACE_WITH_TESTER_NAME (latest local artifact: QA)", artifact.Tester);
         Assert.Contains("Windows 11 24H2", artifact.WindowsVersion, StringComparison.Ordinal);
         Assert.Equal("REPLACE_WITH_DEVICE_MODEL (latest local artifact: HDR workstation)", artifact.Device);
-        Assert.Equal("REPLACE_WITH_GPU_MODEL_AND_DRIVER (latest local artifact: NVIDIA test GPU)", artifact.Gpu);
+        Assert.Equal(
+            "REPLACE_WITH_GPU_MODEL_AND_DRIVER (current session: NVIDIA RTX 5080; latest local artifact: NVIDIA test GPU)",
+            artifact.Gpu);
         Assert.Contains("latest local artifact: HDR primary, SDR secondary", artifact.DisplaySetup, StringComparison.Ordinal);
         Assert.Equal(
-            ["REPLACE_WITH_DPI_SCALE (latest local artifact: 150%)"],
+            ["REPLACE_WITH_DPI_SCALE (current session: 175%; latest local artifact: 150%)"],
             artifact.DpiScales);
         Assert.Equal(
             ["REPLACE_WITH_ENTRY_POINT (for example: Main panel, Tray menu, Global hotkey; latest local artifact: Tray menu)"],

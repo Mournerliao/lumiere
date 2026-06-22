@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Threading;
 using Lumiere.Capture;
 using Lumiere.Graphics.Clipboard;
@@ -1880,7 +1881,8 @@ public sealed partial class MainWindow : Window
                 aboutInfoProvider.Version,
                 settingsProvider.OutputTarget,
                 requestedProfile,
-                currentState));
+                currentState,
+                CreateCurrentSessionValidationHint()));
 
         if (!result.IsSuccess)
         {
@@ -1896,6 +1898,25 @@ public sealed partial class MainWindow : Window
             settingsProvider.OutputTarget,
             requestedProfile.Label);
         await OpenValidationPathAsync(result.DraftPath, ArtifactShellActionKind.Open, "validation draft");
+    }
+
+    private OutputValidationCurrentSessionHint CreateCurrentSessionValidationHint() =>
+        new(
+            deviceResources.AdapterName,
+            CreateCurrentSessionDpiScales());
+
+    private IReadOnlyList<string> CreateCurrentSessionDpiScales()
+    {
+        var scale = RootGrid.XamlRoot?.RasterizationScale;
+        if (scale is null || scale <= 0)
+        {
+            return [];
+        }
+
+        return
+        [
+            $"{(scale.Value * 100).ToString("0.##", CultureInfo.InvariantCulture)}%",
+        ];
     }
 
     private async void OnValidationOpenLatestEvidenceClick(object sender, RoutedEventArgs e)
