@@ -44,6 +44,14 @@ Record all of the following for each run:
    - `%LOCALAPPDATA%\Lumiere\validation\resource-trends`
 5. Prefer targeting a specific PID if more than one `Lumiere.App` process could exist.
 
+Lumiere's Settings > Validation surface can now help with this setup directly:
+
+- `Trend template` opens the seeded session template in the local validation workspace.
+- `Trend script` opens the seeded sampler script in the same workspace.
+- `Copy trend cmd` copies a current-process PowerShell command that already targets the running Lumiere PID and the workspace-local `resource-trends` folder.
+
+Use these helpers to start a run faster, but still review the copied command before execution and still record the real resulting artifacts in the session notes.
+
 ## Sampler Command
 
 Example:

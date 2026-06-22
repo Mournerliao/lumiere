@@ -22,6 +22,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using Vortice.Direct3D11;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
@@ -1875,6 +1876,52 @@ public sealed partial class MainWindow : Window
         await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "validation template");
     }
 
+    private async void OnValidationOpenResourceTrendTemplateClick(object sender, RoutedEventArgs e)
+    {
+        var snapshot = LoadOutputValidationArtifacts();
+        var path = snapshot.Workspace.ResourceTrendTemplatePath
+            ?? PerfectHdrFidelityProjection.ProjectValidationRecord(
+                aboutInfoProvider.Version,
+                snapshot).ResourceTrendTemplatePath;
+        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "resource trend template");
+    }
+
+    private async void OnValidationOpenResourceTrendScriptClick(object sender, RoutedEventArgs e)
+    {
+        var snapshot = LoadOutputValidationArtifacts();
+        var path = snapshot.Workspace.ResourceTrendScriptPath
+            ?? PerfectHdrFidelityProjection.ProjectValidationRecord(
+                aboutInfoProvider.Version,
+                snapshot).ResourceTrendScriptPath;
+        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "resource trend script");
+    }
+
+    private void OnValidationCopyResourceTrendCommandClick(object sender, RoutedEventArgs e)
+    {
+        var snapshot = LoadOutputValidationArtifacts();
+        var record = PerfectHdrFidelityProjection.ProjectValidationRecord(
+            aboutInfoProvider.Version,
+            snapshot);
+        var command = ResourceTrendValidationCommandProjection.Create(
+            record.ResourceTrendScriptPath,
+            record.ValidationWorkspacePath,
+            Process.GetCurrentProcess().Id);
+        if (string.IsNullOrWhiteSpace(command))
+        {
+            Logger.LogWarning(
+                "operation=ValidationWorkspace, stage=CopyTrendCommandSkipped, detail=Command inputs are unavailable.");
+            return;
+        }
+
+        var dataPackage = new DataPackage();
+        dataPackage.SetText(command);
+        Clipboard.SetContent(dataPackage);
+        Logger.LogInformation(
+            "operation=ValidationWorkspace, stage=CopyTrendCommandSucceeded, processId={ProcessId}, workspace={WorkspacePath}",
+            Process.GetCurrentProcess().Id,
+            record.ValidationWorkspacePath);
+    }
+
     private async void OnValidationCreateDraftClick(object sender, RoutedEventArgs e)
     {
         var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
@@ -2111,6 +2158,9 @@ public sealed partial class MainWindow : Window
         ValidationRecordEvidencePathText.Text = record.EvidenceDocumentPath;
         ValidationOpenWorkspaceButton.IsEnabled = record.CanOpenValidationWorkspace;
         ValidationOpenTemplateButton.IsEnabled = record.CanOpenValidationTemplate;
+        ValidationOpenResourceTrendTemplateButton.IsEnabled = record.CanOpenResourceTrendTemplate;
+        ValidationOpenResourceTrendScriptButton.IsEnabled = record.CanOpenResourceTrendScript;
+        ValidationCopyResourceTrendCommandButton.IsEnabled = record.CanCopyResourceTrendCommand;
         ValidationCreateDraftButton.IsEnabled = record.CanOpenValidationWorkspace;
         ToolTipService.SetToolTip(
             ValidationOpenWorkspaceButton,
@@ -2127,6 +2177,21 @@ public sealed partial class MainWindow : Window
             record.CanOpenValidationWorkspace
                 ? $"Create a local validation draft in {record.ValidationWorkspacePath} using the current output target and selected profile."
                 : "Local validation workspace is not available for this session.");
+        ToolTipService.SetToolTip(
+            ValidationOpenResourceTrendTemplateButton,
+            record.CanOpenResourceTrendTemplate
+                ? $"Open seeded resource trend session template: {record.ResourceTrendTemplatePath}"
+                : "Seeded resource trend session template is not available for this session.");
+        ToolTipService.SetToolTip(
+            ValidationOpenResourceTrendScriptButton,
+            record.CanOpenResourceTrendScript
+                ? $"Open seeded resource trend sampler script: {record.ResourceTrendScriptPath}"
+                : "Seeded resource trend sampler script is not available for this session.");
+        ToolTipService.SetToolTip(
+            ValidationCopyResourceTrendCommandButton,
+            record.CanCopyResourceTrendCommand
+                ? $"Copy the current-process resource trend sampler command using {record.ResourceTrendScriptPath}."
+                : "Resource trend sampler command is unavailable until the workspace and script are ready.");
         AutomationProperties.SetHelpText(
             ValidationOpenWorkspaceButton,
             record.CanOpenValidationWorkspace
@@ -2142,6 +2207,21 @@ public sealed partial class MainWindow : Window
             record.CanOpenValidationWorkspace
                 ? $"Create a local validation draft in {record.ValidationWorkspacePath} using the current output target and selected profile."
                 : "Local validation workspace is not available for this session.");
+        AutomationProperties.SetHelpText(
+            ValidationOpenResourceTrendTemplateButton,
+            record.CanOpenResourceTrendTemplate
+                ? $"Open the seeded resource trend session template at {record.ResourceTrendTemplatePath}."
+                : "Seeded resource trend session template is not available for this session.");
+        AutomationProperties.SetHelpText(
+            ValidationOpenResourceTrendScriptButton,
+            record.CanOpenResourceTrendScript
+                ? $"Open the seeded resource trend sampler script at {record.ResourceTrendScriptPath}."
+                : "Seeded resource trend sampler script is not available for this session.");
+        AutomationProperties.SetHelpText(
+            ValidationCopyResourceTrendCommandButton,
+            record.CanCopyResourceTrendCommand
+                ? "Copy the current-process resource trend sampler command for the app-local validation workspace."
+                : "Resource trend sampler command is unavailable until the workspace and script are ready.");
         AutomationProperties.SetHelpText(
             ValidationRecordBuildText,
             $"{record.BuildLabel}. {record.AutomatedEvidenceDetail} {record.WindowsManualValidationDetail} Evidence document: {record.EvidenceDocumentPath}. {record.WorkspaceSummary}");

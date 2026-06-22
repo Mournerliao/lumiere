@@ -789,6 +789,8 @@ public static class PerfectHdrFidelityProjection
                 "%LOCALAPPDATA%\\Lumiere\\validation\\output\\evidence",
                 "%LOCALAPPDATA%\\Lumiere\\validation\\output\\README.txt",
                 null,
+                null,
+                null,
                 []);
         }
         var workspaceSummary = CreateWorkspaceSummary(workspace);
@@ -796,6 +798,8 @@ public static class PerfectHdrFidelityProjection
         {
             ValidationWorkspacePath = string.IsNullOrWhiteSpace(workspace.DirectoryPath) ? null : workspace.DirectoryPath,
             ValidationTemplatePath = workspace.HasSampleTemplate ? workspace.SampleTemplatePath : null,
+            ResourceTrendTemplatePath = workspace.ResourceTrendTemplatePath,
+            ResourceTrendScriptPath = workspace.ResourceTrendScriptPath,
         };
 
         if (!workspace.IsReady)
@@ -1672,9 +1676,21 @@ public sealed record ValidationRecordProjection(
 
     public string? ValidationTemplatePath { get; init; }
 
+    public string? ResourceTrendTemplatePath { get; init; }
+
+    public string? ResourceTrendScriptPath { get; init; }
+
     public bool CanOpenValidationWorkspace => !string.IsNullOrWhiteSpace(ValidationWorkspacePath);
 
     public bool CanOpenValidationTemplate => !string.IsNullOrWhiteSpace(ValidationTemplatePath);
+
+    public bool CanOpenResourceTrendTemplate => !string.IsNullOrWhiteSpace(ResourceTrendTemplatePath);
+
+    public bool CanOpenResourceTrendScript => !string.IsNullOrWhiteSpace(ResourceTrendScriptPath);
+
+    public bool CanCopyResourceTrendCommand =>
+        !string.IsNullOrWhiteSpace(ValidationWorkspacePath)
+        && !string.IsNullOrWhiteSpace(ResourceTrendScriptPath);
 
     public string WorkspaceSummary =>
         string.IsNullOrWhiteSpace(ValidationWorkspacePath)

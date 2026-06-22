@@ -743,6 +743,8 @@ public sealed class PerfectHdrFidelityProjectionTests
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\evidence",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\README.txt",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\output-validation-session.schema-v4.sample.json",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\resource-trend-session-template.md",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\collect-resource-trend-samples.ps1",
                 []),
         };
 
@@ -754,6 +756,11 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Contains("No output validation artifact is loaded", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output", record.ValidationWorkspacePath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\output-validation-session.schema-v4.sample.json", record.ValidationTemplatePath);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\resource-trend-session-template.md", record.ResourceTrendTemplatePath);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\collect-resource-trend-samples.ps1", record.ResourceTrendScriptPath);
+        Assert.True(record.CanOpenResourceTrendTemplate);
+        Assert.True(record.CanOpenResourceTrendScript);
+        Assert.True(record.CanCopyResourceTrendCommand);
     }
 
     [Fact]
@@ -767,6 +774,8 @@ public sealed class PerfectHdrFidelityProjectionTests
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\evidence",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\README.txt",
                 null,
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\resource-trend-session-template.md",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\collect-resource-trend-samples.ps1",
                 [new OutputValidationWorkspaceIssue(
                     "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\output-validation-session.schema-v4.sample.json",
                     "Validation sample template source could not be loaded from the current build.")]),
@@ -780,6 +789,11 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Equal("harness/validation/output-validation.md", record.EvidenceDocumentPath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output", record.ValidationWorkspacePath);
         Assert.Null(record.ValidationTemplatePath);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\resource-trend-session-template.md", record.ResourceTrendTemplatePath);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\collect-resource-trend-samples.ps1", record.ResourceTrendScriptPath);
+        Assert.True(record.CanOpenResourceTrendTemplate);
+        Assert.True(record.CanOpenResourceTrendScript);
+        Assert.True(record.CanCopyResourceTrendCommand);
     }
 
     [Fact]
@@ -934,6 +948,8 @@ public sealed class PerfectHdrFidelityProjectionTests
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\evidence",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\README.txt",
+                null,
+                null,
                 null,
                 [new OutputValidationWorkspaceIssue(
                     "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\output-validation-session.schema-v4.sample.json",

@@ -151,6 +151,10 @@ Evidence:
 - `harness/validation/resource-trend-validation.md` now defines the public-release long-run workflow and classification rules.
 - `harness/validation/templates/resource-trend-session-template.md` now defines the reusable record shape for Story 12-3 sessions.
 - `harness/validation/lifecycle-validation.md`, `harness/validation/release-validation-checklist.md`, and `harness/validation/index.md` now route long-run resource evidence through the new workflow.
+- The app-local validation workspace now also seeds the same resource-trend session template and sampler script next to the output-validation workflow instead of keeping Story `12-3` only in repo docs.
+- Settings > Validation now exposes native `Trend template`, `Trend script`, and `Copy trend cmd` actions so a Windows validator can open the seeded helpers and copy a current-process sampler command without manually rebuilding the PowerShell invocation.
+- `ResourceTrendValidationCommandProjection` now centralizes that copied command behind one narrow seam, keeping the current PID, workspace path, output folder, and default duration/interval policy out of the view layer.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-3-surface-resource-trend-workflow-in-settings.md`.
 
 Remaining blockers:
 

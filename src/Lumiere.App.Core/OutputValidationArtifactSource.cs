@@ -41,6 +41,8 @@ public sealed record OutputValidationWorkspaceState(
     string EvidenceDirectoryPath,
     string GuidanceFilePath,
     string? SampleTemplatePath,
+    string? ResourceTrendTemplatePath,
+    string? ResourceTrendScriptPath,
     IReadOnlyList<OutputValidationWorkspaceIssue> Issues)
 {
     public static OutputValidationWorkspaceState Unavailable { get; } =
@@ -49,6 +51,8 @@ public sealed record OutputValidationWorkspaceState(
             string.Empty,
             string.Empty,
             string.Empty,
+            null,
+            null,
             null,
             []);
 
@@ -103,6 +107,8 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
 {
     internal const string WorkspaceReadmeFileName = "README.txt";
     internal const string SampleTemplateFileName = "output-validation-session.schema-v4.sample.json";
+    internal const string ResourceTrendTemplateFileName = "resource-trend-session-template.md";
+    internal const string ResourceTrendScriptFileName = "collect-resource-trend-samples.ps1";
 
     private readonly string directoryPath;
     private readonly string searchPattern;
@@ -292,6 +298,8 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         var evidenceDirectoryPath = Path.Combine(directoryPath, "evidence");
         var guidanceFilePath = Path.Combine(directoryPath, WorkspaceReadmeFileName);
         var sampleTemplatePath = Path.Combine(templatesDirectoryPath, SampleTemplateFileName);
+        var resourceTrendTemplatePath = Path.Combine(templatesDirectoryPath, ResourceTrendTemplateFileName);
+        var resourceTrendScriptPath = Path.Combine(directoryPath, ResourceTrendScriptFileName);
         var issues = new List<OutputValidationWorkspaceIssue>();
 
         EnsureDirectory(directoryPath, "Validation artifact directory could not be prepared.", issues);
@@ -302,6 +310,8 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         {
             EnsureGuidanceFile(guidanceFilePath, issues);
             EnsureSampleTemplate(sampleTemplatePath, issues);
+            EnsureResourceTrendTemplate(resourceTrendTemplatePath, issues);
+            EnsureResourceTrendScript(resourceTrendScriptPath, issues);
         }
 
         return new OutputValidationWorkspaceState(
@@ -310,6 +320,8 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
             evidenceDirectoryPath,
             guidanceFilePath,
             fileExists(sampleTemplatePath) ? sampleTemplatePath : null,
+            fileExists(resourceTrendTemplatePath) ? resourceTrendTemplatePath : null,
+            fileExists(resourceTrendScriptPath) ? resourceTrendScriptPath : null,
             issues);
     }
 
@@ -388,9 +400,71 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         }
     }
 
-    private static string? LoadEmbeddedTemplateText()
+    private void EnsureResourceTrendTemplate(
+        string resourceTrendTemplatePath,
+        ICollection<OutputValidationWorkspaceIssue> issues)
     {
-        const string resourceName = "Lumiere.App.Validation.Output.output-validation-session.schema-v4.sample.json";
+        if (fileExists(resourceTrendTemplatePath))
+        {
+            return;
+        }
+
+        var templateContent = LoadEmbeddedText("Lumiere.App.Validation.ResourceTrend.resource-trend-session-template.md");
+        if (string.IsNullOrWhiteSpace(templateContent))
+        {
+            issues.Add(new OutputValidationWorkspaceIssue(
+                resourceTrendTemplatePath,
+                "Resource trend session template source could not be loaded from the current build."));
+            return;
+        }
+
+        try
+        {
+            writeAllText(resourceTrendTemplatePath, templateContent);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            issues.Add(new OutputValidationWorkspaceIssue(
+                resourceTrendTemplatePath,
+                $"Resource trend session template could not be seeded. {ex.GetType().Name}: {ex.Message}"));
+        }
+    }
+
+    private void EnsureResourceTrendScript(
+        string resourceTrendScriptPath,
+        ICollection<OutputValidationWorkspaceIssue> issues)
+    {
+        if (fileExists(resourceTrendScriptPath))
+        {
+            return;
+        }
+
+        var scriptContent = LoadEmbeddedText("Lumiere.App.Validation.ResourceTrend.collect-resource-trend-samples.ps1");
+        if (string.IsNullOrWhiteSpace(scriptContent))
+        {
+            issues.Add(new OutputValidationWorkspaceIssue(
+                resourceTrendScriptPath,
+                "Resource trend sampler script source could not be loaded from the current build."));
+            return;
+        }
+
+        try
+        {
+            writeAllText(resourceTrendScriptPath, scriptContent);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            issues.Add(new OutputValidationWorkspaceIssue(
+                resourceTrendScriptPath,
+                $"Resource trend sampler script could not be seeded. {ex.GetType().Name}: {ex.Message}"));
+        }
+    }
+
+    private static string? LoadEmbeddedTemplateText()
+        => LoadEmbeddedText("Lumiere.App.Validation.Output.output-validation-session.schema-v4.sample.json");
+
+    private static string? LoadEmbeddedText(string resourceName)
+    {
         using var stream = typeof(FileOutputValidationArtifactSource).Assembly.GetManifestResourceStream(resourceName);
         if (stream is null)
         {
@@ -411,17 +485,20 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
                 "- Store real Windows manual output validation artifacts for the current machine.",
                 "- Keep draft templates under templates\\ so the runtime loader does not count them as evidence.",
                 "- Save supporting notes, screenshots, or logs under evidence\\ as needed.",
+                "- Seed long-run resource trend validation helpers next to the same workspace so Story 12-3 runs start from the app-local validation surface.",
                 string.Empty,
                 "Workflow:",
                 "1. Copy templates\\output-validation-session.schema-v4.sample.json into this output\\ folder.",
                 "2. Or use Lumiere's Create draft action to generate a prefilled local draft in this folder.",
-                "3. Rename it for the session if needed, replace every REPLACE_WITH_* placeholder, and keep viewer evidence honest.",
-                "4. Reload evidence from Lumiere after recording real observations.",
-                "5. Do not treat template files or incomplete sessions as passing release evidence.",
+                "3. Use templates\\resource-trend-session-template.md plus collect-resource-trend-samples.ps1 for Story 12-3 long-run validation sessions.",
+                "4. Rename or copy templates as needed, replace every REPLACE_WITH_* placeholder, and keep manual evidence honest.",
+                "5. Reload evidence from Lumiere after recording real observations.",
+                "6. Do not treat template files or incomplete sessions as passing release evidence.",
                 string.Empty,
                 "Reference docs:",
                 "- harness/validation/output-validation.md",
-                "- harness/validation/release-validation-checklist.md"]);
+                "- harness/validation/release-validation-checklist.md",
+                "- harness/validation/resource-trend-validation.md"]);
 
     private string AllocateDraftPath(string workspaceDirectoryPath, string fileNameStem)
     {

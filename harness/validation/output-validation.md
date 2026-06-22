@@ -81,6 +81,14 @@ The settings validation record now reports that workspace path and the seeded sa
 
 The settings validation section also exposes native `Create draft`, `Open workspace`, `Open template`, and `Reload evidence` actions so a Windows validator can jump directly into the local evidence flow, generate a session-local draft, edit local evidence, and refresh the current session without restarting Lumiere.
 
+For Story `12-3`, the same settings surface now also exposes app-local resource-trend workflow helpers:
+
+- `Trend template` opens the seeded long-run session record template from the local validation workspace.
+- `Trend script` opens the seeded PowerShell sampler script from the local validation workspace.
+- `Copy trend cmd` copies a current-process sampler command that already points at Lumiere's seeded script, the current app PID, and the workspace-local `resource-trends` output folder.
+
+These actions reduce setup friction for long-run lifecycle validation, but they do not count as evidence by themselves. The copied command is only a launch helper; Story `12-3` still requires real Windows `50+` or `100+` runs, captured CSV/summary artifacts, and an honest pass/fail/limitation record.
+
 The same settings surface now also summarizes the currently loaded evidence for the active session instead of forcing the tester to infer everything from the lower gate rows alone. The loaded-evidence summary is intentionally compact and evidence-first:
 
 - latest loaded artifact date, tester, build, and recorded result summary

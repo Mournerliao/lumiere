@@ -1427,6 +1427,81 @@
                       </StackPanel>
                     </Button>
                   </Grid>
+                  <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Button
+                        x:Name="ValidationOpenResourceTrendTemplateButton"
+                        MinWidth="0"
+                        HorizontalAlignment="Stretch"
+                        AutomationProperties.Name="Open resource trend template"
+                        AutomationProperties.HelpText="Open the seeded long-run resource trend session template for this machine."
+                        Click="OnValidationOpenResourceTrendTemplateClick"
+                        Padding="10,7">
+                      <StackPanel
+                          HorizontalAlignment="Center"
+                          Orientation="Horizontal"
+                          Spacing="6">
+                        <FontIcon
+                            FontFamily="Segoe Fluent Icons"
+                            FontSize="11"
+                            Glyph="&#xE7C3;" />
+                        <TextBlock
+                            FontSize="11"
+                            FontWeight="SemiBold"
+                            Text="Trend template" />
+                      </StackPanel>
+                    </Button>
+                    <Button
+                        x:Name="ValidationOpenResourceTrendScriptButton"
+                        Grid.Column="1"
+                        MinWidth="0"
+                        HorizontalAlignment="Stretch"
+                        AutomationProperties.Name="Open resource trend script"
+                        AutomationProperties.HelpText="Open the seeded long-run resource trend sampler script for this machine."
+                        Click="OnValidationOpenResourceTrendScriptClick"
+                        Padding="10,7">
+                      <StackPanel
+                          HorizontalAlignment="Center"
+                          Orientation="Horizontal"
+                          Spacing="6">
+                        <FontIcon
+                            FontFamily="Segoe Fluent Icons"
+                            FontSize="11"
+                            Glyph="&#xE943;" />
+                        <TextBlock
+                            FontSize="11"
+                            FontWeight="SemiBold"
+                            Text="Trend script" />
+                      </StackPanel>
+                    </Button>
+                    <Button
+                        x:Name="ValidationCopyResourceTrendCommandButton"
+                        Grid.Column="2"
+                        MinWidth="0"
+                        HorizontalAlignment="Stretch"
+                        AutomationProperties.Name="Copy resource trend command"
+                        AutomationProperties.HelpText="Copy the current-process long-run resource trend sampler command."
+                        Click="OnValidationCopyResourceTrendCommandClick"
+                        Padding="10,7">
+                      <StackPanel
+                          HorizontalAlignment="Center"
+                          Orientation="Horizontal"
+                          Spacing="6">
+                        <FontIcon
+                            FontFamily="Segoe Fluent Icons"
+                            FontSize="11"
+                            Glyph="&#xE8C8;" />
+                        <TextBlock
+                            FontSize="11"
+                            FontWeight="SemiBold"
+                            Text="Copy trend cmd" />
+                      </StackPanel>
+                    </Button>
+                  </Grid>
                 </StackPanel>
               </StackPanel>
             </Border>

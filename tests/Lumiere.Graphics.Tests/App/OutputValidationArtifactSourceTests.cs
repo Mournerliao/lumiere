@@ -81,7 +81,11 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Equal("C:\\Validation\\evidence", snapshot.Workspace.EvidenceDirectoryPath);
         Assert.Equal("C:\\Validation\\README.txt", snapshot.Workspace.GuidanceFilePath);
         Assert.Equal("C:\\Validation\\templates\\output-validation-session.schema-v4.sample.json", snapshot.Workspace.SampleTemplatePath);
+        Assert.Equal("C:\\Validation\\templates\\resource-trend-session-template.md", snapshot.Workspace.ResourceTrendTemplatePath);
+        Assert.Equal("C:\\Validation\\collect-resource-trend-samples.ps1", snapshot.Workspace.ResourceTrendScriptPath);
         Assert.Equal(templateJson, files[snapshot.Workspace.SampleTemplatePath!]);
+        Assert.Contains("Session Metadata", files[snapshot.Workspace.ResourceTrendTemplatePath!], StringComparison.Ordinal);
+        Assert.Contains("Collects repeated resource trend samples", files[snapshot.Workspace.ResourceTrendScriptPath!], StringComparison.Ordinal);
         Assert.Contains("Workflow:", files[snapshot.Workspace.GuidanceFilePath], StringComparison.Ordinal);
     }
 
