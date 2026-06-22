@@ -68,25 +68,27 @@ public sealed record SettingsPanelProjection(
         OutputProfileExecutionCapabilities? executionCapabilities = null)
     {
         ArgumentNullException.ThrowIfNull(validationSnapshot);
+        aboutInfoProvider ??= AssemblyAboutInfoProvider.CreateFallback();
+        var rawBuildVersion = aboutInfoProvider.Version;
         return ProjectCore(
             settingsProvider,
             sessionState,
             validationSnapshot.Artifacts,
             aboutInfoProvider,
             executionCapabilities,
-            buildVersion => PerfectHdrFidelityProjection.ProjectValidationRecord(buildVersion, validationSnapshot),
+            _ => PerfectHdrFidelityProjection.ProjectValidationRecord(rawBuildVersion, validationSnapshot),
             (selectedProfileContract, artifacts, capabilities, record, readiness, outputTarget) =>
-                PerfectHdrFidelityProjection.ProjectValidation(
-                    selectedProfileContract,
-                    artifacts,
-                    capabilities,
-                    record,
-                    readiness,
-                    outputTarget)
-                with
-                {
-                    EvidenceSummary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(validationSnapshot),
-                });
+                PerfectHdrFidelityProjection.ApplyEvidenceSummary(
+                    PerfectHdrFidelityProjection.ProjectValidation(
+                        selectedProfileContract,
+                        artifacts,
+                        capabilities,
+                        record,
+                        readiness,
+                        outputTarget),
+                    PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(
+                        validationSnapshot,
+                        rawBuildVersion)));
     }
 
     private static SettingsPanelProjection ProjectCore(

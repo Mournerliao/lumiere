@@ -12,6 +12,7 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
 
         Assert.False(evidence.IsComplete);
         Assert.False(evidence.HasArtifacts);
+        Assert.True(evidence.HasCurrentBuildAlignment);
         Assert.False(evidence.HasCompleteTargetAwareHdrEvidence);
         Assert.False(evidence.HasCompleteFormatContract);
         Assert.False(evidence.HasViewerRecognizedHdr10StaticMetadata);
@@ -81,6 +82,40 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
         Assert.True(evidence.HasViewerRecognizedHdr10StaticMetadata);
         Assert.True(evidence.HasWindowsManualViewerValidation);
         Assert.Empty(evidence.Blockers);
+    }
+
+    [Fact]
+    public void FromArtifacts_WithCurrentBuildVersion_AllowsCompleteEvidenceOnlyWhenBuildMatches()
+    {
+        var artifacts = RequiredHdrViewers
+            .Select((viewer, index) => Hdr10Artifact(
+                viewer,
+                metadataStatus: OutputCompatibilityEvidenceStatus.Pass,
+                includeFormatContract: index == 0))
+            .ToArray();
+
+        var evidence = Hdr10JxrViewerValidationEvidence.FromArtifacts(artifacts, "2.3.4+d54155c");
+
+        Assert.True(evidence.IsComplete);
+        Assert.True(evidence.HasCurrentBuildAlignment);
+        Assert.Empty(evidence.Blockers);
+    }
+
+    [Fact]
+    public void FromArtifacts_WithCurrentBuildVersion_BlocksStaleEvidence()
+    {
+        var artifacts = RequiredHdrViewers
+            .Select((viewer, index) => Hdr10Artifact(
+                viewer,
+                metadataStatus: OutputCompatibilityEvidenceStatus.Pass,
+                includeFormatContract: index == 0))
+            .ToArray();
+
+        var evidence = Hdr10JxrViewerValidationEvidence.FromArtifacts(artifacts, "2.3.4+deadbee");
+
+        Assert.False(evidence.IsComplete);
+        Assert.False(evidence.HasCurrentBuildAlignment);
+        Assert.Contains(evidence.Blockers, blocker => blocker.Contains("stale", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

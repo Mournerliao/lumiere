@@ -84,6 +84,7 @@ The settings validation section also exposes native `Create draft`, `Open worksp
 The same settings surface now also summarizes the currently loaded evidence for the active session instead of forcing the tester to infer everything from the lower gate rows alone. The loaded-evidence summary is intentionally compact and evidence-first:
 
 - latest loaded artifact date, tester, build, and recorded result summary
+- whether the latest loaded artifact matches the current app build, is stale for the current build, or cannot yet be aligned to a comparable build token
 - current coverage across output targets, named viewers, and checklist IDs
 - known limitations and follow-up stories/issues carried by the loaded artifacts
 - ignored-file warnings when invalid JSON or schema problems were skipped during load
@@ -91,6 +92,18 @@ The same settings surface now also summarizes the currently loaded evidence for 
 - direct open access to the latest loaded evidence file when the current session has one
 
 This summary is not a release pass/fail dashboard. It is a review surface that helps a Windows validator answer "what evidence is actually loaded right now?" before interpreting `Build`, `Validate`, `Ready`, or lower validation rows.
+
+Build alignment is intentionally strict:
+
+- Lumiere may only call loaded evidence "matched" when the current app build exposes a comparable commit token and the latest artifact records the same token.
+- If the latest artifact records a different commit token, the app must surface the evidence as stale for the current build instead of quietly reusing it as though it still proved release support.
+- If either side lacks a comparable token, Lumiere should keep the state limited/unknown rather than inventing freshness.
+
+For the HDR10 JXR release path, current-build alignment is now part of the runtime gate as well, not only the review UI:
+
+- when Lumiere can compare the current build token against the loaded HDR10 evidence, stale evidence must keep HDR10 at `PendingValidation`
+- complete but stale artifacts must not promote HDR10 into a `Ready` / executable session
+- only current-build-aligned manual evidence may unlock the first HDR-preserved file-output path
 
 `Create draft` is intentionally a workflow accelerator, not a release-evidence shortcut. Lumiere pre-fills only context it already knows for the current session, such as:
 

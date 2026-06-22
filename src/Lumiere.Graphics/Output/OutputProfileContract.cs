@@ -348,7 +348,8 @@ public sealed record OutputProfileExecutionCapabilities(
 
     public static OutputProfileExecutionCapabilities ResolveHdr10JxrReleaseCapabilities(
         Hdr10JxrCodecReadiness readiness,
-        IEnumerable<OutputValidationSessionArtifact> validationArtifacts)
+        IEnumerable<OutputValidationSessionArtifact> validationArtifacts,
+        string? currentBuildVersion = null)
     {
         ArgumentNullException.ThrowIfNull(readiness);
         ArgumentNullException.ThrowIfNull(validationArtifacts);
@@ -368,7 +369,9 @@ public sealed record OutputProfileExecutionCapabilities(
                         "P3 stays validation-scoped until wide-gamut implementation and validation are complete.")));
         }
 
-        var viewerEvidence = Hdr10JxrViewerValidationEvidence.FromArtifacts(validationArtifacts);
+        var viewerEvidence = Hdr10JxrViewerValidationEvidence.FromArtifacts(
+            validationArtifacts,
+            currentBuildVersion);
         return viewerEvidence.IsComplete
             ? CreateWithGates(
                 [

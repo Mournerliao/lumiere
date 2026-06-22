@@ -1028,6 +1028,33 @@
                         FontWeight="Bold"
                         Foreground="{StaticResource MutedTextBrush}" />
                   </Grid>
+                  <Grid
+                      MinHeight="42"
+                      ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="1">
+                      <TextBlock
+                          x:Name="ValidationRow5Label"
+                          FontSize="11"
+                          FontWeight="SemiBold"
+                          Foreground="{StaticResource TextBrush}" />
+                      <TextBlock
+                          x:Name="ValidationRow5Detail"
+                          FontSize="10"
+                          Foreground="{StaticResource MutedTextBrush}"
+                          TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+                    <TextBlock
+                        x:Name="ValidationRow5Status"
+                        Grid.Column="1"
+                        VerticalAlignment="Top"
+                        FontSize="9"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource MutedTextBrush}" />
+                  </Grid>
                 </StackPanel>
 
                 <Border

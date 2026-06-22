@@ -382,6 +382,22 @@ public sealed class OutputPolicyTests
         Assert.Equal(OutputFidelityMode.HdrPreserved, hdr10Capability.FidelityMode);
     }
 
+    [Fact]
+    public void ResolveHdr10JxrReleaseCapabilities_KeepsCompatibilityOnlyWhenEvidenceIsStaleForCurrentBuild()
+    {
+        var capabilities = OutputProfileExecutionCapabilities.ResolveHdr10JxrReleaseCapabilities(
+            ReadyHdr10JxrReadiness,
+            [CompleteHdr10Artifact()],
+            "2.3.4+deadbee");
+
+        Assert.DoesNotContain(capabilities.Profiles, profile => profile.ProfileKind is OutputProfileKind.Hdr10Pq);
+        var hdr10Gate = Assert.Single(
+            capabilities.Gates,
+            gate => gate.ProfileKind is OutputProfileKind.Hdr10Pq);
+        Assert.Equal(OutputProfileGateStatus.PendingValidation, hdr10Gate.Status);
+        Assert.Contains("stale", hdr10Gate.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static OutputValidationSessionArtifact CompleteHdr10Artifact() =>
         new(
             Date: "2026-06-21",

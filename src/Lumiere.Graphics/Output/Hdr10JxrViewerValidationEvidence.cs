@@ -6,6 +6,7 @@ namespace Lumiere.Graphics.Output;
 /// </summary>
 public sealed record Hdr10JxrViewerValidationEvidence(
     bool HasArtifacts,
+    bool HasCurrentBuildAlignment,
     bool HasCompleteTargetAwareHdrEvidence,
     bool HasCompleteFormatContract,
     bool HasViewerRecognizedHdr10StaticMetadata,
@@ -14,6 +15,7 @@ public sealed record Hdr10JxrViewerValidationEvidence(
 {
     public bool IsComplete =>
         HasArtifacts
+        && HasCurrentBuildAlignment
         && HasCompleteTargetAwareHdrEvidence
         && HasCompleteFormatContract
         && HasViewerRecognizedHdr10StaticMetadata
@@ -21,13 +23,17 @@ public sealed record Hdr10JxrViewerValidationEvidence(
         && Blockers.Count == 0;
 
     public static Hdr10JxrViewerValidationEvidence FromArtifacts(
-        IEnumerable<OutputValidationSessionArtifact> artifacts)
+        IEnumerable<OutputValidationSessionArtifact> artifacts,
+        string? currentBuildVersion = null)
     {
         ArgumentNullException.ThrowIfNull(artifacts);
 
         var artifactArray = artifacts
             .Where(artifact => artifact.CoversProfileOutputTarget(OutputProfileKind.Hdr10Pq, OutputTarget.Folder))
             .ToArray();
+        var buildAlignment = ValidationArtifactBuildAlignment.Evaluate(currentBuildVersion, artifactArray);
+        var requiresCurrentBuildAlignment = !string.IsNullOrWhiteSpace(currentBuildVersion);
+        var hasCurrentBuildAlignment = !requiresCurrentBuildAlignment || buildAlignment.MatchesCurrentBuild;
         var evaluatedProfile = OutputValidationSessionArtifact.ApplyAllTo(
             OutputProfileContract.Hdr10Pq with
             {
@@ -59,6 +65,19 @@ public sealed record Hdr10JxrViewerValidationEvidence(
             blockers.Add("No folder-output validation artifacts were loaded for the HDR10 JXR path.");
         }
 
+        if (requiresCurrentBuildAlignment && !buildAlignment.MatchesCurrentBuild)
+        {
+            blockers.Add(buildAlignment.Status switch
+            {
+                ValidationArtifactBuildAlignmentStatus.StaleForCurrentBuild =>
+                    "Loaded HDR10 JXR validation evidence is stale for the current build.",
+                ValidationArtifactBuildAlignmentStatus.Unknown =>
+                    "Loaded HDR10 JXR validation evidence cannot be aligned to the current build yet.",
+                _ =>
+                    "Loaded HDR10 JXR validation evidence is not aligned to the current build.",
+            });
+        }
+
         if (!hasCompleteTargetAwareHdrEvidence)
         {
             blockers.Add("Complete target-aware HDR evidence is missing.");
@@ -81,6 +100,7 @@ public sealed record Hdr10JxrViewerValidationEvidence(
 
         return new Hdr10JxrViewerValidationEvidence(
             hasArtifacts,
+            hasCurrentBuildAlignment,
             hasCompleteTargetAwareHdrEvidence,
             hasCompleteFormatContract,
             metadataBlockers.Length == 0,

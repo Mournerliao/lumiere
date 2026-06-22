@@ -746,6 +746,21 @@ public sealed class PerfectHdrFidelityProjectionTests
     }
 
     [Fact]
+    public void ProjectValidationRecord_WithMismatchedBuildAlignmentCallsOutStaleEvidence()
+    {
+        var snapshot = new OutputValidationArtifactSnapshot(
+            [ArtifactFor("Windows Photos")],
+            []);
+
+        var record = PerfectHdrFidelityProjection.ProjectValidationRecord("2.3.4+deadbee", snapshot);
+
+        Assert.Equal(ValidationEvidenceStatus.Limited, record.WindowsManualValidationStatus);
+        Assert.Contains("not aligned with the current build", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("deadbee", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("485bc31", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void ProjectValidationEvidenceSummary_WithArtifactsSurfacesLatestCoverageAndFollowUp()
     {
         var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(
@@ -777,6 +792,53 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Contains("Known limitations", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Chromium metadata recognition", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Follow-up: 11-3, 12-1", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectValidationEvidenceSummary_WithMatchingCurrentBuildSurfacesPassAlignment()
+    {
+        var snapshot = new OutputValidationArtifactSnapshot(
+            [ArtifactFor("Windows Photos")],
+            [])
+        {
+            ArtifactReferences =
+            [
+                new OutputValidationArtifactReference(
+                    "C:\\Validation\\windows-photos.json",
+                    ArtifactFor("Windows Photos")),
+            ],
+        };
+
+        var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(snapshot, "2.3.4+485bc31");
+
+        Assert.Equal(ValidationEvidenceStatus.Pass, summary.BuildAlignment.Status);
+        Assert.Equal("Matched current build", summary.BuildAlignment.StatusLabel);
+        Assert.Contains("matches the current build token", summary.BuildAlignment.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("485bc31", summary.BuildAlignment.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectValidationEvidenceSummary_WithMismatchedCurrentBuildSurfacesStaleAlignment()
+    {
+        var snapshot = new OutputValidationArtifactSnapshot(
+            [ArtifactFor("Windows Photos")],
+            [])
+        {
+            ArtifactReferences =
+            [
+                new OutputValidationArtifactReference(
+                    "C:\\Validation\\windows-photos.json",
+                    ArtifactFor("Windows Photos")),
+            ],
+        };
+
+        var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(snapshot, "2.3.4+deadbee");
+
+        Assert.Equal(ValidationEvidenceStatus.Limited, summary.BuildAlignment.Status);
+        Assert.Equal("Stale for current build", summary.BuildAlignment.StatusLabel);
+        Assert.Contains("stale for the current build", summary.BuildAlignment.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("deadbee", summary.BuildAlignment.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("485bc31", summary.BuildAlignment.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

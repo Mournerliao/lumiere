@@ -331,7 +331,8 @@ public sealed partial class MainWindow : Window
         var snapshot = validationSnapshot ?? LoadOutputValidationArtifacts();
         return OutputProfileExecutionCapabilities.ResolveHdr10JxrReleaseCapabilities(
             hdr10JxrCodecReadiness,
-            snapshot.Artifacts);
+            snapshot.Artifacts,
+            aboutInfoProvider.Version);
     }
 
     private async void OnSettingsSavePathBrowseClick(object sender, RoutedEventArgs e)
@@ -1960,6 +1961,7 @@ public sealed partial class MainWindow : Window
         ApplyValidationRow(validation.Rows.ElementAtOrDefault(1), ValidationRow2Label, ValidationRow2Detail, ValidationRow2Status);
         ApplyValidationRow(validation.Rows.ElementAtOrDefault(2), ValidationRow3Label, ValidationRow3Detail, ValidationRow3Status);
         ApplyValidationRow(validation.Rows.ElementAtOrDefault(3), ValidationRow4Label, ValidationRow4Detail, ValidationRow4Status);
+        ApplyValidationRow(validation.Rows.ElementAtOrDefault(4), ValidationRow5Label, ValidationRow5Detail, ValidationRow5Status);
         ValidationViewerMatrixSummaryText.Text = validation.ViewerMatrixSummary;
         ApplyValidationViewerRow(
             validation.ViewerMatrix.ElementAtOrDefault(0),

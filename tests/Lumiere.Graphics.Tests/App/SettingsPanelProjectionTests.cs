@@ -762,6 +762,81 @@ public sealed class SettingsPanelProjectionTests
     }
 
     [Fact]
+    public void Project_SnapshotValidationSurfacesMatchedCurrentBuildEvidenceRow()
+    {
+        var snapshot = new OutputValidationArtifactSnapshot(
+            [ArtifactWithFormatContract("Windows Photos")],
+            [])
+        {
+            ArtifactReferences =
+            [
+                new OutputValidationArtifactReference(
+                    "C:\\Validation\\windows-photos.json",
+                    ArtifactWithFormatContract("Windows Photos")),
+            ],
+        };
+
+        var projection = SettingsPanelProjection.Project(
+            new TestSettingsProvider
+            {
+                ExportColorFormat = "HDR10",
+                OutputTarget = OutputTarget.Folder,
+            },
+            CreateState(),
+            snapshot,
+            new TestAboutInfoProvider
+            {
+                Version = "2.3.4+72c3be7",
+            },
+            executionCapabilities: OutputProfileExecutionCapabilities.CompatibilityOnly);
+        var buildRow = Assert.Single(
+            projection.Validation.Rows,
+            row => row.Label == "Current build evidence");
+
+        Assert.Equal(ValidationEvidenceStatus.Pass, buildRow.Status);
+        Assert.Contains("matches the current build token", buildRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(ValidationEvidenceStatus.Pass, projection.Validation.EvidenceSummary.BuildAlignment.Status);
+    }
+
+    [Fact]
+    public void Project_SnapshotValidationSurfacesStaleCurrentBuildEvidenceRow()
+    {
+        var snapshot = new OutputValidationArtifactSnapshot(
+            [ArtifactWithFormatContract("Windows Photos")],
+            [])
+        {
+            ArtifactReferences =
+            [
+                new OutputValidationArtifactReference(
+                    "C:\\Validation\\windows-photos.json",
+                    ArtifactWithFormatContract("Windows Photos")),
+            ],
+        };
+
+        var projection = SettingsPanelProjection.Project(
+            new TestSettingsProvider
+            {
+                ExportColorFormat = "HDR10",
+                OutputTarget = OutputTarget.Folder,
+            },
+            CreateState(),
+            snapshot,
+            new TestAboutInfoProvider
+            {
+                Version = "2.3.4+deadbee",
+            },
+            executionCapabilities: OutputProfileExecutionCapabilities.CompatibilityOnly);
+        var buildRow = Assert.Single(
+            projection.Validation.Rows,
+            row => row.Label == "Current build evidence");
+
+        Assert.Equal(ValidationEvidenceStatus.Limited, buildRow.Status);
+        Assert.Contains("stale for the current build", buildRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("not aligned with the current build", projection.Validation.Record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(ValidationEvidenceStatus.Limited, projection.Validation.EvidenceSummary.BuildAlignment.Status);
+    }
+
+    [Fact]
     public void Project_ReflectsAfterCaptureRevealForFolderArtifacts()
     {
         var settings = new TestSettingsProvider

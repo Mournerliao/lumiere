@@ -411,20 +411,30 @@ public static class PerfectHdrFidelityProjection
         ValidationRecordProjection? record)
     {
         var viewerMatrix = outputProfile.ViewerEvidence.Select(ProjectViewerEvidence).ToArray();
+        var effectiveRecord = record ?? ProjectValidationRecord(null);
         return new(
             ReleaseTarget,
             "Public release waits for evidence; SDR compatibility remains fallback only.",
             ProjectValidationGate(outputProfileProjection),
-            [
-                ProjectTargetAwareHdrRow(readiness, targetHdrEvidence),
-                ProjectVisualMatchRow(outputProfile),
-                ProjectHdrPreservedProfileRow(outputProfile),
-                ProjectTargetAppMatrixRow(viewerMatrix),
-            ],
+            CreateValidationRows(outputProfile, readiness, targetHdrEvidence, viewerMatrix, evidenceSummary),
             "Named viewers must prove artifact handling, visual match, and fidelity separately.",
             viewerMatrix,
-            record ?? ProjectValidationRecord(null))
+            effectiveRecord)
         {
+            EvidenceSummary = evidenceSummary,
+        };
+    }
+
+    public static ValidationPanelProjection ApplyEvidenceSummary(
+        ValidationPanelProjection validation,
+        ValidationEvidenceSummaryProjection evidenceSummary)
+    {
+        ArgumentNullException.ThrowIfNull(validation);
+        ArgumentNullException.ThrowIfNull(evidenceSummary);
+
+        return validation with
+        {
+            Rows = ReplaceCurrentBuildEvidenceRow(validation.Rows, evidenceSummary.BuildAlignment),
             EvidenceSummary = evidenceSummary,
         };
     }
@@ -661,11 +671,16 @@ public static class PerfectHdrFidelityProjection
         var artifactArray = artifacts.ToArray();
         return artifactArray.Length == 0
             ? ValidationEvidenceSummaryProjection.Empty
-            : CreateLoadedEvidenceSummary(artifactArray, loadIssues: [], artifactReferences: []);
+            : CreateLoadedEvidenceSummary(artifactArray, loadIssues: [], artifactReferences: [], buildVersion: null);
     }
 
     public static ValidationEvidenceSummaryProjection ProjectValidationEvidenceSummary(
         OutputValidationArtifactSnapshot validationSnapshot)
+        => ProjectValidationEvidenceSummary(validationSnapshot, buildVersion: null);
+
+    public static ValidationEvidenceSummaryProjection ProjectValidationEvidenceSummary(
+        OutputValidationArtifactSnapshot validationSnapshot,
+        string? buildVersion)
     {
         ArgumentNullException.ThrowIfNull(validationSnapshot);
 
@@ -675,7 +690,8 @@ public static class PerfectHdrFidelityProjection
             return CreateLoadedEvidenceSummary(
                 artifactArray,
                 validationSnapshot.LoadIssues,
-                validationSnapshot.ArtifactReferences);
+                validationSnapshot.ArtifactReferences,
+                buildVersion);
         }
 
         var workspace = validationSnapshot.Workspace;
@@ -704,6 +720,10 @@ public static class PerfectHdrFidelityProjection
         ArgumentNullException.ThrowIfNull(validationSnapshot);
 
         var baseline = ProjectValidationRecord(buildVersion);
+        var buildAlignment = EvaluateBuildAlignment(
+            buildVersion,
+            validationSnapshot.Artifacts,
+            validationSnapshot.ArtifactReferences);
         var workspace = validationSnapshot.Workspace;
         if (!workspace.IsConfigured)
         {
@@ -745,7 +765,7 @@ public static class PerfectHdrFidelityProjection
             {
                 WindowsManualValidationStatus = ValidationEvidenceStatus.Limited,
                 WindowsManualValidationDetail =
-                    $"{validationSnapshot.Artifacts.Count} output validation artifact(s) loaded, but {validationSnapshot.LoadIssues.Count} file(s) were ignored. Fix ignored JSON/schema files before counting Windows manual output evidence. {workspaceSummary} First issue: {Path.GetFileName(firstIssue.Path)}: {firstIssue.Detail}",
+                    $"{validationSnapshot.Artifacts.Count} output validation artifact(s) loaded, but {validationSnapshot.LoadIssues.Count} file(s) were ignored. Fix ignored JSON/schema files before counting Windows manual output evidence. {DescribeBuildAlignmentForRecord(buildAlignment)} {workspaceSummary} First issue: {Path.GetFileName(firstIssue.Path)}: {firstIssue.Detail}",
                 EvidenceDocumentPath = "harness/validation/output-validation.md",
             };
         }
@@ -756,7 +776,7 @@ public static class PerfectHdrFidelityProjection
             {
                 WindowsManualValidationStatus = ValidationEvidenceStatus.Limited,
                 WindowsManualValidationDetail =
-                    $"{validationSnapshot.Artifacts.Count} output validation artifact(s) loaded for this session. {workspaceSummary} Release gates still require target-aware HDR, visual match, HDR preservation, and HDR10 metadata recognition to pass.",
+                    $"{validationSnapshot.Artifacts.Count} output validation artifact(s) loaded for this session. {DescribeBuildAlignmentForRecord(buildAlignment)} {workspaceSummary} Release gates still require target-aware HDR, visual match, HDR preservation, and HDR10 metadata recognition to pass.",
                 EvidenceDocumentPath = "harness/validation/output-validation.md",
             };
         }
@@ -785,10 +805,12 @@ public static class PerfectHdrFidelityProjection
     private static ValidationEvidenceSummaryProjection CreateLoadedEvidenceSummary(
         IReadOnlyList<OutputValidationSessionArtifact> artifacts,
         IReadOnlyList<OutputValidationArtifactLoadIssue> loadIssues,
-        IReadOnlyList<OutputValidationArtifactReference> artifactReferences)
+        IReadOnlyList<OutputValidationArtifactReference> artifactReferences,
+        string? buildVersion)
     {
         var latestArtifact = SelectLatestArtifact(artifacts);
         var latestArtifactReference = SelectLatestArtifactReference(artifactReferences);
+        var buildAlignment = EvaluateBuildAlignment(buildVersion, artifacts, artifactReferences);
         var latestSummary = latestArtifact is null
             ? "No valid output validation artifact is loaded for this session."
             : $"Latest artifact: {FormatArtifactHeader(latestArtifact)}. {NormalizeSentence(latestArtifact.ResultSummary)}";
@@ -806,7 +828,40 @@ public static class PerfectHdrFidelityProjection
             CreateGapDetail(artifacts, loadIssues))
         {
             LatestArtifactPath = latestArtifactReference?.Path,
+            BuildAlignment = buildAlignment,
         };
+    }
+
+    private static ValidationEvidenceRowProjection ProjectCurrentBuildEvidenceRow(
+        ValidationEvidenceBuildAlignmentProjection buildAlignment) =>
+        new(
+            "Current build evidence",
+            buildAlignment.Status,
+            buildAlignment.Detail);
+
+    private static IReadOnlyList<ValidationEvidenceRowProjection> CreateValidationRows(
+        OutputProfileContract outputProfile,
+        PreviewReadinessStatus? readiness,
+        TargetAwareHdrValidationEvidence? targetHdrEvidence,
+        IReadOnlyList<ValidationViewerMatrixRowProjection> viewerMatrix,
+        ValidationEvidenceSummaryProjection evidenceSummary) =>
+        [
+            ProjectTargetAwareHdrRow(readiness, targetHdrEvidence),
+            ProjectVisualMatchRow(outputProfile),
+            ProjectHdrPreservedProfileRow(outputProfile),
+            ProjectTargetAppMatrixRow(viewerMatrix),
+            ProjectCurrentBuildEvidenceRow(evidenceSummary.BuildAlignment),
+        ];
+
+    private static IReadOnlyList<ValidationEvidenceRowProjection> ReplaceCurrentBuildEvidenceRow(
+        IReadOnlyList<ValidationEvidenceRowProjection> rows,
+        ValidationEvidenceBuildAlignmentProjection buildAlignment)
+    {
+        var updatedRows = rows
+            .Where(row => !string.Equals(row.Label, "Current build evidence", StringComparison.Ordinal))
+            .ToList();
+        updatedRows.Add(ProjectCurrentBuildEvidenceRow(buildAlignment));
+        return updatedRows;
     }
 
     private static OutputValidationSessionArtifact? SelectLatestArtifact(
@@ -943,6 +998,77 @@ public static class PerfectHdrFidelityProjection
             ? trimmed
             : $"{trimmed}.";
     }
+
+    private static ValidationEvidenceBuildAlignmentProjection EvaluateBuildAlignment(
+        string? buildVersion,
+        IEnumerable<OutputValidationSessionArtifact> artifacts,
+        IEnumerable<OutputValidationArtifactReference> artifactReferences)
+    {
+        var artifactArray = artifacts.ToArray();
+        if (artifactArray.Length == 0)
+        {
+            return ValidationEvidenceBuildAlignmentProjection.Empty;
+        }
+
+        var latestArtifact = SelectLatestArtifact(artifactArray);
+        var latestArtifactReference = SelectLatestArtifactReference(artifactReferences);
+        if (latestArtifact is null)
+        {
+            return ValidationEvidenceBuildAlignmentProjection.Empty;
+        }
+
+        var alignment = ValidationArtifactBuildAlignment.Evaluate(buildVersion, artifactArray);
+        var artifactPath = latestArtifactReference?.Path;
+        var artifactPathDetail = string.IsNullOrWhiteSpace(artifactPath)
+            ? string.Empty
+            : $" File: {artifactPath}.";
+
+        return alignment.Status switch
+        {
+            ValidationArtifactBuildAlignmentStatus.MatchedCurrentBuild =>
+                new ValidationEvidenceBuildAlignmentProjection(
+                    "Build alignment",
+                    ValidationEvidenceStatus.Pass,
+                    $"{alignment.Detail} Windows manual validation still remains scoped to the recorded target, viewer, and scenario coverage.{artifactPathDetail}",
+                    "Matched current build")
+                {
+                    ExpectedBuild = alignment.ExpectedBuildCommit,
+                    LatestArtifactBuild = alignment.LatestArtifactBuildCommit,
+                },
+            ValidationArtifactBuildAlignmentStatus.StaleForCurrentBuild =>
+                new ValidationEvidenceBuildAlignmentProjection(
+                    "Build alignment",
+                    ValidationEvidenceStatus.Limited,
+                    $"{alignment.Detail} Record fresh Windows evidence before treating this session as public-release support.{artifactPathDetail}",
+                    "Stale for current build")
+                {
+                    ExpectedBuild = alignment.ExpectedBuildCommit,
+                    LatestArtifactBuild = alignment.LatestArtifactBuildCommit,
+                },
+            ValidationArtifactBuildAlignmentStatus.Unknown =>
+                new ValidationEvidenceBuildAlignmentProjection(
+                    "Build alignment",
+                    ValidationEvidenceStatus.Limited,
+                    $"{alignment.Detail}{artifactPathDetail}",
+                    "Unknown build match")
+                {
+                    ExpectedBuild = alignment.ExpectedBuildCommit,
+                    LatestArtifactBuild = alignment.LatestArtifactBuildCommit,
+                },
+            _ => ValidationEvidenceBuildAlignmentProjection.Empty,
+        };
+    }
+
+    private static string DescribeBuildAlignmentForRecord(
+        ValidationEvidenceBuildAlignmentProjection buildAlignment) =>
+        buildAlignment.Status switch
+        {
+            ValidationEvidenceStatus.Pass => "Loaded evidence matches the current build.",
+            ValidationEvidenceStatus.Limited when buildAlignment.ExpectedBuild is not null && buildAlignment.LatestArtifactBuild is not null =>
+                $"Loaded evidence is not aligned with the current build ({buildAlignment.ExpectedBuild} vs {buildAlignment.LatestArtifactBuild}).",
+            ValidationEvidenceStatus.Limited => "Loaded evidence cannot be aligned to the current build yet.",
+            _ => buildAlignment.Detail,
+        };
 
     public static string NormalizeExportColorFormat(string? exportColorFormat)
         => OutputProfileContract.FromSettingsValue(exportColorFormat).Label;
@@ -1294,6 +1420,9 @@ public sealed record ValidationEvidenceSummaryProjection(
 {
     public string? LatestArtifactPath { get; init; }
 
+    public ValidationEvidenceBuildAlignmentProjection BuildAlignment { get; init; } =
+        ValidationEvidenceBuildAlignmentProjection.Empty;
+
     public bool CanOpenLatestArtifact => !string.IsNullOrWhiteSpace(LatestArtifactPath);
 
     public static ValidationEvidenceSummaryProjection Empty { get; } =
@@ -1303,6 +1432,24 @@ public sealed record ValidationEvidenceSummaryProjection(
             "No output validation artifact is loaded for this session.",
             "Coverage: none yet.",
             "Next step: create or copy a validation artifact, replace placeholders with real Windows observations, then reload evidence.");
+}
+
+public sealed record ValidationEvidenceBuildAlignmentProjection(
+    string Label,
+    ValidationEvidenceStatus Status,
+    string Detail,
+    string StatusLabel)
+{
+    public string? ExpectedBuild { get; init; }
+
+    public string? LatestArtifactBuild { get; init; }
+
+    public static ValidationEvidenceBuildAlignmentProjection Empty { get; } =
+        new(
+            "Build alignment",
+            ValidationEvidenceStatus.NotRun,
+            "No loaded evidence is available yet, so current-build alignment cannot be checked.",
+            "Not checked");
 }
 
 public sealed record ValidationGateProjection(

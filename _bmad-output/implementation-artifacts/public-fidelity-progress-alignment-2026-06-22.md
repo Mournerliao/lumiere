@@ -92,6 +92,7 @@ Evidence:
 - The HDR10 target-app compatibility gate now ignores clipboard-only artifacts for the JXR path, keeping runtime readiness aligned with the real file-based artifact path rather than any generic viewer record.
 - The same gate now also respects record-level target coverage when a mixed session validates different target semantics for different profiles, reducing ambiguity before real Windows manual artifacts are recorded.
 - Selected-profile projections now also respect the active output target. Folder-side HDR10 evidence can still advance `Folder` and `Both` sessions, but it no longer causes `Clipboard` sessions to present `Build` / `Validate` / `Ready` as though the clipboard path itself had become HDR-preserved.
+- HDR10 JXR runtime gating now also checks whether the loaded manual evidence aligns to the current build token before treating that evidence as executable release support. Stale evidence can remain reviewable, but it no longer unlocks `Ready`.
 
 Remaining blockers:
 
@@ -108,6 +109,7 @@ Evidence:
 - The local validation workspace can now generate a prefilled draft artifact from the current session, reducing setup friction before real Windows manual evidence is recorded.
 - Settings validation now also surfaces a compact loaded-evidence summary so testers can review the latest loaded artifact, current coverage, known limitations, follow-up stories, and ignored-file warnings without leaving the app.
 - That same surface now also links directly to the latest loaded evidence file, reducing the gap between in-app review and the durable JSON artifact that release validation depends on.
+- The same validation surface now also calls out whether the latest loaded evidence matches the current build, is stale for the current build, or cannot yet be aligned to a comparable build token.
 - `harness/validation/hdr-sdr-validation-scenarios.md` now defines the standard content families, topology matrix, and session execution flow.
 - `harness/validation/settings-accessibility-validation.md` now gives Story 13-2 a focused Windows validation workflow tied back to the release checklist.
 - `harness/validation/templates/hdr-sdr-validation-session-template.md` now gives future sessions a consistent metadata/result record shape.
@@ -166,6 +168,7 @@ Evidence:
 - The compact main panel now uses a scroll boundary for its body content while keeping header, alert, and footer structure fixed, so layout pressure falls onto secondary summary content before primary capture actions become unreachable.
 - Settings > Validation now includes a compact evidence-summary block that stays native and reviewable while making the currently loaded validation scope legible to keyboard and screen-reader users.
 - Settings > Validation now also exposes a direct `Open latest evidence` path so keyboard and screen-reader users can move from the summary surface to the current loaded artifact without manually browsing the workspace.
+- Settings > Validation now also surfaces `Current build evidence` as a first-class row, so validators do not need to infer stale-versus-current evidence by manually comparing JSON and About metadata.
 
 Remaining blockers:
 
