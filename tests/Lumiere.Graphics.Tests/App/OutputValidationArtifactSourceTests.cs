@@ -132,6 +132,12 @@ public sealed class OutputValidationArtifactSourceTests
             writeAllText: (path, content) => files[path] = content,
             resolveTemplateSourceText: () => "{ \"schemaVersion\": 4 }",
             getNow: () => new DateTimeOffset(2026, 06, 22, 10, 30, 00, TimeSpan.FromHours(8)),
+            targetAppVersionPrefillProvider: new StubTargetAppVersionPrefillProvider(
+                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["Microsoft Paint"] = "11.2504.451.0",
+                    ["Windows Photos"] = "2026.11040.12001.0",
+                }),
             prepareWorkspace: true);
 
         var result = source.CreateDraft(
@@ -160,6 +166,14 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Equal(["Folder"], artifact.OutputTargetsTested);
         Assert.Equal("HDR Display", artifact.TargetHdrEvidence!.TargetDisplayName);
         Assert.Contains("REL-HDR-04", artifact.ChecklistIdsCovered);
+        Assert.Contains(
+            artifact.TargetAppVersions,
+            version => version.Name == "Microsoft Paint"
+                && version.Version == "11.2504.451.0");
+        Assert.Contains(
+            artifact.TargetAppVersions,
+            version => version.Name == "Windows Photos"
+                && version.Version == "2026.11040.12001.0");
     }
 
     [Fact]
@@ -309,6 +323,12 @@ public sealed class OutputValidationArtifactSourceTests
                 },
             ])
         {
+            TargetAppVersions =
+            [
+                new OutputValidationTargetAppVersionRecord(
+                    viewerName,
+                    $"{viewerName} 1.0"),
+            ],
             TargetHdrEvidence = CompleteTargetHdrEvidence,
         };
 
@@ -365,5 +385,12 @@ public sealed class OutputValidationArtifactSourceTests
         public AfterCaptureBehavior AfterCaptureBehavior { get; init; } = AfterCaptureBehavior.None;
 
         public string ExportColorFormat { get; init; } = "sRGB";
+    }
+
+    private sealed class StubTargetAppVersionPrefillProvider(
+        IReadOnlyDictionary<string, string> values) : ITargetAppVersionPrefillProvider
+    {
+        public string? TryGetVersion(string targetAppName) =>
+            values.TryGetValue(targetAppName, out var value) ? value : null;
     }
 }

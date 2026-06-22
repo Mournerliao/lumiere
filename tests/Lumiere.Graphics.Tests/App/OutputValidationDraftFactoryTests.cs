@@ -123,4 +123,44 @@ public sealed class OutputValidationDraftFactoryTests
         Assert.Contains("Lumiere v2.3.4+72c3be7", document.Artifact.BuildCommit, StringComparison.Ordinal);
         Assert.DoesNotContain("REPLACE_WITH_GIT_COMMIT", document.Artifact.BuildCommit, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Create_UsesResolvedTargetAppVersionsWhenProviderCanIdentifyKnownApps()
+    {
+        var request = new OutputValidationDraftRequest(
+            "0.1.0",
+            OutputTarget.Folder,
+            OutputProfileContract.Hdr10Pq,
+            CaptureSessionState.Idle());
+
+        var document = OutputValidationDraftFactory.Create(
+            request,
+            new DateTimeOffset(2026, 06, 22, 10, 30, 00, TimeSpan.FromHours(8)),
+            new StubTargetAppVersionPrefillProvider(
+                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["Microsoft Paint"] = "11.2504.451.0",
+                    ["Windows Photos"] = "2026.11040.12001.0",
+                }));
+
+        Assert.Contains(
+            document.Artifact.TargetAppVersions,
+            version => version.Name == "Microsoft Paint"
+                && version.Version == "11.2504.451.0");
+        Assert.Contains(
+            document.Artifact.TargetAppVersions,
+            version => version.Name == "Windows Photos"
+                && version.Version == "2026.11040.12001.0");
+        Assert.Contains(
+            document.Artifact.TargetAppVersions,
+            version => version.Name == "Chromium browsers"
+                && version.Version == "REPLACE_WITH_CHROMIUM_BROWSERS_VERSION");
+    }
+
+    private sealed class StubTargetAppVersionPrefillProvider(
+        IReadOnlyDictionary<string, string> values) : ITargetAppVersionPrefillProvider
+    {
+        public string? TryGetVersion(string targetAppName) =>
+            values.TryGetValue(targetAppName, out var value) ? value : null;
+    }
 }

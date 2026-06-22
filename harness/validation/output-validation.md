@@ -114,14 +114,14 @@ For the HDR10 JXR release path, current-build alignment is now part of the runti
 - selected output target
 - selected output profile
 - named viewer skeleton for that profile
-- target-app version placeholders for the named viewers
+- known target-app versions when Lumiere can identify them locally, otherwise placeholders for the named viewers
 - current capture-target display name and bounds when available
 
 The generated file still keeps manual-observation fields honest:
 
 - tester, Windows version, device, GPU, and DPI remain explicit placeholders
 - if Lumiere cannot prove a comparable current build token, the draft keeps `REPLACE_WITH_GIT_COMMIT` instead of inventing one
-- target-app versions stay placeholders until the tested Windows machine records the real viewer/app versions
+- target-app versions stay placeholders for any viewer/app Lumiere cannot identify locally, and even prefilled values still need the validator to confirm they match the actual tested app/session
 - viewer artifact handling, visual match, HDR preservation, and HDR10 metadata recognition stay `NotRun` until observed
 - the draft is written into `%LOCALAPPDATA%\Lumiere\validation\output\` as a normal artifact file, but it should not be counted as passing evidence until the placeholders and observed results are replaced with real Windows manual validation data
 - Lumiere does not auto-reload the draft after creation, so an untouched draft does not immediately change the current evidence gate view

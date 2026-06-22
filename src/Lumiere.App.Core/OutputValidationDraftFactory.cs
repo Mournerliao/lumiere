@@ -8,7 +8,8 @@ public static class OutputValidationDraftFactory
 {
     public static OutputValidationDraftDocument Create(
         OutputValidationDraftRequest request,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        ITargetAppVersionPrefillProvider? targetAppVersionPrefillProvider = null)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -68,7 +69,9 @@ public static class OutputValidationDraftFactory
                 CreateProfileRecord(profile, outputTarget),
             ])
         {
-            TargetAppVersions = CreateTargetAppVersionPlaceholders(targetApps),
+            TargetAppVersions = CreateTargetAppVersionSuggestions(
+                targetApps,
+                targetAppVersionPrefillProvider),
             TargetHdrEvidence = CreateTargetHdrEvidence(request.SessionState),
         };
 
@@ -254,13 +257,24 @@ public static class OutputValidationDraftFactory
             : null;
     }
 
-    private static IReadOnlyList<OutputValidationTargetAppVersionRecord> CreateTargetAppVersionPlaceholders(
-        IReadOnlyList<string> targetApps) =>
+    private static IReadOnlyList<OutputValidationTargetAppVersionRecord> CreateTargetAppVersionSuggestions(
+        IReadOnlyList<string> targetApps,
+        ITargetAppVersionPrefillProvider? targetAppVersionPrefillProvider) =>
         targetApps
             .Select(targetApp => new OutputValidationTargetAppVersionRecord(
                 targetApp,
-                $"REPLACE_WITH_{SanitizeIdentifier(targetApp)}_VERSION"))
+                ResolveSuggestedTargetAppVersion(targetApp, targetAppVersionPrefillProvider)))
             .ToArray();
+
+    private static string ResolveSuggestedTargetAppVersion(
+        string targetApp,
+        ITargetAppVersionPrefillProvider? targetAppVersionPrefillProvider)
+    {
+        var resolvedVersion = targetAppVersionPrefillProvider?.TryGetVersion(targetApp)?.Trim();
+        return string.IsNullOrWhiteSpace(resolvedVersion)
+            ? $"REPLACE_WITH_{SanitizeIdentifier(targetApp)}_VERSION"
+            : resolvedVersion;
+    }
 
     private static string CreateFileNameStem(
         string date,

@@ -99,6 +99,7 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
     private readonly Action<string, string> writeAllText;
     private readonly Func<string?> resolveTemplateSourceText;
     private readonly Func<DateTimeOffset> getNow;
+    private readonly ITargetAppVersionPrefillProvider? targetAppVersionPrefillProvider;
     private readonly bool prepareWorkspace;
 
     public FileOutputValidationArtifactSource(string directoryPath, string searchPattern = "*.json")
@@ -113,6 +114,7 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
             File.WriteAllText,
             LoadEmbeddedTemplateText,
             () => DateTimeOffset.Now,
+            new WindowsTargetAppVersionPrefillProvider(),
             prepareWorkspace: true)
     {
     }
@@ -134,6 +136,7 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
             (_, _) => { },
             () => null,
             () => DateTimeOffset.Now,
+            null,
             prepareWorkspace: false)
     {
     }
@@ -149,6 +152,7 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         Action<string, string> writeAllText,
         Func<string?>? resolveTemplateSourceText = null,
         Func<DateTimeOffset>? getNow = null,
+        ITargetAppVersionPrefillProvider? targetAppVersionPrefillProvider = null,
         bool prepareWorkspace = false)
     {
         if (string.IsNullOrWhiteSpace(directoryPath))
@@ -171,6 +175,7 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         this.writeAllText = writeAllText ?? throw new ArgumentNullException(nameof(writeAllText));
         this.resolveTemplateSourceText = resolveTemplateSourceText ?? LoadEmbeddedTemplateText;
         this.getNow = getNow ?? (() => DateTimeOffset.Now);
+        this.targetAppVersionPrefillProvider = targetAppVersionPrefillProvider;
         this.prepareWorkspace = prepareWorkspace;
     }
 
@@ -245,7 +250,10 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         try
         {
             var now = getNow();
-            var draft = OutputValidationDraftFactory.Create(request, now);
+            var draft = OutputValidationDraftFactory.Create(
+                request,
+                now,
+                targetAppVersionPrefillProvider);
             var filePath = AllocateDraftPath(workspace.DirectoryPath, draft.FileNameStem);
             writeAllText(filePath, draft.Artifact.ToJson());
             return OutputValidationDraftResult.Success(filePath);
