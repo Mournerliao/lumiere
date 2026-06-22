@@ -324,6 +324,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Contains(validation.ViewerMatrix, viewer =>
             viewer.Name == "Windows Photos"
             && viewer.TargetAppVersionStatus == ValidationEvidenceStatus.Pass
+            && viewer.Detail.Contains("Output target scope: Folder (session-level).", StringComparison.OrdinalIgnoreCase)
             && viewer.Detail.Contains("Recorded version:", StringComparison.OrdinalIgnoreCase)
             && viewer.Status == ValidationEvidenceStatus.Pass);
         Assert.Contains(validation.ViewerMatrix, viewer =>
@@ -434,6 +435,33 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Contains("Microsoft Paint", versionRow.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(ValidationEvidenceStatus.Limited, missingVersionViewer.TargetAppVersionStatus);
         Assert.Contains("still missing", missingVersionViewer.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectValidation_ViewerMatrixUsesRecordLevelOutputTargetScopeWhenProvided()
+    {
+        var artifact = ArtifactFor("Windows Photos") with
+        {
+            OutputTargetsTested = ["Both"],
+            OutputProfileRecords =
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer("Windows Photos"),
+                    ])
+                {
+                    FormatContract = CompleteHdr10Contract,
+                    OutputTargetsCovered = ["Folder"],
+                },
+            ],
+        };
+
+        var validation = PerfectHdrFidelityProjection.ProjectValidation(OutputProfileContract.Hdr10Pq, artifact);
+        var viewer = Assert.Single(validation.ViewerMatrix, item => item.Name == "Windows Photos");
+
+        Assert.Contains("Output target scope: Folder.", viewer.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("session-level", viewer.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

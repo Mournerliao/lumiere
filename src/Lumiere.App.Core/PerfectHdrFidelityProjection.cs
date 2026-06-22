@@ -950,7 +950,8 @@ public static class PerfectHdrFidelityProjection
         outputProfile.ViewerEvidence
             .Select(evidence => ProjectViewerEvidence(
                 evidence,
-                ProjectViewerTargetAppVersionEvidence(evidence, artifacts)))
+                ProjectViewerTargetAppVersionEvidence(evidence, artifacts),
+                DescribeViewerTargetScope(outputProfile.Kind, evidence.Name, artifacts)))
             .ToArray();
 
     private static OutputValidationSessionArtifact? SelectLatestArtifact(
@@ -1493,7 +1494,8 @@ public static class PerfectHdrFidelityProjection
 
     private static ValidationViewerMatrixRowProjection ProjectViewerEvidence(
         OutputViewerCompatibilityEvidence evidence,
-        ViewerTargetAppVersionEvidence targetAppVersionEvidence) =>
+        ViewerTargetAppVersionEvidence targetAppVersionEvidence,
+        string targetScopeDetail) =>
         new(
             evidence.Name,
             MapEvidenceStatus(evidence.ArtifactHandlingStatus),
@@ -1506,7 +1508,7 @@ public static class PerfectHdrFidelityProjection
                 + $"HDR preservation: {FormatEvidenceStatus(evidence.HdrPreservationStatus)} · "
                 + $"HDR10 metadata: {FormatEvidenceStatus(evidence.Hdr10MetadataStatus)} · "
                 + $"Target app version: {FormatValidationEvidenceStatus(targetAppVersionEvidence.Status)}",
-            $"{targetAppVersionEvidence.Detail} Fidelity evidence is separated by category. {evidence.Detail}");
+            $"{targetScopeDetail} {targetAppVersionEvidence.Detail} Fidelity evidence is separated by category. {evidence.Detail}");
 
     private static ViewerTargetAppVersionEvidence ProjectViewerTargetAppVersionEvidence(
         OutputViewerCompatibilityEvidence evidence,
@@ -1560,6 +1562,75 @@ public static class PerfectHdrFidelityProjection
             : new(
                 ValidationEvidenceStatus.Pass,
                 recordedVersionDetail);
+    }
+
+    private static string DescribeViewerTargetScope(
+        OutputProfileKind profileKind,
+        string viewerName,
+        IReadOnlyList<OutputValidationSessionArtifact> artifacts)
+    {
+        if (artifacts.Count == 0)
+        {
+            return "Output target scope is not recorded yet for this viewer.";
+        }
+
+        var scopes = artifacts
+            .SelectMany(artifact => artifact.OutputProfileRecords
+                .Where(record => record.ProfileKind == profileKind)
+                .Where(record => record.ViewerEvidence.Any(viewer => NamesMatch(viewer.Name, viewerName)))
+                .Select(record => DescribeTargetScope(record, artifact)))
+            .ToArray();
+        if (scopes.Length == 0)
+        {
+            return "Output target scope is not recorded yet for this viewer/profile combination.";
+        }
+
+        var distinctScopes = scopes
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        return distinctScopes.Length == 1
+            ? $"Output target scope: {distinctScopes[0]}."
+            : $"Output target scope varies across loaded sessions: {string.Join(", ", distinctScopes)}.";
+    }
+
+    private static string DescribeTargetScope(
+        OutputProfileValidationRecord record,
+        OutputValidationSessionArtifact artifact)
+    {
+        var scope = record.OutputTargetsCovered.Count == 0
+            ? FormatTargetScope(artifact.OutputTargetsTested)
+            : FormatTargetScope(record.OutputTargetsCovered);
+        return record.OutputTargetsCovered.Count == 0
+            ? $"{scope} (session-level)"
+            : scope;
+    }
+
+    private static string FormatTargetScope(IEnumerable<string> values)
+    {
+        var normalized = values
+            .Select(NormalizeTargetScopeValue)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        return normalized.Length == 0
+            ? "Unspecified"
+            : string.Join(", ", normalized);
+    }
+
+    private static string? NormalizeTargetScopeValue(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var normalized = value.Trim();
+        if (normalized.Equals("File", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Folder";
+        }
+
+        return normalized;
     }
 
     private static bool HasAppliedViewerEvidence(OutputViewerCompatibilityEvidence evidence) =>

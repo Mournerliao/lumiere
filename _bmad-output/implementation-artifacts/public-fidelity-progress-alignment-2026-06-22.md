@@ -2,6 +2,8 @@
 
 This note aligns `sprint-status.yaml` with the code and validation artifacts that landed after the 2026-06-21 Perfect HDR Fidelity course correction. The BMad status file had remained on the planning view where Epics 10-13 were backlog, while implementation commits already advanced several stories.
 
+Addendum: 2026-06-23 implementation slices continue to update this note when they materially change the real evidence/review surface without yet completing the public-release gate.
+
 ## Alignment Rules
 
 - `done` means the code/documentation support for the story acceptance criteria exists and is covered by automated tests or committed release-gate documentation.
@@ -105,6 +107,8 @@ Evidence:
 - Settings > Validation viewer rows now also separate aggregate viewer status from category-by-category evidence breakdown text, so target-app review no longer depends on parsing one dense paragraph to understand artifact handling, visual match, HDR preservation, and HDR10 metadata state.
 - Those same viewer rows now also carry target-app version evidence inline, including recorded version detail or missing-version blockers for the named viewer under review instead of leaving app-version context only in a summary row.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/11-3-carry-target-app-version-evidence-into-viewer-rows.md`.
+- Those same viewer rows now also state the output target scope they actually prove, preferring record-level `outputTargetsCovered` over broad session-level scope so reviewers can see whether the viewer evidence applies to `Folder`, `Clipboard`, or `Both` without cross-checking JSON.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/11-3-carry-output-target-scope-into-viewer-rows.md`.
 
 Remaining blockers:
 
@@ -201,6 +205,7 @@ Evidence:
 - That same validation surface now also carries current active target context inside the `Target-aware HDR` row, reducing ambiguity for keyboard, screen-reader, and manual-validation review flows when mixed-monitor setups are under test.
 - Settings > Validation viewer rows now also render an explicit category-by-category evidence breakdown ahead of the narrative guidance detail, reducing dependence on color and improving screen-reader/long-text review for target-app compatibility states.
 - Those same viewer rows now also keep target-app version evidence inline with the named viewer, reducing cross-row inference during keyboard, screen-reader, and long-text validation review.
+- Those same viewer rows now also keep output target scope inline with the named viewer evidence, reducing another cross-row inference step during keyboard, screen-reader, and long-text validation review.
 - Main-panel output feedback now also keeps captured-target context visible after teardown, reducing ambiguity for post-capture review flows without inventing new non-native UI affordances.
 - A focused implementation record exists at `_bmad-output/implementation-artifacts/13-2-structure-viewer-compatibility-evidence-for-accessibility.md`.
 
