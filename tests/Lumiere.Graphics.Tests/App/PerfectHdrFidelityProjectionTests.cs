@@ -906,13 +906,22 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Contains("2 artifact", summary.Summary, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("2026-06-22", summary.Summary, StringComparison.Ordinal);
         Assert.Contains("Windows Photos validation passed", summary.Summary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("entry points Main panel", summary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("targets Folder, Both", summary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Windows Photos", summary.CoverageDetail, StringComparison.Ordinal);
         Assert.Contains("2026.11040.12001.0", summary.CoverageDetail, StringComparison.Ordinal);
+        Assert.Contains("DPI 150%", summary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("display setups HDR primary", summary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("HDR states HDR enabled", summary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("REL-HDR-04", summary.CoverageDetail, StringComparison.Ordinal);
         Assert.Contains("Known limitations", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Microsoft Edge metadata recognition", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Follow-up: 11-3, 12-1", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Public gate gaps:", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Target-aware HDR", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("REL-HDR-01", summary.GapDetail, StringComparison.Ordinal);
+        Assert.Contains("Long-run lifecycle", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("REL-STAB-02", summary.GapDetail, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -834,10 +834,13 @@ public sealed class SettingsPanelProjectionTests
         Assert.Equal("Loaded evidence", projection.Validation.EvidenceSummary.Heading);
         Assert.Equal(ValidationEvidenceStatus.Limited, projection.Validation.EvidenceSummary.Status);
         Assert.Contains("Windows Photos validation passed", projection.Validation.EvidenceSummary.Summary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("entry points Settings panel", projection.Validation.EvidenceSummary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("targets Folder, Both", projection.Validation.EvidenceSummary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("2026.11040.12001.0", projection.Validation.EvidenceSummary.CoverageDetail, StringComparison.Ordinal);
         Assert.Contains("Microsoft Edge metadata recognition", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Follow-up: 11-3", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Public gate gaps:", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("REL-A11Y-01", projection.Validation.EvidenceSummary.GapDetail, StringComparison.Ordinal);
         Assert.True(projection.Validation.EvidenceSummary.CanOpenLatestArtifact);
         Assert.Equal("C:\\Validation\\windows-photos.json", projection.Validation.EvidenceSummary.LatestArtifactPath);
     }

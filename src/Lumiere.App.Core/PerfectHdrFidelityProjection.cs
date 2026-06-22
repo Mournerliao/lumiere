@@ -980,6 +980,14 @@ public static class PerfectHdrFidelityProjection
             ? parsed
             : DateOnly.MinValue;
 
+    private static readonly (string Label, IReadOnlyList<string> ChecklistIds)[] PublicReleaseChecklistGapGroups =
+    [
+        ("Target-aware HDR", ["REL-HDR-01", "REL-HDR-02", "REL-HDR-03", "REL-HDR-04", "REL-HDR-05"]),
+        ("Viewer/output matrix", ["REL-OUT-01", "REL-OUT-02", "REL-OUT-03", "REL-OUT-04", "REL-OUT-05"]),
+        ("Export-profile accessibility and DPI", ["REL-HDR-06", "REL-A11Y-01", "REL-A11Y-02", "REL-A11Y-03", "REL-A11Y-04", "REL-A11Y-05"]),
+        ("Long-run lifecycle", ["REL-STAB-01", "REL-STAB-02"]),
+    ];
+
     private static string CreateCoverageDetail(IReadOnlyList<OutputValidationSessionArtifact> artifacts)
     {
         if (artifacts.Count == 0)
@@ -988,9 +996,13 @@ public static class PerfectHdrFidelityProjection
         }
 
         return
-            $"Coverage: targets {FormatEvidenceList(artifacts.SelectMany(artifact => artifact.OutputTargetsTested), fallback: "none yet")}; "
+            $"Coverage: entry points {FormatEvidenceList(artifacts.SelectMany(artifact => artifact.EntryPointsTested), fallback: "none yet")}; "
+            + $"targets {FormatEvidenceList(artifacts.SelectMany(artifact => artifact.OutputTargetsTested), fallback: "none yet")}; "
             + $"viewers {FormatEvidenceList(artifacts.SelectMany(artifact => artifact.TargetAppsTested), fallback: "none yet")}; "
             + $"viewer versions {FormatTargetAppVersionList(artifacts.SelectMany(artifact => artifact.TargetAppVersions), fallback: "none yet")}; "
+            + $"DPI {FormatEvidenceList(artifacts.SelectMany(artifact => artifact.DpiScales), fallback: "none yet")}; "
+            + $"display setups {FormatEvidenceList(artifacts.Select(artifact => artifact.DisplaySetup), fallback: "none yet")}; "
+            + $"HDR states {FormatEvidenceList(artifacts.Select(artifact => artifact.HdrState), fallback: "none yet")}; "
             + $"checklist {FormatEvidenceList(artifacts.SelectMany(artifact => artifact.ChecklistIdsCovered), fallback: "none yet")}.";
     }
 
@@ -1018,6 +1030,12 @@ public static class PerfectHdrFidelityProjection
             detailParts.Add($"Target app versions are still missing for {FormatEvidenceList(missingTargetAppVersions, fallback: "named target apps")}.");
         }
 
+        var checklistCoverageGaps = DescribePublicReleaseChecklistGaps(artifacts);
+        if (checklistCoverageGaps.Count > 0)
+        {
+            detailParts.Add($"Public gate gaps: {string.Join("; ", checklistCoverageGaps)}.");
+        }
+
         if (loadIssues.Count > 0)
         {
             detailParts.Add("Ignored files must be fixed before counting this session as release evidence.");
@@ -1031,6 +1049,28 @@ public static class PerfectHdrFidelityProjection
         }
 
         return string.Join(" ", detailParts);
+    }
+
+    private static IReadOnlyList<string> DescribePublicReleaseChecklistGaps(
+        IReadOnlyList<OutputValidationSessionArtifact> artifacts)
+    {
+        var covered = artifacts
+            .SelectMany(artifact => artifact.ChecklistIdsCovered)
+            .Select(value => value?.Trim())
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return PublicReleaseChecklistGapGroups
+            .Select(group =>
+            {
+                var missing = group.ChecklistIds
+                    .Where(id => !covered.Contains(id))
+                    .ToArray();
+                return (group.Label, Missing: missing);
+            })
+            .Where(result => result.Missing.Length > 0)
+            .Select(result => $"{result.Label} ({string.Join(", ", result.Missing)})")
+            .ToArray();
     }
 
     private static ValidationEvidenceTargetAppVersionProjection EvaluateTargetAppVersionEvidence(
