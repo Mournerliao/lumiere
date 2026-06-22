@@ -176,6 +176,7 @@ Recommended native shape:
 Evidence surfaces must link back to `harness/validation/release-validation-checklist.md` in docs and release work. The app UI should summarize evidence; the docs remain the durable release record.
 When Lumiere prepares an app-local validation workspace, the same evidence surface should also expose direct access to the seeded release checklist and focused validation guides instead of forcing validators to browse the repo manually.
 That same evidence summary should also tell the reviewer which public release checklist groups are still uncovered by the loaded evidence, so the next Windows session can be planned from the UI without pretending the missing evidence already exists.
+Where Lumiere already exposes native validation actions, that same summary should point to them directly instead of making the reviewer infer which workflow to run next.
 
 ## Component And State Inventory
 

@@ -922,6 +922,10 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Contains("REL-HDR-01", summary.GapDetail, StringComparison.Ordinal);
         Assert.Contains("Long-run lifecycle", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("REL-STAB-02", summary.GapDetail, StringComparison.Ordinal);
+        Assert.Contains("Next recommended runs:", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Open Scenario guide", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Open A11y guide", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Create trend draft", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

@@ -27,8 +27,9 @@ This slice makes the summary more execution-oriented: it now shows broader cover
    - viewer/output matrix
    - export-profile accessibility and DPI
    - long-run lifecycle
-3. The new gap detail stays evidence-first: it does not invent a pass/fail dashboard, but it does reduce the amount of manual cross-checking between loaded JSON and the release checklist.
-4. Tests now cover the richer coverage detail and the new public-gate gap messaging.
+3. Gap detail now also recommends the next native guide or action to use for each missing public-gate group, such as `Scenario guide`, `A11y guide`, or `Create trend draft` plus `Copy trend cmd`.
+4. The new gap detail stays evidence-first: it does not invent a pass/fail dashboard, but it does reduce the amount of manual cross-checking between loaded JSON, the release checklist, and the next recommended validation step.
+5. Tests now cover the richer coverage detail and the new public-gate gap messaging.
 
 ## Review Pointers
 

@@ -841,6 +841,8 @@ public sealed class SettingsPanelProjectionTests
         Assert.Contains("Follow-up: 11-3", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Public gate gaps:", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("REL-A11Y-01", projection.Validation.EvidenceSummary.GapDetail, StringComparison.Ordinal);
+        Assert.Contains("Next recommended runs:", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Open A11y guide", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.True(projection.Validation.EvidenceSummary.CanOpenLatestArtifact);
         Assert.Equal("C:\\Validation\\windows-photos.json", projection.Validation.EvidenceSummary.LatestArtifactPath);
     }

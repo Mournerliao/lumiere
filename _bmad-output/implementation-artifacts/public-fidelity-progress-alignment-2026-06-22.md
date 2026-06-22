@@ -142,6 +142,7 @@ Evidence:
 - Settings > Validation now also exposes direct `Release checklist`, `Scenario guide`, and `A11y guide` actions so validators can stay inside one native evidence path while preparing real Windows sessions.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-seed-public-validation-guides-into-local-workspace.md`.
 - The same loaded-evidence summary now also carries entry-point, DPI, display-setup, and HDR-state coverage plus the public release checklist groups still missing from the loaded evidence, reducing manual cross-checking during Windows validation prep.
+- That same summary now also recommends the next native guide or action for those missing public-gate groups, reducing another round of guesswork before a validator starts the next Windows run.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-surface-public-gate-evidence-gaps-in-validation-summary.md`.
 
 Remaining blockers:
@@ -214,6 +215,7 @@ Evidence:
 - Main-panel output feedback now also keeps captured-target context visible after teardown, reducing ambiguity for post-capture review flows without inventing new non-native UI affordances.
 - Settings > Validation now also exposes direct native access to the seeded release checklist, scenario guide, and settings accessibility workflow, reducing the amount of manual repo navigation required during keyboard and screen-reader validation sessions.
 - That same validation summary now also calls out which public release checklist groups remain uncovered by the loaded evidence, improving long-text and screen-reader review of what still needs Windows validation.
+- That same validation summary now also points to the next guide or action to run for those missing groups, keeping the accessibility review path action-oriented instead of inference-heavy.
 - A focused implementation record exists at `_bmad-output/implementation-artifacts/13-2-structure-viewer-compatibility-evidence-for-accessibility.md`.
 
 Remaining blockers:

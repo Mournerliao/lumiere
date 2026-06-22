@@ -980,12 +980,29 @@ public static class PerfectHdrFidelityProjection
             ? parsed
             : DateOnly.MinValue;
 
-    private static readonly (string Label, IReadOnlyList<string> ChecklistIds)[] PublicReleaseChecklistGapGroups =
+    private sealed record PublicReleaseChecklistGapGroup(
+        string Label,
+        IReadOnlyList<string> ChecklistIds,
+        string RecommendedAction);
+
+    private static readonly PublicReleaseChecklistGapGroup[] PublicReleaseChecklistGapGroups =
     [
-        ("Target-aware HDR", ["REL-HDR-01", "REL-HDR-02", "REL-HDR-03", "REL-HDR-04", "REL-HDR-05"]),
-        ("Viewer/output matrix", ["REL-OUT-01", "REL-OUT-02", "REL-OUT-03", "REL-OUT-04", "REL-OUT-05"]),
-        ("Export-profile accessibility and DPI", ["REL-HDR-06", "REL-A11Y-01", "REL-A11Y-02", "REL-A11Y-03", "REL-A11Y-04", "REL-A11Y-05"]),
-        ("Long-run lifecycle", ["REL-STAB-01", "REL-STAB-02"]),
+        new(
+            "Target-aware HDR",
+            ["REL-HDR-01", "REL-HDR-02", "REL-HDR-03", "REL-HDR-04", "REL-HDR-05"],
+            "Open Scenario guide and run the target-aware HDR workflow for the missing display states."),
+        new(
+            "Viewer/output matrix",
+            ["REL-OUT-01", "REL-OUT-02", "REL-OUT-03", "REL-OUT-04", "REL-OUT-05"],
+            "Review Release checklist and record the missing named viewer and output-target runs."),
+        new(
+            "Export-profile accessibility and DPI",
+            ["REL-HDR-06", "REL-A11Y-01", "REL-A11Y-02", "REL-A11Y-03", "REL-A11Y-04", "REL-A11Y-05"],
+            "Open A11y guide and record export-profile, keyboard, screen-reader, high-contrast, and DPI checks."),
+        new(
+            "Long-run lifecycle",
+            ["REL-STAB-01", "REL-STAB-02"],
+            "Use Create trend draft plus Copy trend cmd before counting long-run evidence."),
     ];
 
     private static string CreateCoverageDetail(IReadOnlyList<OutputValidationSessionArtifact> artifacts)
@@ -1033,7 +1050,8 @@ public static class PerfectHdrFidelityProjection
         var checklistCoverageGaps = DescribePublicReleaseChecklistGaps(artifacts);
         if (checklistCoverageGaps.Count > 0)
         {
-            detailParts.Add($"Public gate gaps: {string.Join("; ", checklistCoverageGaps)}.");
+            detailParts.Add($"Public gate gaps: {string.Join("; ", checklistCoverageGaps.Select(gap => gap.LabelWithIds))}.");
+            detailParts.Add($"Next recommended runs: {string.Join(" ", checklistCoverageGaps.Select(gap => gap.RecommendedAction))}");
         }
 
         if (loadIssues.Count > 0)
@@ -1051,7 +1069,11 @@ public static class PerfectHdrFidelityProjection
         return string.Join(" ", detailParts);
     }
 
-    private static IReadOnlyList<string> DescribePublicReleaseChecklistGaps(
+    private sealed record PublicReleaseChecklistGapDetail(
+        string LabelWithIds,
+        string RecommendedAction);
+
+    private static IReadOnlyList<PublicReleaseChecklistGapDetail> DescribePublicReleaseChecklistGaps(
         IReadOnlyList<OutputValidationSessionArtifact> artifacts)
     {
         var covered = artifacts
@@ -1066,10 +1088,12 @@ public static class PerfectHdrFidelityProjection
                 var missing = group.ChecklistIds
                     .Where(id => !covered.Contains(id))
                     .ToArray();
-                return (group.Label, Missing: missing);
+                return (Group: group, Missing: missing);
             })
             .Where(result => result.Missing.Length > 0)
-            .Select(result => $"{result.Label} ({string.Join(", ", result.Missing)})")
+            .Select(result => new PublicReleaseChecklistGapDetail(
+                $"{result.Group.Label} ({string.Join(", ", result.Missing)})",
+                result.Group.RecommendedAction))
             .ToArray();
     }
 

@@ -102,6 +102,7 @@ The same settings surface now also summarizes the currently loaded evidence for 
 - whether the latest loaded artifact matches the current app build, is stale for the current build, or cannot yet be aligned to a comparable build token
 - current coverage across output targets, named viewers, and checklist IDs
 - public-release checklist groups that are still missing from the loaded evidence
+- recommended next native guide or action for those missing checklist groups
 - known limitations and follow-up stories/issues carried by the loaded artifacts
 - ignored-file warnings when invalid JSON or schema problems were skipped during load
 - workspace-readiness guidance when the local validation folder exists but is not yet usable
