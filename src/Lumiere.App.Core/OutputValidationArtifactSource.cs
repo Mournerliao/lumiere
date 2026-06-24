@@ -417,7 +417,49 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
                 yield return new OutputValidationArtifactLoadIssue(
                     artifactPath,
                     $"Workspace-local evidence path is missing: {evidencePath}");
+                continue;
             }
+
+            if (IsMarkdownEvidencePath(resolvedPath))
+            {
+                if (!TryReadWorkspaceLocalMarkdownEvidence(evidencePath, resolvedPath, out var content, out var readIssueDetail))
+                {
+                    if (!string.IsNullOrWhiteSpace(readIssueDetail))
+                    {
+                        yield return new OutputValidationArtifactLoadIssue(artifactPath, readIssueDetail);
+                    }
+
+                    continue;
+                }
+
+                if (IsIncompleteMarkdownEvidence(content))
+                {
+                    yield return new OutputValidationArtifactLoadIssue(
+                        artifactPath,
+                        $"Workspace-local markdown evidence is incomplete: {evidencePath}");
+                }
+            }
+        }
+    }
+
+    private bool TryReadWorkspaceLocalMarkdownEvidence(
+        string evidencePath,
+        string resolvedPath,
+        out string content,
+        out string? issueDetail)
+    {
+        content = string.Empty;
+        issueDetail = null;
+
+        try
+        {
+            content = readAllText(resolvedPath);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            issueDetail = $"Workspace-local markdown evidence could not be read: {evidencePath}. {ex.GetType().Name}: {ex.Message}";
+            return false;
         }
     }
 
@@ -477,6 +519,18 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         var normalized = path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
         return normalized.StartsWith($"evidence{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase);
     }
+
+    private static bool IsMarkdownEvidencePath(string path)
+    {
+        var extension = Path.GetExtension(path);
+        return extension.Equals(".md", StringComparison.OrdinalIgnoreCase)
+            || extension.Equals(".markdown", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsIncompleteMarkdownEvidence(string content) =>
+        string.IsNullOrWhiteSpace(content)
+        || content.Contains("REPLACE_WITH_", StringComparison.OrdinalIgnoreCase)
+        || content.Contains("Template only", StringComparison.OrdinalIgnoreCase);
 
     private OutputValidationWorkspaceState EnsureWorkspace()
     {

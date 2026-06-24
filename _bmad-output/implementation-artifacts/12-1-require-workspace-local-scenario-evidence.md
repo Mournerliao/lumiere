@@ -16,8 +16,9 @@ Before this slice, a later edit could leave the JSON artifact pointing at a miss
 
 - Added workspace-local `evidence\...` path validation in `FileOutputValidationArtifactSource`.
 - If a loaded artifact references a missing local evidence file, the loader records an `OutputValidationArtifactLoadIssue` and skips that artifact for the current session.
+- If a workspace-local markdown evidence file is empty or still contains `REPLACE_WITH_*` / `Template only` placeholder text, the loader also treats the JSON artifact as a load issue instead of current-session evidence.
 - Kept repo-relative evidence references review-only so historical or docs-backed references are not rejected just because the app cannot resolve the repo path from `%LOCALAPPDATA%`.
-- Added tests for both missing and present workspace-local scenario evidence.
+- Added tests for missing, present, and still-placeholder workspace-local scenario evidence.
 - Updated `harness/validation/output-validation.md` so the documented loader contract matches the stricter behavior.
 
 ## Validation

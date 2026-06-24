@@ -122,6 +122,44 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Empty(snapshot.LoadIssues);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("- Tester: REPLACE_WITH_TESTER_NAME")]
+    [InlineData("Template only - not a real validation session")]
+    public void Load_WhenWorkspacePrepared_RejectsIncompleteWorkspaceLocalMarkdownEvidence(string markdownContent)
+    {
+        var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["C:\\Validation\\hdr10.json"] = (CreateArtifact("2026-06-24", "Windows Photos") with
+            {
+                EvidencePaths = ["evidence\\hdr10-scenario-session.md"],
+            }).ToJson(),
+            ["C:\\Validation\\evidence\\hdr10-scenario-session.md"] = markdownContent,
+        };
+        var source = new FileOutputValidationArtifactSource(
+            "C:\\Validation",
+            "*.json",
+            directoryExists: directories.Contains,
+            fileExists: files.ContainsKey,
+            createDirectory: path => directories.Add(path),
+            enumerateFiles: (path, pattern) => path == "C:\\Validation" && pattern == "*.json"
+                ? ["C:\\Validation\\hdr10.json"]
+                : [],
+            readAllText: path => files[path],
+            writeAllText: (path, content) => files[path] = content,
+            resolveTemplateSourceText: () => "{ \"schemaVersion\": 4 }",
+            prepareWorkspace: true);
+
+        var snapshot = source.Load();
+
+        Assert.Empty(snapshot.Artifacts);
+        var issue = Assert.Single(snapshot.LoadIssues);
+        Assert.Equal("C:\\Validation\\hdr10.json", issue.Path);
+        Assert.Contains("Workspace-local markdown evidence is incomplete", issue.Detail, StringComparison.Ordinal);
+        Assert.Contains("evidence\\hdr10-scenario-session.md", issue.Detail, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Load_PreparesWorkspaceAndSeedsSampleTemplateWhenEnabled()
     {

@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-09T17:29:57+0800
-last_updated: 2026-06-24T20:49:45+08:00
+last_updated: 2026-06-24T20:55:22+08:00
 project: lumiere
 project_key: NOKEY
 tracking_system: file-system
