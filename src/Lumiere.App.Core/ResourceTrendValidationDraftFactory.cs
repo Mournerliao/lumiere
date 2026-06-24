@@ -50,7 +50,7 @@ public static class ResourceTrendValidationDraftFactory
             .Replace("- Display setup:", $"- Display setup: {CreateDisplaySetupPlaceholder(request.SessionState.Target, request.CurrentSessionHint)}", StringComparison.Ordinal)
             .Replace("- HDR state:", $"- HDR state: {CreateHdrStatePlaceholder(request.SessionState.Readiness)}", StringComparison.Ordinal)
             .Replace("- DPI scale(s):", $"- DPI scale(s): {CreateDpiScalePlaceholder(request.CurrentSessionHint)}", StringComparison.Ordinal)
-            .Replace("- Lumiere process ID:", $"- Lumiere process ID: {CreateProcessIdPlaceholder(request.ProcessId)}", StringComparison.Ordinal)
+            .Replace("- Lumiere process ID:", $"- Lumiere process ID: {CreateProcessIdPlaceholder(request.ProcessId, summary)}", StringComparison.Ordinal)
             .Replace("- Output configuration:", $"- Output configuration: {FormatOutputTarget(request.OutputTarget)}", StringComparison.Ordinal)
             .Replace("- Command:", $"- Command: {command ?? "REPLACE_WITH_RESOURCE_TREND_COMMAND"}", StringComparison.Ordinal)
             .Replace("- Duration seconds:", $"- Duration seconds: {durationSeconds}", StringComparison.Ordinal)
@@ -67,6 +67,7 @@ public static class ResourceTrendValidationDraftFactory
             .Replace("- Session classification: PASS / PASS with limitation / FAIL / NOT RUN", $"- Session classification: {CreateSessionClassificationPlaceholder(summary)}", StringComparison.Ordinal)
             .Replace("- Release impact:", "- Release impact: REPLACE_WITH_RELEASE_IMPACT", StringComparison.Ordinal)
             .Replace("- Known limitations:", "- Known limitations: Draft created from current Lumiere session context. Replace with observed limitations after the run.", StringComparison.Ordinal)
+            .Replace("- Warm-up or stabilization notes:", $"- Warm-up or stabilization notes: {CreateSummaryScopeNote(request.ProcessId, summary)}", StringComparison.Ordinal)
             .Replace("- Follow-up stories / issues:", "- Follow-up stories / issues: 12-3, 10-3, 11-3, 13-2", StringComparison.Ordinal);
     }
 
@@ -182,10 +183,38 @@ public static class ResourceTrendValidationDraftFactory
             : "REPLACE_WITH_DPI_SCALE";
     }
 
-    private static string CreateProcessIdPlaceholder(int processId) =>
-        processId > 0
+    private static string CreateProcessIdPlaceholder(int processId, ResourceTrendSummaryArtifact? summary)
+    {
+        var baseValue = processId > 0
             ? $"{processId} (current session)"
             : "REPLACE_WITH_LUMIERE_PROCESS_ID";
+        if (summary is null)
+        {
+            return baseValue;
+        }
+
+        if (summary.MatchesProcessId(processId))
+        {
+            return $"{baseValue}; imported summary matches PID {summary.ProcessId}";
+        }
+
+        var importedPid = summary.ProcessId > 0
+            ? summary.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            : "missing";
+        return $"{baseValue}; scope warning: imported summary PID {importedPid} does not match current PID {processId}";
+    }
+
+    private static string CreateSummaryScopeNote(int processId, ResourceTrendSummaryArtifact? summary)
+    {
+        if (summary is null)
+        {
+            return "REPLACE_WITH_WARMUP_OR_STABILIZATION_NOTES";
+        }
+
+        return summary.MatchesProcessId(processId)
+            ? $"Imported sampler summary matches current PID {summary.ProcessId}; still verify the run covered the intended 50+ / 100+ cycle plan."
+            : $"Scope warning: imported sampler summary PID {summary.ProcessId} does not match current PID {processId}. Verify this summary belongs to the intended validation run before counting it.";
+    }
 
     private static string FormatOutputTarget(OutputTarget outputTarget) =>
         outputTarget switch

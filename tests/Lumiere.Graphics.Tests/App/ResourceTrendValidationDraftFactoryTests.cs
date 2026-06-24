@@ -117,6 +117,7 @@ public sealed class ResourceTrendValidationDraftFactoryTests
 
             ## Sampler Configuration
 
+            - Lumiere process ID:
             - Duration seconds:
             - Sample interval seconds:
             - Output directory:
@@ -152,6 +153,7 @@ public sealed class ResourceTrendValidationDraftFactoryTests
         Assert.Contains("- CSV path: C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000.csv", document, StringComparison.Ordinal);
         Assert.Contains("- Summary JSON path: C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000-summary.json", document, StringComparison.Ordinal);
         Assert.Contains("- GPU counter availability: GPU counters present in latest sampler summary", document, StringComparison.Ordinal);
+        Assert.Contains("- Lumiere process ID: 4242 (current session); imported summary matches PID 4242", document, StringComparison.Ordinal);
         Assert.Contains("| Handles | 100 | 104 | 4 | 99 | 105 | REPLACE_WITH_PASS_FAIL_LIMITATION | Imported from sampler summary. |", document, StringComparison.Ordinal);
         Assert.Contains("| Private bytes | 1000000 | 1200000 | 200000 | 950000 | 1250000 | REPLACE_WITH_PASS_FAIL_LIMITATION | Imported from sampler summary. |", document, StringComparison.Ordinal);
         Assert.Contains("| GPU total committed bytes | 500000 | 550000 | 50000 | 490000 | 560000 | REPLACE_WITH_PASS_FAIL_LIMITATION | Imported from sampler summary. |", document, StringComparison.Ordinal);
@@ -159,15 +161,47 @@ public sealed class ResourceTrendValidationDraftFactoryTests
         Assert.Contains("- Session classification: REPLACE_WITH_PASS_FAIL_LIMITATION (sampler summary imported; human review required)", document, StringComparison.Ordinal);
     }
 
-    private static string CreateSummaryJson() =>
-        """
+    [Fact]
+    public void Create_WarnsWhenImportedSamplerSummaryDoesNotMatchCurrentProcess()
+    {
+        var request = new ResourceTrendValidationDraftRequest(
+            "2.3.4+72c3be7",
+            OutputTarget.Folder,
+            CaptureSessionState.Idle(),
+            4242);
+        var summary = ResourceTrendSummaryArtifact.FromJson(
+            CreateSummaryJson(processId: 7777),
+            "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid7777-20260624-120000-summary.json");
+
+        var document = ResourceTrendValidationDraftFactory.Create(
+            request,
+            "C:\\Validation",
+            new DateTimeOffset(2026, 06, 24, 12, 30, 00, TimeSpan.FromHours(8)),
+            """
+            - Lumiere process ID:
+            - Warm-up or stabilization notes:
+            """,
+            summary);
+
+        Assert.Contains(
+            "- Lumiere process ID: 4242 (current session); scope warning: imported summary PID 7777 does not match current PID 4242",
+            document,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "Scope warning: imported sampler summary PID 7777 does not match current PID 4242",
+            document,
+            StringComparison.Ordinal);
+    }
+
+    private static string CreateSummaryJson(int processId = 4242) =>
+        $$"""
         {
-          "processId": 4242,
+          "processId": {{processId}},
           "processName": "Lumiere.App",
           "durationSeconds": 900,
           "sampleIntervalSeconds": 5,
           "sampleCount": 180,
-          "csvPath": "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000.csv",
+          "csvPath": "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid{{processId}}-20260624-120000.csv",
           "metrics": {
             "handles": { "baseline": 100, "final": 104, "delta": 4, "min": 99, "max": 105 },
             "privateBytes": { "baseline": 1000000, "final": 1200000, "delta": 200000, "min": 950000, "max": 1250000 },

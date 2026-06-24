@@ -87,7 +87,7 @@ The settings validation section keeps the evidence rows as the primary surface a
 
 For Story `12-3`, the same settings surface now also exposes app-local resource-trend workflow helpers:
 
-- `Create trend draft` generates a workspace-local long-run session markdown draft prefilled with the current process ID, output target, current-session hints, and a seeded sampler command. If a readable `resource-trends\*-summary.json` exists, the draft also imports the latest sampler CSV/summary paths and metric baseline/final/delta/min/max rows while leaving pass/fail classification for human review.
+- `Create trend draft` generates a workspace-local long-run session markdown draft prefilled with the current process ID, output target, current-session hints, and a seeded sampler command. If readable `resource-trends\*-summary.json` files exist, the draft prefers a summary matching the current Lumiere PID; fallback imports are marked with a scope warning. Imported summaries carry sampler CSV/summary paths and metric baseline/final/delta/min/max rows while leaving pass/fail classification for human review.
 - `Trend template` opens the seeded long-run session record template from the local validation workspace.
 - `Trend script` opens the seeded PowerShell sampler script from the local validation workspace.
 - `Copy trend cmd` copies a current-process sampler command that already points at Lumiere's seeded script, the current app PID, and the workspace-local `resource-trends` output folder.

@@ -43,6 +43,11 @@ public sealed record ResourceTrendSummaryArtifact(
     public ResourceTrendMetricSummary? TryGetMetric(string name) =>
         Metrics.TryGetValue(name, out var metric) ? metric : null;
 
+    public bool MatchesProcessId(int processId) =>
+        processId > 0
+        && ProcessId > 0
+        && ProcessId == processId;
+
     public bool HasGpuCounterSamples =>
         HasNonZeroMax("gpuDedicatedUsageBytes")
         || HasNonZeroMax("gpuSharedUsageBytes")

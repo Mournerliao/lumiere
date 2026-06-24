@@ -251,6 +251,20 @@ public sealed class OutputValidationArtifactSourceTests
                   }
                 }
                 """,
+            ["C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid7777-20260625-120000-summary.json"] =
+                """
+                {
+                  "processId": 7777,
+                  "processName": "Lumiere.App",
+                  "durationSeconds": 900,
+                  "sampleIntervalSeconds": 5,
+                  "sampleCount": 180,
+                  "csvPath": "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid7777-20260625-120000.csv",
+                  "metrics": {
+                    "privateBytes": { "baseline": 7000000, "final": 9000000, "delta": 2000000, "min": 6900000, "max": 9100000 }
+                  }
+                }
+                """,
         };
         var source = new FileOutputValidationArtifactSource(
             "C:\\Validation",
@@ -259,7 +273,11 @@ public sealed class OutputValidationArtifactSourceTests
             fileExists: files.ContainsKey,
             createDirectory: path => directories.Add(path),
             enumerateFiles: (path, pattern) => path == "C:\\Validation\\resource-trends" && pattern == "*-summary.json"
-                ? ["C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000-summary.json"]
+                ?
+                [
+                    "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid7777-20260625-120000-summary.json",
+                    "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000-summary.json",
+                ]
                 : [],
             readAllText: path => files[path],
             writeAllText: (path, content) => files[path] = content,
@@ -296,6 +314,7 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Contains("- Output configuration: Both", files[result.DraftPath!], StringComparison.Ordinal);
         Assert.Contains("- Lumiere process ID: 4242 (current session)", files[result.DraftPath!], StringComparison.Ordinal);
         Assert.Contains("resource-trend-Lumiere.App-pid4242-20260624-120000.csv", files[result.DraftPath!], StringComparison.Ordinal);
+        Assert.DoesNotContain("resource-trend-Lumiere.App-pid7777-20260625-120000.csv", files[result.DraftPath!], StringComparison.Ordinal);
         Assert.Contains("| Private bytes | 1000000 | 1200000 | 200000 | 950000 | 1250000 | REPLACE_WITH_PASS_FAIL_LIMITATION | Imported from sampler summary. |", files[result.DraftPath!], StringComparison.Ordinal);
         Assert.Contains("after reviewing 180 imported sampler samples", files[result.DraftPath!], StringComparison.Ordinal);
     }
