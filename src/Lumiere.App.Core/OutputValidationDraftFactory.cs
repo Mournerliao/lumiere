@@ -43,7 +43,7 @@ public static class OutputValidationDraftFactory
             ],
             TargetAppsTested: targetApps,
             ChecklistIdsCovered: CreateSuggestedChecklistIds(outputTarget, profile.Kind),
-            ResultSummary: $"REPLACE_WITH_VALIDATION_RESULT_SUMMARY. Draft for {profile.Label} on {FormatOutputTarget(outputTarget)} generated from {buildLabel}.",
+            ResultSummary: CreateResultSummaryPlaceholder(profile, outputTarget, buildLabel, seed),
             EvidencePaths:
             [
                 $@"evidence\{CreateFileNameStem(date, profile.Label, outputTarget)}-REPLACE_WITH_SESSION_NOTES.md",
@@ -73,6 +73,19 @@ public static class OutputValidationDraftFactory
         return new OutputValidationDraftDocument(
             artifact,
             CreateFileNameStem(date, profile.Label, outputTarget));
+    }
+
+    private static string CreateResultSummaryPlaceholder(
+        OutputProfileContract profile,
+        OutputTarget outputTarget,
+        string buildLabel,
+        OutputValidationDraftSeed? seed)
+    {
+        var summary = $"REPLACE_WITH_VALIDATION_RESULT_SUMMARY. Draft for {profile.Label} on {FormatOutputTarget(outputTarget)} generated from {buildLabel}.";
+        var nextRun = CreateSuggestedNextRun(seed);
+        return nextRun is null
+            ? summary
+            : $"{summary} {nextRun}";
     }
 
     private static OutputProfileValidationRecord CreateProfileRecord(
@@ -161,18 +174,33 @@ public static class OutputValidationDraftFactory
     {
         var currentSession = NormalizeHint(currentSessionHint?.DisplaySetup);
         var hint = NormalizeHint(seed?.DisplaySetup);
+        var suggestedTopology = seed?.SuggestedDisplayTopologies.FirstOrDefault();
         if (target is null)
         {
             return CreateDisplaySetupPlaceholder(
-                "REPLACE_WITH_FULL_DISPLAY_SETUP_AND_TOPOLOGY_BUCKET",
+                AddSuggestedTopologyHint(
+                    "REPLACE_WITH_FULL_DISPLAY_SETUP_AND_TOPOLOGY_BUCKET",
+                    suggestedTopology),
                 currentSession,
                 hint);
         }
 
         return CreateDisplaySetupPlaceholder(
-            $"REPLACE_WITH_FULL_DISPLAY_SETUP_AND_TOPOLOGY_BUCKET (active target: {target.DisplayName})",
+            AddSuggestedTopologyHint(
+                $"REPLACE_WITH_FULL_DISPLAY_SETUP_AND_TOPOLOGY_BUCKET (active target: {target.DisplayName})",
+                suggestedTopology),
             currentSession,
             hint);
+    }
+
+    private static string AddSuggestedTopologyHint(
+        string placeholder,
+        string? suggestedTopology)
+    {
+        var normalized = NormalizeHint(suggestedTopology);
+        return normalized is null
+            ? placeholder
+            : $"{placeholder} (suggested next topology: {normalized})";
     }
 
     private static string CreateHdrStatePlaceholder(PreviewReadinessStatus readiness)
@@ -415,12 +443,39 @@ public static class OutputValidationDraftFactory
     private static IReadOnlyList<string> CreateEntryPointPlaceholders(OutputValidationDraftSeed? seed)
     {
         var latestArtifact = JoinMeaningfulValues(seed?.EntryPointsTested);
+        var suggestedEntryPoint = seed?.SuggestedEntryPoints.FirstOrDefault();
+        var suggestion = NormalizeHint(suggestedEntryPoint) is { } normalizedSuggestion
+            ? $"; suggested next entry point: {normalizedSuggestion}"
+            : string.Empty;
         return
         [
             latestArtifact is null
-                ? "REPLACE_WITH_ENTRY_POINT (for example: Main panel, Tray menu, Global hotkey)"
-                : $"REPLACE_WITH_ENTRY_POINT (for example: Main panel, Tray menu, Global hotkey; latest local artifact: {latestArtifact})",
+                ? $"REPLACE_WITH_ENTRY_POINT (for example: Main panel, Tray menu, Global hotkey{suggestion})"
+                : $"REPLACE_WITH_ENTRY_POINT (for example: Main panel, Tray menu, Global hotkey; latest local artifact: {latestArtifact}{suggestion})",
         ];
+    }
+
+    private static string? CreateSuggestedNextRun(OutputValidationDraftSeed? seed)
+    {
+        if (seed is null)
+        {
+            return null;
+        }
+
+        var topology = NormalizeHint(seed.SuggestedDisplayTopologies.FirstOrDefault());
+        var entryPoint = NormalizeHint(seed.SuggestedEntryPoints.FirstOrDefault()) ?? "Main panel";
+        var outputTarget = NormalizeHint(seed.SuggestedOutputTargets.FirstOrDefault()) ?? "Folder";
+        var viewers = JoinMeaningfulValues(seed.SuggestedViewerTargets) ?? "the named viewer set";
+        if (topology is null
+            && seed.SuggestedEntryPoints.Count == 0
+            && seed.SuggestedOutputTargets.Count == 0
+            && seed.SuggestedViewerTargets.Count == 0)
+        {
+            return null;
+        }
+
+        var topologyText = topology ?? "a currently unblocked topology";
+        return $"Suggested next Windows run: use {entryPoint}, record {topologyText}, validate {outputTarget}, and test viewer evidence for {viewers}.";
     }
 
     private static string AppendLatestArtifactHint(string placeholder, string? hint)

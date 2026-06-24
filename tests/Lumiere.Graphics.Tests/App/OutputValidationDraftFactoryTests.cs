@@ -213,6 +213,57 @@ public sealed class OutputValidationDraftFactoryTests
             document.Artifact.EntryPointsTested);
     }
 
+    [Fact]
+    public void Create_CarriesSuggestedNextRunHintsWhenSeedProvidesMissingScope()
+    {
+        var request = new OutputValidationDraftRequest(
+            "0.1.0",
+            OutputTarget.Folder,
+            OutputProfileContract.Hdr10Pq,
+            CaptureSessionState.Idle());
+        var seed = new OutputValidationDraftSeed(
+            Tester: null,
+            WindowsVersion: null,
+            Device: null,
+            Gpu: null,
+            DisplaySetup: null,
+            DpiScales: [],
+            EntryPointsTested: [])
+        {
+            SuggestedDisplayTopologies =
+            [
+                "Single HDR-capable display with Windows HDR enabled",
+            ],
+            SuggestedEntryPoints =
+            [
+                "Main panel",
+            ],
+            SuggestedOutputTargets =
+            [
+                "Clipboard",
+            ],
+            SuggestedViewerTargets =
+            [
+                "Windows Photos",
+                "Microsoft Edge",
+            ],
+        };
+
+        var document = OutputValidationDraftFactory.Create(
+            request,
+            new DateTimeOffset(2026, 06, 22, 10, 30, 00, TimeSpan.FromHours(8)),
+            seed: seed);
+
+        Assert.Contains("Suggested next Windows run", document.Artifact.ResultSummary, StringComparison.Ordinal);
+        Assert.Contains("Single HDR-capable display with Windows HDR enabled", document.Artifact.ResultSummary, StringComparison.Ordinal);
+        Assert.Contains("Clipboard", document.Artifact.ResultSummary, StringComparison.Ordinal);
+        Assert.Contains("Windows Photos, Microsoft Edge", document.Artifact.ResultSummary, StringComparison.Ordinal);
+        Assert.Contains("suggested next topology: Single HDR-capable display with Windows HDR enabled", document.Artifact.DisplaySetup, StringComparison.Ordinal);
+        Assert.Equal(
+            ["REPLACE_WITH_ENTRY_POINT (for example: Main panel, Tray menu, Global hotkey; suggested next entry point: Main panel)"],
+            document.Artifact.EntryPointsTested);
+    }
+
     private sealed class StubTargetAppVersionPrefillProvider(
         IReadOnlyDictionary<string, string> values) : ITargetAppVersionPrefillProvider
     {

@@ -99,7 +99,16 @@ public sealed record OutputValidationDraftSeed(
     string? Gpu,
     string? DisplaySetup,
     IReadOnlyList<string> DpiScales,
-    IReadOnlyList<string> EntryPointsTested);
+    IReadOnlyList<string> EntryPointsTested)
+{
+    public IReadOnlyList<string> SuggestedDisplayTopologies { get; init; } = [];
+
+    public IReadOnlyList<string> SuggestedEntryPoints { get; init; } = [];
+
+    public IReadOnlyList<string> SuggestedOutputTargets { get; init; } = [];
+
+    public IReadOnlyList<string> SuggestedViewerTargets { get; init; } = [];
+}
 
 public sealed record OutputValidationDraftResult(
     bool IsSuccess,
@@ -673,21 +682,27 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         ArgumentNullException.ThrowIfNull(artifacts);
         ArgumentNullException.ThrowIfNull(request);
 
-        var selected = artifacts
+        var artifactArray = artifacts.ToArray();
+        var selected = artifactArray
             .OrderByDescending(artifact => ScoreSeedCompatibility(artifact, request))
             .ThenByDescending(artifact => artifact.Date, StringComparer.Ordinal)
             .FirstOrDefault();
+        var runPlan = OutputValidationRunPlanner.Create(artifactArray, request.RequestedProfile);
 
-        return selected is null
-            ? null
-            : new OutputValidationDraftSeed(
-                selected.Tester,
-                selected.WindowsVersion,
-                selected.Device,
-                selected.Gpu,
-                selected.DisplaySetup,
-                selected.DpiScales,
-                selected.EntryPointsTested);
+        return new OutputValidationDraftSeed(
+            selected?.Tester,
+            selected?.WindowsVersion,
+            selected?.Device,
+            selected?.Gpu,
+            selected?.DisplaySetup,
+            selected?.DpiScales ?? [],
+            selected?.EntryPointsTested ?? [])
+        {
+            SuggestedDisplayTopologies = runPlan.MissingDisplayTopologies,
+            SuggestedEntryPoints = runPlan.MissingEntryPoints,
+            SuggestedOutputTargets = runPlan.MissingOutputTargets,
+            SuggestedViewerTargets = runPlan.MissingViewerTargets,
+        };
     }
 
     private static int ScoreSeedCompatibility(

@@ -177,6 +177,8 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Equal(["Folder"], artifact.OutputTargetsTested);
         Assert.Equal("HDR Display", artifact.TargetHdrEvidence!.TargetDisplayName);
         Assert.Contains("REL-HDR-04", artifact.ChecklistIdsCovered);
+        Assert.Contains("Suggested next Windows run", artifact.ResultSummary, StringComparison.Ordinal);
+        Assert.Contains("suggested next topology", artifact.DisplaySetup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(
             artifact.TargetAppVersions,
             version => version.Name == "Microsoft Paint"
@@ -340,7 +342,7 @@ public sealed class OutputValidationArtifactSourceTests
             ["REPLACE_WITH_DPI_SCALE (current session: 175%; latest local artifact: 150%)"],
             artifact.DpiScales);
         Assert.Equal(
-            ["REPLACE_WITH_ENTRY_POINT (for example: Main panel, Tray menu, Global hotkey; latest local artifact: Tray menu)"],
+            ["REPLACE_WITH_ENTRY_POINT (for example: Main panel, Tray menu, Global hotkey; latest local artifact: Tray menu; suggested next entry point: Main panel)"],
             artifact.EntryPointsTested);
     }
 

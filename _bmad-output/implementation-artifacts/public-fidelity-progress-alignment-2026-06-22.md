@@ -146,6 +146,8 @@ Evidence:
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-surface-public-gate-evidence-gaps-in-validation-summary.md`.
 - The loaded-evidence summary now also names covered display topology buckets, missing topology buckets, missing HDR10 named viewer targets, and a concrete next Windows run combining entry point, topology, output target, and viewer scope.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-surface-missing-topology-and-viewer-runs.md`.
+- Generated output-validation drafts now also carry that missing-run scope as placeholder guidance, so the durable JSON draft and Settings > Validation summary point validators at the same next Windows run.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-carry-next-run-scope-into-validation-drafts.md`.
 
 Remaining blockers:
 
@@ -219,6 +221,7 @@ Evidence:
 - That same validation summary now also calls out which public release checklist groups remain uncovered by the loaded evidence, improving long-text and screen-reader review of what still needs Windows validation.
 - That same validation summary now also points to the next guide or action to run for those missing groups, keeping the accessibility review path action-oriented instead of inference-heavy.
 - The same loaded-evidence summary now also calls out missing topology buckets, missing HDR10 viewer targets, and the next Windows validation run in readable text, reducing another cross-document inference step for keyboard, screen-reader, and long-text review flows.
+- The `Create draft` workflow now carries the same suggested topology, entry point, output target, and viewer scope into the generated artifact placeholders, reducing another handoff gap between the native validation surface and the edited JSON evidence file.
 - A focused implementation record exists at `_bmad-output/implementation-artifacts/13-2-structure-viewer-compatibility-evidence-for-accessibility.md`.
 
 Remaining blockers:
