@@ -6,7 +6,7 @@
   "windowsVersion": "Windows 11 24H2 build REPLACE_WITH_BUILD",
   "device": "REPLACE_WITH_DEVICE_MODEL",
   "gpu": "REPLACE_WITH_GPU_MODEL_AND_DRIVER",
-  "displaySetup": "HDR primary display, SDR secondary display if present",
+  "displaySetup": "REPLACE_WITH_FULL_DISPLAY_SETUP including one Display Topology Matrix bucket from hdr-sdr-validation-scenarios.md",
   "hdrState": "Windows HDR enabled on the active capture target display",
   "dpiScales": [
     "150%"
@@ -52,6 +52,7 @@
   "followUpIssuesOrStories": [
     "Template only: remove or replace after validation."
   ],
+  "_comment_displaySetup": "Name the tested topology bucket verbatim when possible, for example \"Topology: Mixed HDR + SDR multi-monitor desktop; HDR primary, SDR secondary\". The loaded-evidence summary uses this to show missing display topology buckets.",
   "_comment_outputTargetsTested": "Use \"Folder\" for HDR10 JXR file-output evidence. Use \"Both\" only when the same session explicitly validates both clipboard and folder behavior. Clipboard-only evidence must not be treated as HDR10 JXR folder-output proof.",
   "outputProfileRecords": [
     {

@@ -883,11 +883,14 @@ public sealed class PerfectHdrFidelityProjectionTests
                 ArtifactFor("Microsoft Paint") with
                 {
                     Date = "2026-06-21",
+                    DisplaySetup = "Topology: Single HDR-capable display with Windows HDR enabled; HDR primary",
                     ResultSummary = "Paint validation passed.",
                 },
                 ArtifactFor("Windows Photos") with
                 {
                     Date = "2026-06-22",
+                    DisplaySetup = "Topology: Mixed HDR + SDR multi-monitor desktop; HDR primary, SDR secondary",
+                    DpiScales = ["150%", "200%"],
                     OutputTargetsTested = ["Folder", "Both"],
                     TargetAppsTested = ["Windows Photos", "Microsoft Edge"],
                     TargetAppVersions =
@@ -910,22 +913,54 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Contains("targets Folder, Both", summary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Windows Photos", summary.CoverageDetail, StringComparison.Ordinal);
         Assert.Contains("2026.11040.12001.0", summary.CoverageDetail, StringComparison.Ordinal);
-        Assert.Contains("DPI 150%", summary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("display setups HDR primary", summary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("topologies Single HDR-capable display", summary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Mixed HDR + SDR multi-monitor desktop", summary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Multi-monitor mixed-DPI", summary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("DPI 150%, 200%", summary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("display setups Topology: Single HDR-capable display", summary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("HDR states HDR enabled", summary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("REL-HDR-04", summary.CoverageDetail, StringComparison.Ordinal);
         Assert.Contains("Known limitations", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Microsoft Edge metadata recognition", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Follow-up: 11-3, 12-1", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Display topology gaps:", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Single HDR-capable display with Windows HDR disabled", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("HDR10 viewer target gaps:", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Public gate gaps:", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Target-aware HDR", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("REL-HDR-01", summary.GapDetail, StringComparison.Ordinal);
         Assert.Contains("Long-run lifecycle", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("REL-STAB-02", summary.GapDetail, StringComparison.Ordinal);
         Assert.Contains("Next recommended runs:", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Next Windows run:", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Open Scenario guide", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Open A11y guide", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Create trend draft", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ProjectValidationEvidenceSummary_CallsOutMissingHdr10ViewerTargets()
+    {
+        var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(
+            [
+                ArtifactFor("Microsoft Paint") with
+                {
+                    TargetAppsTested = ["Microsoft Paint"],
+                    OutputProfileRecords =
+                    [
+                        new(
+                            OutputProfileKind.Hdr10Pq,
+                            [
+                                PassingHdrViewer("Microsoft Paint"),
+                            ]),
+                    ],
+                },
+            ]);
+
+        Assert.Contains("HDR10 viewer target gaps:", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Windows Photos", summary.GapDetail, StringComparison.Ordinal);
+        Assert.Contains("Microsoft Edge", summary.GapDetail, StringComparison.Ordinal);
+        Assert.Contains("Next Windows run:", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

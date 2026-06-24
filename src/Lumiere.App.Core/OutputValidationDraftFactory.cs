@@ -164,13 +164,13 @@ public static class OutputValidationDraftFactory
         if (target is null)
         {
             return CreateDisplaySetupPlaceholder(
-                "REPLACE_WITH_FULL_DISPLAY_SETUP",
+                "REPLACE_WITH_FULL_DISPLAY_SETUP_AND_TOPOLOGY_BUCKET",
                 currentSession,
                 hint);
         }
 
         return CreateDisplaySetupPlaceholder(
-            $"REPLACE_WITH_FULL_DISPLAY_SETUP (active target: {target.DisplayName})",
+            $"REPLACE_WITH_FULL_DISPLAY_SETUP_AND_TOPOLOGY_BUCKET (active target: {target.DisplayName})",
             currentSession,
             hint);
     }

@@ -98,11 +98,14 @@ The seeded guide actions also do not count as evidence by themselves. They only 
 The same settings surface now also summarizes the currently loaded evidence for the active session instead of forcing the tester to infer everything from the lower gate rows alone. The loaded-evidence summary is intentionally compact and evidence-first:
 
 - latest loaded artifact date, tester, build, and recorded result summary
-- entry points, DPI scales, display setups, and HDR states already covered by the loaded evidence
+- entry points, display topology buckets, DPI scales, display setups, and HDR states already covered by the loaded evidence
 - whether the latest loaded artifact matches the current app build, is stale for the current build, or cannot yet be aligned to a comparable build token
 - current coverage across output targets, named viewers, and checklist IDs
+- missing display topology buckets from `hdr-sdr-validation-scenarios.md`
+- missing HDR10 named viewer targets expected by the public HDR-preserved profile
 - public-release checklist groups that are still missing from the loaded evidence
 - recommended next native guide or action for those missing checklist groups
+- a concrete next Windows run suggestion combining the next uncovered entry point, display topology, output target, and HDR10 viewer target set
 - known limitations and follow-up stories/issues carried by the loaded artifacts
 - ignored-file warnings when invalid JSON or schema problems were skipped during load
 - workspace-readiness guidance when the local validation folder exists but is not yet usable
@@ -149,7 +152,7 @@ The generated file still keeps manual-observation fields honest:
 - the draft is written into `%LOCALAPPDATA%\Lumiere\validation\output\` as a normal artifact file, but it should not be counted as passing evidence until the placeholders and observed results are replaced with real Windows manual validation data
 - Lumiere does not auto-reload the draft after creation, so an untouched draft does not immediately change the current evidence gate view
 
-Use `templates/output-validation-session.schema-v4.sample.json` or the in-app `Create draft` action as the starting point for a local validation artifact. Copy the sample, or generate a prefilled draft directly into `%LOCALAPPDATA%\Lumiere\validation\output\`, rename it for the session if needed, replace every `REPLACE_WITH_*` value, and change each viewer status only after observing that viewer on the tested Windows machine. The sample and the generated draft intentionally keep viewer statuses at `NotRun`; do not commit or share them as passing release evidence until the target-aware HDR evidence, evidence paths, visual-match result, HDR preservation result, and HDR10 metadata recognition result have all been replaced with real observations. If the same validation session covers different output targets for different profiles, keep `outputTargetsTested` as the session summary and use per-record `outputTargetsCovered` to declare the narrower profile-specific scope.
+Use `templates/output-validation-session.schema-v4.sample.json` or the in-app `Create draft` action as the starting point for a local validation artifact. Copy the sample, or generate a prefilled draft directly into `%LOCALAPPDATA%\Lumiere\validation\output\`, rename it for the session if needed, replace every `REPLACE_WITH_*` value, and change each viewer status only after observing that viewer on the tested Windows machine. The `displaySetup` field should name the tested Display Topology Matrix bucket when possible, such as `Topology: Single HDR-capable display with Windows HDR enabled` or `Topology: Multi-monitor mixed-DPI`, so the in-app loaded-evidence summary can identify missing topology buckets. The sample and the generated draft intentionally keep viewer statuses at `NotRun`; do not commit or share them as passing release evidence until the target-aware HDR evidence, evidence paths, visual-match result, HDR preservation result, and HDR10 metadata recognition result have all been replaced with real observations. If the same validation session covers different output targets for different profiles, keep `outputTargetsTested` as the session summary and use per-record `outputTargetsCovered` to declare the narrower profile-specific scope.
 
 Missing target-app versions now also count as incomplete manual evidence, not only as a review-surface gap. If `targetAppsTested` names a viewer or app but `targetAppVersions` does not carry a real version for it, Lumiere downgrades that artifact to incomplete manual evidence and the HDR10 JXR runtime gate remains blocked.
 

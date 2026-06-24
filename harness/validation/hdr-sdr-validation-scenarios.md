@@ -158,6 +158,7 @@ Prefer recording results against these topology buckets:
 6. Multi-monitor mixed-DPI
 
 If a topology is unavailable, record it explicitly as `NOT RUN` rather than silently omitting it.
+When writing an output validation JSON artifact, include the tested bucket label in `displaySetup` when possible, for example `Topology: Mixed HDR + SDR multi-monitor desktop; HDR primary, SDR secondary`. Lumiere's loaded-evidence summary uses those labels and DPI/display hints to show which topology buckets are still missing.
 
 ## Standard Execution Flow
 

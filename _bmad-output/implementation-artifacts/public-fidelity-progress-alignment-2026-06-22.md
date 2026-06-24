@@ -144,6 +144,8 @@ Evidence:
 - The same loaded-evidence summary now also carries entry-point, DPI, display-setup, and HDR-state coverage plus the public release checklist groups still missing from the loaded evidence, reducing manual cross-checking during Windows validation prep.
 - That same summary now also recommends the next native guide or action for those missing public-gate groups, reducing another round of guesswork before a validator starts the next Windows run.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-surface-public-gate-evidence-gaps-in-validation-summary.md`.
+- The loaded-evidence summary now also names covered display topology buckets, missing topology buckets, missing HDR10 named viewer targets, and a concrete next Windows run combining entry point, topology, output target, and viewer scope.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-surface-missing-topology-and-viewer-runs.md`.
 
 Remaining blockers:
 
@@ -216,6 +218,7 @@ Evidence:
 - Settings > Validation now also exposes direct native access to the seeded release checklist, scenario guide, and settings accessibility workflow, reducing the amount of manual repo navigation required during keyboard and screen-reader validation sessions.
 - That same validation summary now also calls out which public release checklist groups remain uncovered by the loaded evidence, improving long-text and screen-reader review of what still needs Windows validation.
 - That same validation summary now also points to the next guide or action to run for those missing groups, keeping the accessibility review path action-oriented instead of inference-heavy.
+- The same loaded-evidence summary now also calls out missing topology buckets, missing HDR10 viewer targets, and the next Windows validation run in readable text, reducing another cross-document inference step for keyboard, screen-reader, and long-text review flows.
 - A focused implementation record exists at `_bmad-output/implementation-artifacts/13-2-structure-viewer-compatibility-evidence-for-accessibility.md`.
 
 Remaining blockers:
