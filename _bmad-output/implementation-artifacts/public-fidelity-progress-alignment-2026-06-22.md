@@ -150,6 +150,7 @@ Evidence:
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-surface-missing-topology-and-viewer-runs.md`.
 - Generated output-validation drafts now also carry that missing-run scope as placeholder guidance, so the durable JSON draft and Settings > Validation summary point validators at the same next Windows run.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-carry-next-run-scope-into-validation-drafts.md`.
+- `Create draft` now also writes a companion Story `12-1` scenario-session markdown draft under the local workspace `evidence\` folder and points the JSON draft's `evidencePaths` at it, closing the handoff gap between scenario notes and the runtime-loaded output-validation artifact.
 
 Remaining blockers:
 

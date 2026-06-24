@@ -264,6 +264,70 @@ public sealed class OutputValidationDraftFactoryTests
             document.Artifact.EntryPointsTested);
     }
 
+    [Fact]
+    public void ScenarioDraftFactory_PrefillsSessionTemplateAndLinksJsonArtifact()
+    {
+        var document = OutputValidationDraftFactory.Create(
+            new OutputValidationDraftRequest(
+                "2.3.4+72c3be7",
+                OutputTarget.Folder,
+                OutputProfileContract.Hdr10Pq,
+                CaptureSessionState.Idle()),
+            new DateTimeOffset(2026, 06, 22, 10, 30, 00, TimeSpan.FromHours(8)));
+        var artifact = document.Artifact with
+        {
+            EvidencePaths =
+            [
+                "evidence\\output-validation-draft-2026-06-22-hdr10-folder-scenario-session.md",
+            ],
+        };
+
+        var markdown = ScenarioValidationDraftFactory.Create(
+            """
+            # HDR / SDR Validation Session Template
+
+            ## Session Metadata
+
+            - Date:
+            - Tester:
+            - Build / commit:
+            - Windows version:
+            - Device:
+            - GPU:
+            - Display setup:
+            - HDR state:
+            - DPI scale(s):
+            - Target apps tested:
+            - Entry points tested:
+            - Output targets tested:
+
+            ## Checklist Rows Covered
+
+            - `REL-CAP-*`:
+            - `REL-OUT-*`:
+            - `REL-HDR-*`:
+            - `REL-A11Y-*`:
+            - `REL-SET-*`:
+
+            ## Evidence Paths
+
+            - Additional notes:
+
+            ## Follow-up
+
+            - Known limitations:
+            - Follow-up stories / issues:
+            """,
+            artifact,
+            "output-validation-draft-2026-06-22-hdr10-folder.json");
+
+        Assert.Contains("- Date: 2026-06-22", markdown, StringComparison.Ordinal);
+        Assert.Contains("- Output targets tested: Folder", markdown, StringComparison.Ordinal);
+        Assert.Contains("- `REL-OUT-*`: REL-OUT-04", markdown, StringComparison.Ordinal);
+        Assert.Contains("- `REL-HDR-*`: REL-HDR-04", markdown, StringComparison.Ordinal);
+        Assert.Contains("Linked output validation JSON: ..\\output-validation-draft-2026-06-22-hdr10-folder.json", markdown, StringComparison.Ordinal);
+    }
+
     private sealed class StubTargetAppVersionPrefillProvider(
         IReadOnlyDictionary<string, string> values) : ITargetAppVersionPrefillProvider
     {

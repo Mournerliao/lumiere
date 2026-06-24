@@ -176,6 +176,10 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Equal("C:\\Validation\\output-validation-draft-2026-06-22-hdr10-folder.json", result.DraftPath);
         Assert.True(files.ContainsKey(result.DraftPath!));
         var artifact = OutputValidationSessionArtifact.FromJson(files[result.DraftPath!]);
+        Assert.Equal(["evidence\\output-validation-draft-2026-06-22-hdr10-folder-scenario-session.md"], artifact.EvidencePaths);
+        Assert.True(files.ContainsKey("C:\\Validation\\evidence\\output-validation-draft-2026-06-22-hdr10-folder-scenario-session.md"));
+        Assert.Contains("Linked output validation JSON: ..\\output-validation-draft-2026-06-22-hdr10-folder.json", files["C:\\Validation\\evidence\\output-validation-draft-2026-06-22-hdr10-folder-scenario-session.md"], StringComparison.Ordinal);
+        Assert.Contains("REL-OUT-04", files["C:\\Validation\\evidence\\output-validation-draft-2026-06-22-hdr10-folder-scenario-session.md"], StringComparison.Ordinal);
         Assert.Equal(["Folder"], artifact.OutputTargetsTested);
         Assert.Equal("HDR Display", artifact.TargetHdrEvidence!.TargetDisplayName);
         Assert.Contains("REL-HDR-04", artifact.ChecklistIdsCovered);

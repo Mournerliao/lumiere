@@ -279,7 +279,26 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
                 targetAppVersionPrefillProvider,
                 SelectDraftSeed(snapshot.Artifacts, request));
             var filePath = AllocateDraftPath(workspace.DirectoryPath, draft.FileNameStem);
-            writeAllText(filePath, draft.Artifact.ToJson());
+            var scenarioNotesPath = AllocateScenarioNotesPath(
+                workspace.EvidenceDirectoryPath,
+                Path.GetFileNameWithoutExtension(filePath));
+            var scenarioNotesRelativePath = Path.Combine("evidence", Path.GetFileName(scenarioNotesPath));
+            var artifact = draft.Artifact with
+            {
+                EvidencePaths =
+                [
+                    scenarioNotesRelativePath,
+                ],
+            };
+            var scenarioTemplatePath = Path.Combine(workspace.TemplatesDirectoryPath, HdrSdrSessionTemplateFileName);
+            var scenarioTemplate = readAllText(scenarioTemplatePath);
+            writeAllText(
+                scenarioNotesPath,
+                ScenarioValidationDraftFactory.Create(
+                    scenarioTemplate,
+                    artifact,
+                    Path.GetFileName(filePath)));
+            writeAllText(filePath, artifact.ToJson());
             return OutputValidationDraftResult.Success(filePath);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
@@ -690,6 +709,26 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         }
 
         throw new InvalidOperationException("Could not allocate a unique resource trend draft file name.");
+    }
+
+    private string AllocateScenarioNotesPath(string evidenceDirectoryPath, string draftStem)
+    {
+        var candidate = Path.Combine(evidenceDirectoryPath, $"{draftStem}-scenario-session.md");
+        if (!fileExists(candidate))
+        {
+            return candidate;
+        }
+
+        for (var suffix = 2; suffix < 1000; suffix++)
+        {
+            candidate = Path.Combine(evidenceDirectoryPath, $"{draftStem}-scenario-session-{suffix}.md");
+            if (!fileExists(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        throw new InvalidOperationException("Could not allocate a unique scenario validation notes file name.");
     }
 
     private static OutputValidationDraftSeed? SelectDraftSeed(

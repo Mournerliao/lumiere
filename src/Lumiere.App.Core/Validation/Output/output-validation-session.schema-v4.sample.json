@@ -44,7 +44,7 @@
   ],
   "resultSummary": "Template only: replace with the observed Windows manual validation result before using this artifact as evidence.",
   "evidencePaths": [
-    "harness/validation/evidence/REPLACE_WITH_SESSION_RECORD.md"
+    "evidence\\REPLACE_WITH_SCENARIO_SESSION_RECORD.md"
   ],
   "knownLimitations": [
     "Template only: remove or replace after validation."
@@ -53,6 +53,7 @@
     "Template only: remove or replace after validation."
   ],
   "_comment_displaySetup": "Name the tested topology bucket verbatim when possible, for example \"Topology: Mixed HDR + SDR multi-monitor desktop; HDR primary, SDR secondary\". The loaded-evidence summary uses this to show missing display topology buckets.",
+  "_comment_evidencePaths": "Prefer a workspace-local scenario-session markdown record under evidence\\, generated from templates\\hdr-sdr-validation-session-template.md or created by Lumiere's Create draft action.",
   "_comment_outputTargetsTested": "Use \"Folder\" for HDR10 JXR file-output evidence. Use \"Both\" only when the same session explicitly validates both clipboard and folder behavior. Clipboard-only evidence must not be treated as HDR10 JXR folder-output proof.",
   "outputProfileRecords": [
     {

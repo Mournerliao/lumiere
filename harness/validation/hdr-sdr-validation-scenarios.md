@@ -11,6 +11,8 @@ This document defines the standard Windows manual validation content and executi
 
 Use `templates/hdr-sdr-validation-session-template.md` to record a session. Lumiere also seeds this template into the local Windows validation workspace at `%LOCALAPPDATA%\Lumiere\validation\output\templates\hdr-sdr-validation-session-template.md` so a tester can start from the same machine-local folder that stores output-validation JSON evidence.
 
+When a tester uses Lumiere's `Create draft` action, the app writes both a JSON output-validation artifact draft and a companion markdown scenario-session draft under `%LOCALAPPDATA%\Lumiere\validation\output\evidence\`. The JSON draft points to that markdown path through `evidencePaths`, and the markdown file links back to the JSON artifact name. Fill both before counting the session toward this Story `12-1` scenario set.
+
 ## Goal
 
 Every Windows manual validation session should answer the same core questions:
