@@ -176,8 +176,11 @@ Evidence:
 - Settings > Validation now also exposes `Create trend draft`, which writes a session-local long-run markdown record prefilled with the current process ID, output configuration, current-session hints, and workspace-local sampler command instead of leaving Story `12-3` at template-only readiness.
 - `ResourceTrendValidationCommandProjection` now centralizes that copied command behind one narrow seam, keeping the current PID, workspace path, output folder, and default duration/interval policy out of the view layer.
 - `ResourceTrendValidationDraftFactory` now centralizes long-run session draft content behind one narrow seam, keeping the WinUI layer limited to request assembly and file-open behavior.
+- `ResourceTrendSummaryArtifact` now parses the sampler `*-summary.json` shape, and `Create trend draft` imports the latest readable workspace-local summary into the markdown draft so CSV/summary paths and metric rows do not need to be copied by hand.
+- Imported sampler summaries still leave pass/fail/limitation classification as an explicit human review field, preserving the public-release gate boundary between raw telemetry and validated evidence.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-3-surface-resource-trend-workflow-in-settings.md`.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-3-create-resource-trend-draft-from-current-session.md`.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-3-import-resource-trend-summary-into-draft.md`.
 
 Remaining blockers:
 

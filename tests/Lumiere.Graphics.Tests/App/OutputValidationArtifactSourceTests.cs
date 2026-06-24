@@ -234,14 +234,33 @@ public sealed class OutputValidationArtifactSourceTests
     public void CreateResourceTrendDraft_WritesPrefilledMarkdownIntoWorkspaceRoot()
     {
         var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000-summary.json"] =
+                """
+                {
+                  "processId": 4242,
+                  "processName": "Lumiere.App",
+                  "durationSeconds": 900,
+                  "sampleIntervalSeconds": 5,
+                  "sampleCount": 180,
+                  "csvPath": "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000.csv",
+                  "metrics": {
+                    "privateBytes": { "baseline": 1000000, "final": 1200000, "delta": 200000, "min": 950000, "max": 1250000 },
+                    "gpuTotalCommittedBytes": { "baseline": 500000, "final": 550000, "delta": 50000, "min": 490000, "max": 560000 }
+                  }
+                }
+                """,
+        };
         var source = new FileOutputValidationArtifactSource(
             "C:\\Validation",
             "*.json",
-            directoryExists: directories.Contains,
+            directoryExists: path => directories.Contains(path) || path == "C:\\Validation\\resource-trends",
             fileExists: files.ContainsKey,
             createDirectory: path => directories.Add(path),
-            enumerateFiles: (_, _) => Array.Empty<string>(),
+            enumerateFiles: (path, pattern) => path == "C:\\Validation\\resource-trends" && pattern == "*-summary.json"
+                ? ["C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000-summary.json"]
+                : [],
             readAllText: path => files[path],
             writeAllText: (path, content) => files[path] = content,
             resolveTemplateSourceText: () => "{ \"schemaVersion\": 4 }",
@@ -276,7 +295,9 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.True(files.ContainsKey(result.DraftPath!));
         Assert.Contains("- Output configuration: Both", files[result.DraftPath!], StringComparison.Ordinal);
         Assert.Contains("- Lumiere process ID: 4242 (current session)", files[result.DraftPath!], StringComparison.Ordinal);
-        Assert.Contains("resource-trend-Lumiere.App-pid4242-REPLACE_WITH_TIMESTAMP.csv", files[result.DraftPath!], StringComparison.Ordinal);
+        Assert.Contains("resource-trend-Lumiere.App-pid4242-20260624-120000.csv", files[result.DraftPath!], StringComparison.Ordinal);
+        Assert.Contains("| Private bytes | 1000000 | 1200000 | 200000 | 950000 | 1250000 | REPLACE_WITH_PASS_FAIL_LIMITATION | Imported from sampler summary. |", files[result.DraftPath!], StringComparison.Ordinal);
+        Assert.Contains("after reviewing 180 imported sampler samples", files[result.DraftPath!], StringComparison.Ordinal);
     }
 
     [Fact]

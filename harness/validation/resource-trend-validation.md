@@ -53,6 +53,8 @@ Lumiere's Settings > Validation surface can now help with this setup directly:
 
 Use these helpers to start a run faster, but still review the copied command before execution and still record the real resulting artifacts in the session notes. A generated draft is only a structured starting point; it does not count toward Story `12-3` or the public release gate until its placeholders are replaced with real Windows manual observations.
 
+If the workspace-local `resource-trends` folder already contains a sampler `*-summary.json`, `Create trend draft` imports the latest readable summary into the markdown draft. It fills the CSV path, summary JSON path, duration, sample interval, sample count context, and metric baseline/final/delta/min/max rows. It still leaves metric classification and session classification as explicit `REPLACE_WITH_PASS_FAIL_LIMITATION` review fields so sampler output cannot accidentally become a passing public-release claim without human judgement.
+
 ## Sampler Command
 
 Example:
@@ -109,6 +111,8 @@ Minimum coverage:
 4. Stop after the planned cycle count or sampler duration completes.
 5. Copy the CSV path, summary JSON path, and relevant logs into the session record.
 6. Classify the run as `PASS`, `PASS with limitation`, `FAIL`, or `NOT RUN`.
+
+If you generate or refresh the draft after the sampler completes, verify that the imported summary paths and metric rows match the run you intend to count. Keep the CSV and summary JSON files in `resource-trends\` and attach any additional screenshots, logs, or notes under the same validation workspace.
 
 ## How To Judge The Result
 

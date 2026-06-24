@@ -336,7 +336,8 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
                 request,
                 workspace.DirectoryPath,
                 now,
-                template);
+                template,
+                SelectLatestResourceTrendSummary(workspace));
             var filePath = AllocateResourceTrendDraftPath(workspace.DirectoryPath, now);
             writeAllText(filePath, content);
             return OutputValidationDraftResult.Success(filePath);
@@ -709,6 +710,30 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         }
 
         throw new InvalidOperationException("Could not allocate a unique resource trend draft file name.");
+    }
+
+    private ResourceTrendSummaryArtifact? SelectLatestResourceTrendSummary(OutputValidationWorkspaceState workspace)
+    {
+        var resourceTrendDirectoryPath = Path.Combine(workspace.DirectoryPath, "resource-trends");
+        if (!directoryExists(resourceTrendDirectoryPath))
+        {
+            return null;
+        }
+
+        foreach (var path in enumerateFiles(resourceTrendDirectoryPath, "*-summary.json")
+            .OrderDescending(StringComparer.OrdinalIgnoreCase))
+        {
+            try
+            {
+                return ResourceTrendSummaryArtifact.FromJson(readAllText(path), path);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException or System.Text.Json.JsonException)
+            {
+                continue;
+            }
+        }
+
+        return null;
     }
 
     private string AllocateScenarioNotesPath(string evidenceDirectoryPath, string draftStem)

@@ -10,7 +10,8 @@ public static class ResourceTrendValidationDraftFactory
         ResourceTrendValidationDraftRequest request,
         string validationWorkspacePath,
         DateTimeOffset now,
-        string template)
+        string template,
+        ResourceTrendSummaryArtifact? latestSummary = null)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentException.ThrowIfNullOrWhiteSpace(validationWorkspacePath);
@@ -27,7 +28,19 @@ public static class ResourceTrendValidationDraftFactory
                 request.ProcessId)
             : request.ResourceTrendCommand.Trim();
 
-        return template
+        var summary = latestSummary;
+        var csvPath = summary?.CsvPath
+            ?? Path.Combine(outputDirectory, $"resource-trend-Lumiere.App-pid{request.ProcessId}-REPLACE_WITH_TIMESTAMP.csv");
+        var summaryPath = summary?.SummaryPath
+            ?? Path.Combine(outputDirectory, $"resource-trend-Lumiere.App-pid{request.ProcessId}-REPLACE_WITH_TIMESTAMP-summary.json");
+        var durationSeconds = summary is null || summary.DurationSeconds <= 0
+            ? "900"
+            : summary.DurationSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var sampleIntervalSeconds = summary is null || summary.SampleIntervalSeconds <= 0
+            ? "5"
+            : summary.SampleIntervalSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+        return ApplyMetricRows(template, summary)
             .Replace("- Date:", $"- Date: {date}", StringComparison.Ordinal)
             .Replace("- Tester:", "- Tester: REPLACE_WITH_TESTER_NAME", StringComparison.Ordinal)
             .Replace("- Build / commit:", $"- Build / commit: {CreateBuildPlaceholder(buildLabel, request.BuildVersion)}", StringComparison.Ordinal)
@@ -40,22 +53,77 @@ public static class ResourceTrendValidationDraftFactory
             .Replace("- Lumiere process ID:", $"- Lumiere process ID: {CreateProcessIdPlaceholder(request.ProcessId)}", StringComparison.Ordinal)
             .Replace("- Output configuration:", $"- Output configuration: {FormatOutputTarget(request.OutputTarget)}", StringComparison.Ordinal)
             .Replace("- Command:", $"- Command: {command ?? "REPLACE_WITH_RESOURCE_TREND_COMMAND"}", StringComparison.Ordinal)
-            .Replace("- Duration seconds:", "- Duration seconds: 900", StringComparison.Ordinal)
-            .Replace("- Sample interval seconds:", "- Sample interval seconds: 5", StringComparison.Ordinal)
+            .Replace("- Duration seconds:", $"- Duration seconds: {durationSeconds}", StringComparison.Ordinal)
+            .Replace("- Sample interval seconds:", $"- Sample interval seconds: {sampleIntervalSeconds}", StringComparison.Ordinal)
             .Replace("- Output directory:", $"- Output directory: {outputDirectory}", StringComparison.Ordinal)
-            .Replace("- CSV path:", $"- CSV path: {Path.Combine(outputDirectory, $"resource-trend-Lumiere.App-pid{request.ProcessId}-REPLACE_WITH_TIMESTAMP.csv")}", StringComparison.Ordinal)
-            .Replace("- Summary JSON path:", $"- Summary JSON path: {Path.Combine(outputDirectory, $"resource-trend-Lumiere.App-pid{request.ProcessId}-REPLACE_WITH_TIMESTAMP-summary.json")}", StringComparison.Ordinal)
-            .Replace("- GPU counter availability:", "- GPU counter availability: REPLACE_WITH_AVAILABLE_OR_LIMITATION", StringComparison.Ordinal)
+            .Replace("- CSV path:", $"- CSV path: {csvPath}", StringComparison.Ordinal)
+            .Replace("- Summary JSON path:", $"- Summary JSON path: {summaryPath}", StringComparison.Ordinal)
+            .Replace("- GPU counter availability:", $"- GPU counter availability: {CreateGpuCounterAvailability(summary)}", StringComparison.Ordinal)
             .Replace("- `REL-STAB-01`:", "- `REL-STAB-01`: Repeated capture/output loop stability session", StringComparison.Ordinal)
             .Replace("- `REL-STAB-02`:", "- `REL-STAB-02`: Private bytes / handles / GPU trend sampler evidence", StringComparison.Ordinal)
             .Replace("- `REL-STAB-03`:", "- `REL-STAB-03`: Duplicate capture rejection during active session", StringComparison.Ordinal)
             .Replace("- `REL-STAB-04`:", "- `REL-STAB-04`: Slow or failing clipboard/file target recovery", StringComparison.Ordinal)
-            .Replace("- Public gate `Long-run lifecycle evidence`:", "- Public gate `Long-run lifecycle evidence`: REPLACE_WITH_PASS_FAIL_LIMITATION", StringComparison.Ordinal)
-            .Replace("- Session classification: PASS / PASS with limitation / FAIL / NOT RUN", "- Session classification: NOT RUN", StringComparison.Ordinal)
+            .Replace("- Public gate `Long-run lifecycle evidence`:", $"- Public gate `Long-run lifecycle evidence`: {CreatePublicGatePlaceholder(summary)}", StringComparison.Ordinal)
+            .Replace("- Session classification: PASS / PASS with limitation / FAIL / NOT RUN", $"- Session classification: {CreateSessionClassificationPlaceholder(summary)}", StringComparison.Ordinal)
             .Replace("- Release impact:", "- Release impact: REPLACE_WITH_RELEASE_IMPACT", StringComparison.Ordinal)
             .Replace("- Known limitations:", "- Known limitations: Draft created from current Lumiere session context. Replace with observed limitations after the run.", StringComparison.Ordinal)
             .Replace("- Follow-up stories / issues:", "- Follow-up stories / issues: 12-3, 10-3, 11-3, 13-2", StringComparison.Ordinal);
     }
+
+    private static string ApplyMetricRows(string template, ResourceTrendSummaryArtifact? summary)
+    {
+        if (summary is null)
+        {
+            return template;
+        }
+
+        return template
+            .Replace(CreateMetricRow("Handles"), CreateMetricRow("Handles", summary.TryGetMetric("handles")), StringComparison.Ordinal)
+            .Replace(CreateMetricRow("Private bytes"), CreateMetricRow("Private bytes", summary.TryGetMetric("privateBytes")), StringComparison.Ordinal)
+            .Replace(CreateMetricRow("Threads"), CreateMetricRow("Threads", summary.TryGetMetric("threads")), StringComparison.Ordinal)
+            .Replace(CreateMetricRow("Working set bytes"), CreateMetricRow("Working set bytes", summary.TryGetMetric("workingSetBytes")), StringComparison.Ordinal)
+            .Replace(CreateMetricRow("Paged memory bytes"), CreateMetricRow("Paged memory bytes", summary.TryGetMetric("pagedMemoryBytes")), StringComparison.Ordinal)
+            .Replace(CreateMetricRow("GPU dedicated usage bytes"), CreateMetricRow("GPU dedicated usage bytes", summary.TryGetMetric("gpuDedicatedUsageBytes")), StringComparison.Ordinal)
+            .Replace(CreateMetricRow("GPU shared usage bytes"), CreateMetricRow("GPU shared usage bytes", summary.TryGetMetric("gpuSharedUsageBytes")), StringComparison.Ordinal)
+            .Replace(CreateMetricRow("GPU total committed bytes"), CreateMetricRow("GPU total committed bytes", summary.TryGetMetric("gpuTotalCommittedBytes")), StringComparison.Ordinal);
+    }
+
+    private static string CreateMetricRow(string label) =>
+        $"| {label} |  |  |  |  |  | PASS / PASS with limitation / FAIL / NOT RUN |  |";
+
+    private static string CreateMetricRow(string label, ResourceTrendMetricSummary? metric)
+    {
+        if (metric is null)
+        {
+            return CreateMetricRow(label);
+        }
+
+        return string.Create(
+            System.Globalization.CultureInfo.InvariantCulture,
+            $"| {label} | {metric.Baseline} | {metric.Final} | {metric.Delta} | {metric.Min} | {metric.Max} | REPLACE_WITH_PASS_FAIL_LIMITATION | Imported from sampler summary. |");
+    }
+
+    private static string CreateGpuCounterAvailability(ResourceTrendSummaryArtifact? summary)
+    {
+        if (summary is null)
+        {
+            return "REPLACE_WITH_AVAILABLE_OR_LIMITATION";
+        }
+
+        return summary.HasGpuCounterSamples
+            ? "GPU counters present in latest sampler summary"
+            : "PASS with limitation candidate: latest sampler summary did not report non-zero GPU counters; confirm whether GPU counters were unavailable.";
+    }
+
+    private static string CreatePublicGatePlaceholder(ResourceTrendSummaryArtifact? summary) =>
+        summary is null
+            ? "REPLACE_WITH_PASS_FAIL_LIMITATION"
+            : $"REPLACE_WITH_PASS_FAIL_LIMITATION after reviewing {summary.SampleCount} imported sampler samples";
+
+    private static string CreateSessionClassificationPlaceholder(ResourceTrendSummaryArtifact? summary) =>
+        summary is null
+            ? "NOT RUN"
+            : "REPLACE_WITH_PASS_FAIL_LIMITATION (sampler summary imported; human review required)";
 
     private static string NormalizeBuildVersion(string? buildVersion)
     {
