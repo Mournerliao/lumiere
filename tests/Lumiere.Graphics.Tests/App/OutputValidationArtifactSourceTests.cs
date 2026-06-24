@@ -88,11 +88,13 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Equal("C:\\Validation\\templates\\resource-trend-session-template.md", snapshot.Workspace.ResourceTrendTemplatePath);
         Assert.Equal("C:\\Validation\\collect-resource-trend-samples.ps1", snapshot.Workspace.ResourceTrendScriptPath);
         Assert.Equal(templateJson, files[snapshot.Workspace.SampleTemplatePath!]);
+        Assert.Contains("Session Metadata", files["C:\\Validation\\templates\\hdr-sdr-validation-session-template.md"], StringComparison.Ordinal);
         Assert.Contains("Public perfect-HDR-fidelity", files[snapshot.Workspace.ReleaseChecklistPath!], StringComparison.Ordinal);
         Assert.Contains("Standard Content Set", files[snapshot.Workspace.HdrSdrScenariosPath!], StringComparison.Ordinal);
         Assert.Contains("Keyboard Validation", files[snapshot.Workspace.SettingsAccessibilityGuidePath!], StringComparison.Ordinal);
         Assert.Contains("Session Metadata", files[snapshot.Workspace.ResourceTrendTemplatePath!], StringComparison.Ordinal);
         Assert.Contains("Collects repeated resource trend samples", files[snapshot.Workspace.ResourceTrendScriptPath!], StringComparison.Ordinal);
+        Assert.Contains("templates\\hdr-sdr-validation-session-template.md", files[snapshot.Workspace.GuidanceFilePath], StringComparison.Ordinal);
         Assert.Contains("guidance\\release-validation-checklist.md", files[snapshot.Workspace.GuidanceFilePath], StringComparison.Ordinal);
     }
 

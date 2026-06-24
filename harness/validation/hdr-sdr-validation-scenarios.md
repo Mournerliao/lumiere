@@ -9,7 +9,7 @@ This document defines the standard Windows manual validation content and executi
 - `output-validation.md` for output profile and viewer-specific behavior
 - `settings-accessibility-validation.md` for settings-shell keyboard, screen reader, high contrast, and DPI checks
 
-Use `templates/hdr-sdr-validation-session-template.md` to record a session.
+Use `templates/hdr-sdr-validation-session-template.md` to record a session. Lumiere also seeds this template into the local Windows validation workspace at `%LOCALAPPDATA%\Lumiere\validation\output\templates\hdr-sdr-validation-session-template.md` so a tester can start from the same machine-local folder that stores output-validation JSON evidence.
 
 ## Goal
 

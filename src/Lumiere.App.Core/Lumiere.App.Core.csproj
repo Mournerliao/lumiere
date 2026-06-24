@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Validation\Output\output-validation-session.schema-v4.sample.json" />
+    <EmbeddedResource Include="Validation\Output\hdr-sdr-validation-session-template.md" />
     <EmbeddedResource Include="Validation\ResourceTrend\resource-trend-session-template.md" />
     <EmbeddedResource Include="Validation\ResourceTrend\collect-resource-trend-samples.ps1" />
     <EmbeddedResource Include="..\..\harness\validation\release-validation-checklist.md">

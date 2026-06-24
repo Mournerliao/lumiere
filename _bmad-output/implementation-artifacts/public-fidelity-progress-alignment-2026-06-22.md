@@ -139,8 +139,10 @@ Evidence:
 - `harness/validation/settings-accessibility-validation.md` now gives Story 13-2 a focused Windows validation workflow tied back to the release checklist.
 - `harness/validation/templates/hdr-sdr-validation-session-template.md` now gives future sessions a consistent metadata/result record shape.
 - The app-local validation workspace now also seeds the current release checklist, HDR/SDR scenario guide, and settings accessibility workflow into a local `guidance` folder instead of leaving those core manual-validation references repo-only.
-- Settings > Validation now also exposes direct `Release checklist`, `Scenario guide`, and `A11y guide` actions so validators can stay inside one native evidence path while preparing real Windows sessions.
+- The app-local validation workspace now also seeds `templates/hdr-sdr-validation-session-template.md`, keeping the Story `12-1` scenario record template beside the JSON output-evidence sample without adding another settings-page button.
+- Settings > Validation keeps evidence rows primary and moves secondary workspace, checklist, scenario, accessibility, and trend helpers into a compact native command surface instead of expanding into a standalone button grid.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-seed-public-validation-guides-into-local-workspace.md`.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-seed-scenario-session-template-into-local-workspace.md`.
 - The same loaded-evidence summary now also carries entry-point, DPI, display-setup, and HDR-state coverage plus the public release checklist groups still missing from the loaded evidence, reducing manual cross-checking during Windows validation prep.
 - That same summary now also recommends the next native guide or action for those missing public-gate groups, reducing another round of guesswork before a validator starts the next Windows run.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-surface-public-gate-evidence-gaps-in-validation-summary.md`.

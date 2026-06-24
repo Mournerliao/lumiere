@@ -1325,295 +1325,139 @@
                       Foreground="{StaticResource SubtleTextBrush}"
                       Text="harness/validation/release-validation-checklist.md"
                       TextWrapping="WrapWholeWords" />
-                  <Button
-                      x:Name="ValidationOpenLatestEvidenceButton"
-                      MinWidth="0"
+                  <CommandBar
+                      x:Name="ValidationEvidenceCommandBar"
+                      Padding="0"
                       HorizontalAlignment="Stretch"
-                      AutomationProperties.Name="Open latest validation evidence"
-                      AutomationProperties.HelpText="Open the latest loaded validation evidence file for this session."
-                      Click="OnValidationOpenLatestEvidenceClick"
-                      Padding="10,7">
-                    <StackPanel
-                        HorizontalAlignment="Center"
-                        Orientation="Horizontal"
-                        Spacing="6">
-                      <FontIcon
-                          FontFamily="Segoe Fluent Icons"
-                          FontSize="11"
-                          Glyph="&#xE8A7;" />
-                      <TextBlock
-                          FontSize="11"
-                          FontWeight="SemiBold"
-                          Text="Open latest evidence" />
-                    </StackPanel>
-                  </Button>
-                  <Button
-                      x:Name="ValidationCreateDraftButton"
-                      MinWidth="0"
-                      HorizontalAlignment="Stretch"
-                      AutomationProperties.Name="Create validation draft"
-                      AutomationProperties.HelpText="Create a local validation draft prefilled with the current Lumiere session context."
-                      Click="OnValidationCreateDraftClick"
-                      Padding="10,7">
-                    <StackPanel
-                        HorizontalAlignment="Center"
-                        Orientation="Horizontal"
-                        Spacing="6">
-                      <FontIcon
-                          FontFamily="Segoe Fluent Icons"
-                          FontSize="11"
-                          Glyph="&#xE70F;" />
-                        <TextBlock
-                            FontSize="11"
-                            FontWeight="SemiBold"
-                            Text="Create draft" />
-                      </StackPanel>
-                  </Button>
-                  <Button
-                      x:Name="ValidationCreateResourceTrendDraftButton"
-                      MinWidth="0"
-                      HorizontalAlignment="Stretch"
-                      AutomationProperties.Name="Create resource trend draft"
-                      AutomationProperties.HelpText="Create a local long-run resource trend session draft prefilled with the current Lumiere session context."
-                      Click="OnValidationCreateResourceTrendDraftClick"
-                      Padding="10,7">
-                    <StackPanel
-                        HorizontalAlignment="Center"
-                        Orientation="Horizontal"
-                        Spacing="6">
-                      <FontIcon
-                          FontFamily="Segoe Fluent Icons"
-                          FontSize="11"
-                          Glyph="&#xE70F;" />
-                      <TextBlock
-                          FontSize="11"
-                          FontWeight="SemiBold"
-                          Text="Create trend draft" />
-                    </StackPanel>
-                  </Button>
-                  <Button
-                      x:Name="ValidationReloadArtifactsButton"
-                      MinWidth="0"
-                      HorizontalAlignment="Stretch"
-                      AutomationProperties.Name="Reload validation evidence"
-                      AutomationProperties.HelpText="Reload local output validation artifacts for this session."
-                      Click="OnValidationReloadArtifactsClick"
-                      Padding="10,7">
-                    <StackPanel
-                        HorizontalAlignment="Center"
-                        Orientation="Horizontal"
-                        Spacing="6">
-                      <FontIcon
-                          FontFamily="Segoe Fluent Icons"
-                          FontSize="11"
-                          Glyph="&#xE72C;" />
-                      <TextBlock
-                          FontSize="11"
-                          FontWeight="SemiBold"
-                          Text="Reload evidence" />
-                    </StackPanel>
-                  </Button>
-                  <Grid ColumnSpacing="8">
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="*" />
-                      <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Button
-                        x:Name="ValidationOpenWorkspaceButton"
-                        MinWidth="0"
-                        HorizontalAlignment="Stretch"
-                        AutomationProperties.Name="Open validation workspace"
-                        AutomationProperties.HelpText="Open the local output validation workspace for this machine."
-                        Click="OnValidationOpenWorkspaceClick"
-                        Padding="10,7">
-                      <StackPanel
-                          HorizontalAlignment="Center"
-                          Orientation="Horizontal"
-                          Spacing="6">
-                        <FontIcon
-                            FontFamily="Segoe Fluent Icons"
-                            FontSize="11"
-                            Glyph="&#xE838;" />
-                        <TextBlock
-                            FontSize="11"
-                            FontWeight="SemiBold"
-                            Text="Open workspace" />
-                      </StackPanel>
-                    </Button>
-                    <Button
-                        x:Name="ValidationOpenTemplateButton"
-                        Grid.Column="1"
-                        MinWidth="0"
-                        HorizontalAlignment="Stretch"
-                        AutomationProperties.Name="Open validation template"
-                        AutomationProperties.HelpText="Open the seeded validation session template for this machine."
-                        Click="OnValidationOpenTemplateClick"
-                        Padding="10,7">
-                      <StackPanel
-                          HorizontalAlignment="Center"
-                          Orientation="Horizontal"
-                          Spacing="6">
-                        <FontIcon
-                            FontFamily="Segoe Fluent Icons"
-                            FontSize="11"
-                            Glyph="&#xE7C3;" />
-                        <TextBlock
-                            FontSize="11"
-                            FontWeight="SemiBold"
-                            Text="Open template" />
-                      </StackPanel>
-                    </Button>
-                  </Grid>
-                  <Grid ColumnSpacing="8">
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="*" />
-                      <ColumnDefinition Width="*" />
-                      <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Button
-                        x:Name="ValidationOpenReleaseChecklistButton"
-                        MinWidth="0"
-                        HorizontalAlignment="Stretch"
-                        AutomationProperties.Name="Open release validation checklist"
-                        AutomationProperties.HelpText="Open the seeded public release validation checklist for this machine."
-                        Click="OnValidationOpenReleaseChecklistClick"
-                        Padding="10,7">
-                      <StackPanel
-                          HorizontalAlignment="Center"
-                          Orientation="Horizontal"
-                          Spacing="6">
-                        <FontIcon
-                            FontFamily="Segoe Fluent Icons"
-                            FontSize="11"
-                            Glyph="&#xE8A7;" />
-                        <TextBlock
-                            FontSize="11"
-                            FontWeight="SemiBold"
-                            Text="Release checklist" />
-                      </StackPanel>
-                    </Button>
-                    <Button
-                        x:Name="ValidationOpenHdrSdrScenariosButton"
-                        Grid.Column="1"
-                        MinWidth="0"
-                        HorizontalAlignment="Stretch"
-                        AutomationProperties.Name="Open HDR SDR validation scenarios"
-                        AutomationProperties.HelpText="Open the seeded HDR and SDR validation scenario guide for this machine."
-                        Click="OnValidationOpenHdrSdrScenariosClick"
-                        Padding="10,7">
-                      <StackPanel
-                          HorizontalAlignment="Center"
-                          Orientation="Horizontal"
-                          Spacing="6">
-                        <FontIcon
-                            FontFamily="Segoe Fluent Icons"
-                            FontSize="11"
-                            Glyph="&#xE70F;" />
-                        <TextBlock
-                            FontSize="11"
-                            FontWeight="SemiBold"
-                            Text="Scenario guide" />
-                      </StackPanel>
-                    </Button>
-                    <Button
-                        x:Name="ValidationOpenSettingsAccessibilityGuideButton"
-                        Grid.Column="2"
-                        MinWidth="0"
-                        HorizontalAlignment="Stretch"
-                        AutomationProperties.Name="Open settings accessibility validation guide"
-                        AutomationProperties.HelpText="Open the seeded settings accessibility validation workflow for this machine."
-                        Click="OnValidationOpenSettingsAccessibilityGuideClick"
-                        Padding="10,7">
-                      <StackPanel
-                          HorizontalAlignment="Center"
-                          Orientation="Horizontal"
-                          Spacing="6">
-                        <FontIcon
-                            FontFamily="Segoe Fluent Icons"
-                            FontSize="11"
-                            Glyph="&#xE897;" />
-                        <TextBlock
-                            FontSize="11"
-                            FontWeight="SemiBold"
-                            Text="A11y guide" />
-                      </StackPanel>
-                    </Button>
-                  </Grid>
-                  <Grid ColumnSpacing="8">
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="*" />
-                      <ColumnDefinition Width="*" />
-                      <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Button
-                        x:Name="ValidationOpenResourceTrendTemplateButton"
-                        MinWidth="0"
-                        HorizontalAlignment="Stretch"
-                        AutomationProperties.Name="Open resource trend template"
-                        AutomationProperties.HelpText="Open the seeded long-run resource trend session template for this machine."
-                        Click="OnValidationOpenResourceTrendTemplateClick"
-                        Padding="10,7">
-                      <StackPanel
-                          HorizontalAlignment="Center"
-                          Orientation="Horizontal"
-                          Spacing="6">
-                        <FontIcon
-                            FontFamily="Segoe Fluent Icons"
-                            FontSize="11"
-                            Glyph="&#xE7C3;" />
-                        <TextBlock
-                            FontSize="11"
-                            FontWeight="SemiBold"
-                            Text="Trend template" />
-                      </StackPanel>
-                    </Button>
-                    <Button
-                        x:Name="ValidationOpenResourceTrendScriptButton"
-                        Grid.Column="1"
-                        MinWidth="0"
-                        HorizontalAlignment="Stretch"
-                        AutomationProperties.Name="Open resource trend script"
-                        AutomationProperties.HelpText="Open the seeded long-run resource trend sampler script for this machine."
-                        Click="OnValidationOpenResourceTrendScriptClick"
-                        Padding="10,7">
-                      <StackPanel
-                          HorizontalAlignment="Center"
-                          Orientation="Horizontal"
-                          Spacing="6">
-                        <FontIcon
-                            FontFamily="Segoe Fluent Icons"
-                            FontSize="11"
-                            Glyph="&#xE943;" />
-                        <TextBlock
-                            FontSize="11"
-                            FontWeight="SemiBold"
-                            Text="Trend script" />
-                      </StackPanel>
-                    </Button>
-                    <Button
-                        x:Name="ValidationCopyResourceTrendCommandButton"
-                        Grid.Column="2"
-                        MinWidth="0"
-                        HorizontalAlignment="Stretch"
-                        AutomationProperties.Name="Copy resource trend command"
-                        AutomationProperties.HelpText="Copy the current-process long-run resource trend sampler command."
-                        Click="OnValidationCopyResourceTrendCommandClick"
-                        Padding="10,7">
-                      <StackPanel
-                          HorizontalAlignment="Center"
-                          Orientation="Horizontal"
-                          Spacing="6">
-                        <FontIcon
-                            FontFamily="Segoe Fluent Icons"
-                            FontSize="11"
-                            Glyph="&#xE8C8;" />
-                        <TextBlock
-                            FontSize="11"
-                            FontWeight="SemiBold"
-                            Text="Copy trend cmd" />
-                      </StackPanel>
-                    </Button>
-                  </Grid>
+                      Background="Transparent"
+                      DefaultLabelPosition="Right"
+                      IsDynamicOverflowEnabled="False"
+                      OverflowButtonVisibility="Visible">
+                    <AppBarButton
+                        x:Name="ValidationCreateDraftButton"
+                        AutomationProperties.HelpText="Create a local validation draft prefilled with the current Lumiere session context."
+                        AutomationProperties.Name="Create validation draft"
+                        Click="OnValidationCreateDraftClick"
+                        Label="Create draft">
+                      <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE70F;" />
+                      </AppBarButton.Icon>
+                    </AppBarButton>
+                    <AppBarButton
+                        x:Name="ValidationReloadArtifactsButton"
+                        AutomationProperties.HelpText="Reload local output validation artifacts for this session."
+                        AutomationProperties.Name="Reload validation evidence"
+                        Click="OnValidationReloadArtifactsClick"
+                        Label="Reload">
+                      <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE72C;" />
+                      </AppBarButton.Icon>
+                    </AppBarButton>
+                    <CommandBar.SecondaryCommands>
+                      <AppBarButton
+                          x:Name="ValidationOpenLatestEvidenceButton"
+                          AutomationProperties.HelpText="Open the latest loaded validation evidence file for this session."
+                          AutomationProperties.Name="Open latest validation evidence"
+                          Click="OnValidationOpenLatestEvidenceClick"
+                          Label="Open latest evidence">
+                        <AppBarButton.Icon>
+                          <FontIcon Glyph="&#xE8A7;" />
+                        </AppBarButton.Icon>
+                      </AppBarButton>
+                      <AppBarButton
+                          x:Name="ValidationCreateResourceTrendDraftButton"
+                          AutomationProperties.HelpText="Create a local long-run resource trend session draft prefilled with the current Lumiere session context."
+                          AutomationProperties.Name="Create resource trend draft"
+                          Click="OnValidationCreateResourceTrendDraftClick"
+                          Label="Create trend draft">
+                        <AppBarButton.Icon>
+                          <FontIcon Glyph="&#xE70F;" />
+                        </AppBarButton.Icon>
+                      </AppBarButton>
+                      <AppBarSeparator />
+                      <AppBarButton
+                          x:Name="ValidationOpenWorkspaceButton"
+                          AutomationProperties.HelpText="Open the local output validation workspace for this machine."
+                          AutomationProperties.Name="Open validation workspace"
+                          Click="OnValidationOpenWorkspaceClick"
+                          Label="Open workspace">
+                        <AppBarButton.Icon>
+                          <FontIcon Glyph="&#xE838;" />
+                        </AppBarButton.Icon>
+                      </AppBarButton>
+                      <AppBarButton
+                          x:Name="ValidationOpenTemplateButton"
+                          AutomationProperties.HelpText="Open the seeded validation session template for this machine."
+                          AutomationProperties.Name="Open validation template"
+                          Click="OnValidationOpenTemplateClick"
+                          Label="Open template">
+                        <AppBarButton.Icon>
+                          <FontIcon Glyph="&#xE7C3;" />
+                        </AppBarButton.Icon>
+                      </AppBarButton>
+                      <AppBarButton
+                          x:Name="ValidationOpenReleaseChecklistButton"
+                          AutomationProperties.HelpText="Open the seeded public release validation checklist for this machine."
+                          AutomationProperties.Name="Open release validation checklist"
+                          Click="OnValidationOpenReleaseChecklistClick"
+                          Label="Release checklist">
+                        <AppBarButton.Icon>
+                          <FontIcon Glyph="&#xE8A7;" />
+                        </AppBarButton.Icon>
+                      </AppBarButton>
+                      <AppBarButton
+                          x:Name="ValidationOpenHdrSdrScenariosButton"
+                          AutomationProperties.HelpText="Open the seeded HDR and SDR validation scenario guide for this machine."
+                          AutomationProperties.Name="Open HDR SDR validation scenarios"
+                          Click="OnValidationOpenHdrSdrScenariosClick"
+                          Label="Scenario guide">
+                        <AppBarButton.Icon>
+                          <FontIcon Glyph="&#xE70F;" />
+                        </AppBarButton.Icon>
+                      </AppBarButton>
+                      <AppBarButton
+                          x:Name="ValidationOpenSettingsAccessibilityGuideButton"
+                          AutomationProperties.HelpText="Open the seeded settings accessibility validation workflow for this machine."
+                          AutomationProperties.Name="Open settings accessibility validation guide"
+                          Click="OnValidationOpenSettingsAccessibilityGuideClick"
+                          Label="A11y guide">
+                        <AppBarButton.Icon>
+                          <FontIcon Glyph="&#xE897;" />
+                        </AppBarButton.Icon>
+                      </AppBarButton>
+                      <AppBarSeparator />
+                      <AppBarButton
+                          x:Name="ValidationOpenResourceTrendTemplateButton"
+                          AutomationProperties.HelpText="Open the seeded long-run resource trend session template for this machine."
+                          AutomationProperties.Name="Open resource trend template"
+                          Click="OnValidationOpenResourceTrendTemplateClick"
+                          Label="Trend template">
+                        <AppBarButton.Icon>
+                          <FontIcon Glyph="&#xE7C3;" />
+                        </AppBarButton.Icon>
+                      </AppBarButton>
+                      <AppBarButton
+                          x:Name="ValidationOpenResourceTrendScriptButton"
+                          AutomationProperties.HelpText="Open the seeded long-run resource trend sampler script for this machine."
+                          AutomationProperties.Name="Open resource trend script"
+                          Click="OnValidationOpenResourceTrendScriptClick"
+                          Label="Trend script">
+                        <AppBarButton.Icon>
+                          <FontIcon Glyph="&#xE943;" />
+                        </AppBarButton.Icon>
+                      </AppBarButton>
+                      <AppBarButton
+                          x:Name="ValidationCopyResourceTrendCommandButton"
+                          AutomationProperties.HelpText="Copy the current-process long-run resource trend sampler command."
+                          AutomationProperties.Name="Copy resource trend command"
+                          Click="OnValidationCopyResourceTrendCommandClick"
+                          Label="Copy trend command">
+                        <AppBarButton.Icon>
+                          <FontIcon Glyph="&#xE8C8;" />
+                        </AppBarButton.Icon>
+                      </AppBarButton>
+                    </CommandBar.SecondaryCommands>
+                  </CommandBar>
                 </StackPanel>
               </StackPanel>
             </Border>

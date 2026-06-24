@@ -134,6 +134,7 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
 {
     internal const string WorkspaceReadmeFileName = "README.txt";
     internal const string SampleTemplateFileName = "output-validation-session.schema-v4.sample.json";
+    internal const string HdrSdrSessionTemplateFileName = "hdr-sdr-validation-session-template.md";
     internal const string ReleaseChecklistFileName = "release-validation-checklist.md";
     internal const string HdrSdrScenariosFileName = "hdr-sdr-validation-scenarios.md";
     internal const string SettingsAccessibilityGuideFileName = "settings-accessibility-validation.md";
@@ -369,6 +370,7 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         var evidenceDirectoryPath = Path.Combine(directoryPath, "evidence");
         var guidanceFilePath = Path.Combine(directoryPath, WorkspaceReadmeFileName);
         var sampleTemplatePath = Path.Combine(templatesDirectoryPath, SampleTemplateFileName);
+        var hdrSdrSessionTemplatePath = Path.Combine(templatesDirectoryPath, HdrSdrSessionTemplateFileName);
         var releaseChecklistPath = Path.Combine(guidanceDirectoryPath, ReleaseChecklistFileName);
         var hdrSdrScenariosPath = Path.Combine(guidanceDirectoryPath, HdrSdrScenariosFileName);
         var settingsAccessibilityGuidePath = Path.Combine(guidanceDirectoryPath, SettingsAccessibilityGuideFileName);
@@ -385,6 +387,12 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         {
             EnsureGuidanceFile(guidanceFilePath, issues);
             EnsureSampleTemplate(sampleTemplatePath, issues);
+            EnsureSeededTemplate(
+                hdrSdrSessionTemplatePath,
+                "Lumiere.App.Validation.Output.hdr-sdr-validation-session-template.md",
+                "HDR/SDR validation session template source could not be loaded from the current build.",
+                "HDR/SDR validation session template could not be seeded.",
+                issues);
             EnsureSeededGuidance(
                 releaseChecklistPath,
                 "Lumiere.App.Validation.Guidance.release-validation-checklist.md",
@@ -527,6 +535,14 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         }
     }
 
+    private void EnsureSeededTemplate(
+        string path,
+        string resourceName,
+        string missingSourceDetail,
+        string seedFailurePrefix,
+        ICollection<OutputValidationWorkspaceIssue> issues) =>
+        EnsureSeededGuidance(path, resourceName, missingSourceDetail, seedFailurePrefix, issues);
+
     private void EnsureSeededGuidance(
         string path,
         string resourceName,
@@ -620,10 +636,11 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
                 "1. Copy templates\\output-validation-session.schema-v4.sample.json into this output\\ folder.",
                 "2. Or use Lumiere's Create draft action to generate a prefilled local draft in this folder.",
                 "3. Review guidance\\release-validation-checklist.md, guidance\\hdr-sdr-validation-scenarios.md, and guidance\\settings-accessibility-validation.md before counting Windows manual evidence toward public release.",
-                "4. Use templates\\resource-trend-session-template.md plus collect-resource-trend-samples.ps1 for Story 12-3 long-run validation sessions.",
-                "5. Rename or copy templates as needed, replace every REPLACE_WITH_* placeholder, and keep manual evidence honest.",
-                "6. Reload evidence from Lumiere after recording real observations.",
-                "7. Do not treat template files or incomplete sessions as passing release evidence.",
+                "4. Use templates\\hdr-sdr-validation-session-template.md when recording a focused Story 12-1 manual scenario run.",
+                "5. Use templates\\resource-trend-session-template.md plus collect-resource-trend-samples.ps1 for Story 12-3 long-run validation sessions.",
+                "6. Rename or copy templates as needed, replace every REPLACE_WITH_* placeholder, and keep manual evidence honest.",
+                "7. Reload evidence from Lumiere after recording real observations.",
+                "8. Do not treat template files or incomplete sessions as passing release evidence.",
                 string.Empty,
                 "Seeded local guides:",
                 "- guidance\\release-validation-checklist.md",
