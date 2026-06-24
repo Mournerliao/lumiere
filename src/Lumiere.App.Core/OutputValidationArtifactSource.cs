@@ -367,6 +367,13 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
             try
             {
                 var artifact = OutputValidationSessionArtifact.FromJson(readAllText(path));
+                var evidenceIssues = ValidateWorkspaceLocalEvidencePaths(path, artifact, workspace).ToArray();
+                if (evidenceIssues.Length > 0)
+                {
+                    issues.AddRange(evidenceIssues);
+                    continue;
+                }
+
                 artifacts.Add(artifact);
                 artifactReferences.Add(new OutputValidationArtifactReference(path, artifact));
             }
@@ -381,6 +388,94 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
             ArtifactReferences = artifactReferences,
             Workspace = workspace,
         };
+    }
+
+    private IEnumerable<OutputValidationArtifactLoadIssue> ValidateWorkspaceLocalEvidencePaths(
+        string artifactPath,
+        OutputValidationSessionArtifact artifact,
+        OutputValidationWorkspaceState workspace)
+    {
+        if (!workspace.IsReady)
+        {
+            yield break;
+        }
+
+        foreach (var evidencePath in artifact.EvidencePaths)
+        {
+            if (!TryResolveWorkspaceLocalEvidencePath(workspace, evidencePath, out var resolvedPath, out var issueDetail))
+            {
+                if (!string.IsNullOrWhiteSpace(issueDetail))
+                {
+                    yield return new OutputValidationArtifactLoadIssue(artifactPath, issueDetail);
+                }
+
+                continue;
+            }
+
+            if (!fileExists(resolvedPath))
+            {
+                yield return new OutputValidationArtifactLoadIssue(
+                    artifactPath,
+                    $"Workspace-local evidence path is missing: {evidencePath}");
+            }
+        }
+    }
+
+    private static bool TryResolveWorkspaceLocalEvidencePath(
+        OutputValidationWorkspaceState workspace,
+        string? evidencePath,
+        out string resolvedPath,
+        out string? issueDetail)
+    {
+        resolvedPath = string.Empty;
+        issueDetail = null;
+
+        var trimmed = evidencePath?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return false;
+        }
+
+        try
+        {
+            var candidate = Path.IsPathFullyQualified(trimmed)
+                ? Path.GetFullPath(trimmed)
+                : Path.GetFullPath(Path.Combine(workspace.DirectoryPath, trimmed));
+            var evidenceDirectory = Path.GetFullPath(workspace.EvidenceDirectoryPath);
+            if (!IsPathInsideDirectory(candidate, evidenceDirectory))
+            {
+                return false;
+            }
+
+            if (!Path.IsPathFullyQualified(trimmed)
+                && !StartsWithEvidenceSegment(trimmed))
+            {
+                return false;
+            }
+
+            resolvedPath = candidate;
+            return true;
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            issueDetail = $"Workspace-local evidence path is invalid: {trimmed}. {ex.GetType().Name}: {ex.Message}";
+            return false;
+        }
+    }
+
+    private static bool IsPathInsideDirectory(string candidatePath, string directoryPath)
+    {
+        var directoryWithSeparator = Path.EndsInDirectorySeparator(directoryPath)
+            ? directoryPath
+            : directoryPath + Path.DirectorySeparatorChar;
+        return candidatePath.Equals(directoryPath, StringComparison.OrdinalIgnoreCase)
+            || candidatePath.StartsWith(directoryWithSeparator, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool StartsWithEvidenceSegment(string path)
+    {
+        var normalized = path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+        return normalized.StartsWith($"evidence{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase);
     }
 
     private OutputValidationWorkspaceState EnsureWorkspace()
