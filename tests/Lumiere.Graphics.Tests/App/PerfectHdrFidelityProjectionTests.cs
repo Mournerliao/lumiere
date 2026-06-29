@@ -978,6 +978,24 @@ public sealed class PerfectHdrFidelityProjectionTests
     }
 
     [Fact]
+    public void ProjectValidationEvidenceSummary_CallsOutIncompleteTargetHdrColorSpace()
+    {
+        var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(
+            [
+                ArtifactFor("Windows Photos") with
+                {
+                    TargetHdrEvidence = CompleteTargetHdrEvidence with
+                    {
+                        ColorSpace = "REPLACE_WITH_OBSERVED_TARGET_COLOR_SPACE",
+                    },
+                },
+            ]);
+
+        Assert.Contains("Target-aware HDR evidence is incomplete", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("target-aware HDR evidence color space", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void ProjectValidationEvidenceSummary_WithMatchingCurrentBuildSurfacesPassAlignment()
     {
         var snapshot = new OutputValidationArtifactSnapshot(

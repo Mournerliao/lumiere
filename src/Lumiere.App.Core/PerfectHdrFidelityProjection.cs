@@ -1048,6 +1048,12 @@ public static class PerfectHdrFidelityProjection
             detailParts.Add($"Target app versions are still missing for {FormatEvidenceList(missingTargetAppVersions, fallback: "named target apps")}.");
         }
 
+        var missingTargetHdrEvidenceFields = CollectMissingTargetHdrEvidenceFields(artifacts);
+        if (missingTargetHdrEvidenceFields.Count > 0)
+        {
+            detailParts.Add($"Target-aware HDR evidence is incomplete: {FormatEvidenceList(missingTargetHdrEvidenceFields, fallback: "target-aware HDR evidence", maxItems: 6)}.");
+        }
+
         var runPlan = OutputValidationRunPlanner.Create(artifacts);
         if (runPlan.MissingDisplayTopologies.Count > 0)
         {
@@ -1152,6 +1158,28 @@ public static class PerfectHdrFidelityProjection
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
             .ToArray();
+
+    private static IReadOnlyList<string> CollectMissingTargetHdrEvidenceFields(
+        IReadOnlyList<OutputValidationSessionArtifact> artifacts)
+    {
+        if (artifacts.Count == 0
+            || artifacts.Any(artifact =>
+                artifact.TargetHdrEvidence is { } targetEvidence
+                && !targetEvidence.GetMissingFields().Any()))
+        {
+            return [];
+        }
+
+        return artifacts
+            .SelectMany(artifact => artifact.TargetHdrEvidence is null
+                ? Enumerable.Repeat("target-aware HDR evidence", 1)
+                : artifact.TargetHdrEvidence
+                    .GetMissingFields()
+                    .Select(field => $"target-aware HDR evidence {field}"))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(field => field, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
 
     private static string FormatArtifactHeader(OutputValidationSessionArtifact artifact)
     {
@@ -1988,4 +2016,3 @@ public enum ValidationEvidenceStatus
     NotRun,
     NotApplicable,
 }
-

@@ -848,6 +848,35 @@ public sealed class SettingsPanelProjectionTests
     }
 
     [Fact]
+    public void Project_SnapshotValidationSummarySurfacesIncompleteTargetHdrColorSpace()
+    {
+        var snapshot = new OutputValidationArtifactSnapshot(
+            [
+                ArtifactWithFormatContract("Windows Photos") with
+                {
+                    TargetHdrEvidence = CompleteTargetHdrEvidence with
+                    {
+                        ColorSpace = "REPLACE_WITH_OBSERVED_TARGET_COLOR_SPACE",
+                    },
+                },
+            ],
+            []);
+
+        var projection = SettingsPanelProjection.Project(
+            new TestSettingsProvider
+            {
+                ExportColorFormat = "HDR10",
+                OutputTarget = OutputTarget.Folder,
+            },
+            CreateState(),
+            snapshot,
+            executionCapabilities: OutputProfileExecutionCapabilities.CompatibilityOnly);
+
+        Assert.Contains("Target-aware HDR evidence is incomplete", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("target-aware HDR evidence color space", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Project_SnapshotValidationSurfacesMatchedCurrentBuildEvidenceRow()
     {
         var snapshot = new OutputValidationArtifactSnapshot(

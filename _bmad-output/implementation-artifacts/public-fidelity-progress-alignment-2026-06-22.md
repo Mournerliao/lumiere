@@ -47,6 +47,8 @@ Evidence:
 - A focused implementation record exists at `_bmad-output/implementation-artifacts/10-3-carry-captured-target-context-into-output-feedback.md`.
 - Output validation artifacts now also require explicit target-aware color-space evidence before a manual session can apply HDR10 format/viewer proof, so a target name/bounds record without observed display color space remains incomplete.
 - A focused implementation record exists at `_bmad-output/implementation-artifacts/12-1-require-target-color-space-in-output-validation-evidence.md`.
+- Settings > Validation loaded-evidence summary now names incomplete target-aware HDR evidence fields such as missing observed target color space, so mixed-monitor/HDR validation prep no longer has to infer that blocker from runtime fallback text or raw JSON.
+- A focused implementation record exists at `_bmad-output/implementation-artifacts/12-1-surface-target-hdr-evidence-fields-in-summary.md`.
 
 Remaining blockers:
 
@@ -116,6 +118,7 @@ Evidence:
 - Next-run guidance now also respects profile-record output target scope, so a broad `Both` session cannot hide missing HDR10 `Folder` viewer evidence when the profile record only covered `Clipboard`.
 - Next-run guidance now also requires the named viewer's profile-specific evidence statuses to pass before treating that viewer target as covered; named but incomplete viewer rows stay visible as missing target-app work.
 - Output validation sample artifacts now keep target-aware HDR state/color-space/detail fields as explicit placeholders, and incomplete or placeholder target color-space evidence keeps the manual session incomplete for HDR10 JXR runtime gating.
+- The loaded-evidence summary now also surfaces incomplete target-aware HDR fields directly, keeping target-app compatibility review aligned with the stricter target-aware display-evidence prerequisite.
 
 Remaining blockers:
 
@@ -169,6 +172,8 @@ Evidence:
 - The durable output-validation sample now matches that loader contract by using a workspace-local `evidence\REPLACE_WITH_SCENARIO_SESSION_RECORD.md` placeholder instead of a repo-relative evidence path.
 - Target-aware color-space evidence is now required for output-validation manual sessions before they can apply HDR10 format/viewer proof.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-require-target-color-space-in-output-validation-evidence.md`.
+- The loaded-evidence summary now calls out missing target-aware HDR fields when no loaded artifact has complete target-aware evidence, including the observed target color-space field required for release evidence.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-surface-target-hdr-evidence-fields-in-summary.md`.
 
 Remaining blockers:
 
@@ -251,6 +256,7 @@ Evidence:
 - The same loaded-evidence summary now also calls out missing topology buckets, missing HDR10 viewer targets, and the next Windows validation run in readable text, reducing another cross-document inference step for keyboard, screen-reader, and long-text review flows.
 - The `Create draft` workflow now carries the same suggested topology, entry point, output target, and viewer scope into the generated artifact placeholders, reducing another handoff gap between the native validation surface and the edited JSON evidence file.
 - Output-validation sample/draft semantics now keep target-aware HDR state and target color space as manual-observation placeholders, reducing overclaim risk in keyboard/screen-reader review of validation evidence.
+- The existing compact loaded-evidence summary now also names incomplete target-aware HDR fields, improving keyboard/screen-reader review without adding another custom control or visual-only cue.
 - A focused implementation record exists at `_bmad-output/implementation-artifacts/13-2-structure-viewer-compatibility-evidence-for-accessibility.md`.
 
 Remaining blockers:
