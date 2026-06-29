@@ -127,6 +127,8 @@ Evidence:
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-surface-manual-session-fields-in-validation-summary.md`.
 - Workspace-local scenario markdown drafts now carry an explicit `Draft status: NOT RUN until...` sentinel, and the app loader rejects both that sentinel and unresolved result-choice rows such as `PASS / PASS with limitation / FAIL / NOT RUN`. Untouched `Create draft` output can therefore remain visible in the workspace without becoming loaded HDR10 viewer evidence.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-reject-unresolved-scenario-session-drafts.md`.
+- Markdown evidence load issues now include specific repair guidance for incomplete markers, including `REPLACE_WITH_*` placeholders, template-only language, the draft NOT RUN sentinel, and unresolved scenario result choices. The existing Settings validation record surfaces that guidance through ignored-file details without adding a new runtime gate state.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-surface-markdown-evidence-repair-guidance.md`.
 
 Remaining blockers:
 
@@ -177,6 +179,8 @@ Evidence:
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-require-workspace-local-scenario-evidence.md`.
 - Scenario-session markdown templates now include an explicit `Draft status: NOT RUN until...` sentinel, and the loader rejects that sentinel plus unresolved scenario result-choice rows. This keeps raw or generated Story `12-1` markdown drafts from counting as current-session evidence until a Windows validator replaces them with observed results.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-reject-unresolved-scenario-session-drafts.md`.
+- Workspace-local markdown evidence load issues now name the concrete repair steps still required before a linked scenario note can count as loaded evidence, reducing guesswork when Windows validators reload a generated draft that is still incomplete.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-surface-markdown-evidence-repair-guidance.md`.
 - The same loader now rejects non-workspace-local `evidencePaths` such as repo-relative `docs\...` review references or absolute paths outside the local validation workspace, so external notes cannot accidentally replace the app-local scenario-session evidence required for runtime validation state.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-reject-non-workspace-evidence-paths.md`.
 - The durable output-validation sample now matches that loader contract by using a workspace-local `evidence\REPLACE_WITH_SCENARIO_SESSION_RECORD.md` placeholder instead of a repo-relative evidence path.
@@ -275,6 +279,7 @@ Evidence:
 - The existing compact loaded-evidence summary now also names incomplete target-aware HDR fields, improving keyboard/screen-reader review without adding another custom control or visual-only cue.
 - That same loaded-evidence summary now also names incomplete manual-session fields such as missing `evidence paths`, improving keyboard/screen-reader review of scenario evidence gaps without adding another custom control.
 - The scenario-session draft now has a concise NOT RUN sentinel that appears in generated markdown and is rejected by the loader until removed after real observations are recorded, keeping the Settings validation surface precise for keyboard and screen-reader review without adding another native control.
+- Ignored-file details now carry specific markdown evidence repair guidance, so keyboard and screen-reader review can identify the next edit without opening the loader code or comparing the markdown template manually.
 - A focused implementation record exists at `_bmad-output/implementation-artifacts/13-2-structure-viewer-compatibility-evidence-for-accessibility.md`.
 
 Remaining blockers:

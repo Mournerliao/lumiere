@@ -432,11 +432,11 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
                     continue;
                 }
 
-                if (IsIncompleteMarkdownEvidence(content))
+                if (TryCreateIncompleteMarkdownEvidenceDetail(evidencePath, content, out var incompleteDetail))
                 {
                     yield return new OutputValidationArtifactLoadIssue(
                         artifactPath,
-                        $"Workspace-local markdown evidence is incomplete: {evidencePath}");
+                        incompleteDetail);
                 }
             }
         }
@@ -529,12 +529,52 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
             || extension.Equals(".markdown", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool IsIncompleteMarkdownEvidence(string content) =>
-        string.IsNullOrWhiteSpace(content)
-        || content.Contains("REPLACE_WITH_", StringComparison.OrdinalIgnoreCase)
-        || content.Contains("Template only", StringComparison.OrdinalIgnoreCase)
-        || content.Contains("Draft status: NOT RUN until", StringComparison.OrdinalIgnoreCase)
-        || content.Contains("PASS / PASS with limitation / FAIL / NOT RUN", StringComparison.OrdinalIgnoreCase);
+    private static bool TryCreateIncompleteMarkdownEvidenceDetail(
+        string evidencePath,
+        string content,
+        out string detail)
+    {
+        var fixes = CreateIncompleteMarkdownEvidenceFixes(content);
+        if (fixes.Count == 0)
+        {
+            detail = string.Empty;
+            return false;
+        }
+
+        detail = $"Workspace-local markdown evidence is incomplete: {evidencePath}. {string.Join(" ", fixes)}";
+        return true;
+    }
+
+    private static IReadOnlyList<string> CreateIncompleteMarkdownEvidenceFixes(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return ["Record observed Windows manual validation notes before using this file as evidence."];
+        }
+
+        var fixes = new List<string>();
+        if (content.Contains("REPLACE_WITH_", StringComparison.OrdinalIgnoreCase))
+        {
+            fixes.Add("Replace every REPLACE_WITH_* placeholder.");
+        }
+
+        if (content.Contains("Template only", StringComparison.OrdinalIgnoreCase))
+        {
+            fixes.Add("Replace template-only language with observed validation results.");
+        }
+
+        if (content.Contains("Draft status: NOT RUN until", StringComparison.OrdinalIgnoreCase))
+        {
+            fixes.Add("Remove the draft NOT RUN sentinel after recording observed Windows manual results.");
+        }
+
+        if (content.Contains("PASS / PASS with limitation / FAIL / NOT RUN", StringComparison.OrdinalIgnoreCase))
+        {
+            fixes.Add("Replace unresolved result choices with one observed status for each scenario.");
+        }
+
+        return fixes;
+    }
 
     private OutputValidationWorkspaceState EnsureWorkspace()
     {

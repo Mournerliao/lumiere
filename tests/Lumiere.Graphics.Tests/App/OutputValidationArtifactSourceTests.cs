@@ -163,12 +163,18 @@ public sealed class OutputValidationArtifactSourceTests
     }
 
     [Theory]
-    [InlineData("")]
-    [InlineData("- Tester: REPLACE_WITH_TESTER_NAME")]
-    [InlineData("Template only - not a real validation session")]
-    [InlineData("Draft status: NOT RUN until each status row is replaced with observed Windows manual validation evidence.")]
-    [InlineData("| Bright highlight stress | PASS / PASS with limitation / FAIL / NOT RUN |  |")]
-    public void Load_WhenWorkspacePrepared_RejectsIncompleteWorkspaceLocalMarkdownEvidence(string markdownContent)
+    [InlineData("", "Record observed Windows manual validation notes")]
+    [InlineData("- Tester: REPLACE_WITH_TESTER_NAME", "Replace every REPLACE_WITH_* placeholder")]
+    [InlineData("Template only - not a real validation session", "Replace template-only language")]
+    [InlineData(
+        "Draft status: NOT RUN until each status row is replaced with observed Windows manual validation evidence.",
+        "Remove the draft NOT RUN sentinel")]
+    [InlineData(
+        "| Bright highlight stress | PASS / PASS with limitation / FAIL / NOT RUN |  |",
+        "Replace unresolved result choices")]
+    public void Load_WhenWorkspacePrepared_RejectsIncompleteWorkspaceLocalMarkdownEvidence(
+        string markdownContent,
+        string expectedFix)
     {
         var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -200,6 +206,49 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Equal("C:\\Validation\\hdr10.json", issue.Path);
         Assert.Contains("Workspace-local markdown evidence is incomplete", issue.Detail, StringComparison.Ordinal);
         Assert.Contains("evidence\\hdr10-scenario-session.md", issue.Detail, StringComparison.Ordinal);
+        Assert.Contains(expectedFix, issue.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Load_WhenWorkspacePrepared_ReportsEveryIncompleteMarkdownEvidenceFix()
+    {
+        var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["C:\\Validation\\hdr10.json"] = (CreateArtifact("2026-06-24", "Windows Photos") with
+            {
+                EvidencePaths = ["evidence\\hdr10-scenario-session.md"],
+            }).ToJson(),
+            ["C:\\Validation\\evidence\\hdr10-scenario-session.md"] =
+                """
+                Draft status: NOT RUN until each status row is replaced with observed Windows manual validation evidence.
+                - Tester: REPLACE_WITH_TESTER_NAME
+                Template only - replace after validation.
+                | Bright highlight stress | PASS / PASS with limitation / FAIL / NOT RUN |  |
+                """,
+        };
+        var source = new FileOutputValidationArtifactSource(
+            "C:\\Validation",
+            "*.json",
+            directoryExists: directories.Contains,
+            fileExists: files.ContainsKey,
+            createDirectory: path => directories.Add(path),
+            enumerateFiles: (path, pattern) => path == "C:\\Validation" && pattern == "*.json"
+                ? ["C:\\Validation\\hdr10.json"]
+                : [],
+            readAllText: path => files[path],
+            writeAllText: (path, content) => files[path] = content,
+            resolveTemplateSourceText: () => "{ \"schemaVersion\": 4 }",
+            prepareWorkspace: true);
+
+        var snapshot = source.Load();
+
+        Assert.Empty(snapshot.Artifacts);
+        var issue = Assert.Single(snapshot.LoadIssues);
+        Assert.Contains("Replace every REPLACE_WITH_* placeholder", issue.Detail, StringComparison.Ordinal);
+        Assert.Contains("Replace template-only language", issue.Detail, StringComparison.Ordinal);
+        Assert.Contains("Remove the draft NOT RUN sentinel", issue.Detail, StringComparison.Ordinal);
+        Assert.Contains("Replace unresolved result choices", issue.Detail, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -243,6 +292,8 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Equal(result.DraftPath, issue.Path);
         Assert.Contains("Workspace-local markdown evidence is incomplete", issue.Detail, StringComparison.Ordinal);
         Assert.Contains("scenario-session.md", issue.Detail, StringComparison.Ordinal);
+        Assert.Contains("Remove the draft NOT RUN sentinel", issue.Detail, StringComparison.Ordinal);
+        Assert.Contains("Replace unresolved result choices", issue.Detail, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -699,10 +750,40 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Equal(ValidationEvidenceStatus.Limited, projection.Validation.Record.WindowsManualValidationStatus);
         Assert.Contains("1 output validation artifact", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Contains("1 file", projection.Validation.Record.WindowsManualValidationDetail);
+        Assert.Contains("artifact or evidence files", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Contains("bad.json", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Contains("JsonException", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Equal("harness/validation/output-validation.md", projection.Validation.Record.EvidenceDocumentPath);
         Assert.Equal("%LOCALAPPDATA%\\Lumiere\\validation\\output", projection.Validation.Record.ValidationWorkspacePath);
+        Assert.Equal("Build", projection.MainPanel.OutputProfile.StatusLabel);
+        Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
+    }
+
+    [Fact]
+    public void LoadedSnapshotSurfacesSpecificMarkdownEvidenceFixInSettingsValidationRecord()
+    {
+        var snapshot = new OutputValidationArtifactSnapshot(
+            [],
+            [
+                new(
+                    "C:\\Validation\\hdr10.json",
+                    "Workspace-local markdown evidence is incomplete: evidence\\hdr10-scenario-session.md. Remove the draft NOT RUN sentinel after recording observed Windows manual results."),
+            ]);
+        var settings = new TestSettingsProvider
+        {
+            ExportColorFormat = "HDR10",
+            OutputTarget = OutputTarget.Folder,
+        };
+
+        var projection = SettingsPanelProjection.Project(
+            settings,
+            CaptureSessionState.Idle(),
+            snapshot,
+            executionCapabilities: OutputProfileExecutionCapabilities.CompatibilityOnly);
+
+        Assert.Contains("hdr10.json", projection.Validation.Record.WindowsManualValidationDetail);
+        Assert.Contains("artifact or evidence files", projection.Validation.Record.WindowsManualValidationDetail);
+        Assert.Contains("Remove the draft NOT RUN sentinel", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Equal("Build", projection.MainPanel.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
     }

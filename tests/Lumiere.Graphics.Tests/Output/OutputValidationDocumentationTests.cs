@@ -19,6 +19,7 @@ public sealed class OutputValidationDocumentationTests
         Assert.Contains("Windows manual validation", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Every app-loaded artifact evidence path must resolve inside the same local validation workspace", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Draft status: NOT RUN until", document, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("specific repair guidance", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("repo-relative references", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("HDR10", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("P3", document, StringComparison.OrdinalIgnoreCase);
