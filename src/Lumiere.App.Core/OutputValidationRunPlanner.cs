@@ -115,7 +115,7 @@ public static class OutputValidationRunPlanner
             CollectMissingDisplayTopologies(artifacts),
             CollectMissingViewerTargets(profile, artifacts),
             CollectMissingRequiredValues(artifacts.SelectMany(artifact => artifact.EntryPointsTested), RequiredCaptureEntryPoints),
-            CollectMissingRequiredValues(artifacts.SelectMany(artifact => artifact.OutputTargetsTested), RequiredOutputTargets));
+            CollectMissingOutputTargets(profile, artifacts));
     }
 
     public static bool IsRecordedEvidenceValue(string? value)
@@ -169,6 +169,15 @@ public static class OutputValidationRunPlanner
             .ToArray();
     }
 
+    private static IReadOnlyList<string> CollectMissingOutputTargets(
+        OutputProfileContract profile,
+        IReadOnlyList<OutputValidationSessionArtifact> artifacts) =>
+        RequiredOutputTargets
+            .Where(targetLabel =>
+                !TryParseOutputTarget(targetLabel, out var target)
+                || !artifacts.Any(artifact => artifact.CoversProfileOutputTarget(profile.Kind, target)))
+            .ToArray();
+
     private static bool HasTopologyEvidence(
         IReadOnlyList<OutputValidationSessionArtifact> artifacts,
         params string[] needles) =>
@@ -208,4 +217,28 @@ public static class OutputValidationRunPlanner
     private static bool HasRecordedText(string? value, string needle) =>
         IsRecordedEvidenceValue(value)
         && value!.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0;
+
+    private static bool TryParseOutputTarget(string value, out OutputTarget target)
+    {
+        if (value.Equals("Clipboard", StringComparison.OrdinalIgnoreCase))
+        {
+            target = OutputTarget.Clipboard;
+            return true;
+        }
+
+        if (value.Equals("Folder", StringComparison.OrdinalIgnoreCase))
+        {
+            target = OutputTarget.Folder;
+            return true;
+        }
+
+        if (value.Equals("Both", StringComparison.OrdinalIgnoreCase))
+        {
+            target = OutputTarget.Both;
+            return true;
+        }
+
+        target = default;
+        return false;
+    }
 }

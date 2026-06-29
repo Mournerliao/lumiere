@@ -167,6 +167,8 @@ Use `templates/output-validation-session.schema-v4.sample.json` or the in-app `C
 
 Missing target-app versions now also count as incomplete manual evidence, not only as a review-surface gap. If `targetAppsTested` names a viewer or app but `targetAppVersions` does not carry a real version for it, Lumiere downgrades that artifact to incomplete manual evidence and the HDR10 JXR runtime gate remains blocked.
 
+Next-run guidance uses the same profile-aware target scope. A broad session-level `Both` value is only enough for a profile when that profile record does not narrow `outputTargetsCovered`. If an HDR10 record says it covered only `Clipboard`, Settings > Validation and generated draft hints must still ask for `Folder` evidence before the first HDR-preserved file-output path can be treated as covered.
+
 ## Manual Validation Scenarios
 
 1. Clipboard output to Paint, Photos, and Microsoft Edge.
