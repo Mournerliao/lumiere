@@ -341,6 +341,7 @@ public sealed class OutputValidationArtifactSourceTests
         var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
+            ["C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000.csv"] = "TimestampUtc,ProcessId,PrivateBytes",
             ["C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000-summary.json"] =
                 """
                 {
@@ -422,6 +423,69 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.DoesNotContain("resource-trend-Lumiere.App-pid7777-20260625-120000.csv", files[result.DraftPath!], StringComparison.Ordinal);
         Assert.Contains("| Private bytes | 1000000 | 1200000 | 200000 | 950000 | 1250000 | REPLACE_WITH_PASS_FAIL_LIMITATION | Imported from sampler summary. |", files[result.DraftPath!], StringComparison.Ordinal);
         Assert.Contains("after reviewing 180 imported sampler samples", files[result.DraftPath!], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CreateResourceTrendDraft_KeepsNotRunWhenImportedSummaryCsvIsMissing()
+    {
+        var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000-summary.json"] =
+                """
+                {
+                  "processId": 4242,
+                  "processName": "Lumiere.App",
+                  "durationSeconds": 900,
+                  "sampleIntervalSeconds": 5,
+                  "sampleCount": 180,
+                  "csvPath": "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000.csv",
+                  "metrics": {
+                    "handles": { "baseline": 100, "final": 104, "delta": 4, "min": 99, "max": 105 },
+                    "privateBytes": { "baseline": 1000000, "final": 1200000, "delta": 200000, "min": 950000, "max": 1250000 }
+                  }
+                }
+                """,
+        };
+        var source = new FileOutputValidationArtifactSource(
+            "C:\\Validation",
+            "*.json",
+            directoryExists: path => directories.Contains(path) || path == "C:\\Validation\\resource-trends",
+            fileExists: files.ContainsKey,
+            createDirectory: path => directories.Add(path),
+            enumerateFiles: (path, pattern) => path == "C:\\Validation\\resource-trends" && pattern == "*-summary.json"
+                ?
+                [
+                    "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000-summary.json",
+                ]
+                : [],
+            readAllText: path => files[path],
+            writeAllText: (path, content) => files[path] = content,
+            resolveTemplateSourceText: () => "{ \"schemaVersion\": 4 }",
+            getNow: () => new DateTimeOffset(2026, 06, 23, 11, 30, 00, TimeSpan.FromHours(8)),
+            prepareWorkspace: true);
+
+        var result = source.CreateResourceTrendDraft(
+            new ResourceTrendValidationDraftRequest(
+                "2.3.4+72c3be7",
+                OutputTarget.Both,
+                CaptureSessionState.Idle(),
+                4242));
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.DraftPath);
+        Assert.Contains(
+            "Public gate `Long-run lifecycle evidence`: NOT RUN until imported sampler evidence is complete",
+            files[result.DraftPath!],
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "CSV path is missing or unreadable: C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000.csv",
+            files[result.DraftPath!],
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "- Session classification: NOT RUN (imported sampler summary is incomplete:",
+            files[result.DraftPath!],
+            StringComparison.Ordinal);
     }
 
     [Fact]

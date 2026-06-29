@@ -66,7 +66,7 @@ public static class ResourceTrendValidationDraftFactory
             .Replace("- Public gate `Long-run lifecycle evidence`:", $"- Public gate `Long-run lifecycle evidence`: {CreatePublicGatePlaceholder(summary)}", StringComparison.Ordinal)
             .Replace("- Session classification: PASS / PASS with limitation / FAIL / NOT RUN", $"- Session classification: {CreateSessionClassificationPlaceholder(summary)}", StringComparison.Ordinal)
             .Replace("- Release impact:", "- Release impact: REPLACE_WITH_RELEASE_IMPACT", StringComparison.Ordinal)
-            .Replace("- Known limitations:", "- Known limitations: Draft created from current Lumiere session context. Replace with observed limitations after the run.", StringComparison.Ordinal)
+            .Replace("- Known limitations:", $"- Known limitations: {CreateKnownLimitationsPlaceholder(summary)}", StringComparison.Ordinal)
             .Replace("- Warm-up or stabilization notes:", $"- Warm-up or stabilization notes: {CreateSummaryScopeNote(request.ProcessId, summary)}", StringComparison.Ordinal)
             .Replace("- Follow-up stories / issues:", "- Follow-up stories / issues: 12-3, 10-3, 11-3, 13-2", StringComparison.Ordinal);
     }
@@ -119,12 +119,23 @@ public static class ResourceTrendValidationDraftFactory
     private static string CreatePublicGatePlaceholder(ResourceTrendSummaryArtifact? summary) =>
         summary is null
             ? "REPLACE_WITH_PASS_FAIL_LIMITATION"
-            : $"REPLACE_WITH_PASS_FAIL_LIMITATION after reviewing {summary.SampleCount} imported sampler samples";
+            : HasBlockingSummaryEvidenceGap(summary)
+                ? $"NOT RUN until imported sampler evidence is complete; {CreateSummaryEvidenceGapDetail(summary)}"
+                : $"REPLACE_WITH_PASS_FAIL_LIMITATION after reviewing {summary.SampleCount} imported sampler samples";
 
     private static string CreateSessionClassificationPlaceholder(ResourceTrendSummaryArtifact? summary) =>
         summary is null
             ? "NOT RUN"
-            : "REPLACE_WITH_PASS_FAIL_LIMITATION (sampler summary imported; human review required)";
+            : HasBlockingSummaryEvidenceGap(summary)
+                ? $"NOT RUN (imported sampler summary is incomplete: {CreateSummaryEvidenceGapDetail(summary)})"
+                : "REPLACE_WITH_PASS_FAIL_LIMITATION (sampler summary imported; human review required)";
+
+    private static string CreateKnownLimitationsPlaceholder(ResourceTrendSummaryArtifact? summary) =>
+        summary is null
+            ? "Draft created from current Lumiere session context. Replace with observed limitations after the run."
+            : HasBlockingSummaryEvidenceGap(summary)
+                ? $"Imported sampler summary is not yet countable release evidence: {CreateSummaryEvidenceGapDetail(summary)} Replace placeholders only after the CSV, summary JSON, cycle notes, and manual judgement are complete."
+                : "Imported sampler summary requires human review; replace with observed limitations after the run.";
 
     private static string NormalizeBuildVersion(string? buildVersion)
     {
@@ -211,9 +222,40 @@ public static class ResourceTrendValidationDraftFactory
             return "REPLACE_WITH_WARMUP_OR_STABILIZATION_NOTES";
         }
 
-        return summary.MatchesProcessId(processId)
+        var scopeNote = summary.MatchesProcessId(processId)
             ? $"Imported sampler summary matches current PID {summary.ProcessId}; still verify the run covered the intended 50+ / 100+ cycle plan."
             : $"Scope warning: imported sampler summary PID {summary.ProcessId} does not match current PID {processId}. Verify this summary belongs to the intended validation run before counting it.";
+        return HasBlockingSummaryEvidenceGap(summary)
+            ? $"{scopeNote} Evidence completeness warning: {CreateSummaryEvidenceGapDetail(summary)}"
+            : scopeNote;
+    }
+
+    private static bool HasBlockingSummaryEvidenceGap(ResourceTrendSummaryArtifact summary) =>
+        !summary.HasReadableCsvEvidence
+        || !summary.HasPrimaryProcessMetricCoverage;
+
+    private static string CreateSummaryEvidenceGapDetail(ResourceTrendSummaryArtifact summary)
+    {
+        var gaps = new List<string>();
+        if (!summary.HasRecordedCsvPath)
+        {
+            gaps.Add("CSV path is not recorded");
+        }
+        else if (summary.CsvPathStatus is ResourceTrendEvidencePathStatus.Missing)
+        {
+            gaps.Add($"CSV path is missing or unreadable: {summary.CsvPath}");
+        }
+        else if (summary.CsvPathStatus is ResourceTrendEvidencePathStatus.Unknown)
+        {
+            gaps.Add($"CSV path must be manually verified: {summary.CsvPath}");
+        }
+
+        if (!summary.HasPrimaryProcessMetricCoverage)
+        {
+            gaps.Add("sample count, handles, or private bytes coverage is incomplete");
+        }
+
+        return string.Join("; ", gaps);
     }
 
     private static string FormatOutputTarget(OutputTarget outputTarget) =>

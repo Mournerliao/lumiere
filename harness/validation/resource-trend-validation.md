@@ -55,6 +55,8 @@ Use these helpers to start a run faster, but still review the copied command bef
 
 If the workspace-local `resource-trends` folder already contains sampler `*-summary.json` files, `Create trend draft` prefers the latest readable summary whose PID matches the current Lumiere process. If no matching-PID summary exists, it may import the latest readable summary but marks the draft with a scope warning. Imported summaries fill the CSV path, summary JSON path, duration, sample interval, sample count context, and metric baseline/final/delta/min/max rows. Metric classification and session classification remain explicit `REPLACE_WITH_PASS_FAIL_LIMITATION` review fields so sampler output cannot accidentally become a passing public-release claim without human judgement.
 
+If the imported summary points to a missing or unreadable CSV path, omits the CSV path, or lacks primary process coverage such as sample count, handles, or private bytes, `Create trend draft` keeps the public gate and session classification at `NOT RUN`. Treat that draft as setup guidance only until the CSV, summary JSON, cycle notes, and manual judgement are complete in the same validation workspace.
+
 ## Sampler Command
 
 Example:
@@ -112,7 +114,7 @@ Minimum coverage:
 5. Copy the CSV path, summary JSON path, and relevant logs into the session record.
 6. Classify the run as `PASS`, `PASS with limitation`, `FAIL`, or `NOT RUN`.
 
-If you generate or refresh the draft after the sampler completes, verify that the imported summary paths, PID scope, and metric rows match the run you intend to count. A draft that contains a scope warning must not count toward Story `12-3` until the validator confirms that the imported summary belongs to the intended run. Keep the CSV and summary JSON files in `resource-trends\` and attach any additional screenshots, logs, or notes under the same validation workspace.
+If you generate or refresh the draft after the sampler completes, verify that the imported summary paths, PID scope, evidence-completeness warning, and metric rows match the run you intend to count. A draft that contains a scope warning or evidence-completeness warning must not count toward Story `12-3` until the validator confirms that the imported summary belongs to the intended run and that the linked CSV path is present. Keep the CSV and summary JSON files in `resource-trends\` and attach any additional screenshots, logs, or notes under the same validation workspace.
 
 ## How To Judge The Result
 

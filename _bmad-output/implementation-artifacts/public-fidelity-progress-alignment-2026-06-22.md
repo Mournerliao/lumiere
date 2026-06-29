@@ -181,10 +181,12 @@ Evidence:
 - `ResourceTrendSummaryArtifact` now parses the sampler `*-summary.json` shape, and `Create trend draft` imports the latest readable workspace-local summary into the markdown draft so CSV/summary paths and metric rows do not need to be copied by hand.
 - Imported sampler summaries still leave pass/fail/limitation classification as an explicit human review field, preserving the public-release gate boundary between raw telemetry and validated evidence.
 - Resource-trend summary import now prefers summaries whose PID matches the current Lumiere process and flags fallback imports with an explicit scope warning, reducing the chance that a stale or unrelated sampler run is mistaken for current release evidence.
+- Resource-trend summary imports now also check whether the linked CSV path exists and whether primary process coverage includes sample count, handles, and private bytes. Drafts with missing/unreadable CSV evidence or incomplete primary metrics keep the long-run gate and session classification at `NOT RUN` instead of offering a pass/fail placeholder.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-3-surface-resource-trend-workflow-in-settings.md`.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-3-create-resource-trend-draft-from-current-session.md`.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-3-import-resource-trend-summary-into-draft.md`.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-3-scope-resource-trend-summary-imports.md`.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-3-flag-incomplete-resource-trend-summary-imports.md`.
 
 Remaining blockers:
 

@@ -106,7 +106,10 @@ public sealed class ResourceTrendValidationDraftFactoryTests
             4242);
         var summary = ResourceTrendSummaryArtifact.FromJson(
             CreateSummaryJson(),
-            "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000-summary.json");
+            "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000-summary.json") with
+        {
+            CsvPathStatus = ResourceTrendEvidencePathStatus.Present,
+        };
 
         var document = ResourceTrendValidationDraftFactory.Create(
             request,
@@ -171,7 +174,10 @@ public sealed class ResourceTrendValidationDraftFactoryTests
             4242);
         var summary = ResourceTrendSummaryArtifact.FromJson(
             CreateSummaryJson(processId: 7777),
-            "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid7777-20260624-120000-summary.json");
+            "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid7777-20260624-120000-summary.json") with
+        {
+            CsvPathStatus = ResourceTrendEvidencePathStatus.Present,
+        };
 
         var document = ResourceTrendValidationDraftFactory.Create(
             request,
@@ -189,6 +195,87 @@ public sealed class ResourceTrendValidationDraftFactoryTests
             StringComparison.Ordinal);
         Assert.Contains(
             "Scope warning: imported sampler summary PID 7777 does not match current PID 4242",
+            document,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Create_KeepsSessionNotRunWhenImportedSamplerCsvIsMissing()
+    {
+        var request = new ResourceTrendValidationDraftRequest(
+            "2.3.4+72c3be7",
+            OutputTarget.Folder,
+            CaptureSessionState.Idle(),
+            4242);
+        var summary = ResourceTrendSummaryArtifact.FromJson(
+            CreateSummaryJson(),
+            "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000-summary.json") with
+        {
+            CsvPathStatus = ResourceTrendEvidencePathStatus.Missing,
+        };
+
+        var document = ResourceTrendValidationDraftFactory.Create(
+            request,
+            "C:\\Validation",
+            new DateTimeOffset(2026, 06, 24, 12, 30, 00, TimeSpan.FromHours(8)),
+            """
+            - Public gate `Long-run lifecycle evidence`:
+            - Warm-up or stabilization notes:
+            - Session classification: PASS / PASS with limitation / FAIL / NOT RUN
+            - Known limitations:
+            """,
+            summary);
+
+        Assert.Contains(
+            "Public gate `Long-run lifecycle evidence`: NOT RUN until imported sampler evidence is complete",
+            document,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "CSV path is missing or unreadable: C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000.csv",
+            document,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "- Session classification: NOT RUN (imported sampler summary is incomplete:",
+            document,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "Imported sampler summary is not yet countable release evidence",
+            document,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Create_KeepsSessionNotRunWhenImportedSamplerCsvWasNotVerified()
+    {
+        var request = new ResourceTrendValidationDraftRequest(
+            "2.3.4+72c3be7",
+            OutputTarget.Folder,
+            CaptureSessionState.Idle(),
+            4242);
+        var summary = ResourceTrendSummaryArtifact.FromJson(
+            CreateSummaryJson(),
+            "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000-summary.json");
+
+        var document = ResourceTrendValidationDraftFactory.Create(
+            request,
+            "C:\\Validation",
+            new DateTimeOffset(2026, 06, 24, 12, 30, 00, TimeSpan.FromHours(8)),
+            """
+            - Public gate `Long-run lifecycle evidence`:
+            - Session classification: PASS / PASS with limitation / FAIL / NOT RUN
+            """,
+            summary);
+
+        Assert.Contains(
+            "Public gate `Long-run lifecycle evidence`: NOT RUN until imported sampler evidence is complete",
+            document,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "CSV path must be manually verified: C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000.csv",
+            document,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "- Session classification: NOT RUN (imported sampler summary is incomplete:",
             document,
             StringComparison.Ordinal);
     }

@@ -12,6 +12,8 @@ public sealed record ResourceTrendSummaryArtifact(
     int SampleCount,
     IReadOnlyDictionary<string, ResourceTrendMetricSummary> Metrics)
 {
+    public ResourceTrendEvidencePathStatus CsvPathStatus { get; init; } = ResourceTrendEvidencePathStatus.Unknown;
+
     public static ResourceTrendSummaryArtifact FromJson(string json, string summaryPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
@@ -48,6 +50,18 @@ public sealed record ResourceTrendSummaryArtifact(
         && ProcessId > 0
         && ProcessId == processId;
 
+    public bool HasRecordedCsvPath =>
+        IsRecordedEvidenceValue(CsvPath);
+
+    public bool HasReadableCsvEvidence =>
+        HasRecordedCsvPath
+        && CsvPathStatus is ResourceTrendEvidencePathStatus.Present;
+
+    public bool HasPrimaryProcessMetricCoverage =>
+        SampleCount > 0
+        && TryGetMetric("handles") is not null
+        && TryGetMetric("privateBytes") is not null;
+
     public bool HasGpuCounterSamples =>
         HasNonZeroMax("gpuDedicatedUsageBytes")
         || HasNonZeroMax("gpuSharedUsageBytes")
@@ -65,6 +79,22 @@ public sealed record ResourceTrendSummaryArtifact(
         element.TryGetProperty(propertyName, out var value) && value.TryGetInt32(out var result)
             ? result
             : 0;
+
+    private static bool IsRecordedEvidenceValue(string? value)
+    {
+        var normalized = value?.Trim();
+        return !string.IsNullOrWhiteSpace(normalized)
+            && !normalized.Contains("REPLACE_WITH_", StringComparison.OrdinalIgnoreCase)
+            && !normalized.Contains("TBD", StringComparison.OrdinalIgnoreCase)
+            && !normalized.Contains("TODO", StringComparison.OrdinalIgnoreCase);
+    }
+}
+
+public enum ResourceTrendEvidencePathStatus
+{
+    Unknown,
+    Present,
+    Missing,
 }
 
 public sealed record ResourceTrendMetricSummary(

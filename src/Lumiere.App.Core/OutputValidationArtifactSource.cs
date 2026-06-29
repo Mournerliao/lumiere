@@ -877,7 +877,15 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         {
             try
             {
-                var summary = ResourceTrendSummaryArtifact.FromJson(readAllText(path), path);
+                var parsedSummary = ResourceTrendSummaryArtifact.FromJson(readAllText(path), path);
+                var summary = parsedSummary with
+                {
+                    CsvPathStatus = parsedSummary.HasRecordedCsvPath
+                        ? fileExists(parsedSummary.CsvPath)
+                            ? ResourceTrendEvidencePathStatus.Present
+                            : ResourceTrendEvidencePathStatus.Missing
+                        : ResourceTrendEvidencePathStatus.Missing,
+                };
                 latestAnyProcess ??= summary;
                 if (summary.MatchesProcessId(processId))
                 {
