@@ -112,6 +112,7 @@ Evidence:
 - HDR10 JXR runtime gating now requires every app-loaded artifact participating in the folder-output viewer gate to align with the current build token. A current-build artifact can no longer mask stale evidence for another named viewer.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/11-3-require-all-hdr10-viewer-evidence-current-build.md`.
 - Next-run guidance now also respects profile-record output target scope, so a broad `Both` session cannot hide missing HDR10 `Folder` viewer evidence when the profile record only covered `Clipboard`.
+- Next-run guidance now also requires the named viewer's profile-specific evidence statuses to pass before treating that viewer target as covered; named but incomplete viewer rows stay visible as missing target-app work.
 
 Remaining blockers:
 
@@ -155,6 +156,8 @@ Evidence:
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-carry-next-run-scope-into-validation-drafts.md`.
 - The next-run planner now calculates missing output targets through the requested profile's record-level scope rather than broad session-level `outputTargetsTested`, keeping draft guidance aligned with `outputTargetsCovered`.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-scope-next-run-output-targets-to-profile-records.md`.
+- The same next-run planner now keeps viewer targets missing until their required profile-specific evidence statuses pass, so incomplete HDR10 viewer rows keep guiding the next Windows run instead of disappearing after the viewer name is added.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-require-complete-viewer-evidence-in-next-run-guidance.md`.
 - `Create draft` now also writes a companion Story `12-1` scenario-session markdown draft under the local workspace `evidence\` folder and points the JSON draft's `evidencePaths` at it, closing the handoff gap between scenario notes and the runtime-loaded output-validation artifact.
 - The output-validation loader now requires workspace-local `evidence\...` paths to exist and workspace-local markdown evidence to be filled in before loading the JSON artifact, so a broken or still-template companion scenario-session link cannot advance the current evidence summary or runtime gates.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-require-workspace-local-scenario-evidence.md`.

@@ -38,9 +38,35 @@ public sealed class OutputValidationRunPlannerTests
         Assert.Empty(plan.MissingOutputTargets);
     }
 
+    [Fact]
+    public void Create_KeepsViewerTargetMissingUntilRequiredHdr10EvidencePasses()
+    {
+        var artifact = Hdr10Artifact(
+            outputTargetsTested: ["Folder"],
+            outputTargetsCovered: ["Folder"],
+            viewerEvidence:
+            [
+                PassingHdrViewer("Microsoft Paint"),
+                PassingHdrViewer("Windows Photos") with
+                {
+                    Hdr10MetadataStatus = OutputCompatibilityEvidenceStatus.NotRun,
+                },
+                PassingHdrViewer("Microsoft Edge"),
+            ]);
+
+        var plan = OutputValidationRunPlanner.Create(
+            [artifact],
+            OutputProfileContract.Hdr10Pq);
+
+        Assert.Equal(["Windows Photos"], plan.MissingViewerTargets);
+        var recommendation = Assert.IsType<string>(plan.CreateNextWindowsRunRecommendation());
+        Assert.Contains("Windows Photos", recommendation);
+    }
+
     private static OutputValidationSessionArtifact Hdr10Artifact(
         IReadOnlyList<string> outputTargetsTested,
-        IReadOnlyList<string> outputTargetsCovered) =>
+        IReadOnlyList<string> outputTargetsCovered,
+        IReadOnlyList<OutputViewerCompatibilityEvidence>? viewerEvidence = null) =>
         new(
             Date: "2026-06-29",
             Tester: "QA",
@@ -63,6 +89,7 @@ public sealed class OutputValidationRunPlannerTests
             [
                 new(
                     OutputProfileKind.Hdr10Pq,
+                    viewerEvidence ??
                     [
                         PassingHdrViewer("Microsoft Paint"),
                         PassingHdrViewer("Windows Photos"),

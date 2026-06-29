@@ -169,6 +169,8 @@ Missing target-app versions now also count as incomplete manual evidence, not on
 
 Next-run guidance uses the same profile-aware target scope. A broad session-level `Both` value is only enough for a profile when that profile record does not narrow `outputTargetsCovered`. If an HDR10 record says it covered only `Clipboard`, Settings > Validation and generated draft hints must still ask for `Folder` evidence before the first HDR-preserved file-output path can be treated as covered.
 
+Viewer-target guidance also requires complete profile-specific evidence, not just a recorded viewer name. For HDR10, a viewer remains missing from the next-run plan until artifact handling, visual match, HDR preservation, and HDR10 metadata recognition all pass for that viewer. `NotRun`, `Limited`, or `Fail` rows stay visible as work for the next Windows manual run.
+
 ## Manual Validation Scenarios
 
 1. Clipboard output to Paint, Photos, and Microsoft Edge.

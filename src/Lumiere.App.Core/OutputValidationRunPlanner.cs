@@ -147,7 +147,9 @@ public static class OutputValidationRunPlanner
         var covered = artifacts
             .SelectMany(artifact => artifact.OutputProfileRecords
                 .Where(record => record.ProfileKind == profile.Kind)
-                .SelectMany(record => record.ViewerEvidence.Select(viewer => viewer.Name)))
+                .SelectMany(record => record.ViewerEvidence
+                    .Where(viewer => HasCompleteViewerEvidence(profile.Kind, viewer))
+                    .Select(viewer => viewer.Name)))
             .Where(IsRecordedEvidenceValue)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -155,6 +157,28 @@ public static class OutputValidationRunPlanner
             .Select(viewer => viewer.Name)
             .Where(name => !covered.Contains(name))
             .ToArray();
+    }
+
+    private static bool HasCompleteViewerEvidence(
+        OutputProfileKind profileKind,
+        OutputViewerCompatibilityEvidence viewer)
+    {
+        if (!IsRecordedEvidenceValue(viewer.Name)
+            || viewer.ArtifactHandlingStatus is not OutputCompatibilityEvidenceStatus.Pass
+            || viewer.VisualMatchStatus is not OutputCompatibilityEvidenceStatus.Pass)
+        {
+            return false;
+        }
+
+        return profileKind switch
+        {
+            OutputProfileKind.Hdr10Pq =>
+                viewer.HdrPreservationStatus is OutputCompatibilityEvidenceStatus.Pass
+                && viewer.Hdr10MetadataStatus is OutputCompatibilityEvidenceStatus.Pass,
+            OutputProfileKind.DisplayP3 =>
+                viewer.HdrPreservationStatus is OutputCompatibilityEvidenceStatus.Pass,
+            _ => true,
+        };
     }
 
     private static IReadOnlyList<string> CollectMissingRequiredValues(
