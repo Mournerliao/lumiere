@@ -377,6 +377,11 @@ public sealed record TargetAwareHdrValidationEvidence(
             yield return "HDR state";
         }
 
+        if (OutputValidationManualEvidenceFields.IsMissing(ColorSpace))
+        {
+            yield return "color space";
+        }
+
         if (OutputValidationManualEvidenceFields.IsMissing(Detail))
         {
             yield return "detail";

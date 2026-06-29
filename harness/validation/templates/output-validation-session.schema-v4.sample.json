@@ -7,14 +7,12 @@
   "device": "REPLACE_WITH_DEVICE_MODEL",
   "gpu": "REPLACE_WITH_GPU_MODEL_AND_DRIVER",
   "displaySetup": "REPLACE_WITH_FULL_DISPLAY_SETUP including one Display Topology Matrix bucket from hdr-sdr-validation-scenarios.md",
-  "hdrState": "Windows HDR enabled on the active capture target display",
+  "hdrState": "REPLACE_WITH_OBSERVED_WINDOWS_HDR_STATE",
   "dpiScales": [
-    "150%"
+    "REPLACE_WITH_DPI_SCALE"
   ],
   "entryPointsTested": [
-    "Main panel",
-    "Tray menu",
-    "Global hotkey"
+    "REPLACE_WITH_ENTRY_POINT"
   ],
   "outputTargetsTested": [
     "Folder"
@@ -44,7 +42,7 @@
   ],
   "resultSummary": "Template only: replace with the observed Windows manual validation result before using this artifact as evidence.",
   "evidencePaths": [
-    "harness/validation/evidence/REPLACE_WITH_SESSION_RECORD.md"
+    "evidence\\REPLACE_WITH_SCENARIO_SESSION_RECORD.md"
   ],
   "knownLimitations": [
     "Template only: remove or replace after validation."
@@ -53,6 +51,7 @@
     "Template only: remove or replace after validation."
   ],
   "_comment_displaySetup": "Name the tested topology bucket verbatim when possible, for example \"Topology: Mixed HDR + SDR multi-monitor desktop; HDR primary, SDR secondary\". The loaded-evidence summary uses this to show missing display topology buckets.",
+  "_comment_evidencePaths": "Prefer a workspace-local scenario-session markdown record under evidence\\, generated from templates\\hdr-sdr-validation-session-template.md or created by Lumiere's Create draft action.",
   "_comment_outputTargetsTested": "Use \"Folder\" for HDR10 JXR file-output evidence. Use \"Both\" only when the same session explicitly validates both clipboard and folder behavior. Clipboard-only evidence must not be treated as HDR10 JXR folder-output proof.",
   "outputProfileRecords": [
     {
@@ -131,8 +130,8 @@
     "width": 3840,
     "height": 2160,
     "matchKind": "DesktopBounds",
-    "hdrState": "Active",
-    "colorSpace": "RgbFullG2084NoneP2020",
-    "detail": "Replace with target-aware HDR detection evidence for the active capture target display."
+    "hdrState": "REPLACE_WITH_OBSERVED_TARGET_HDR_STATE",
+    "colorSpace": "REPLACE_WITH_OBSERVED_TARGET_COLOR_SPACE",
+    "detail": "REPLACE_WITH_TARGET_HDR_VALIDATION_DETAIL for the active capture target display."
   }
 }

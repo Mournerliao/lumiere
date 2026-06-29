@@ -383,6 +383,46 @@ public sealed class OutputValidationSessionArtifactTests
     }
 
     [Fact]
+    public void ApplyTo_TreatsMissingTargetAwareColorSpaceAsIncompleteManualSession()
+    {
+        var artifact = CreateArtifact(
+            [
+                new(
+                    OutputProfileKind.Hdr10Pq,
+                    [
+                        PassingHdrViewer("Microsoft Paint"),
+                        PassingHdrViewer("Windows Photos"),
+                        PassingHdrViewer("Microsoft Edge"),
+                    ])
+                {
+                    FormatContract = CompleteHdr10Contract,
+                },
+            ]) with
+        {
+            TargetHdrEvidence = CompleteTargetHdrEvidence with
+            {
+                ColorSpace = "REPLACE_WITH_OBSERVED_TARGET_COLOR_SPACE",
+            },
+        };
+        var contract = OutputProfileContract.Hdr10Pq with
+        {
+            IsExecutable = true,
+            FidelityMode = OutputFidelityMode.HdrPreserved,
+        };
+
+        var updated = artifact.ApplyTo(contract);
+
+        Assert.False(updated.HasCompleteFormatContract);
+        Assert.All(
+            updated.ViewerEvidence,
+            viewer =>
+            {
+                Assert.Equal(OutputCompatibilityEvidenceStatus.Limited, viewer.ArtifactHandlingStatus);
+                Assert.Contains("target-aware HDR evidence color space", viewer.Detail, StringComparison.OrdinalIgnoreCase);
+            });
+    }
+
+    [Fact]
     public void ApplyTo_TreatsMissingTargetAppVersionsAsIncompleteManualSession()
     {
         var artifact = CreateArtifact(

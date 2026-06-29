@@ -43,6 +43,15 @@ public sealed class OutputValidationDocumentationTests
         Assert.Equal(
             ["Microsoft Paint", "Windows Photos", "Microsoft Edge"],
             artifact.OutputProfileRecords.Single().ViewerEvidence.Select(viewer => viewer.Name).ToArray());
+        Assert.Equal(["evidence\\REPLACE_WITH_SCENARIO_SESSION_RECORD.md"], artifact.EvidencePaths);
+        var targetHdrEvidence = artifact.TargetHdrEvidence
+            ?? throw new InvalidOperationException("Template must include target-aware HDR evidence.");
+        Assert.Contains("REPLACE_WITH_OBSERVED_TARGET_HDR_STATE", targetHdrEvidence.HdrState, StringComparison.Ordinal);
+        Assert.Contains(
+            "REPLACE_WITH_OBSERVED_TARGET_COLOR_SPACE",
+            targetHdrEvidence.ColorSpace ?? string.Empty,
+            StringComparison.Ordinal);
+        Assert.Contains("REPLACE_WITH_TARGET_HDR_VALIDATION_DETAIL", targetHdrEvidence.Detail, StringComparison.Ordinal);
 
         var updated = artifact.ApplyTo(OutputProfileContract.Hdr10Pq with
         {
