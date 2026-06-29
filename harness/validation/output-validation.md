@@ -121,7 +121,7 @@ The same settings surface now also summarizes the currently loaded evidence for 
 - recommended next native guide or action for those missing checklist groups
 - a concrete next Windows run suggestion combining the next uncovered entry point, display topology, output target, and HDR10 viewer target set
 - known limitations and follow-up stories/issues carried by the loaded artifacts
-- ignored-file warnings when invalid JSON or schema problems were skipped during load
+- ignored-file warnings when invalid JSON, schema problems, or rejected companion evidence were skipped during load; when valid artifacts also load, the first rejected file's repair guidance stays visible in the gap text while the latest valid artifact remains openable for review
 - workspace-readiness guidance when the local validation folder exists but is not yet usable
 - direct open access to the latest loaded evidence file when the current session has one
 

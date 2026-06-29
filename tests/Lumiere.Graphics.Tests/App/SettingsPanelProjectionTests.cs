@@ -848,6 +848,52 @@ public sealed class SettingsPanelProjectionTests
     }
 
     [Fact]
+    public void Project_SnapshotValidationSummaryKeepsRejectedEvidenceRepairVisibleWhenValidArtifactLoads()
+    {
+        var validArtifact = ArtifactWithFormatContract("Windows Photos") with
+        {
+            Date = "2026-06-22",
+            ResultSummary = "Windows Photos validation passed with pending Microsoft Edge follow-up.",
+        };
+        var snapshot = new OutputValidationArtifactSnapshot(
+            [validArtifact],
+            [
+                new(
+                    "C:\\Validation\\output-validation-draft-2026-06-29-hdr10-folder.json",
+                    "Workspace-local markdown evidence is incomplete: evidence\\draft-scenario-session.md. Remove the draft NOT RUN sentinel after recording observed Windows manual results."),
+            ])
+        {
+            ArtifactReferences =
+            [
+                new OutputValidationArtifactReference(
+                    "C:\\Validation\\windows-photos.json",
+                    validArtifact),
+            ],
+        };
+
+        var projection = SettingsPanelProjection.Project(
+            new TestSettingsProvider
+            {
+                ExportColorFormat = "HDR10",
+                OutputTarget = OutputTarget.Folder,
+            },
+            CreateState(),
+            snapshot,
+            executionCapabilities: OutputProfileExecutionCapabilities.CompatibilityOnly);
+
+        Assert.Equal(ValidationEvidenceStatus.Limited, projection.Validation.EvidenceSummary.Status);
+        Assert.Contains("1 artifact", projection.Validation.EvidenceSummary.Summary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("1 file", projection.Validation.EvidenceSummary.Summary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("output-validation-draft", projection.Validation.EvidenceSummary.Summary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Ignored files must be fixed", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Remove the draft NOT RUN sentinel", projection.Validation.EvidenceSummary.GapDetail, StringComparison.Ordinal);
+        Assert.True(projection.Validation.EvidenceSummary.CanOpenLatestArtifact);
+        Assert.Equal("C:\\Validation\\windows-photos.json", projection.Validation.EvidenceSummary.LatestArtifactPath);
+        Assert.Equal("Build", projection.MainPanel.OutputProfile.StatusLabel);
+        Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
+    }
+
+    [Fact]
     public void Project_SnapshotValidationSummarySurfacesIncompleteTargetHdrColorSpace()
     {
         var snapshot = new OutputValidationArtifactSnapshot(

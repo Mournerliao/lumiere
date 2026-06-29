@@ -1079,6 +1079,8 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Contains("1 file", summary.Summary, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("bad.json", summary.Summary, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Ignored files must be fixed", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("bad.json", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("JsonException: invalid JSON", summary.GapDetail, StringComparison.Ordinal);
         Assert.Equal("C:\\Validation\\windows-photos.json", summary.LatestArtifactPath);
         Assert.True(summary.CanOpenLatestArtifact);
     }

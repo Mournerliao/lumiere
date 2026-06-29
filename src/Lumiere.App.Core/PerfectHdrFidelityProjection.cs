@@ -895,7 +895,7 @@ public static class PerfectHdrFidelityProjection
             : $"Latest artifact: {FormatArtifactHeader(latestArtifact)}. {NormalizeSentence(latestArtifact.ResultSummary)}";
         var loadIssueSummary = loadIssues.Count == 0
             ? string.Empty
-            : $" {loadIssues.Count} file(s) were ignored during load. First issue: {Path.GetFileName(loadIssues[0].Path)}: {loadIssues[0].Detail}";
+            : $" {loadIssues.Count} file(s) were ignored during load. {DescribeFirstLoadIssue(loadIssues[0])}";
 
         return new ValidationEvidenceSummaryProjection(
             "Loaded evidence",
@@ -916,18 +916,20 @@ public static class PerfectHdrFidelityProjection
         IReadOnlyList<OutputValidationArtifactLoadIssue> loadIssues)
     {
         var firstIssue = loadIssues[0];
-        var firstIssueFileName = Path.GetFileName(firstIssue.Path);
         return new ValidationEvidenceSummaryProjection(
             "Loaded evidence",
             ValidationEvidenceStatus.NotRun,
             $"{loadIssues.Count} validation artifact or evidence file(s) were found but none loaded for this session. Runtime gates stay blocked until ignored files are fixed and reloaded.",
             "Coverage: none loaded; ignored files do not count as Windows manual evidence.",
-            $"Next step: fix ignored artifact or evidence files, then reload evidence. First issue: {firstIssueFileName}: {firstIssue.Detail}")
+            $"Next step: fix ignored artifact or evidence files, then reload evidence. {DescribeFirstLoadIssue(firstIssue)}")
         {
             BuildAlignment = ValidationEvidenceBuildAlignmentProjection.Empty,
             TargetAppVersionEvidence = ValidationEvidenceTargetAppVersionProjection.Empty,
         };
     }
+
+    private static string DescribeFirstLoadIssue(OutputValidationArtifactLoadIssue issue) =>
+        $"First issue: {Path.GetFileName(issue.Path)}: {issue.Detail}";
 
     private static ValidationEvidenceRowProjection ProjectCurrentBuildEvidenceRow(
         ValidationEvidenceBuildAlignmentProjection buildAlignment) =>
@@ -1108,7 +1110,7 @@ public static class PerfectHdrFidelityProjection
 
         if (loadIssues.Count > 0)
         {
-            detailParts.Add("Ignored files must be fixed before counting this session as release evidence.");
+            detailParts.Add($"Ignored files must be fixed before counting this session as release evidence. {DescribeFirstLoadIssue(loadIssues[0])}");
         }
 
         if (detailParts.Count == 0)
