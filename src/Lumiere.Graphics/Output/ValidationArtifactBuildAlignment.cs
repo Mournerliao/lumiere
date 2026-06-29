@@ -73,6 +73,64 @@ public sealed record ValidationArtifactBuildAlignment(
             artifactCommit);
     }
 
+    public static ValidationArtifactBuildAlignment EvaluateAll(
+        string? buildVersion,
+        IEnumerable<OutputValidationSessionArtifact> artifacts)
+    {
+        ArgumentNullException.ThrowIfNull(artifacts);
+
+        var artifactArray = artifacts.ToArray();
+        if (artifactArray.Length == 0)
+        {
+            return NotChecked;
+        }
+
+        var expectedCommit = ExtractBuildCommitToken(buildVersion);
+        if (string.IsNullOrWhiteSpace(expectedCommit))
+        {
+            return new ValidationArtifactBuildAlignment(
+                ValidationArtifactBuildAlignmentStatus.Unknown,
+                "The current app build does not expose a commit token, so Lumiere cannot prove whether every loaded evidence artifact matches this exact build.",
+                NormalizeBuildVersion(buildVersion),
+                null);
+        }
+
+        var artifactCommits = artifactArray
+            .Select(artifact => new
+            {
+                Field = NormalizeEvidenceField(artifact.BuildCommit, "unknown build"),
+                Commit = ExtractArtifactCommitToken(artifact.BuildCommit),
+            })
+            .ToArray();
+
+        var missingArtifactCommit = artifactCommits.FirstOrDefault(artifact => string.IsNullOrWhiteSpace(artifact.Commit));
+        if (missingArtifactCommit is not null)
+        {
+            return new ValidationArtifactBuildAlignment(
+                ValidationArtifactBuildAlignmentStatus.Unknown,
+                $"At least one loaded evidence artifact does not record a comparable build commit, so current-build alignment remains unknown for the full evidence set. Current build token: {expectedCommit}. Evidence build field: {missingArtifactCommit.Field}.",
+                expectedCommit,
+                missingArtifactCommit.Field);
+        }
+
+        var staleArtifactCommit = artifactCommits.FirstOrDefault(artifact =>
+            !string.Equals(expectedCommit, artifact.Commit, StringComparison.OrdinalIgnoreCase));
+        if (staleArtifactCommit is not null)
+        {
+            return new ValidationArtifactBuildAlignment(
+                ValidationArtifactBuildAlignmentStatus.StaleForCurrentBuild,
+                $"At least one loaded evidence artifact is stale for the current build. Current build token: {expectedCommit}; stale evidence token: {staleArtifactCommit.Commit}.",
+                expectedCommit,
+                staleArtifactCommit.Commit);
+        }
+
+        return new ValidationArtifactBuildAlignment(
+            ValidationArtifactBuildAlignmentStatus.MatchedCurrentBuild,
+            $"Every loaded evidence artifact matches the current build token ({expectedCommit}).",
+            expectedCommit,
+            expectedCommit);
+    }
+
     private static DateOnly ParseArtifactDate(string? value) =>
         DateOnly.TryParse(value, out var parsed)
             ? parsed

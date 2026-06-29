@@ -109,6 +109,8 @@ Evidence:
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/11-3-carry-target-app-version-evidence-into-viewer-rows.md`.
 - Those same viewer rows now also state the output target scope they actually prove, preferring record-level `outputTargetsCovered` over broad session-level scope so reviewers can see whether the viewer evidence applies to `Folder`, `Clipboard`, or `Both` without cross-checking JSON.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/11-3-carry-output-target-scope-into-viewer-rows.md`.
+- HDR10 JXR runtime gating now requires every app-loaded artifact participating in the folder-output viewer gate to align with the current build token. A current-build artifact can no longer mask stale evidence for another named viewer.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/11-3-require-all-hdr10-viewer-evidence-current-build.md`.
 
 Remaining blockers:
 

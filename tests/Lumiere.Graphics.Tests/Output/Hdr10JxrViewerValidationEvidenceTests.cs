@@ -123,6 +123,24 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
     }
 
     [Fact]
+    public void FromArtifacts_WithCurrentBuildVersion_BlocksWhenAnyParticipatingArtifactIsStale()
+    {
+        var artifacts = RequiredHdrViewers
+            .Select((viewer, index) => Hdr10Artifact(
+                viewer,
+                metadataStatus: OutputCompatibilityEvidenceStatus.Pass,
+                includeFormatContract: index == 0,
+                buildCommit: index == 1 ? "c0ffee0" : "d54155c"))
+            .ToArray();
+
+        var evidence = Hdr10JxrViewerValidationEvidence.FromArtifacts(artifacts, "2.3.4+d54155c");
+
+        Assert.False(evidence.IsComplete);
+        Assert.False(evidence.HasCurrentBuildAlignment);
+        Assert.Contains(evidence.Blockers, blocker => blocker.Contains("stale", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void FromArtifacts_IgnoresClipboardOnlyArtifactsForHdr10JxrFolderReleaseGate()
     {
         var artifacts = RequiredHdrViewers
@@ -190,11 +208,12 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
         OutputValidationEvidenceSource evidenceSource = OutputValidationEvidenceSource.WindowsManual,
         string outputTarget = "Folder",
         IReadOnlyList<string>? recordOutputTargetsCovered = null,
-        bool includeTargetAppVersion = true) =>
+        bool includeTargetAppVersion = true,
+        string buildCommit = "d54155c") =>
         new(
             Date: "2026-06-22",
             Tester: "QA",
-            BuildCommit: "d54155c",
+            BuildCommit: buildCommit,
             WindowsVersion: "Windows 11 24H2",
             Device: "HDR workstation",
             Gpu: "Test GPU",

@@ -33,7 +33,7 @@ public sealed record Hdr10JxrViewerValidationEvidence(
         var artifactArray = artifacts
             .Where(artifact => artifact.CoversProfileOutputTarget(OutputProfileKind.Hdr10Pq, OutputTarget.Folder))
             .ToArray();
-        var buildAlignment = ValidationArtifactBuildAlignment.Evaluate(currentBuildVersion, artifactArray);
+        var buildAlignment = ValidationArtifactBuildAlignment.EvaluateAll(currentBuildVersion, artifactArray);
         var requiresCurrentBuildAlignment = !string.IsNullOrWhiteSpace(currentBuildVersion);
         var hasCurrentBuildAlignment = !requiresCurrentBuildAlignment || buildAlignment.MatchesCurrentBuild;
         var evaluatedProfile = OutputValidationSessionArtifact.ApplyAllTo(

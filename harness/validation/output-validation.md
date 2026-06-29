@@ -131,6 +131,7 @@ For the HDR10 JXR release path, current-build alignment is now part of the runti
 - when Lumiere can compare the current build token against the loaded HDR10 evidence, stale evidence must keep HDR10 at `PendingValidation`
 - complete but stale artifacts must not promote HDR10 into a `Ready` / executable session
 - only current-build-aligned manual evidence may unlock the first HDR-preserved file-output path
+- every app-loaded artifact that participates in the HDR10 JXR folder-output viewer gate must align with the current build token; a current artifact for one named viewer must not mask stale evidence for another named viewer
 
 `Create draft` is intentionally a workflow accelerator, not a release-evidence shortcut. Lumiere pre-fills only context it already knows for the current session, such as:
 
