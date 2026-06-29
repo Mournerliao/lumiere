@@ -486,12 +486,14 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
             var evidenceDirectory = Path.GetFullPath(workspace.EvidenceDirectoryPath);
             if (!IsPathInsideDirectory(candidate, evidenceDirectory))
             {
+                issueDetail = $"Evidence path must stay inside the local validation workspace evidence directory: {trimmed}";
                 return false;
             }
 
             if (!Path.IsPathFullyQualified(trimmed)
                 && !StartsWithEvidenceSegment(trimmed))
             {
+                issueDetail = $"Evidence path must be workspace-local and start with evidence\\: {trimmed}";
                 return false;
             }
 

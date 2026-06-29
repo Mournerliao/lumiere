@@ -89,6 +89,46 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Contains("evidence\\missing-scenario-session.md", issue.Detail, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("docs\\validation\\evidence\\hdr10-session.md", "inside the local validation workspace evidence directory")]
+    [InlineData("evidence2\\..\\evidence\\hdr10-session.md", "start with evidence\\")]
+    [InlineData("C:\\Other\\evidence\\hdr10-session.md", "inside the local validation workspace evidence directory")]
+    public void Load_WhenWorkspacePrepared_RejectsNonWorkspaceLocalEvidencePath(
+        string evidencePath,
+        string expectedIssueDetail)
+    {
+        var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["C:\\Validation\\hdr10.json"] = (CreateArtifact("2026-06-24", "Windows Photos") with
+            {
+                EvidencePaths = [evidencePath],
+            }).ToJson(),
+            [evidencePath] = "# External notes should not count as app-loaded evidence",
+        };
+        var source = new FileOutputValidationArtifactSource(
+            "C:\\Validation",
+            "*.json",
+            directoryExists: directories.Contains,
+            fileExists: files.ContainsKey,
+            createDirectory: path => directories.Add(path),
+            enumerateFiles: (path, pattern) => path == "C:\\Validation" && pattern == "*.json"
+                ? ["C:\\Validation\\hdr10.json"]
+                : [],
+            readAllText: path => files[path],
+            writeAllText: (path, content) => files[path] = content,
+            resolveTemplateSourceText: () => "{ \"schemaVersion\": 4 }",
+            prepareWorkspace: true);
+
+        var snapshot = source.Load();
+
+        Assert.Empty(snapshot.Artifacts);
+        var issue = Assert.Single(snapshot.LoadIssues);
+        Assert.Equal("C:\\Validation\\hdr10.json", issue.Path);
+        Assert.Contains(expectedIssueDetail, issue.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(evidencePath, issue.Detail, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Load_WhenWorkspacePrepared_LoadsArtifactWhenWorkspaceLocalEvidenceExists()
     {
@@ -503,7 +543,9 @@ public sealed class OutputValidationArtifactSourceTests
                 DisplaySetup = "HDR primary, SDR secondary",
                 DpiScales = ["150%"],
                 EntryPointsTested = ["Tray menu"],
+                EvidencePaths = ["evidence\\existing-session.md"],
             }).ToJson(),
+            ["C:\\Validation\\evidence\\existing-session.md"] = "# Existing Windows validation notes",
         };
         var source = new FileOutputValidationArtifactSource(
             "C:\\Validation",

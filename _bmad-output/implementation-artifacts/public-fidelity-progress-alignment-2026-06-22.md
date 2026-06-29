@@ -153,6 +153,8 @@ Evidence:
 - `Create draft` now also writes a companion Story `12-1` scenario-session markdown draft under the local workspace `evidence\` folder and points the JSON draft's `evidencePaths` at it, closing the handoff gap between scenario notes and the runtime-loaded output-validation artifact.
 - The output-validation loader now requires workspace-local `evidence\...` paths to exist and workspace-local markdown evidence to be filled in before loading the JSON artifact, so a broken or still-template companion scenario-session link cannot advance the current evidence summary or runtime gates.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-require-workspace-local-scenario-evidence.md`.
+- The same loader now rejects non-workspace-local `evidencePaths` such as repo-relative `docs\...` review references or absolute paths outside the local validation workspace, so external notes cannot accidentally replace the app-local scenario-session evidence required for runtime validation state.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-reject-non-workspace-evidence-paths.md`.
 
 Remaining blockers:
 
