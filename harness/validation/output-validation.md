@@ -75,6 +75,8 @@ Workspace-local companion evidence is now part of that loading contract. Every a
 
 The loaded-evidence summary names incomplete target-aware HDR fields when no loaded artifact has a complete target-aware record. For example, if the JSON still contains `REPLACE_WITH_OBSERVED_TARGET_COLOR_SPACE`, Settings > Validation should show that `target-aware HDR evidence color space` is missing. This summary text is guidance for fixing the artifact; it is not a PASS condition and does not replace Windows manual display validation.
 
+The HDR10 JXR viewer gate uses the same target-aware field vocabulary in its blockers. A loaded artifact with placeholder target color-space evidence must keep HDR10 at `Validate` / fallback state and should report the missing `color space` field before the validator reruns or edits the artifact.
+
 On startup, Lumiere now also prepares the local validation workspace under `%LOCALAPPDATA%\Lumiere\validation\output\`. It seeds:
 
 - `templates\output-validation-session.schema-v4.sample.json` as the local copy-ready sample

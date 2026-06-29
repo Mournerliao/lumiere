@@ -47,6 +47,7 @@ public sealed record Hdr10JxrViewerValidationEvidence(
         var viewerEvidence = evaluatedProfile.ViewerEvidence.ToArray();
         var hasArtifacts = artifactArray.Length > 0;
         var hasCompleteTargetAwareHdrEvidence = artifactArray.Any(ArtifactHasCompleteTargetAwareHdrEvidence);
+        var missingTargetAwareHdrEvidenceFields = CollectMissingTargetAwareHdrEvidenceFields(artifactArray);
         var missingTargetAppVersions = artifactArray
             .SelectMany(artifact => artifact.GetMissingTargetAppVersions())
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -87,7 +88,9 @@ public sealed record Hdr10JxrViewerValidationEvidence(
 
         if (!hasCompleteTargetAwareHdrEvidence)
         {
-            blockers.Add("Complete target-aware HDR evidence is missing.");
+            blockers.Add(missingTargetAwareHdrEvidenceFields.Length == 0
+                ? "Complete target-aware HDR evidence is missing."
+                : $"Complete target-aware HDR evidence is missing: {FormatNames(missingTargetAwareHdrEvidenceFields)}.");
         }
 
         if (!hasCompleteTargetAppVersionEvidence)
@@ -126,6 +129,24 @@ public sealed record Hdr10JxrViewerValidationEvidence(
     private static bool ArtifactHasCompleteTargetAwareHdrEvidence(OutputValidationSessionArtifact artifact) =>
         artifact.TargetHdrEvidence is { } targetEvidence
         && !targetEvidence.GetMissingFields().Any();
+
+    private static string[] CollectMissingTargetAwareHdrEvidenceFields(
+        IReadOnlyList<OutputValidationSessionArtifact> artifacts)
+    {
+        if (artifacts.Count == 0
+            || artifacts.Any(ArtifactHasCompleteTargetAwareHdrEvidence))
+        {
+            return [];
+        }
+
+        return artifacts
+            .SelectMany(artifact => artifact.TargetHdrEvidence is null
+                ? Enumerable.Repeat("target-aware HDR evidence", 1)
+                : artifact.TargetHdrEvidence.GetMissingFields())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(field => field, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
 
     private static string FormatNames(IReadOnlyList<string> names) =>
         names.Count == 0 ? "named viewers" : string.Join(", ", names);

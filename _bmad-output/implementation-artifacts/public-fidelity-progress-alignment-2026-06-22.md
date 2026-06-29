@@ -119,6 +119,8 @@ Evidence:
 - Next-run guidance now also requires the named viewer's profile-specific evidence statuses to pass before treating that viewer target as covered; named but incomplete viewer rows stay visible as missing target-app work.
 - Output validation sample artifacts now keep target-aware HDR state/color-space/detail fields as explicit placeholders, and incomplete or placeholder target color-space evidence keeps the manual session incomplete for HDR10 JXR runtime gating.
 - The loaded-evidence summary now also surfaces incomplete target-aware HDR fields directly, keeping target-app compatibility review aligned with the stricter target-aware display-evidence prerequisite.
+- The HDR10 JXR viewer gate now also names missing target-aware HDR fields in its blockers, so a placeholder observed target color-space value blocks runtime readiness with a specific `color space` reason instead of a generic target-aware evidence message.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/11-3-surface-target-hdr-fields-in-hdr10-viewer-gate.md`.
 
 Remaining blockers:
 
@@ -174,6 +176,8 @@ Evidence:
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-require-target-color-space-in-output-validation-evidence.md`.
 - The loaded-evidence summary now calls out missing target-aware HDR fields when no loaded artifact has complete target-aware evidence, including the observed target color-space field required for release evidence.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-surface-target-hdr-evidence-fields-in-summary.md`.
+- The HDR10 JXR viewer gate now uses the same missing-field vocabulary for target-aware HDR blockers, keeping runtime readiness reasons aligned with the Settings > Validation summary.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/11-3-surface-target-hdr-fields-in-hdr10-viewer-gate.md`.
 
 Remaining blockers:
 

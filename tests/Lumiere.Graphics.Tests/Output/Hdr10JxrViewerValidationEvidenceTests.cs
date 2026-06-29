@@ -180,6 +180,31 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
     }
 
     [Fact]
+    public void FromArtifacts_BlocksWithSpecificTargetAwareHdrFieldWhenColorSpaceIsMissing()
+    {
+        var artifacts = RequiredHdrViewers
+            .Select((viewer, index) => Hdr10Artifact(
+                viewer,
+                metadataStatus: OutputCompatibilityEvidenceStatus.Pass,
+                includeFormatContract: index == 0) with
+            {
+                TargetHdrEvidence = CompleteTargetHdrEvidence with
+                {
+                    ColorSpace = "REPLACE_WITH_OBSERVED_TARGET_COLOR_SPACE",
+                },
+            })
+            .ToArray();
+
+        var evidence = Hdr10JxrViewerValidationEvidence.FromArtifacts(artifacts);
+
+        Assert.False(evidence.IsComplete);
+        Assert.False(evidence.HasCompleteTargetAwareHdrEvidence);
+        Assert.Contains(evidence.Blockers, blocker =>
+            blocker.Contains("target-aware HDR evidence", StringComparison.OrdinalIgnoreCase)
+            && blocker.Contains("color space", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void FromArtifacts_UsesRecordLevelOutputTargetsWhenArtifactSessionCoversBoth()
     {
         var artifacts = RequiredHdrViewers
