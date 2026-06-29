@@ -1084,6 +1084,28 @@ public sealed class PerfectHdrFidelityProjectionTests
     }
 
     [Fact]
+    public void ProjectValidationEvidenceSummary_WithOnlyLoadIssuesDistinguishesRejectedEvidenceFromEmptyWorkspace()
+    {
+        var snapshot = new OutputValidationArtifactSnapshot(
+            [],
+            [
+                new(
+                    "C:\\Validation\\output-validation-draft-2026-06-29-hdr10-folder.json",
+                    "Workspace-local markdown evidence is incomplete: evidence\\draft-scenario-session.md. Remove the draft NOT RUN sentinel after recording observed Windows manual results."),
+            ]);
+
+        var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(snapshot);
+
+        Assert.Equal(ValidationEvidenceStatus.NotRun, summary.Status);
+        Assert.Contains("were found but none loaded", summary.Summary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Runtime gates stay blocked", summary.Summary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("ignored files do not count", summary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("fix ignored artifact or evidence files", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Remove the draft NOT RUN sentinel", summary.GapDetail, StringComparison.Ordinal);
+        Assert.False(summary.CanOpenLatestArtifact);
+    }
+
+    [Fact]
     public void ProjectValidationEvidenceSummary_WithWorkspaceFailureKeepsCoverageEmpty()
     {
         var snapshot = new OutputValidationArtifactSnapshot([], [])

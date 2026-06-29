@@ -129,6 +129,8 @@ Evidence:
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-reject-unresolved-scenario-session-drafts.md`.
 - Markdown evidence load issues now include specific repair guidance for incomplete markers, including `REPLACE_WITH_*` placeholders, template-only language, the draft NOT RUN sentinel, and unresolved scenario result choices. The existing Settings validation record surfaces that guidance through ignored-file details without adding a new runtime gate state.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-surface-markdown-evidence-repair-guidance.md`.
+- Settings > Validation now distinguishes a rejected-evidence snapshot from a truly empty workspace: when files are present but all are ignored, the loaded-evidence summary says none loaded, ignored files do not count as Windows manual evidence, and runtime gates stay blocked until the files are fixed and reloaded.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-distinguish-rejected-evidence-in-validation-summary.md`.
 
 Remaining blockers:
 
@@ -181,6 +183,8 @@ Evidence:
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-reject-unresolved-scenario-session-drafts.md`.
 - Workspace-local markdown evidence load issues now name the concrete repair steps still required before a linked scenario note can count as loaded evidence, reducing guesswork when Windows validators reload a generated draft that is still incomplete.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-surface-markdown-evidence-repair-guidance.md`.
+- Load-issue-only snapshots now project a distinct rejected-evidence state instead of looking like a blank workspace, keeping generated drafts visible as repair work without counting them as loaded evidence.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-distinguish-rejected-evidence-in-validation-summary.md`.
 - The same loader now rejects non-workspace-local `evidencePaths` such as repo-relative `docs\...` review references or absolute paths outside the local validation workspace, so external notes cannot accidentally replace the app-local scenario-session evidence required for runtime validation state.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-reject-non-workspace-evidence-paths.md`.
 - The durable output-validation sample now matches that loader contract by using a workspace-local `evidence\REPLACE_WITH_SCENARIO_SESSION_RECORD.md` placeholder instead of a repo-relative evidence path.
@@ -280,6 +284,7 @@ Evidence:
 - That same loaded-evidence summary now also names incomplete manual-session fields such as missing `evidence paths`, improving keyboard/screen-reader review of scenario evidence gaps without adding another custom control.
 - The scenario-session draft now has a concise NOT RUN sentinel that appears in generated markdown and is rejected by the loader until removed after real observations are recorded, keeping the Settings validation surface precise for keyboard and screen-reader review without adding another native control.
 - Ignored-file details now carry specific markdown evidence repair guidance, so keyboard and screen-reader review can identify the next edit without opening the loader code or comparing the markdown template manually.
+- The loaded-evidence summary now separates rejected evidence from missing evidence, reducing ambiguity for keyboard and screen-reader users when a generated draft exists but still cannot count toward release evidence.
 - A focused implementation record exists at `_bmad-output/implementation-artifacts/13-2-structure-viewer-compatibility-evidence-for-accessibility.md`.
 
 Remaining blockers:

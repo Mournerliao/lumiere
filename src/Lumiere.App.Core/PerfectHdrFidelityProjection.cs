@@ -882,6 +882,11 @@ public static class PerfectHdrFidelityProjection
         IReadOnlyList<OutputValidationArtifactReference> artifactReferences,
         string? buildVersion)
     {
+        if (artifacts.Count == 0 && loadIssues.Count > 0)
+        {
+            return CreateRejectedEvidenceSummary(loadIssues);
+        }
+
         var latestArtifact = SelectLatestArtifact(artifacts);
         var latestArtifactReference = SelectLatestArtifactReference(artifactReferences);
         var buildAlignment = EvaluateBuildAlignment(buildVersion, artifacts, artifactReferences);
@@ -904,6 +909,23 @@ public static class PerfectHdrFidelityProjection
             LatestArtifactPath = latestArtifactReference?.Path,
             BuildAlignment = buildAlignment,
             TargetAppVersionEvidence = EvaluateTargetAppVersionEvidence(artifacts),
+        };
+    }
+
+    private static ValidationEvidenceSummaryProjection CreateRejectedEvidenceSummary(
+        IReadOnlyList<OutputValidationArtifactLoadIssue> loadIssues)
+    {
+        var firstIssue = loadIssues[0];
+        var firstIssueFileName = Path.GetFileName(firstIssue.Path);
+        return new ValidationEvidenceSummaryProjection(
+            "Loaded evidence",
+            ValidationEvidenceStatus.NotRun,
+            $"{loadIssues.Count} validation artifact or evidence file(s) were found but none loaded for this session. Runtime gates stay blocked until ignored files are fixed and reloaded.",
+            "Coverage: none loaded; ignored files do not count as Windows manual evidence.",
+            $"Next step: fix ignored artifact or evidence files, then reload evidence. First issue: {firstIssueFileName}: {firstIssue.Detail}")
+        {
+            BuildAlignment = ValidationEvidenceBuildAlignmentProjection.Empty,
+            TargetAppVersionEvidence = ValidationEvidenceTargetAppVersionProjection.Empty,
         };
     }
 

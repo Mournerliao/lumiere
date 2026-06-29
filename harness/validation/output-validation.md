@@ -111,6 +111,7 @@ The seeded `templates\hdr-sdr-validation-session-template.md` file is a markdown
 The same settings surface now also summarizes the currently loaded evidence for the active session instead of forcing the tester to infer everything from the lower gate rows alone. The loaded-evidence summary is intentionally compact and evidence-first:
 
 - latest loaded artifact date, tester, build, and recorded result summary
+- a distinct rejected-evidence state when validation files are present but none can load, making clear that ignored files do not count as Windows manual evidence and runtime gates stay blocked
 - entry points, display topology buckets, DPI scales, display setups, and HDR states already covered by the loaded evidence
 - whether the latest loaded artifact matches the current app build, is stale for the current build, or cannot yet be aligned to a comparable build token
 - current coverage across output targets, named viewers, and checklist IDs

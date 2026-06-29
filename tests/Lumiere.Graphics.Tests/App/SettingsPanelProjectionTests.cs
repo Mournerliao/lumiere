@@ -903,6 +903,37 @@ public sealed class SettingsPanelProjectionTests
     }
 
     [Fact]
+    public void Project_SnapshotValidationSummaryDistinguishesRejectedDraftEvidenceFromMissingEvidence()
+    {
+        var snapshot = new OutputValidationArtifactSnapshot(
+            [],
+            [
+                new(
+                    "C:\\Validation\\output-validation-draft-2026-06-29-hdr10-folder.json",
+                    "Workspace-local markdown evidence is incomplete: evidence\\draft-scenario-session.md. Replace unresolved result choices with one observed status for each scenario."),
+            ]);
+
+        var projection = SettingsPanelProjection.Project(
+            new TestSettingsProvider
+            {
+                ExportColorFormat = "HDR10",
+                OutputTarget = OutputTarget.Folder,
+            },
+            CreateState(),
+            snapshot,
+            executionCapabilities: OutputProfileExecutionCapabilities.CompatibilityOnly);
+
+        Assert.Equal(ValidationEvidenceStatus.NotRun, projection.Validation.EvidenceSummary.Status);
+        Assert.Contains("were found but none loaded", projection.Validation.EvidenceSummary.Summary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Runtime gates stay blocked", projection.Validation.EvidenceSummary.Summary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("ignored files do not count", projection.Validation.EvidenceSummary.CoverageDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Replace unresolved result choices", projection.Validation.EvidenceSummary.GapDetail, StringComparison.Ordinal);
+        Assert.False(projection.Validation.EvidenceSummary.CanOpenLatestArtifact);
+        Assert.Equal("Build", projection.MainPanel.OutputProfile.StatusLabel);
+        Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
+    }
+
+    [Fact]
     public void Project_SnapshotValidationSurfacesMatchedCurrentBuildEvidenceRow()
     {
         var snapshot = new OutputValidationArtifactSnapshot(
