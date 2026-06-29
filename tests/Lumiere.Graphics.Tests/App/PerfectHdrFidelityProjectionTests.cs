@@ -996,6 +996,21 @@ public sealed class PerfectHdrFidelityProjectionTests
     }
 
     [Fact]
+    public void ProjectValidationEvidenceSummary_CallsOutMissingManualSessionEvidencePaths()
+    {
+        var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(
+            [
+                ArtifactFor("Windows Photos") with
+                {
+                    EvidencePaths = [],
+                },
+            ]);
+
+        Assert.Contains("Manual validation session evidence is incomplete", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("evidence paths", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void ProjectValidationEvidenceSummary_WithMatchingCurrentBuildSurfacesPassAlignment()
     {
         var snapshot = new OutputValidationArtifactSnapshot(

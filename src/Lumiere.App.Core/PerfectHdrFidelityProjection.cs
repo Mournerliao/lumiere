@@ -1054,6 +1054,12 @@ public static class PerfectHdrFidelityProjection
             detailParts.Add($"Target-aware HDR evidence is incomplete: {FormatEvidenceList(missingTargetHdrEvidenceFields, fallback: "target-aware HDR evidence", maxItems: 6)}.");
         }
 
+        var missingManualSessionFields = CollectMissingManualSessionFields(artifacts);
+        if (missingManualSessionFields.Count > 0)
+        {
+            detailParts.Add($"Manual validation session evidence is incomplete: {FormatEvidenceList(missingManualSessionFields, fallback: "manual session fields", maxItems: 6)}.");
+        }
+
         var runPlan = OutputValidationRunPlanner.Create(artifacts);
         if (runPlan.MissingDisplayTopologies.Count > 0)
         {
@@ -1176,6 +1182,24 @@ public static class PerfectHdrFidelityProjection
                 : artifact.TargetHdrEvidence
                     .GetMissingFields()
                     .Select(field => $"target-aware HDR evidence {field}"))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(field => field, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private static IReadOnlyList<string> CollectMissingManualSessionFields(
+        IReadOnlyList<OutputValidationSessionArtifact> artifacts)
+    {
+        if (artifacts.Count == 0)
+        {
+            return [];
+        }
+
+        return artifacts
+            .SelectMany(artifact => artifact.GetMissingManualEvidenceFields())
+            .Where(field =>
+                !field.StartsWith("target-aware HDR evidence", StringComparison.OrdinalIgnoreCase)
+                && !field.StartsWith("target app version", StringComparison.OrdinalIgnoreCase))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(field => field, StringComparer.OrdinalIgnoreCase)
             .ToArray();

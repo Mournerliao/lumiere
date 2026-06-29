@@ -79,6 +79,8 @@ The HDR10 JXR viewer gate uses the same target-aware field vocabulary in its blo
 
 The same viewer gate also names incomplete manual-session fields that are not covered by more specific blockers. For example, if an artifact is readable but `evidencePaths` is empty, HDR10 must stay at `Validate` / fallback state and the blocker should mention missing `evidence paths`. This keeps scenario notes and workspace-local evidence links part of the runtime release gate instead of only a documentation checklist item.
 
+The loaded-evidence summary in Settings > Validation uses the same manual-session field vocabulary for gaps that are not already covered by dedicated target-aware HDR or target-app-version lines. A readable artifact with empty `evidencePaths` should therefore show `Manual validation session evidence is incomplete: evidence paths.` in the summary. This is review guidance for fixing the artifact; it is not a PASS condition and does not replace Windows manual scenario evidence.
+
 On startup, Lumiere now also prepares the local validation workspace under `%LOCALAPPDATA%\Lumiere\validation\output\`. It seeds:
 
 - `templates\output-validation-session.schema-v4.sample.json` as the local copy-ready sample

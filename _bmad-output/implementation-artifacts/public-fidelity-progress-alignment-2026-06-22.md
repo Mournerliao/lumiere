@@ -123,6 +123,8 @@ Evidence:
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/11-3-surface-target-hdr-fields-in-hdr10-viewer-gate.md`.
 - The HDR10 JXR viewer gate now also names incomplete manual-session fields such as missing `evidence paths`, so a structurally readable artifact without workspace-local scenario evidence remains blocked with a specific next-fix reason.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/11-3-surface-manual-session-fields-in-hdr10-viewer-gate.md`.
+- Settings > Validation now also surfaces incomplete manual-session fields such as missing `evidence paths` in the loaded-evidence summary, keeping the review surface aligned with the runtime gate blocker vocabulary.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-surface-manual-session-fields-in-validation-summary.md`.
 
 Remaining blockers:
 
@@ -182,6 +184,8 @@ Evidence:
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/11-3-surface-target-hdr-fields-in-hdr10-viewer-gate.md`.
 - The HDR10 JXR viewer gate now also reuses the artifact manual-session completeness fields for blockers such as missing `evidence paths`, reducing the gap between draft/scenario-note requirements and runtime readiness reasons.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/11-3-surface-manual-session-fields-in-hdr10-viewer-gate.md`.
+- The loaded-evidence summary now also uses those manual-session completeness fields for gaps such as missing `evidence paths`, so draft/scenario-note omissions are visible before runtime execution policy is inspected.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-surface-manual-session-fields-in-validation-summary.md`.
 
 Remaining blockers:
 
@@ -265,6 +269,7 @@ Evidence:
 - The `Create draft` workflow now carries the same suggested topology, entry point, output target, and viewer scope into the generated artifact placeholders, reducing another handoff gap between the native validation surface and the edited JSON evidence file.
 - Output-validation sample/draft semantics now keep target-aware HDR state and target color space as manual-observation placeholders, reducing overclaim risk in keyboard/screen-reader review of validation evidence.
 - The existing compact loaded-evidence summary now also names incomplete target-aware HDR fields, improving keyboard/screen-reader review without adding another custom control or visual-only cue.
+- That same loaded-evidence summary now also names incomplete manual-session fields such as missing `evidence paths`, improving keyboard/screen-reader review of scenario evidence gaps without adding another custom control.
 - A focused implementation record exists at `_bmad-output/implementation-artifacts/13-2-structure-viewer-compatibility-evidence-for-accessibility.md`.
 
 Remaining blockers:
