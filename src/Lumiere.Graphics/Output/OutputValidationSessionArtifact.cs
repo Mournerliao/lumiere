@@ -160,7 +160,7 @@ public sealed record OutputValidationSessionArtifact(
             ? status
             : OutputCompatibilityEvidenceStatus.Limited;
 
-    private IEnumerable<string> GetMissingManualEvidenceFields()
+    public IEnumerable<string> GetMissingManualEvidenceFields()
     {
         if (OutputValidationManualEvidenceFields.IsMissing(Date))
         {

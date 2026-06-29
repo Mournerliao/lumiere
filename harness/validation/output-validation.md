@@ -77,6 +77,8 @@ The loaded-evidence summary names incomplete target-aware HDR fields when no loa
 
 The HDR10 JXR viewer gate uses the same target-aware field vocabulary in its blockers. A loaded artifact with placeholder target color-space evidence must keep HDR10 at `Validate` / fallback state and should report the missing `color space` field before the validator reruns or edits the artifact.
 
+The same viewer gate also names incomplete manual-session fields that are not covered by more specific blockers. For example, if an artifact is readable but `evidencePaths` is empty, HDR10 must stay at `Validate` / fallback state and the blocker should mention missing `evidence paths`. This keeps scenario notes and workspace-local evidence links part of the runtime release gate instead of only a documentation checklist item.
+
 On startup, Lumiere now also prepares the local validation workspace under `%LOCALAPPDATA%\Lumiere\validation\output\`. It seeds:
 
 - `templates\output-validation-session.schema-v4.sample.json` as the local copy-ready sample

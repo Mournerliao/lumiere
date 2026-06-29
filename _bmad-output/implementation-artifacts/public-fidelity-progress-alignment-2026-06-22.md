@@ -121,6 +121,8 @@ Evidence:
 - The loaded-evidence summary now also surfaces incomplete target-aware HDR fields directly, keeping target-app compatibility review aligned with the stricter target-aware display-evidence prerequisite.
 - The HDR10 JXR viewer gate now also names missing target-aware HDR fields in its blockers, so a placeholder observed target color-space value blocks runtime readiness with a specific `color space` reason instead of a generic target-aware evidence message.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/11-3-surface-target-hdr-fields-in-hdr10-viewer-gate.md`.
+- The HDR10 JXR viewer gate now also names incomplete manual-session fields such as missing `evidence paths`, so a structurally readable artifact without workspace-local scenario evidence remains blocked with a specific next-fix reason.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/11-3-surface-manual-session-fields-in-hdr10-viewer-gate.md`.
 
 Remaining blockers:
 
@@ -178,6 +180,8 @@ Evidence:
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-surface-target-hdr-evidence-fields-in-summary.md`.
 - The HDR10 JXR viewer gate now uses the same missing-field vocabulary for target-aware HDR blockers, keeping runtime readiness reasons aligned with the Settings > Validation summary.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/11-3-surface-target-hdr-fields-in-hdr10-viewer-gate.md`.
+- The HDR10 JXR viewer gate now also reuses the artifact manual-session completeness fields for blockers such as missing `evidence paths`, reducing the gap between draft/scenario-note requirements and runtime readiness reasons.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/11-3-surface-manual-session-fields-in-hdr10-viewer-gate.md`.
 
 Remaining blockers:
 

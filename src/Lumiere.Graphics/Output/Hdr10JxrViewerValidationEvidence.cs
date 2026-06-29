@@ -48,6 +48,7 @@ public sealed record Hdr10JxrViewerValidationEvidence(
         var hasArtifacts = artifactArray.Length > 0;
         var hasCompleteTargetAwareHdrEvidence = artifactArray.Any(ArtifactHasCompleteTargetAwareHdrEvidence);
         var missingTargetAwareHdrEvidenceFields = CollectMissingTargetAwareHdrEvidenceFields(artifactArray);
+        var missingManualSessionFields = CollectMissingManualSessionFields(artifactArray);
         var missingTargetAppVersions = artifactArray
             .SelectMany(artifact => artifact.GetMissingTargetAppVersions())
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -100,6 +101,11 @@ public sealed record Hdr10JxrViewerValidationEvidence(
                 : "Target app version evidence is missing.");
         }
 
+        if (missingManualSessionFields.Length > 0)
+        {
+            blockers.Add($"Manual validation session evidence is incomplete: {FormatNames(missingManualSessionFields)}.");
+        }
+
         if (!hasCompleteFormatContract)
         {
             blockers.Add("Complete HDR10 JXR format contract evidence is missing.");
@@ -143,6 +149,24 @@ public sealed record Hdr10JxrViewerValidationEvidence(
             .SelectMany(artifact => artifact.TargetHdrEvidence is null
                 ? Enumerable.Repeat("target-aware HDR evidence", 1)
                 : artifact.TargetHdrEvidence.GetMissingFields())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(field => field, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private static string[] CollectMissingManualSessionFields(
+        IReadOnlyList<OutputValidationSessionArtifact> artifacts)
+    {
+        if (artifacts.Count == 0)
+        {
+            return [];
+        }
+
+        return artifacts
+            .SelectMany(artifact => artifact.GetMissingManualEvidenceFields())
+            .Where(field =>
+                !field.StartsWith("target-aware HDR evidence", StringComparison.OrdinalIgnoreCase)
+                && !field.StartsWith("target app version", StringComparison.OrdinalIgnoreCase))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(field => field, StringComparer.OrdinalIgnoreCase)
             .ToArray();

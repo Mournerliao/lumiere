@@ -205,6 +205,29 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
     }
 
     [Fact]
+    public void FromArtifacts_BlocksWithSpecificManualSessionFieldWhenEvidencePathsAreMissing()
+    {
+        var artifacts = RequiredHdrViewers
+            .Select((viewer, index) => Hdr10Artifact(
+                viewer,
+                metadataStatus: OutputCompatibilityEvidenceStatus.Pass,
+                includeFormatContract: index == 0) with
+            {
+                EvidencePaths = [],
+            })
+            .ToArray();
+
+        var evidence = Hdr10JxrViewerValidationEvidence.FromArtifacts(artifacts);
+
+        Assert.False(evidence.IsComplete);
+        Assert.False(evidence.HasCompleteFormatContract);
+        Assert.False(evidence.HasWindowsManualViewerValidation);
+        Assert.Contains(evidence.Blockers, blocker =>
+            blocker.Contains("Manual validation session evidence", StringComparison.OrdinalIgnoreCase)
+            && blocker.Contains("evidence paths", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void FromArtifacts_UsesRecordLevelOutputTargetsWhenArtifactSessionCoversBoth()
     {
         var artifacts = RequiredHdrViewers
