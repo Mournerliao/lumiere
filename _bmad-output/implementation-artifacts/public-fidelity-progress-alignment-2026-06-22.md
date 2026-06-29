@@ -125,6 +125,8 @@ Evidence:
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/11-3-surface-manual-session-fields-in-hdr10-viewer-gate.md`.
 - Settings > Validation now also surfaces incomplete manual-session fields such as missing `evidence paths` in the loaded-evidence summary, keeping the review surface aligned with the runtime gate blocker vocabulary.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-surface-manual-session-fields-in-validation-summary.md`.
+- Workspace-local scenario markdown drafts now carry an explicit `Draft status: NOT RUN until...` sentinel, and the app loader rejects both that sentinel and unresolved result-choice rows such as `PASS / PASS with limitation / FAIL / NOT RUN`. Untouched `Create draft` output can therefore remain visible in the workspace without becoming loaded HDR10 viewer evidence.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-reject-unresolved-scenario-session-drafts.md`.
 
 Remaining blockers:
 
@@ -173,6 +175,8 @@ Evidence:
 - `Create draft` now also writes a companion Story `12-1` scenario-session markdown draft under the local workspace `evidence\` folder and points the JSON draft's `evidencePaths` at it, closing the handoff gap between scenario notes and the runtime-loaded output-validation artifact.
 - The output-validation loader now requires workspace-local `evidence\...` paths to exist and workspace-local markdown evidence to be filled in before loading the JSON artifact, so a broken or still-template companion scenario-session link cannot advance the current evidence summary or runtime gates.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-require-workspace-local-scenario-evidence.md`.
+- Scenario-session markdown templates now include an explicit `Draft status: NOT RUN until...` sentinel, and the loader rejects that sentinel plus unresolved scenario result-choice rows. This keeps raw or generated Story `12-1` markdown drafts from counting as current-session evidence until a Windows validator replaces them with observed results.
+- A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-reject-unresolved-scenario-session-drafts.md`.
 - The same loader now rejects non-workspace-local `evidencePaths` such as repo-relative `docs\...` review references or absolute paths outside the local validation workspace, so external notes cannot accidentally replace the app-local scenario-session evidence required for runtime validation state.
 - A focused implementation record now exists at `_bmad-output/implementation-artifacts/12-1-reject-non-workspace-evidence-paths.md`.
 - The durable output-validation sample now matches that loader contract by using a workspace-local `evidence\REPLACE_WITH_SCENARIO_SESSION_RECORD.md` placeholder instead of a repo-relative evidence path.
@@ -270,6 +274,7 @@ Evidence:
 - Output-validation sample/draft semantics now keep target-aware HDR state and target color space as manual-observation placeholders, reducing overclaim risk in keyboard/screen-reader review of validation evidence.
 - The existing compact loaded-evidence summary now also names incomplete target-aware HDR fields, improving keyboard/screen-reader review without adding another custom control or visual-only cue.
 - That same loaded-evidence summary now also names incomplete manual-session fields such as missing `evidence paths`, improving keyboard/screen-reader review of scenario evidence gaps without adding another custom control.
+- The scenario-session draft now has a concise NOT RUN sentinel that appears in generated markdown and is rejected by the loader until removed after real observations are recorded, keeping the Settings validation surface precise for keyboard and screen-reader review without adding another native control.
 - A focused implementation record exists at `_bmad-output/implementation-artifacts/13-2-structure-viewer-compatibility-evidence-for-accessibility.md`.
 
 Remaining blockers:

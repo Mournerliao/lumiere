@@ -18,11 +18,28 @@ public sealed class OutputValidationDocumentationTests
         Assert.Contains("Target-app assumptions", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Windows manual validation", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Every app-loaded artifact evidence path must resolve inside the same local validation workspace", document, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Draft status: NOT RUN until", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("repo-relative references", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("HDR10", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("P3", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("sRGB", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Visible design-reference controls", document, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void HdrSdrValidationSessionTemplate_CarriesDraftSentinel()
+    {
+        var repoRoot = LocateRepositoryRoot();
+        var templatePath = Path.Combine(
+            repoRoot,
+            "harness",
+            "validation",
+            "templates",
+            "hdr-sdr-validation-session-template.md");
+        var template = File.ReadAllText(templatePath);
+
+        Assert.Contains("Draft status: NOT RUN until", template, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("PASS / PASS with limitation / FAIL / NOT RUN", template, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

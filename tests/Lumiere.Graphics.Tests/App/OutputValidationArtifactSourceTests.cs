@@ -166,6 +166,8 @@ public sealed class OutputValidationArtifactSourceTests
     [InlineData("")]
     [InlineData("- Tester: REPLACE_WITH_TESTER_NAME")]
     [InlineData("Template only - not a real validation session")]
+    [InlineData("Draft status: NOT RUN until each status row is replaced with observed Windows manual validation evidence.")]
+    [InlineData("| Bright highlight stress | PASS / PASS with limitation / FAIL / NOT RUN |  |")]
     public void Load_WhenWorkspacePrepared_RejectsIncompleteWorkspaceLocalMarkdownEvidence(string markdownContent)
     {
         var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -198,6 +200,49 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Equal("C:\\Validation\\hdr10.json", issue.Path);
         Assert.Contains("Workspace-local markdown evidence is incomplete", issue.Detail, StringComparison.Ordinal);
         Assert.Contains("evidence\\hdr10-scenario-session.md", issue.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Load_WhenWorkspacePrepared_RejectsGeneratedScenarioDraftUntilObservedResultsAreRecorded()
+    {
+        var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var source = new FileOutputValidationArtifactSource(
+            "C:\\Validation",
+            "*.json",
+            directoryExists: directories.Contains,
+            fileExists: files.ContainsKey,
+            createDirectory: path => directories.Add(path),
+            enumerateFiles: (path, pattern) => path == "C:\\Validation" && pattern == "*.json"
+                ? files.Keys
+                    .Where(filePath => string.Equals(
+                        Path.GetDirectoryName(filePath),
+                        "C:\\Validation",
+                        StringComparison.OrdinalIgnoreCase))
+                    .Where(filePath => string.Equals(Path.GetExtension(filePath), ".json", StringComparison.OrdinalIgnoreCase))
+                    .ToArray()
+                : [],
+            readAllText: path => files[path],
+            writeAllText: (path, content) => files[path] = content,
+            resolveTemplateSourceText: () => "{ \"schemaVersion\": 4 }",
+            getNow: () => new DateTimeOffset(2026, 06, 22, 10, 30, 00, TimeSpan.FromHours(8)),
+            prepareWorkspace: true);
+
+        var result = source.CreateDraft(
+            new OutputValidationDraftRequest(
+                "0.1.0",
+                OutputTarget.Folder,
+                OutputProfileContract.Hdr10Pq,
+                CaptureSessionState.Idle()));
+
+        Assert.True(result.IsSuccess);
+        var snapshot = source.Load();
+
+        Assert.Empty(snapshot.Artifacts);
+        var issue = Assert.Single(snapshot.LoadIssues);
+        Assert.Equal(result.DraftPath, issue.Path);
+        Assert.Contains("Workspace-local markdown evidence is incomplete", issue.Detail, StringComparison.Ordinal);
+        Assert.Contains("scenario-session.md", issue.Detail, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -324,6 +369,7 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Equal(["evidence\\output-validation-draft-2026-06-22-hdr10-folder-scenario-session.md"], artifact.EvidencePaths);
         Assert.True(files.ContainsKey("C:\\Validation\\evidence\\output-validation-draft-2026-06-22-hdr10-folder-scenario-session.md"));
         Assert.Contains("Linked output validation JSON: ..\\output-validation-draft-2026-06-22-hdr10-folder.json", files["C:\\Validation\\evidence\\output-validation-draft-2026-06-22-hdr10-folder-scenario-session.md"], StringComparison.Ordinal);
+        Assert.Contains("Draft status: NOT RUN until", files["C:\\Validation\\evidence\\output-validation-draft-2026-06-22-hdr10-folder-scenario-session.md"], StringComparison.Ordinal);
         Assert.Contains("REL-OUT-04", files["C:\\Validation\\evidence\\output-validation-draft-2026-06-22-hdr10-folder-scenario-session.md"], StringComparison.Ordinal);
         Assert.Equal(["Folder"], artifact.OutputTargetsTested);
         Assert.Equal("HDR Display", artifact.TargetHdrEvidence!.TargetDisplayName);

@@ -532,7 +532,9 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
     private static bool IsIncompleteMarkdownEvidence(string content) =>
         string.IsNullOrWhiteSpace(content)
         || content.Contains("REPLACE_WITH_", StringComparison.OrdinalIgnoreCase)
-        || content.Contains("Template only", StringComparison.OrdinalIgnoreCase);
+        || content.Contains("Template only", StringComparison.OrdinalIgnoreCase)
+        || content.Contains("Draft status: NOT RUN until", StringComparison.OrdinalIgnoreCase)
+        || content.Contains("PASS / PASS with limitation / FAIL / NOT RUN", StringComparison.OrdinalIgnoreCase);
 
     private OutputValidationWorkspaceState EnsureWorkspace()
     {

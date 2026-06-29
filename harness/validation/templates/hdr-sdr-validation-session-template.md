@@ -2,6 +2,8 @@
 
 Use this template for a Windows manual validation run tied to `Public perfect-HDR-fidelity`.
 
+Draft status: NOT RUN until each status row is replaced with observed Windows manual validation evidence.
+
 ## Session Metadata
 
 - Date:
