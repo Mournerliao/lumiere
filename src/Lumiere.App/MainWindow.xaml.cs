@@ -1893,7 +1893,7 @@ public sealed partial class MainWindow : Window
             ?? PerfectHdrFidelityProjection.ProjectValidationRecord(
                 aboutInfoProvider.Version,
                 snapshot).ReleaseChecklistPath;
-        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "release validation checklist");
+        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "MVP validation checklist");
     }
 
     private async void OnValidationOpenHdrSdrScenariosClick(object sender, RoutedEventArgs e)
@@ -1903,7 +1903,7 @@ public sealed partial class MainWindow : Window
             ?? PerfectHdrFidelityProjection.ProjectValidationRecord(
                 aboutInfoProvider.Version,
                 snapshot).HdrSdrScenariosPath;
-        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "HDR SDR validation scenarios");
+        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "HDR notes");
     }
 
     private async void OnValidationOpenSettingsAccessibilityGuideClick(object sender, RoutedEventArgs e)
@@ -1913,7 +1913,7 @@ public sealed partial class MainWindow : Window
             ?? PerfectHdrFidelityProjection.ProjectValidationRecord(
                 aboutInfoProvider.Version,
                 snapshot).SettingsAccessibilityGuidePath;
-        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "settings accessibility validation guide");
+        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "HDR notes");
     }
 
     private async void OnValidationOpenResourceTrendScriptClick(object sender, RoutedEventArgs e)
@@ -2251,18 +2251,18 @@ public sealed partial class MainWindow : Window
         ToolTipService.SetToolTip(
             ValidationOpenReleaseChecklistButton,
             record.CanOpenReleaseChecklist
-                ? $"Open seeded release validation checklist: {record.ReleaseChecklistPath}"
-                : "Seeded release validation checklist is not available for this session.");
+                ? $"Open seeded MVP validation checklist: {record.ReleaseChecklistPath}"
+                : "Seeded MVP validation checklist is not available for this session.");
         ToolTipService.SetToolTip(
             ValidationOpenHdrSdrScenariosButton,
             record.CanOpenHdrSdrScenarios
-                ? $"Open seeded HDR/SDR validation scenarios: {record.HdrSdrScenariosPath}"
-                : "Seeded HDR/SDR validation scenarios are not available for this session.");
+                ? $"Open seeded HDR notes: {record.HdrSdrScenariosPath}"
+                : "Seeded HDR notes are not available for this session.");
         ToolTipService.SetToolTip(
             ValidationOpenSettingsAccessibilityGuideButton,
             record.CanOpenSettingsAccessibilityGuide
-                ? $"Open seeded settings accessibility validation guide: {record.SettingsAccessibilityGuidePath}"
-                : "Seeded settings accessibility validation guide is not available for this session.");
+                ? $"Open seeded HDR notes: {record.SettingsAccessibilityGuidePath}"
+                : "Seeded HDR notes are not available for this session.");
         ToolTipService.SetToolTip(
             ValidationCreateDraftButton,
             record.CanOpenValidationWorkspace
@@ -2301,18 +2301,18 @@ public sealed partial class MainWindow : Window
         AutomationProperties.SetHelpText(
             ValidationOpenReleaseChecklistButton,
             record.CanOpenReleaseChecklist
-                ? $"Open the seeded release validation checklist at {record.ReleaseChecklistPath}."
-                : "Seeded release validation checklist is not available for this session.");
+                ? $"Open the seeded MVP validation checklist at {record.ReleaseChecklistPath}."
+                : "Seeded MVP validation checklist is not available for this session.");
         AutomationProperties.SetHelpText(
             ValidationOpenHdrSdrScenariosButton,
             record.CanOpenHdrSdrScenarios
-                ? $"Open the seeded HDR and SDR validation scenario guide at {record.HdrSdrScenariosPath}."
-                : "Seeded HDR and SDR validation scenario guide is not available for this session.");
+                ? $"Open the seeded HDR notes at {record.HdrSdrScenariosPath}."
+                : "Seeded HDR notes are not available for this session.");
         AutomationProperties.SetHelpText(
             ValidationOpenSettingsAccessibilityGuideButton,
             record.CanOpenSettingsAccessibilityGuide
-                ? $"Open the seeded settings accessibility validation guide at {record.SettingsAccessibilityGuidePath}."
-                : "Seeded settings accessibility validation guide is not available for this session.");
+                ? $"Open the seeded HDR notes at {record.SettingsAccessibilityGuidePath}."
+                : "Seeded HDR notes are not available for this session.");
         AutomationProperties.SetHelpText(
             ValidationCreateDraftButton,
             record.CanOpenValidationWorkspace

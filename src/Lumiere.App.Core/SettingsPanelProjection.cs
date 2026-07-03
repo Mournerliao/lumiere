@@ -172,7 +172,7 @@ public sealed record TargetEvidenceProjection(
                 "Target unresolved",
                 "No active target",
                 stageLabel,
-                "Select a target before public release can replace the global HDR guess with target-aware evidence.");
+                "Select a target so Lumiere can report HDR state for the active capture target.");
         }
 
         var targetLabel = string.IsNullOrWhiteSpace(state.Target.DisplayName)

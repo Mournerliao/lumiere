@@ -773,7 +773,7 @@ public sealed class SettingsPanelProjectionTests
         Assert.Equal(ValidationEvidenceStatus.NotRun, projection.Validation.Record.WindowsManualValidationStatus);
         Assert.Contains("Windows CI", projection.Validation.Record.AutomatedEvidenceDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("manual validation", projection.Validation.Record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("harness/validation/release-validation-checklist.md", projection.Validation.Record.EvidenceDocumentPath);
+        Assert.Contains("docs/validation/mvp-checklist.md", projection.Validation.Record.EvidenceDocumentPath);
     }
 
     [Fact]
@@ -842,7 +842,7 @@ public sealed class SettingsPanelProjectionTests
         Assert.Contains("Public gate gaps:", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("REL-A11Y-01", projection.Validation.EvidenceSummary.GapDetail, StringComparison.Ordinal);
         Assert.Contains("Next recommended runs:", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Open A11y guide", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Record any export-profile", projection.Validation.EvidenceSummary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.True(projection.Validation.EvidenceSummary.CanOpenLatestArtifact);
         Assert.Equal("C:\\Validation\\windows-photos.json", projection.Validation.EvidenceSummary.LatestArtifactPath);
     }

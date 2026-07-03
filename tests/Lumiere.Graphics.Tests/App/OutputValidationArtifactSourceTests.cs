@@ -323,20 +323,20 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Equal("C:\\Validation\\evidence", snapshot.Workspace.EvidenceDirectoryPath);
         Assert.Equal("C:\\Validation\\README.txt", snapshot.Workspace.GuidanceFilePath);
         Assert.Equal("C:\\Validation\\templates\\output-validation-session.schema-v4.sample.json", snapshot.Workspace.SampleTemplatePath);
-        Assert.Equal("C:\\Validation\\guidance\\release-validation-checklist.md", snapshot.Workspace.ReleaseChecklistPath);
-        Assert.Equal("C:\\Validation\\guidance\\hdr-sdr-validation-scenarios.md", snapshot.Workspace.HdrSdrScenariosPath);
-        Assert.Equal("C:\\Validation\\guidance\\settings-accessibility-validation.md", snapshot.Workspace.SettingsAccessibilityGuidePath);
+        Assert.Equal("C:\\Validation\\guidance\\mvp-checklist.md", snapshot.Workspace.ReleaseChecklistPath);
+        Assert.Equal("C:\\Validation\\guidance\\hdr-notes.md", snapshot.Workspace.HdrSdrScenariosPath);
+        Assert.Null(snapshot.Workspace.SettingsAccessibilityGuidePath);
         Assert.Equal("C:\\Validation\\templates\\resource-trend-session-template.md", snapshot.Workspace.ResourceTrendTemplatePath);
         Assert.Equal("C:\\Validation\\collect-resource-trend-samples.ps1", snapshot.Workspace.ResourceTrendScriptPath);
         Assert.Equal(templateJson, files[snapshot.Workspace.SampleTemplatePath!]);
         Assert.Contains("Session Metadata", files["C:\\Validation\\templates\\hdr-sdr-validation-session-template.md"], StringComparison.Ordinal);
-        Assert.Contains("Public perfect-HDR-fidelity", files[snapshot.Workspace.ReleaseChecklistPath!], StringComparison.Ordinal);
-        Assert.Contains("Standard Content Set", files[snapshot.Workspace.HdrSdrScenariosPath!], StringComparison.Ordinal);
-        Assert.Contains("Keyboard Validation", files[snapshot.Workspace.SettingsAccessibilityGuidePath!], StringComparison.Ordinal);
+        Assert.Contains("MVP Validation Checklist", files[snapshot.Workspace.ReleaseChecklistPath!], StringComparison.Ordinal);
+        Assert.Contains("HDR Notes", files[snapshot.Workspace.HdrSdrScenariosPath!], StringComparison.Ordinal);
         Assert.Contains("Session Metadata", files[snapshot.Workspace.ResourceTrendTemplatePath!], StringComparison.Ordinal);
         Assert.Contains("Collects repeated resource trend samples", files[snapshot.Workspace.ResourceTrendScriptPath!], StringComparison.Ordinal);
         Assert.Contains("templates\\hdr-sdr-validation-session-template.md", files[snapshot.Workspace.GuidanceFilePath], StringComparison.Ordinal);
-        Assert.Contains("guidance\\release-validation-checklist.md", files[snapshot.Workspace.GuidanceFilePath], StringComparison.Ordinal);
+        Assert.Contains("guidance\\mvp-checklist.md", files[snapshot.Workspace.GuidanceFilePath], StringComparison.Ordinal);
+        Assert.Contains("guidance\\hdr-notes.md", files[snapshot.Workspace.GuidanceFilePath], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -753,7 +753,7 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Contains("artifact or evidence files", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Contains("bad.json", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Contains("JsonException", projection.Validation.Record.WindowsManualValidationDetail);
-        Assert.Equal("harness/validation/output-validation.md", projection.Validation.Record.EvidenceDocumentPath);
+        Assert.Equal("docs/validation/mvp-checklist.md", projection.Validation.Record.EvidenceDocumentPath);
         Assert.Equal("%LOCALAPPDATA%\\Lumiere\\validation\\output", projection.Validation.Record.ValidationWorkspacePath);
         Assert.Equal("Build", projection.MainPanel.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
@@ -807,8 +807,8 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Equal(ValidationEvidenceStatus.Limited, projection.Validation.Record.WindowsManualValidationStatus);
         Assert.Contains("2 output validation artifact", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Contains("Validation workspace:", projection.Validation.Record.WindowsManualValidationDetail);
-        Assert.Contains("Release gates", projection.Validation.Record.WindowsManualValidationDetail);
-        Assert.Equal("harness/validation/output-validation.md", projection.Validation.Record.EvidenceDocumentPath);
+        Assert.Contains("MVP release", projection.Validation.Record.WindowsManualValidationDetail);
+        Assert.Equal("docs/validation/mvp-checklist.md", projection.Validation.Record.EvidenceDocumentPath);
     }
 
     private static OutputValidationSessionArtifact CreateArtifact(string date, string viewerName) =>

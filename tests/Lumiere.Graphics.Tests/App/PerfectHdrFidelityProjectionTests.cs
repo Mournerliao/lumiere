@@ -55,7 +55,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Contains("compatibility", profile.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("Compatibility-converted sRGB artifact", profile.Contract.DestinationPolicy);
         Assert.Contains("no HDR metadata", profile.Contract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("public release target", profile.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("broad release target", profile.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -769,7 +769,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Equal(ValidationEvidenceStatus.NotRun, record.WindowsManualValidationStatus);
         Assert.Contains("Windows CI", record.AutomatedEvidenceDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("manual validation", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("harness/validation/release-validation-checklist.md", record.EvidenceDocumentPath);
+        Assert.Contains("docs/validation/mvp-checklist.md", record.EvidenceDocumentPath);
         Assert.DoesNotContain("HDR-preserved", record.AutomatedEvidenceDetail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
     }
@@ -786,9 +786,9 @@ public sealed class PerfectHdrFidelityProjectionTests
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\evidence",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\README.txt",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\output-validation-session.schema-v4.sample.json",
-                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\release-validation-checklist.md",
-                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-sdr-validation-scenarios.md",
-                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\settings-accessibility-validation.md",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\mvp-checklist.md",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-notes.md",
+                null,
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\resource-trend-session-template.md",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\collect-resource-trend-samples.ps1",
                 []),
@@ -802,14 +802,14 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Contains("No output validation artifact is loaded", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output", record.ValidationWorkspacePath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\output-validation-session.schema-v4.sample.json", record.ValidationTemplatePath);
-        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\release-validation-checklist.md", record.ReleaseChecklistPath);
-        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-sdr-validation-scenarios.md", record.HdrSdrScenariosPath);
-        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\settings-accessibility-validation.md", record.SettingsAccessibilityGuidePath);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\mvp-checklist.md", record.ReleaseChecklistPath);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-notes.md", record.HdrSdrScenariosPath);
+        Assert.Null(record.SettingsAccessibilityGuidePath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\resource-trend-session-template.md", record.ResourceTrendTemplatePath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\collect-resource-trend-samples.ps1", record.ResourceTrendScriptPath);
         Assert.True(record.CanOpenReleaseChecklist);
         Assert.True(record.CanOpenHdrSdrScenarios);
-        Assert.True(record.CanOpenSettingsAccessibilityGuide);
+        Assert.False(record.CanOpenSettingsAccessibilityGuide);
         Assert.True(record.CanOpenResourceTrendTemplate);
         Assert.True(record.CanOpenResourceTrendScript);
         Assert.True(record.CanCopyResourceTrendCommand);
@@ -828,9 +828,9 @@ public sealed class PerfectHdrFidelityProjectionTests
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\evidence",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\README.txt",
                 null,
-                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\release-validation-checklist.md",
-                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-sdr-validation-scenarios.md",
-                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\settings-accessibility-validation.md",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\mvp-checklist.md",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-notes.md",
+                null,
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\resource-trend-session-template.md",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\collect-resource-trend-samples.ps1",
                 [new OutputValidationWorkspaceIssue(
@@ -843,17 +843,17 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Equal(ValidationEvidenceStatus.Limited, record.WindowsManualValidationStatus);
         Assert.Contains("workspace is not ready", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("sample template source", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal("harness/validation/output-validation.md", record.EvidenceDocumentPath);
+        Assert.Equal("docs/validation/mvp-checklist.md", record.EvidenceDocumentPath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output", record.ValidationWorkspacePath);
         Assert.Null(record.ValidationTemplatePath);
-        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\release-validation-checklist.md", record.ReleaseChecklistPath);
-        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-sdr-validation-scenarios.md", record.HdrSdrScenariosPath);
-        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\settings-accessibility-validation.md", record.SettingsAccessibilityGuidePath);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\mvp-checklist.md", record.ReleaseChecklistPath);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-notes.md", record.HdrSdrScenariosPath);
+        Assert.Null(record.SettingsAccessibilityGuidePath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\resource-trend-session-template.md", record.ResourceTrendTemplatePath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\collect-resource-trend-samples.ps1", record.ResourceTrendScriptPath);
         Assert.True(record.CanOpenReleaseChecklist);
         Assert.True(record.CanOpenHdrSdrScenarios);
-        Assert.True(record.CanOpenSettingsAccessibilityGuide);
+        Assert.False(record.CanOpenSettingsAccessibilityGuide);
         Assert.True(record.CanOpenResourceTrendTemplate);
         Assert.True(record.CanOpenResourceTrendScript);
         Assert.True(record.CanCopyResourceTrendCommand);
@@ -933,8 +933,8 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Contains("REL-STAB-02", summary.GapDetail, StringComparison.Ordinal);
         Assert.Contains("Next recommended runs:", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Next Windows run:", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Open Scenario guide", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Open A11y guide", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Review HDR notes", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Record any export-profile", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Create trend draft", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
     }
 

@@ -235,7 +235,7 @@
                     x:Name="OutputProfileDetail"
                     FontSize="10"
                     Foreground="{StaticResource MutedTextBrush}"
-                    Text="Compatibility output; useful fallback, not the public release target."
+                    Text="Compatible output for the MVP; HDR-preserved export remains future work."
                     TextWrapping="WrapWholeWords" />
               </StackPanel>
               <Border
@@ -598,7 +598,7 @@
                       x:Name="SettingsTargetEvidenceDetailText"
                       FontSize="10"
                       Foreground="{StaticResource MutedTextBrush}"
-                      Text="Select a target before public release can replace the global HDR guess with target-aware evidence."
+                      Text="Select a target so Lumiere can report HDR state for the active capture target."
                       TextWrapping="WrapWholeWords" />
                 </StackPanel>
                 <Border
@@ -878,13 +878,13 @@
                         FontSize="12"
                         FontWeight="SemiBold"
                         Foreground="{StaticResource TextBrush}"
-                        Text="Public perfect-HDR-fidelity"
+                        Text="HDR-aware MVP"
                         TextWrapping="WrapWholeWords" />
                     <TextBlock
                         x:Name="ValidationSummaryText"
                         FontSize="10"
                         Foreground="{StaticResource MutedTextBrush}"
-                        Text="Public release waits for evidence; SDR compatibility remains fallback only."
+                        Text="MVP release checks capture, output, and honest HDR state."
                         TextWrapping="WrapWholeWords" />
                   </StackPanel>
                 </Grid>
@@ -1307,7 +1307,7 @@
                           x:Name="ValidationRecordManualDetail"
                           FontSize="9"
                           Foreground="{StaticResource MutedTextBrush}"
-                          Text="Windows manual validation for HDR displays, target apps, mixed monitors, and visual match is not run."
+                          Text="Windows manual validation for MVP capture, output, and HDR honesty is not run."
                           TextWrapping="WrapWholeWords" />
                     </StackPanel>
                     <TextBlock
@@ -1323,7 +1323,7 @@
                       x:Name="ValidationRecordEvidencePathText"
                       FontSize="9"
                       Foreground="{StaticResource SubtleTextBrush}"
-                      Text="harness/validation/release-validation-checklist.md"
+                      Text="docs/validation/mvp-checklist.md"
                       TextWrapping="WrapWholeWords" />
                   <CommandBar
                       x:Name="ValidationEvidenceCommandBar"
@@ -1397,30 +1397,30 @@
                       </AppBarButton>
                       <AppBarButton
                           x:Name="ValidationOpenReleaseChecklistButton"
-                          AutomationProperties.HelpText="Open the seeded public release validation checklist for this machine."
-                          AutomationProperties.Name="Open release validation checklist"
+                          AutomationProperties.HelpText="Open the seeded MVP validation checklist for this machine."
+                          AutomationProperties.Name="Open MVP validation checklist"
                           Click="OnValidationOpenReleaseChecklistClick"
-                          Label="Release checklist">
+                          Label="MVP checklist">
                         <AppBarButton.Icon>
                           <FontIcon Glyph="&#xE8A7;" />
                         </AppBarButton.Icon>
                       </AppBarButton>
                       <AppBarButton
                           x:Name="ValidationOpenHdrSdrScenariosButton"
-                          AutomationProperties.HelpText="Open the seeded HDR and SDR validation scenario guide for this machine."
-                          AutomationProperties.Name="Open HDR SDR validation scenarios"
+                          AutomationProperties.HelpText="Open the seeded HDR notes for this machine."
+                          AutomationProperties.Name="Open HDR notes"
                           Click="OnValidationOpenHdrSdrScenariosClick"
-                          Label="Scenario guide">
+                          Label="HDR notes">
                         <AppBarButton.Icon>
                           <FontIcon Glyph="&#xE70F;" />
                         </AppBarButton.Icon>
                       </AppBarButton>
                       <AppBarButton
                           x:Name="ValidationOpenSettingsAccessibilityGuideButton"
-                          AutomationProperties.HelpText="Open the seeded settings accessibility validation workflow for this machine."
-                          AutomationProperties.Name="Open settings accessibility validation guide"
+                          AutomationProperties.HelpText="Open the seeded HDR notes for this machine."
+                          AutomationProperties.Name="Open HDR notes"
                           Click="OnValidationOpenSettingsAccessibilityGuideClick"
-                          Label="A11y guide">
+                          Label="Extra guide">
                         <AppBarButton.Icon>
                           <FontIcon Glyph="&#xE897;" />
                         </AppBarButton.Icon>

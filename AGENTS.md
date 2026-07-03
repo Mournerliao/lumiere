@@ -2,33 +2,44 @@
 
 ## Project Overview
 
-Lumiere is a native Windows HDR screenshot tool built with WinUI 3, Windows App SDK, Direct3D 11, DXGI, and Vortice. The core pipeline captures FP16 frames via Windows Graphics Capture and presents them through a scRGB swap chain.
+Lumiere is a native Windows HDR-aware screenshot tool built with WinUI 3, Windows App SDK, Direct3D 11, DXGI, Windows Graphics Capture, and Vortice. The MVP goal is fast native screenshot capture with honest HDR state and compatible output, not a broad HDR-preserved claim.
+
+## Start Here
+
+- Product scope: `docs/product/mvp.md`
+- Roadmap: `docs/product/roadmap.md`
+- Architecture boundaries: `docs/engineering/architecture.md`
+- Workflows: `docs/engineering/workflows.md`
+- MVP validation: `docs/validation/mvp-checklist.md`
+- HDR notes: `docs/validation/hdr-notes.md`
 
 ## Platform Constraints
 
-- Target: `.NET 10` / `net10.0-windows10.0.19041.0` / `x64` only
-- Preserve HDR: FP16/scRGB format, never introduce SDR fallbacks
-- Public HDR-preserving claims require target-aware display evidence, output format/conversion/metadata policy, target-app compatibility, and Windows manual validation.
-- Windows-only: WGC, DXGI, D3D11, WinUI 3
+- Target: `.NET 10` / `net10.0-windows10.0.19041.0` / `x64` only.
+- Windows-only production stack: WGC, DXGI, D3D11, WinUI 3.
+- Preserve the FP16/scRGB preview direction.
+- Do not introduce SDR-first screenshot-library foundations.
+- Public HDR-preserved claims require target-aware display evidence, documented output semantics, target-app compatibility, and Windows manual validation.
 
 ## Architecture
 
 | Module | Responsibility |
 |---|---|
-| `Lumiere.App` | WinUI startup, window composition |
-| `Lumiere.Graphics` | D3D11 device, swap chain, HDR constants |
-| `Lumiere.Capture` | WGC frame pool, capture lifecycle |
-| `Lumiere.Infrastructure` | COM/WinRT interop, diagnostics |
-| `Lumiere.Overlay` | Full-screen overlay, crop UI |
-| `Lumiere.Settings` | Local preferences |
+| `Lumiere.App` | WinUI startup, dependency composition, windows, app-level projections |
+| `Lumiere.Graphics` | D3D11 device, DXGI swap chain, HDR constants and graphics contracts |
+| `Lumiere.Capture` | WGC target selection, frame pool lifecycle, capture state |
+| `Lumiere.Infrastructure` | COM/WinRT interop, diagnostics, typed results, UI-thread helpers |
+| `Lumiere.Overlay` | Fullscreen overlay, crop UI, overlay cues |
+| `Lumiere.Settings` | Local preferences and settings projections |
 
-**Rule:** Platform APIs must stay in their boundary module. Expose narrow interfaces.
+Platform APIs must stay in their boundary module. Expose narrow interfaces upward.
 
 ## Coding Constraints
 
-- Use structured logging (`ILogger` via `LumiereLoggerFactory`) — never `Console.WriteLine`
-- Manage COM/DXGI resources with deterministic disposal
-- Follow existing patterns; read harness docs before changes
+- Use structured logging through `ILogger` via `LumiereLoggerFactory`; never use `Console.WriteLine`.
+- Manage COM/DXGI/D3D11/WGC resources with deterministic disposal.
+- Follow existing patterns before introducing new abstractions.
+- Keep output artifact success separate from HDR-preserved claims.
 
 ## Validation Commands
 
@@ -41,32 +52,28 @@ dotnet format Lumiere.sln --verify-no-changes --verbosity minimal
 
 ## NuGet Restore/Run Guidance
 
-For ad-hoc local app launch, prefer `dotnet run --project src/Lumiere.App/Lumiere.App.csproj -p:Platform=x64` without `--no-restore`. Use `--no-restore` only after a successful restore in the same workspace state.
+For ad-hoc local app launch, prefer:
 
-If `dotnet build`, `dotnet test`, or `dotnet run` fails with `NETSDK1064` and says a package was not found after restore, treat it as a stale/partial NuGet restore or cache issue before debugging source code. Stop using `--no-restore`, run:
+```bash
+dotnet run --project src/Lumiere.App/Lumiere.App.csproj -p:Platform=x64
+```
+
+Use `--no-restore` only after a successful restore in the same workspace state.
+
+If `dotnet build`, `dotnet test`, or `dotnet run` fails with `NETSDK1064` and says a package was not found after restore, treat it as a stale or partial NuGet restore/cache issue before debugging source code. Stop using `--no-restore`, run:
 
 ```bash
 dotnet restore Lumiere.sln --disable-parallel --verbosity minimal /nr:false --force
 ```
 
-Then retry the original command. If it still fails, follow `harness/workflows/nuget-restore-recovery.md`.
+Then retry the original command.
 
 ## Commit Convention
 
-```
+```text
 feat:  user-visible capability
 fix:   defect fix
 docs:  documentation only
 chore: scaffold, build, repo maintenance
 test:  test-only changes
 ```
-
-## Skills & Workflows
-
-This project uses BMad skills for requirements, architecture, and sprint planning. Project-specific skills are in `harness/skills/`.
-
-## Key Files
-
-- `harness/README.md` — project context and reusable guidance
-- `harness/planning/project-plan.md` — product intent
-- `harness/workflows/cross-platform-development.md` — Mac-edit/Windows-validate workflow

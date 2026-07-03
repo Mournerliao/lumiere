@@ -135,9 +135,8 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
     internal const string WorkspaceReadmeFileName = "README.txt";
     internal const string SampleTemplateFileName = "output-validation-session.schema-v4.sample.json";
     internal const string HdrSdrSessionTemplateFileName = "hdr-sdr-validation-session-template.md";
-    internal const string ReleaseChecklistFileName = "release-validation-checklist.md";
-    internal const string HdrSdrScenariosFileName = "hdr-sdr-validation-scenarios.md";
-    internal const string SettingsAccessibilityGuideFileName = "settings-accessibility-validation.md";
+    internal const string MvpChecklistFileName = "mvp-checklist.md";
+    internal const string HdrNotesFileName = "hdr-notes.md";
     internal const string ResourceTrendTemplateFileName = "resource-trend-session-template.md";
     internal const string ResourceTrendScriptFileName = "collect-resource-trend-samples.ps1";
 
@@ -584,9 +583,9 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         var guidanceFilePath = Path.Combine(directoryPath, WorkspaceReadmeFileName);
         var sampleTemplatePath = Path.Combine(templatesDirectoryPath, SampleTemplateFileName);
         var hdrSdrSessionTemplatePath = Path.Combine(templatesDirectoryPath, HdrSdrSessionTemplateFileName);
-        var releaseChecklistPath = Path.Combine(guidanceDirectoryPath, ReleaseChecklistFileName);
-        var hdrSdrScenariosPath = Path.Combine(guidanceDirectoryPath, HdrSdrScenariosFileName);
-        var settingsAccessibilityGuidePath = Path.Combine(guidanceDirectoryPath, SettingsAccessibilityGuideFileName);
+        var releaseChecklistPath = Path.Combine(guidanceDirectoryPath, MvpChecklistFileName);
+        var hdrSdrScenariosPath = Path.Combine(guidanceDirectoryPath, HdrNotesFileName);
+        string? settingsAccessibilityGuidePath = null;
         var resourceTrendTemplatePath = Path.Combine(templatesDirectoryPath, ResourceTrendTemplateFileName);
         var resourceTrendScriptPath = Path.Combine(directoryPath, ResourceTrendScriptFileName);
         var issues = new List<OutputValidationWorkspaceIssue>();
@@ -608,21 +607,15 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
                 issues);
             EnsureSeededGuidance(
                 releaseChecklistPath,
-                "Lumiere.App.Validation.Guidance.release-validation-checklist.md",
-                "Release validation checklist source could not be loaded from the current build.",
-                "Release validation checklist could not be seeded.",
+                "Lumiere.App.Validation.Guidance.mvp-checklist.md",
+                "MVP validation checklist source could not be loaded from the current build.",
+                "MVP validation checklist could not be seeded.",
                 issues);
             EnsureSeededGuidance(
                 hdrSdrScenariosPath,
-                "Lumiere.App.Validation.Guidance.hdr-sdr-validation-scenarios.md",
-                "HDR/SDR validation scenarios source could not be loaded from the current build.",
-                "HDR/SDR validation scenarios could not be seeded.",
-                issues);
-            EnsureSeededGuidance(
-                settingsAccessibilityGuidePath,
-                "Lumiere.App.Validation.Guidance.settings-accessibility-validation.md",
-                "Settings accessibility validation guide source could not be loaded from the current build.",
-                "Settings accessibility validation guide could not be seeded.",
+                "Lumiere.App.Validation.Guidance.hdr-notes.md",
+                "HDR notes source could not be loaded from the current build.",
+                "HDR notes could not be seeded.",
                 issues);
             EnsureResourceTrendTemplate(resourceTrendTemplatePath, issues);
             EnsureResourceTrendScript(resourceTrendScriptPath, issues);
@@ -637,7 +630,7 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
             fileExists(sampleTemplatePath) ? sampleTemplatePath : null,
             fileExists(releaseChecklistPath) ? releaseChecklistPath : null,
             fileExists(hdrSdrScenariosPath) ? hdrSdrScenariosPath : null,
-            fileExists(settingsAccessibilityGuidePath) ? settingsAccessibilityGuidePath : null,
+            null,
             fileExists(resourceTrendTemplatePath) ? resourceTrendTemplatePath : null,
             fileExists(resourceTrendScriptPath) ? resourceTrendScriptPath : null,
             issues);
@@ -842,27 +835,25 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
                 "- Store real Windows manual output validation artifacts for the current machine.",
                 "- Keep draft templates under templates\\ so the runtime loader does not count them as evidence.",
                 "- Save supporting notes, screenshots, or logs under evidence\\ as needed.",
-                "- Seed long-run resource trend validation helpers next to the same workspace so Story 12-3 runs start from the app-local validation surface.",
-                "- Seed the current release checklist, HDR/SDR scenario guide, and settings accessibility workflow into guidance\\ for this machine.",
+                "- Seed the current MVP checklist and HDR notes into guidance\\ for this machine.",
                 string.Empty,
                 "Workflow:",
                 "1. Copy templates\\output-validation-session.schema-v4.sample.json into this output\\ folder.",
                 "2. Or use Lumiere's Create draft action to generate a prefilled local draft in this folder.",
-                "3. Review guidance\\release-validation-checklist.md, guidance\\hdr-sdr-validation-scenarios.md, and guidance\\settings-accessibility-validation.md before counting Windows manual evidence toward public release.",
-                "4. Use templates\\hdr-sdr-validation-session-template.md when recording a focused Story 12-1 manual scenario run.",
-                "5. Use templates\\resource-trend-session-template.md plus collect-resource-trend-samples.ps1 for Story 12-3 long-run validation sessions.",
+                "3. Review guidance\\mvp-checklist.md and guidance\\hdr-notes.md before counting Windows manual evidence toward the MVP.",
+                "4. Use templates\\hdr-sdr-validation-session-template.md only when recording deeper HDR notes for future export work.",
+                "5. Use templates\\resource-trend-session-template.md plus collect-resource-trend-samples.ps1 only for future long-run validation sessions.",
                 "6. Rename or copy templates as needed, replace every REPLACE_WITH_* placeholder, and keep manual evidence honest.",
                 "7. Reload evidence from Lumiere after recording real observations.",
                 "8. Do not treat template files or incomplete sessions as passing release evidence.",
                 string.Empty,
                 "Seeded local guides:",
-                "- guidance\\release-validation-checklist.md",
-                "- guidance\\hdr-sdr-validation-scenarios.md",
-                "- guidance\\settings-accessibility-validation.md",
+                "- guidance\\mvp-checklist.md",
+                "- guidance\\hdr-notes.md",
                 string.Empty,
                 "Repo references:",
-                "- harness/validation/output-validation.md",
-                "- harness/validation/resource-trend-validation.md"]);
+                "- docs/validation/mvp-checklist.md",
+                "- docs/validation/hdr-notes.md"]);
 
     private string AllocateDraftPath(string workspaceDirectoryPath, string fileNameStem)
     {

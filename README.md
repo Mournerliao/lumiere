@@ -1,18 +1,43 @@
 # Lumiere
 
-Lumiere is a native Windows desktop screenshot tool focused on HDR-correct capture and preview. The application foundation is WinUI 3 on Windows App SDK with Windows Graphics Capture, Direct3D 11, DXGI, and Vortice for the future GPU-resident HDR pipeline.
+Lumiere is a native Windows desktop screenshot tool focused on HDR-aware capture and preview. The first release target is a usable MVP: fast screenshots, honest HDR status, an FP16/scRGB-oriented preview path, and compatible clipboard/file output.
 
-The current public release target is validated perfect HDR fidelity for supported paths. The existing capture and workflow baseline is treated as the implementation foundation; public release requires target-aware HDR detection, documented output semantics, compatibility evidence, and Windows manual validation.
+Lumiere does not currently claim broad HDR-preserved export support. HDR-preserved file export remains a future milestone that requires a narrow supported path, documented conversion and metadata policy, named viewer assumptions, and Windows manual validation.
+
+## Current Docs
+
+- [MVP product scope](docs/product/mvp.md)
+- [Product roadmap](docs/product/roadmap.md)
+- [Architecture](docs/engineering/architecture.md)
+- [Engineering workflows](docs/engineering/workflows.md)
+- [MVP validation checklist](docs/validation/mvp-checklist.md)
+- [HDR notes](docs/validation/hdr-notes.md)
 
 ## Platform Constraints
 
 - Target runtime: `.NET 10` with `net10.0-windows10.0.19041.0`.
 - Primary architecture: `x64` / `win-x64`; do not use `Any CPU`.
-- Main preview path must preserve FP16/scRGB HDR data.
-- Public HDR-preserving claims require target-aware display evidence plus output format, conversion, metadata, target-app compatibility, and Windows manual validation records.
-- Do not introduce Electron, Tauri, WPF bitmap-first, WinForms, GDI, web UI, cloud upload, telemetry, or SDR screenshot-library foundations.
+- Production UI must remain native WinUI 3 / Windows App SDK.
+- Capture and preview must remain based on Windows Graphics Capture, Direct3D 11, DXGI, and Vortice.
+- Main preview work should preserve the FP16/scRGB HDR direction.
+- Public HDR-preserved claims require target-aware display evidence, documented output semantics, target-app compatibility, and Windows manual validation.
+- Do not introduce Electron, Tauri, WPF bitmap-first, WinForms, GDI screenshot-library foundations, web UI, cloud upload, or telemetry.
 
-## Prerequisites
+## Repository Layout
+
+```text
+src/
+  Lumiere.App/             WinUI startup and window composition
+  Lumiere.Overlay/         Fullscreen overlay and crop UI behavior
+  Lumiere.Capture/         Windows Graphics Capture lifecycle
+  Lumiere.Graphics/        D3D11/DXGI rendering and presentation
+  Lumiere.Infrastructure/  Interop, diagnostics, result types, UI-thread helpers
+  Lumiere.Settings/        Local preferences
+tests/                     Test projects mirroring source boundaries
+docs/                      Current product, engineering, validation, and decision docs
+```
+
+## Developer Workflow
 
 Development and full validation require Windows:
 
@@ -20,30 +45,9 @@ Development and full validation require Windows:
 - .NET 10 SDK.
 - Windows SDK `10.0.26100.x` or a documented compatible Windows SDK.
 
-Non-Windows machines can inspect and edit the repository, but WinUI restore/build validation is expected to run on Windows. See [Mac + Windows development workflow](harness/workflows/cross-platform-development.md) for the supported split between macOS editing, Windows CI, and Windows hardware validation.
+macOS is suitable for editing, documentation, refactoring, and platform-neutral test design. Windows is required for WinUI restore/build validation and real WGC, DXGI, D3D11, HDR display, tray, shortcut, clipboard, and multi-monitor behavior.
 
-## Repository Layout
-
-```text
-src/
-  Lumiere.App/             WinUI app startup and composition
-  Lumiere.Overlay/         Future overlay and crop UI behavior
-  Lumiere.Capture/         Future Windows.Graphics.Capture lifecycle
-  Lumiere.Graphics/        Future D3D11/DXGI rendering and presentation
-  Lumiere.Infrastructure/  Interop, diagnostics, result types, UI-thread helpers
-  Lumiere.Settings/        Local preferences only
-tests/                     Future test projects mirroring source boundaries
-```
-
-## Developer Workflow
-
-Lumiere supports a Mac-edit/Windows-validate workflow:
-
-- macOS is suitable for code editing, documentation, refactoring, API design, and platform-neutral test design.
-- Windows CI or a Windows development machine must run restore/build/test/format before review.
-- A real Windows machine is required for WinUI, WGC, DXGI, D3D11, HDR display, and multi-monitor validation.
-
-Before review, run the validation sequence from the repository root:
+Before review on Windows, run:
 
 ```bash
 dotnet restore Lumiere.sln --disable-parallel --verbosity minimal /nr:false
@@ -52,7 +56,13 @@ dotnet test tests/Lumiere.Graphics.Tests/Lumiere.Graphics.Tests.csproj -p:Platfo
 dotnet format Lumiere.sln --verify-no-changes --verbosity minimal
 ```
 
-Do not fake HDR graphics tests before the production graphics lifecycle exists. Automated tests can cover configuration, state, and lifecycle behavior; real HDR presentation still requires Windows hardware validation.
+For local app launch, prefer:
+
+```bash
+dotnet run --project src/Lumiere.App/Lumiere.App.csproj -p:Platform=x64
+```
+
+Use `--no-restore` only after a successful restore in the same workspace state.
 
 ## Commit Convention
 
@@ -63,10 +73,3 @@ Use concise Conventional Commit prefixes:
 - `docs:` for documentation-only changes.
 - `chore:` for scaffold, build, repository, or maintenance work.
 - `test:` for test-only changes.
-
-Examples:
-
-```text
-chore: scaffold native windows solution
-docs: document hdr validation workflow
-```

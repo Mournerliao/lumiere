@@ -6,7 +6,7 @@ namespace Lumiere.App;
 
 public static class PerfectHdrFidelityProjection
 {
-    public const string ReleaseTarget = "Public perfect-HDR-fidelity";
+    public const string ReleaseTarget = "HDR-aware MVP";
 
     public static OutputProfileProjection ProjectOutputProfile(string? exportColorFormat)
     {
@@ -26,7 +26,7 @@ public static class PerfectHdrFidelityProjection
             _ => CreateOutputProfile(
                 contract,
                 "Compat",
-                "Compatibility output; useful fallback, not the public release target.",
+                "Compatible output for the MVP; HDR-preserved export remains future work.",
                 isReadOnly: false),
         };
     }
@@ -167,7 +167,7 @@ public static class PerfectHdrFidelityProjection
             _ => CreateOutputProfile(
                 contract,
                 "Compat",
-                "Compatibility output; useful fallback, not the public release target.",
+                "Compatible output for the MVP; HDR-preserved export remains future work.",
                 isReadOnly: false,
                 readiness),
         };
@@ -542,7 +542,7 @@ public static class PerfectHdrFidelityProjection
         return new ValidationEvidenceRowProjection(
             "HDR-preserved profile",
             ValidationEvidenceStatus.NotRun,
-            "At least one supported profile must pass before public release.");
+            "HDR-preserved export remains blocked until a supported profile passes validation.");
     }
 
     private static ValidationEvidenceRowProjection ProjectTargetAppMatrixRow(
@@ -722,8 +722,8 @@ public static class PerfectHdrFidelityProjection
             ValidationEvidenceStatus.Limited,
             "Windows CI restore, build, unit tests, and format gates can support implementation confidence only.",
             ValidationEvidenceStatus.NotRun,
-            "Windows manual validation for HDR displays, target apps, mixed monitors, and visual match is not run.",
-            "harness/validation/release-validation-checklist.md");
+            "Windows manual validation for MVP capture, output, and HDR honesty is not run.",
+            "docs/validation/mvp-checklist.md");
     }
 
     public static ValidationEvidenceSummaryProjection ProjectValidationEvidenceSummary(
@@ -797,9 +797,9 @@ public static class PerfectHdrFidelityProjection
                 "%LOCALAPPDATA%\\Lumiere\\validation\\output\\evidence",
                 "%LOCALAPPDATA%\\Lumiere\\validation\\output\\README.txt",
                 null,
-                "%LOCALAPPDATA%\\Lumiere\\validation\\output\\guidance\\release-validation-checklist.md",
-                "%LOCALAPPDATA%\\Lumiere\\validation\\output\\guidance\\hdr-sdr-validation-scenarios.md",
-                "%LOCALAPPDATA%\\Lumiere\\validation\\output\\guidance\\settings-accessibility-validation.md",
+                "%LOCALAPPDATA%\\Lumiere\\validation\\output\\guidance\\mvp-checklist.md",
+                "%LOCALAPPDATA%\\Lumiere\\validation\\output\\guidance\\hdr-notes.md",
+                null,
                 null,
                 null,
                 []);
@@ -828,7 +828,7 @@ public static class PerfectHdrFidelityProjection
                     string.IsNullOrWhiteSpace(detail)
                         ? "Validation workspace is not ready on this machine. Lumiere could not prepare the local output-validation folder."
                         : $"Validation workspace is not ready on this machine. {detail}",
-                EvidenceDocumentPath = "harness/validation/output-validation.md",
+                EvidenceDocumentPath = "docs/validation/mvp-checklist.md",
             };
         }
 
@@ -840,7 +840,7 @@ public static class PerfectHdrFidelityProjection
                 WindowsManualValidationStatus = ValidationEvidenceStatus.Limited,
                 WindowsManualValidationDetail =
                     $"{validationSnapshot.Artifacts.Count} output validation artifact(s) loaded, but {validationSnapshot.LoadIssues.Count} file(s) were ignored. Fix ignored artifact or evidence files before counting Windows manual output evidence. {DescribeBuildAlignmentForRecord(buildAlignment)} {workspaceSummary} First issue: {Path.GetFileName(firstIssue.Path)}: {firstIssue.Detail}",
-                EvidenceDocumentPath = "harness/validation/output-validation.md",
+                EvidenceDocumentPath = "docs/validation/mvp-checklist.md",
             };
         }
 
@@ -850,8 +850,8 @@ public static class PerfectHdrFidelityProjection
             {
                 WindowsManualValidationStatus = ValidationEvidenceStatus.Limited,
                 WindowsManualValidationDetail =
-                    $"{validationSnapshot.Artifacts.Count} output validation artifact(s) loaded for this session. {DescribeBuildAlignmentForRecord(buildAlignment)} {workspaceSummary} Release gates still require target-aware HDR, visual match, HDR preservation, and HDR10 metadata recognition to pass.",
-                EvidenceDocumentPath = "harness/validation/output-validation.md",
+                    $"{validationSnapshot.Artifacts.Count} output validation artifact(s) loaded for this session. {DescribeBuildAlignmentForRecord(buildAlignment)} {workspaceSummary} MVP release still requires usable capture/output behavior and honest HDR copy.",
+                EvidenceDocumentPath = "docs/validation/mvp-checklist.md",
             };
         }
 
@@ -860,7 +860,7 @@ public static class PerfectHdrFidelityProjection
             WindowsManualValidationStatus = ValidationEvidenceStatus.Limited,
             WindowsManualValidationDetail =
                 $"{workspaceSummary} No output validation artifact is loaded for this session yet; copy the seeded sample, replace placeholders, and reload Lumiere after recording real Windows observations.",
-            EvidenceDocumentPath = "harness/validation/output-validation.md",
+            EvidenceDocumentPath = "docs/validation/mvp-checklist.md",
         };
     }
 
@@ -872,7 +872,7 @@ public static class PerfectHdrFidelityProjection
         }
 
         return workspace.HasSampleTemplate
-            ? $"Validation workspace: {workspace.DirectoryPath}. Seeded sample: {workspace.SampleTemplatePath}. Local guides: release checklist, HDR/SDR scenarios, and settings accessibility workflow."
+            ? $"Validation workspace: {workspace.DirectoryPath}. Seeded sample: {workspace.SampleTemplatePath}. Local guides: MVP checklist and HDR notes."
             : $"Validation workspace: {workspace.DirectoryPath}.";
     }
 
@@ -1004,25 +1004,25 @@ public static class PerfectHdrFidelityProjection
             ? parsed
             : DateOnly.MinValue;
 
-    private sealed record PublicReleaseChecklistGapGroup(
+    private sealed record MvpChecklistGapGroup(
         string Label,
         IReadOnlyList<string> ChecklistIds,
         string RecommendedAction);
 
-    private static readonly PublicReleaseChecklistGapGroup[] PublicReleaseChecklistGapGroups =
+    private static readonly MvpChecklistGapGroup[] MvpChecklistGapGroups =
     [
         new(
             "Target-aware HDR",
             ["REL-HDR-01", "REL-HDR-02", "REL-HDR-03", "REL-HDR-04", "REL-HDR-05"],
-            "Open Scenario guide and run the target-aware HDR workflow for the missing display states."),
+            "Review HDR notes and record the missing target HDR observations."),
         new(
             "Viewer/output matrix",
             ["REL-OUT-01", "REL-OUT-02", "REL-OUT-03", "REL-OUT-04", "REL-OUT-05"],
-            "Review Release checklist and record the missing named viewer and output-target runs."),
+            "Review the MVP checklist and record the missing output-target runs."),
         new(
             "Export-profile accessibility and DPI",
             ["REL-HDR-06", "REL-A11Y-01", "REL-A11Y-02", "REL-A11Y-03", "REL-A11Y-04", "REL-A11Y-05"],
-            "Open A11y guide and record export-profile, keyboard, screen-reader, high-contrast, and DPI checks."),
+            "Record any export-profile, keyboard, high-contrast, or DPI limitations that affect the MVP."),
         new(
             "Long-run lifecycle",
             ["REL-STAB-01", "REL-STAB-02"],
@@ -1095,7 +1095,7 @@ public static class PerfectHdrFidelityProjection
             detailParts.Add($"HDR10 viewer target gaps: {FormatEvidenceList(runPlan.MissingViewerTargets, fallback: "named target apps")}.");
         }
 
-        var checklistCoverageGaps = DescribePublicReleaseChecklistGaps(artifacts);
+        var checklistCoverageGaps = DescribeMvpChecklistGaps(artifacts);
         if (checklistCoverageGaps.Count > 0)
         {
             detailParts.Add($"Public gate gaps: {string.Join("; ", checklistCoverageGaps.Select(gap => gap.LabelWithIds))}.");
@@ -1123,11 +1123,11 @@ public static class PerfectHdrFidelityProjection
         return string.Join(" ", detailParts);
     }
 
-    private sealed record PublicReleaseChecklistGapDetail(
+    private sealed record MvpChecklistGapDetail(
         string LabelWithIds,
         string RecommendedAction);
 
-    private static IReadOnlyList<PublicReleaseChecklistGapDetail> DescribePublicReleaseChecklistGaps(
+    private static IReadOnlyList<MvpChecklistGapDetail> DescribeMvpChecklistGaps(
         IReadOnlyList<OutputValidationSessionArtifact> artifacts)
     {
         var covered = artifacts
@@ -1136,7 +1136,7 @@ public static class PerfectHdrFidelityProjection
             .Where(value => !string.IsNullOrWhiteSpace(value))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        return PublicReleaseChecklistGapGroups
+        return MvpChecklistGapGroups
             .Select(group =>
             {
                 var missing = group.ChecklistIds
@@ -1145,7 +1145,7 @@ public static class PerfectHdrFidelityProjection
                 return (Group: group, Missing: missing);
             })
             .Where(result => result.Missing.Length > 0)
-            .Select(result => new PublicReleaseChecklistGapDetail(
+            .Select(result => new MvpChecklistGapDetail(
                 $"{result.Group.Label} ({string.Join(", ", result.Missing)})",
                 result.Group.RecommendedAction))
             .ToArray();
@@ -1595,7 +1595,7 @@ public static class PerfectHdrFidelityProjection
                 true),
             _ => (
                 "Compat",
-                "Compatibility output; useful fallback, not the public release target.",
+                "Compatible output for the MVP; HDR-preserved export remains future work.",
                 false),
         };
     }

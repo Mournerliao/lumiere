@@ -2,7 +2,7 @@
 
 ## Product
 
-Lumiere is a native Windows desktop screenshot tool focused on HDR-correct capture and preview. It is built on WinUI 3, Windows App SDK, Windows Graphics Capture, Direct3D 11, DXGI, and Vortice.
+Lumiere is a native Windows desktop screenshot tool focused on HDR-aware capture and preview. It is built on WinUI 3, Windows App SDK, Windows Graphics Capture, Direct3D 11, DXGI, and Vortice.
 
 ## Register
 
@@ -11,23 +11,23 @@ product
 ## Users
 
 - Windows users who need fast, reliable screenshots during normal desktop work.
-- Designers, engineers, technical writers, and reviewers who care about pixel accuracy, HDR behavior, and repeatable capture workflows.
-- Power users with HDR displays and multi-monitor setups who need a tool that does not flatten or misrepresent HDR content.
+- Designers, engineers, technical writers, and reviewers who care about screenshots that do not obviously misrepresent HDR content.
+- Power users with HDR displays and multi-monitor setups who need honest capability boundaries.
 
 ## Product Purpose
 
-Lumiere should make screenshot capture feel native, precise, and trustworthy on Windows. The main product promise is not decoration or cloud sharing; it is accurate capture, accurate preview, clear export behavior, and a low-interruption workflow.
+Lumiere should make screenshot capture feel native, precise, and trustworthy on Windows. The first release target is an HDR-aware MVP: fast capture, clear preview/status behavior, compatible output, and no unsupported HDR-preserved claims.
 
-The current public release target is Public perfect-HDR-fidelity. The current capture and workflow baseline provides the product foundation, but public release claims require target-aware HDR detection, documented output fidelity semantics, target-app compatibility evidence, Windows manual validation, visual-match output, and at least one HDR-preserved supported output path.
+HDR-preserved export remains a future milestone. It must be scoped to a named output path with documented format/conversion/metadata semantics, target-app assumptions, and Windows manual validation before it becomes public product language.
 
 ## Strategic Principles
 
 - Native Windows first: preserve WinUI 3, Windows App SDK, WGC, D3D11, DXGI, and Vortice boundaries.
-- HDR trust first: avoid claims of HDR correctness unless the pipeline has the matching validation level.
-- Public fidelity requires evidence: "perfect HDR fidelity" means supported capture/preview/output paths have explicit fidelity contracts and recorded Windows validation, not a universal guarantee for every device, app, or format.
+- MVP first: ship the core screenshot workflow before broad HDR-preservation certification.
+- HDR honesty first: avoid claims of HDR preservation unless the selected output path has matching validation evidence.
 - Fast capture first: the overlay and capture flow must not slow the user's original task.
 - Local tool first: no cloud upload, telemetry, Electron, Tauri, WPF bitmap-first, WinForms, GDI, web UI, or SDR screenshot-library foundations.
-- Expert power, calm surface: advanced HDR and output controls should exist without overwhelming first-time capture.
+- Calm surface: advanced HDR risks should be handled in copy and docs without overwhelming first-time capture.
 
 ## Tone
 
@@ -39,7 +39,6 @@ Calm, precise, professional, native, and concise. The UI should sound like a rel
 - Purple-blue gradient AI-tool aesthetics.
 - Web landing pages with oversized heroes.
 - Nested cards and decorative card grids.
-- Unverified HDR claims.
+- Unverified HDR-preserved claims.
 - Cloud-sharing-first screenshot tools.
 - Decorative motion that delays capture or confirmation.
-

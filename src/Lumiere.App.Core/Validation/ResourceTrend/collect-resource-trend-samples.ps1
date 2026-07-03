@@ -5,7 +5,7 @@ Collects repeated resource trend samples for a running Lumiere process.
 .DESCRIPTION
 Records CPU-process and GPU-process-memory counters at a fixed interval and
 emits both raw CSV samples and a JSON summary. This script is intended for the
-Windows manual validation workflow in harness/validation/resource-trend-validation.md.
+future Windows long-run validation beyond the MVP checklist.
 
 .PARAMETER ProcessName
 Process name to monitor when ProcessId is not provided. Defaults to Lumiere.App.
@@ -14,8 +14,8 @@ Process name to monitor when ProcessId is not provided. Defaults to Lumiere.App.
 Exact process ID to monitor. Prefer this when multiple Lumiere instances may exist.
 
 .PARAMETER DurationSeconds
-How long to sample for. Public-fidelity long-run validation usually uses a
-duration that covers 50+ or 100+ capture/output cycles.
+How long to sample for. Future long-run validation may use a duration that
+covers 50+ or 100+ capture/output cycles.
 
 .PARAMETER SampleIntervalSeconds
 Seconds between samples.

@@ -15,14 +15,11 @@
     <EmbeddedResource Include="Validation\Output\hdr-sdr-validation-session-template.md" />
     <EmbeddedResource Include="Validation\ResourceTrend\resource-trend-session-template.md" />
     <EmbeddedResource Include="Validation\ResourceTrend\collect-resource-trend-samples.ps1" />
-    <EmbeddedResource Include="..\..\harness\validation\release-validation-checklist.md">
-      <LogicalName>Lumiere.App.Validation.Guidance.release-validation-checklist.md</LogicalName>
+    <EmbeddedResource Include="..\..\docs\validation\mvp-checklist.md">
+      <LogicalName>Lumiere.App.Validation.Guidance.mvp-checklist.md</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\..\harness\validation\hdr-sdr-validation-scenarios.md">
-      <LogicalName>Lumiere.App.Validation.Guidance.hdr-sdr-validation-scenarios.md</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="..\..\harness\validation\settings-accessibility-validation.md">
-      <LogicalName>Lumiere.App.Validation.Guidance.settings-accessibility-validation.md</LogicalName>
+    <EmbeddedResource Include="..\..\docs\validation\hdr-notes.md">
+      <LogicalName>Lumiere.App.Validation.Guidance.hdr-notes.md</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
 </Project>

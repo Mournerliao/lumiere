@@ -1,6 +1,6 @@
 # HDR / SDR Validation Session Template
 
-Use this template for a Windows manual validation run tied to `Public perfect-HDR-fidelity`.
+Use this template for optional deeper HDR validation runs beyond the MVP checklist.
 
 Draft status: NOT RUN until each status row is replaced with observed Windows manual validation evidence.
 
@@ -31,7 +31,6 @@ Draft status: NOT RUN until each status row is replaced with observed Windows ma
 - `REL-CAP-*`:
 - `REL-OUT-*`:
 - `REL-HDR-*`:
-- `REL-A11Y-*`:
 - `REL-SET-*`:
 - Other:
 

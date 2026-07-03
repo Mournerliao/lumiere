@@ -9,23 +9,16 @@ public sealed class OutputValidationDocumentationTests
     public void OutputValidationDocs_RecordFutureFormatAcceptanceFields()
     {
         var repoRoot = LocateRepositoryRoot();
-        var document = File.ReadAllText(Path.Combine(repoRoot, "harness", "validation", "output-validation.md"));
+        var document = File.ReadAllText(Path.Combine(repoRoot, "docs", "validation", "hdr-notes.md"));
 
-        Assert.Contains("not validated HDR-preserving output", document, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Format choice", document, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Conversion policy", document, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("does not claim that every output preserves HDR data", document, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("exact format", document, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Conversion or tone-mapping policy", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Metadata policy", document, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Target-app assumptions", document, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Named viewer assumptions", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Windows manual validation", document, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Every app-loaded artifact evidence path must resolve inside the same local validation workspace", document, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Draft status: NOT RUN until", document, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("specific repair guidance", document, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("distinct rejected-evidence state", document, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("repo-relative references", document, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("HDR10", document, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("P3", document, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("sRGB", document, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Visible design-reference controls", document, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("JPEG XR", document, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("compatible-output wording", document, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -34,9 +27,10 @@ public sealed class OutputValidationDocumentationTests
         var repoRoot = LocateRepositoryRoot();
         var templatePath = Path.Combine(
             repoRoot,
-            "harness",
-            "validation",
-            "templates",
+            "src",
+            "Lumiere.App.Core",
+            "Validation",
+            "Output",
             "hdr-sdr-validation-session-template.md");
         var template = File.ReadAllText(templatePath);
 
@@ -50,9 +44,10 @@ public sealed class OutputValidationDocumentationTests
         var repoRoot = LocateRepositoryRoot();
         var templatePath = Path.Combine(
             repoRoot,
-            "harness",
-            "validation",
-            "templates",
+            "src",
+            "Lumiere.App.Core",
+            "Validation",
+            "Output",
             "output-validation-session.schema-v4.sample.json");
         var artifact = OutputValidationSessionArtifact.FromJson(File.ReadAllText(templatePath));
 
