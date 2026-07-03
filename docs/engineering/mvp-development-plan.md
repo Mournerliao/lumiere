@@ -44,11 +44,11 @@ Checkbox meaning: checked means the repo or current working tree contains the im
 - [x] Keep output artifact success separate from visual match and HDR preservation claims.
 - [x] Keep output profile contracts for sRGB, P3, and HDR10 while releasing only sRGB Visual Match in the MVP UI.
 - [x] Hide P3 and HDR10 from normal user-selectable MVP output UI.
-- [ ] Extract the current FP16/scRGB to RGBA8/sRGB conversion into a shared output component without changing behavior.
-- [ ] Route clipboard output through the shared sRGB Visual Match component.
-- [ ] Route folder output through the same shared sRGB Visual Match component.
-- [ ] Ensure both-target output performs one shared visual-match conversion per capture result where practical.
-- [ ] Update output result copy to identify successful output as sRGB Visual Match without warning on every capture.
+- [x] Extract the current FP16/scRGB to RGBA8/sRGB conversion into a shared output component without changing behavior.
+- [x] Route clipboard output through the shared sRGB Visual Match component.
+- [x] Route folder output through the same shared sRGB Visual Match component.
+- [x] Ensure both-target output performs one shared visual-match conversion per capture result where practical.
+- [x] Update output result copy to identify successful output as sRGB Visual Match without warning on every capture.
 
 ## Phase 3: Default Visual Match Conversion
 

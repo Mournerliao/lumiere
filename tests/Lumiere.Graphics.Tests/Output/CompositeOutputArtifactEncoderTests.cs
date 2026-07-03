@@ -85,7 +85,8 @@ public sealed class CompositeOutputArtifactEncoderTests
             CapturedFrameTexture texture,
             CropPixelRect? cropRegion,
             OutputProfileContract outputProfile,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            OutputArtifactCache? artifactCache = null)
         {
             ArtifactCalls++;
             return Task.FromResult(new OutputEncodedArtifact(

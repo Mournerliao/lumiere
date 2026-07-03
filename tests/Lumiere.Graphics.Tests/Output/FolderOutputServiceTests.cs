@@ -70,6 +70,7 @@ public sealed class FolderOutputServiceTests
         Assert.Equal("C:\\Captures\\Lumiere-20260523-090807-123.png", result.Targets.Single().ArtifactPath);
         Assert.Equal(result.Targets.Single().ArtifactPath, writtenPaths.Single());
         Assert.Equal(1, encoder.Calls);
+        Assert.Null(encoder.ArtifactCache);
     }
 
     [Fact]
@@ -102,6 +103,29 @@ public sealed class FolderOutputServiceTests
         Assert.Equal(OutputProfileKind.Hdr10Pq, result.EffectiveProfile.Kind);
         Assert.False(result.UsesCompatibilityProfileFallback);
     }
+
+    [Fact]
+    public async Task ExecuteOutputAsync_PassesRequestArtifactCacheToEncoder()
+    {
+        var cache = new OutputArtifactCache();
+        var encoder = new TestArtifactEncoder([7, 8, 9], "png");
+        var service = CreateService(encoder, directoryExists: _ => true);
+
+        var result = await service.ExecuteOutputAsync(new OutputRequest
+        {
+            Texture = new CapturedFrameTexture(null, 16, 16, "Test frame"),
+            ArtifactCache = cache,
+            Policy = OutputPolicy.Default with
+            {
+                Target = OutputTarget.Folder,
+                SavePath = "C:\\Captures",
+            },
+        });
+
+        Assert.True(result.IsSuccess);
+        Assert.Same(cache, encoder.ArtifactCache);
+    }
+
 
     [Fact]
     public async Task ExecuteOutputAsync_BothTargetUsesFolderSpecificEffectiveProfileForArtifactEncoding()
@@ -199,6 +223,8 @@ public sealed class FolderOutputServiceTests
 
         public OutputProfileContract? Profile { get; private set; }
 
+        public OutputArtifactCache? ArtifactCache { get; private set; }
+
         public Task<byte[]> EncodePngAsync(
             CapturedFrameTexture texture,
             CropPixelRect? cropRegion,
@@ -212,10 +238,12 @@ public sealed class FolderOutputServiceTests
             CapturedFrameTexture texture,
             CropPixelRect? cropRegion,
             OutputProfileContract outputProfile,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            OutputArtifactCache? artifactCache = null)
         {
             Calls++;
             Profile = outputProfile;
+            ArtifactCache = artifactCache;
             return Task.FromResult(new OutputEncodedArtifact(bytes, extension, outputProfile));
         }
     }

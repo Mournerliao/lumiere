@@ -85,10 +85,25 @@ public sealed record OutputResultProjection(
             outputResult.Targets.Select(target =>
                 target.Target switch
                 {
-                    OutputTarget.Folder => target.Outcome is OutputOutcome.Success ? "File saved" : target.UserMessage,
-                    OutputTarget.Clipboard => target.Outcome is OutputOutcome.Success ? "Clipboard copied" : target.UserMessage,
+                    OutputTarget.Folder => target.Outcome is OutputOutcome.Success
+                        ? FormatSuccessfulTargetDetail(outputResult, target.Target, "File saved")
+                        : target.UserMessage,
+                    OutputTarget.Clipboard => target.Outcome is OutputOutcome.Success
+                        ? FormatSuccessfulTargetDetail(outputResult, target.Target, "Clipboard copied")
+                        : target.UserMessage,
                     _ => target.UserMessage,
                 }));
+    }
+
+    private static string FormatSuccessfulTargetDetail(
+        OutputResult outputResult,
+        OutputTarget target,
+        string fallback)
+    {
+        var profile = outputResult.EffectiveProfileFor(target);
+        return profile.Kind is OutputProfileKind.SrgbCompatibilityPng
+            ? $"{fallback} as sRGB Visual Match"
+            : $"{fallback} as {profile.Label}";
     }
 
     private static OutputResultProjectionSeverity ProjectSeverity(OutputResult? outputResult)

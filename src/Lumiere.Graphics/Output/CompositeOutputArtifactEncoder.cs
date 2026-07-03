@@ -25,7 +25,8 @@ public sealed class CompositeOutputArtifactEncoder : IOutputPngEncoder
         CapturedFrameTexture texture,
         CropPixelRect? cropRegion,
         OutputProfileContract outputProfile,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        OutputArtifactCache? artifactCache = null)
     {
         ArgumentNullException.ThrowIfNull(outputProfile);
         return outputProfile.Kind switch
@@ -34,12 +35,14 @@ public sealed class CompositeOutputArtifactEncoder : IOutputPngEncoder
                 texture,
                 cropRegion,
                 outputProfile,
-                cancellationToken),
+                cancellationToken,
+                artifactCache),
             _ => compatibilityEncoder.EncodeArtifactAsync(
                 texture,
                 cropRegion,
                 outputProfile,
-                cancellationToken),
+                cancellationToken,
+                artifactCache),
         };
     }
 }

@@ -13,7 +13,8 @@ public interface IOutputPngEncoder
         CapturedFrameTexture texture,
         CropPixelRect? cropRegion,
         OutputProfileContract outputProfile,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        OutputArtifactCache? artifactCache = null)
     {
         ArgumentNullException.ThrowIfNull(outputProfile);
         var pngBytes = await EncodePngAsync(texture, cropRegion, cancellationToken);

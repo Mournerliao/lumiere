@@ -73,7 +73,8 @@ public sealed class FolderOutputService : IOutputService
                 request.Texture,
                 request.CropRegion,
                 folderProfile,
-                cancellationToken);
+                cancellationToken,
+                request.ArtifactCache);
             var artifactPath = pathPolicy.CreateCandidatePath(
                 request.Policy,
                 artifact.NormalizedFileExtension,

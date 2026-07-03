@@ -40,10 +40,13 @@ public partial class App : Application
             }
             captureService = new CaptureService(deviceResources, borderOptions);
             var captureCommandCoordinator = new CaptureCommandCoordinator(captureService);
-            clipboardOutputService = new ClipboardOutputService(deviceResources);
+            var srgbVisualMatchEncoder = new SrgbVisualMatchPngEncoder(
+                new SrgbVisualMatchConverter(
+                    new CapturedFrameTextureReadback(deviceResources)));
+            clipboardOutputService = new ClipboardOutputService(srgbVisualMatchEncoder);
             var hdr10JxrCodec = new WicHdr10JxrCodec(new WindowsWicJpegXrEncoder());
             var folderArtifactEncoder = new CompositeOutputArtifactEncoder(
-                clipboardOutputService,
+                srgbVisualMatchEncoder,
                 new Hdr10JxrOutputEncoder(
                     new CapturedFrameTextureReadback(deviceResources),
                     hdr10JxrCodec));
@@ -125,4 +128,3 @@ public partial class App : Application
         }
     }
 }
-

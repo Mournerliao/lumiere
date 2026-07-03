@@ -28,7 +28,8 @@ public sealed class Hdr10JxrOutputEncoder : IOutputPngEncoder
         CapturedFrameTexture texture,
         CropPixelRect? cropRegion,
         OutputProfileContract outputProfile,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        OutputArtifactCache? artifactCache = null)
     {
         ArgumentNullException.ThrowIfNull(texture);
         ArgumentNullException.ThrowIfNull(outputProfile);

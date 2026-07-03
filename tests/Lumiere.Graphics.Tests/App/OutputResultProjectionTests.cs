@@ -32,7 +32,7 @@ public sealed class OutputResultProjectionTests
         var projection = OutputResultProjection.Project(output, fidelity);
 
         Assert.Equal("Copied", projection.Title);
-        Assert.Equal("Clipboard copied", projection.Detail);
+        Assert.Equal("Clipboard copied as sRGB Visual Match", projection.Detail);
         Assert.Equal(OutputResultProjectionSeverity.Success, projection.Severity);
         Assert.Contains("requested HDR10", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("using sRGB", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
@@ -125,7 +125,7 @@ public sealed class OutputResultProjectionTests
         var projection = OutputResultProjection.Project(output, fidelity);
 
         Assert.Equal("Saved", projection.Title);
-        Assert.Equal("File saved", projection.Detail);
+        Assert.Equal("File saved as sRGB Visual Match", projection.Detail);
         Assert.Equal(OutputResultProjectionSeverity.Success, projection.Severity);
     }
 
@@ -141,7 +141,7 @@ public sealed class OutputResultProjectionTests
 
         Assert.Equal("Output partially complete", projection.Title);
         Assert.Equal(OutputResultProjectionSeverity.Warning, projection.Severity);
-        Assert.Equal("Clipboard copied | Folder unavailable", projection.Detail);
+        Assert.Equal("Clipboard copied as sRGB Visual Match | Folder unavailable", projection.Detail);
     }
 
     [Fact]

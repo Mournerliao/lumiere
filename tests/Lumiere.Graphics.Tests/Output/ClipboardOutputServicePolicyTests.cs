@@ -88,11 +88,10 @@ public sealed class ClipboardOutputServicePolicyTests
     }
 
     [Fact]
-    public async Task EncodeArtifactAsync_RejectsHdrProfileBecausePngEncoderIsCompatibilityOnly()
+    public async Task EncodeArtifactAsync_RejectsHdrProfileBecauseSrgbVisualMatchEncoderIsCompatibilityOnly()
     {
         using var frame = new CapturedFrameTexture(null, 16, 16, "Test frame");
-        using var service = new ClipboardOutputService((_, _) =>
-            Task.FromResult(OutputResult.ClipboardSuccess(128)));
+        var encoder = new SrgbVisualMatchPngEncoder(new ThrowingSrgbVisualMatchConverter());
         var hdrProfile = OutputProfileContract.Hdr10Pq with
         {
             IsExecutable = true,
@@ -101,9 +100,15 @@ public sealed class ClipboardOutputServicePolicyTests
         };
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            service.EncodeArtifactAsync(frame, cropRegion: null, hdrProfile));
+            encoder.EncodeArtifactAsync(frame, cropRegion: null, hdrProfile));
 
         Assert.Contains("cannot create HDR10", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private sealed class ThrowingSrgbVisualMatchConverter : ISrgbVisualMatchConverter
+    {
+        public SrgbVisualMatchImage Convert(CapturedFrameTexture texture, CropPixelRect? cropRegion) =>
+            throw new InvalidOperationException("Converter should not run for rejected profiles.");
     }
 
     private static OutputFormatContract CompleteHdr10Contract { get; } =

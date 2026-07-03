@@ -22,6 +22,11 @@ public sealed record OutputRequest
     /// Gets the configured output policy for this request.
     /// </summary>
     public OutputPolicy Policy { get; init; } = OutputPolicy.Default;
+
+    /// <summary>
+    /// Gets the optional per-request cache for artifacts shared by multiple output targets.
+    /// </summary>
+    public OutputArtifactCache? ArtifactCache { get; init; }
 }
 
 /// <summary>

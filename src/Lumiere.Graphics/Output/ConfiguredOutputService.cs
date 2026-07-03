@@ -25,6 +25,10 @@ public sealed class ConfiguredOutputService : IOutputService
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        request = request.Policy.Target is OutputTarget.Both && request.ArtifactCache is null
+            ? request with { ArtifactCache = new OutputArtifactCache() }
+            : request;
+
         var results = new List<OutputTargetResult>();
         if (request.Policy.Target is OutputTarget.Clipboard)
         {

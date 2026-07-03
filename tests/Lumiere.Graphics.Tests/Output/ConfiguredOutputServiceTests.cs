@@ -21,6 +21,8 @@ public sealed class ConfiguredOutputServiceTests
         Assert.Equal("Output complete", result.UserMessage);
         Assert.Equal(1, clipboard.Calls);
         Assert.Equal(1, folder.Calls);
+        var cache = Assert.IsType<OutputArtifactCache>(clipboard.LastRequest?.ArtifactCache);
+        Assert.Same(cache, folder.LastRequest?.ArtifactCache);
     }
 
     [Fact]
@@ -112,9 +114,12 @@ public sealed class ConfiguredOutputServiceTests
 
         public int Calls { get; private set; }
 
+        public OutputRequest? LastRequest { get; private set; }
+
         public Task<OutputResult> ExecuteOutputAsync(OutputRequest request, CancellationToken cancellationToken = default)
         {
             Calls++;
+            LastRequest = request;
             return Task.FromResult(OutputResult.FromTargets(result));
         }
     }
