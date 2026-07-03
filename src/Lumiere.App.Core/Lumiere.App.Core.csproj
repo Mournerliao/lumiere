@@ -13,8 +13,6 @@
   <ItemGroup>
     <EmbeddedResource Include="Validation\Output\output-validation-session.schema-v4.sample.json" />
     <EmbeddedResource Include="Validation\Output\hdr-sdr-validation-session-template.md" />
-    <EmbeddedResource Include="Validation\ResourceTrend\resource-trend-session-template.md" />
-    <EmbeddedResource Include="Validation\ResourceTrend\collect-resource-trend-samples.ps1" />
     <EmbeddedResource Include="..\..\docs\validation\mvp-checklist.md">
       <LogicalName>Lumiere.App.Validation.Guidance.mvp-checklist.md</LogicalName>
     </EmbeddedResource>

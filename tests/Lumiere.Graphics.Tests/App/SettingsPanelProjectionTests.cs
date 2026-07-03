@@ -290,7 +290,7 @@ public sealed class SettingsPanelProjectionTests
     }
 
     [Fact]
-    public void Project_RestoresExportProfileSegmentsAndScopesAdvancedProfiles()
+    public void Project_ShowsOnlySrgbVisualMatchInMvpOutputSettings()
     {
         var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
 
@@ -298,41 +298,28 @@ public sealed class SettingsPanelProjectionTests
         Assert.Equal("sRGB", projection.Output.ExportColorDisplayValue);
         Assert.Contains("no file artifact", projection.Output.AfterCaptureHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("skipped", projection.Output.AfterCaptureHelpText, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("planned HDR output paths", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("validation", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("metadata", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("target-app", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("sRGB Visual Match", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("only MVP output mode", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("P3 and HDR10", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.False(projection.Output.IsExportColorReadOnly);
 
-        Assert.Equal(["HDR10", "P3", "sRGB"], projection.Output.ExportColorOptions.Select(option => option.Label).ToArray());
+        Assert.Equal(["sRGB"], projection.Output.ExportColorOptions.Select(option => option.Label).ToArray());
         Assert.Equal("Compat", projection.Output.ExportColorOptions[0].StatusLabel);
-        Assert.Equal("Compat", projection.Output.ExportColorOptions[1].StatusLabel);
-        Assert.Equal("Compat", projection.Output.ExportColorOptions[2].StatusLabel);
-        Assert.True(projection.Output.ExportColorOptions[0].IsReadOnly);
-        Assert.True(projection.Output.ExportColorOptions[1].IsReadOnly);
-        Assert.False(projection.Output.ExportColorOptions[2].IsReadOnly);
-        Assert.False(projection.Output.ExportColorOptions[0].IsSelected);
-        Assert.False(projection.Output.ExportColorOptions[1].IsSelected);
-        Assert.True(projection.Output.ExportColorOptions[2].IsSelected);
-        Assert.False(projection.Output.ExportColorOptions[0].IsInteractive);
-        Assert.False(projection.Output.ExportColorOptions[1].IsInteractive);
-        Assert.True(projection.Output.ExportColorOptions[2].IsInteractive);
-        Assert.Contains("clipboard output stays on sRGB compatibility output", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("clipboard target", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("clipboard output stays on sRGB compatibility output", projection.Output.ExportColorOptions[1].HelpText, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Compatibility output", projection.Output.ExportColorOptions[2].HelpText, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("not selected and currently unavailable", projection.Output.ExportColorOptions[0].AccessibilityHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.False(projection.Output.ExportColorOptions[0].IsReadOnly);
+        Assert.True(projection.Output.ExportColorOptions[0].IsSelected);
+        Assert.True(projection.Output.ExportColorOptions[0].IsInteractive);
+        Assert.Contains("Compatibility output", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("selected and available", projection.Output.ExportColorOptions[0].AccessibilityHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("design reference", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("validation-scoped", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("visible as intent", projection.Output.ExportColorOptions[1].HelpText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserving", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR preserving", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("HDR-preserving", projection.Output.ExportColorOptions[2].HelpText, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("HDR preserving", projection.Output.ExportColorOptions[2].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR-preserving", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HDR preserving", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void Project_SelectedHdr10ProfileIsVisibleButDoesNotEnableHdrPreservedClaim()
+    public void Project_SelectedHdr10ProfileIsHiddenFromMvpOutputSettings()
     {
         var settings = new TestSettingsProvider
         {
@@ -342,11 +329,12 @@ public sealed class SettingsPanelProjectionTests
 
         var projection = SettingsPanelProjection.Project(settings, CreateState());
 
-        Assert.Equal("HDR10", projection.Output.ExportColorDisplayValue);
+        Assert.Equal("sRGB", projection.Output.ExportColorDisplayValue);
+        Assert.Equal(["sRGB"], projection.Output.ExportColorOptions.Select(option => option.Label).ToArray());
         Assert.True(projection.Output.ExportColorOptions[0].IsSelected);
-        Assert.True(projection.Output.ExportColorOptions[0].IsReadOnly);
+        Assert.False(projection.Output.ExportColorOptions[0].IsReadOnly);
         Assert.True(projection.Output.ExportColorOptions[0].IsInteractive);
-        Assert.Contains("selected and kept as the current choice for this session", projection.Output.ExportColorOptions[0].AccessibilityHelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("selected and available", projection.Output.ExportColorOptions[0].AccessibilityHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("validation-scoped", projection.Output.ExportColorOptions[0].AccessibilityHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("Build", projection.MainPanel.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
@@ -378,9 +366,9 @@ public sealed class SettingsPanelProjectionTests
             artifacts,
             executionCapabilities: ValidateOnlyHdr10Capabilities(artifacts));
 
-        Assert.Equal("HDR10", projection.Output.ExportColorDisplayValue);
+        Assert.Equal("sRGB", projection.Output.ExportColorDisplayValue);
         Assert.Equal("Compat", projection.Output.ExportColorOptions[0].StatusLabel);
-        Assert.Contains("clipboard output stays on sRGB compatibility output", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Compatibility output", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("Compat", projection.MainPanel.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
     }
@@ -406,15 +394,15 @@ public sealed class SettingsPanelProjectionTests
             artifacts,
             executionCapabilities: ValidateOnlyHdr10Capabilities(artifacts));
 
-        Assert.Equal("Ready", projection.Output.ExportColorOptions[0].StatusLabel);
-        Assert.Contains("Both-target output still keeps clipboard on sRGB compatibility fallback", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Compat", projection.Output.ExportColorOptions[0].StatusLabel);
+        Assert.Contains("Compatibility output", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("Ready", projection.MainPanel.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
         Assert.Contains("folder artifacts separately", projection.MainPanel.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void Project_SelectedHdr10ProfileSurfacesOutputContractPolicy()
+    public void Project_SelectedHdr10ProfileKeepsMvpOutputSettingsOnSrgbContract()
     {
         var settings = new TestSettingsProvider
         {
@@ -425,10 +413,10 @@ public sealed class SettingsPanelProjectionTests
         var projection = SettingsPanelProjection.Project(settings, CreateState());
 
         Assert.Equal("FP16/scRGB capture source", projection.Output.SelectedProfileContract.SourcePolicy);
-        Assert.Equal("HDR10 output contract pending implementation", projection.Output.SelectedProfileContract.DestinationPolicy);
-        Assert.Contains("tone", projection.Output.SelectedProfileContract.ConversionPolicy, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("metadata", projection.Output.SelectedProfileContract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("target-app", projection.Output.SelectedProfileContract.ViewerCompatibilityPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Compatibility-converted sRGB artifact", projection.Output.SelectedProfileContract.DestinationPolicy);
+        Assert.Contains("converted", projection.Output.SelectedProfileContract.ConversionPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("No HDR metadata", projection.Output.SelectedProfileContract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("compatibility", projection.Output.SelectedProfileContract.ViewerCompatibilityPolicy, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", projection.Output.SelectedProfileContract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", projection.Output.SelectedProfileContract.ViewerCompatibilityPolicy, StringComparison.OrdinalIgnoreCase);
     }
@@ -466,10 +454,10 @@ public sealed class SettingsPanelProjectionTests
         Assert.Equal("Validate", projection.Validation.OutputProfileGate.StatusLabel);
         Assert.Equal("HDR10", projection.MainPanel.OutputProfile.Label);
         Assert.Equal("Validate", projection.MainPanel.OutputProfile.StatusLabel);
-        Assert.Equal("HDR10 output contract is defined, but this session is still waiting for Windows manual viewer evidence.", projection.Output.SelectedProfileContract.DestinationPolicy);
-        Assert.Contains("defined for the HDR10 path", projection.Output.SelectedProfileContract.ConversionPolicy, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("viewer evidence is still incomplete", projection.Output.SelectedProfileContract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Windows manual viewer evidence", projection.Output.SelectedProfileContract.ViewerCompatibilityPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Compatibility-converted sRGB artifact", projection.Output.SelectedProfileContract.DestinationPolicy);
+        Assert.Contains("converted", projection.Output.SelectedProfileContract.ConversionPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("No HDR metadata", projection.Output.SelectedProfileContract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("compatibility", projection.Output.SelectedProfileContract.ViewerCompatibilityPolicy, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
         Assert.Contains("compatibility", projection.MainPanel.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("compatibility fallback", projection.MainPanel.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
@@ -496,10 +484,10 @@ public sealed class SettingsPanelProjectionTests
             ]);
 
         Assert.Equal("Build", projection.Validation.OutputProfileGate.StatusLabel);
-        Assert.Equal("HDR10 output contract pending implementation", projection.Output.SelectedProfileContract.DestinationPolicy);
-        Assert.Contains("tone", projection.Output.SelectedProfileContract.ConversionPolicy, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("metadata", projection.Output.SelectedProfileContract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("target-app", projection.Output.SelectedProfileContract.ViewerCompatibilityPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Compatibility-converted sRGB artifact", projection.Output.SelectedProfileContract.DestinationPolicy);
+        Assert.Contains("converted", projection.Output.SelectedProfileContract.ConversionPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("No HDR metadata", projection.Output.SelectedProfileContract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("compatibility", projection.Output.SelectedProfileContract.ViewerCompatibilityPolicy, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -523,18 +511,18 @@ public sealed class SettingsPanelProjectionTests
                 OutputProfileExecutionCapability.SrgbCompatibility,
                 OutputProfileExecutionCapability.Hdr10PreservedImplementedArtifactEncoder));
 
-        Assert.Equal("HDR10", projection.Output.ExportColorDisplayValue);
-        Assert.Equal("Ready", projection.Output.ExportColorOptions[0].StatusLabel);
+        Assert.Equal("sRGB", projection.Output.ExportColorDisplayValue);
+        Assert.Equal("Compat", projection.Output.ExportColorOptions[0].StatusLabel);
         Assert.False(projection.Output.ExportColorOptions[0].IsReadOnly);
         Assert.True(projection.Output.ExportColorOptions[0].IsSelected);
         Assert.True(projection.Output.ExportColorOptions[0].IsInteractive);
         Assert.Equal("HDR10", projection.Validation.OutputProfileGate.ProfileLabel);
         Assert.Equal("Ready", projection.Validation.OutputProfileGate.StatusLabel);
         Assert.Equal("Ready", projection.MainPanel.OutputProfile.StatusLabel);
-        Assert.Equal("Validated HDR10-preserved artifact contract is active for this session.", projection.Output.SelectedProfileContract.DestinationPolicy);
-        Assert.Contains("validated HDR-preserved path", projection.Output.SelectedProfileContract.ConversionPolicy, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("validated for the active HDR-preserved path", projection.Output.SelectedProfileContract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("compatibility evidence passed", projection.Output.SelectedProfileContract.ViewerCompatibilityPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Compatibility-converted sRGB artifact", projection.Output.SelectedProfileContract.DestinationPolicy);
+        Assert.Contains("converted", projection.Output.SelectedProfileContract.ConversionPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("No HDR metadata", projection.Output.SelectedProfileContract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("compatibility", projection.Output.SelectedProfileContract.ViewerCompatibilityPolicy, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(FidelityClaimKind.HdrPreserved, projection.MainPanel.FidelityClaim.Kind);
     }
 
@@ -563,8 +551,8 @@ public sealed class SettingsPanelProjectionTests
             projection.Validation.Rows,
             row => row.Label == "Target app versions"
                 && row.Status == ValidationEvidenceStatus.Pass);
-        Assert.Equal("PQ ST.2084", projection.Output.SelectedProfileContract.TransferFunctionLabel);
-        Assert.Equal("Attach HDR10 static metadata", projection.Output.SelectedProfileContract.MetadataPolicyLabel);
+        Assert.Equal("sRGB", projection.Output.SelectedProfileContract.TransferFunctionLabel);
+        Assert.Equal("No HDR metadata", projection.Output.SelectedProfileContract.MetadataPolicyLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
     }
 
@@ -617,7 +605,7 @@ public sealed class SettingsPanelProjectionTests
     {
         var projection = SettingsPanelProjection.Project(new TestSettingsProvider(), CreateState());
 
-        Assert.Equal(PerfectHdrFidelityProjection.ReleaseTarget, projection.Validation.ReleaseTarget);
+        Assert.Equal(HdrAwareOutputProjection.ReleaseTarget, projection.Validation.ReleaseTarget);
         Assert.Equal("sRGB", projection.Validation.OutputProfileGate.ProfileLabel);
         Assert.Equal("Compat", projection.Validation.OutputProfileGate.StatusLabel);
         Assert.Equal(6, projection.Validation.Rows.Count);

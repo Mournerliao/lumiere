@@ -49,9 +49,9 @@ public sealed record SettingsPanelProjection(
             validationArtifacts,
             aboutInfoProvider,
             executionCapabilities,
-            validationRecordFactory: PerfectHdrFidelityProjection.ProjectValidationRecord,
+            validationRecordFactory: HdrAwareOutputProjection.ProjectValidationRecord,
             validationProjectionFactory: (selectedProfileContract, artifacts, capabilities, record, readiness, outputTarget) =>
-                PerfectHdrFidelityProjection.ProjectValidation(
+                HdrAwareOutputProjection.ProjectValidation(
                     selectedProfileContract,
                     artifacts,
                     capabilities,
@@ -77,10 +77,10 @@ public sealed record SettingsPanelProjection(
             validationSnapshot.Artifacts,
             aboutInfoProvider,
             executionCapabilities,
-            _ => PerfectHdrFidelityProjection.ProjectValidationRecord(rawBuildVersion, validationSnapshot),
+            _ => HdrAwareOutputProjection.ProjectValidationRecord(rawBuildVersion, validationSnapshot),
             (selectedProfileContract, artifacts, capabilities, record, readiness, outputTarget) =>
-                PerfectHdrFidelityProjection.ApplyEvidenceSummary(
-                    PerfectHdrFidelityProjection.ProjectValidation(
+                HdrAwareOutputProjection.ApplyEvidenceSummary(
+                    HdrAwareOutputProjection.ProjectValidation(
                         selectedProfileContract,
                         artifacts,
                         capabilities,
@@ -88,7 +88,7 @@ public sealed record SettingsPanelProjection(
                         readiness,
                         outputTarget,
                         sessionState.Target),
-                    PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(
+                    HdrAwareOutputProjection.ProjectValidationEvidenceSummary(
                         validationSnapshot,
                         rawBuildVersion)));
     }
@@ -274,7 +274,7 @@ public sealed record OutputSettingsProjection(
 {
     private const string OutputPolicyActiveReason = "Output target policy is active for clipboard, folder, and both targets";
     private const string ExportColorHelp =
-        "HDR10 and P3 stay visible so you can review planned HDR output paths. They need encoder metadata, conversion policy, target-app support, and Windows validation before they become available.";
+        "sRGB Visual Match is the only MVP output mode. Planned P3 and HDR10 profiles stay out of the normal UI until implementation and Windows validation are complete.";
 
     public static OutputSettingsProjection ReadOnly(
         Lumiere.Graphics.Output.OutputTarget outputTarget,
@@ -301,10 +301,10 @@ public sealed record OutputSettingsProjection(
         var (afterCaptureDisplayValue, afterCaptureHelpText, isAfterCaptureSelected) = ProjectAfterCapture(
             outputTarget,
             afterCaptureBehavior);
-        var selectedContract = OutputProfileContract.FromSettingsValue(exportColorFormat);
+        var selectedContract = OutputProfileContract.SrgbCompatibilityPng;
         var selectedProfile = validationArtifacts is null
-            ? PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, readiness: null, capabilities, outputTarget)
-            : PerfectHdrFidelityProjection.ProjectOutputProfile(selectedContract, validationArtifacts, readiness: null, capabilities, outputTarget);
+            ? HdrAwareOutputProjection.ProjectOutputProfile(selectedContract, readiness: null, capabilities, outputTarget)
+            : HdrAwareOutputProjection.ProjectOutputProfile(selectedContract, validationArtifacts, readiness: null, capabilities, outputTarget);
         var exportColorOptions = CreateExportColorOptions(
             selectedProfile.Label,
             outputTarget,
@@ -345,12 +345,6 @@ public sealed record OutputSettingsProjection(
         OutputProfileExecutionCapabilities capabilities) =>
     [
         CreateExportColorOption(
-            ProjectExportColorOptionProfile("HDR10", outputTarget, validationArtifacts, capabilities),
-            selectedLabel),
-        CreateExportColorOption(
-            ProjectExportColorOptionProfile("P3", outputTarget, validationArtifacts, capabilities),
-            selectedLabel),
-        CreateExportColorOption(
             ProjectExportColorOptionProfile("sRGB", outputTarget, validationArtifacts, capabilities),
             selectedLabel),
     ];
@@ -363,8 +357,8 @@ public sealed record OutputSettingsProjection(
     {
         var contract = OutputProfileContract.FromSettingsValue(exportColorFormat);
         return validationArtifacts is null
-            ? PerfectHdrFidelityProjection.ProjectOutputProfile(contract, readiness: null, capabilities, outputTarget)
-            : PerfectHdrFidelityProjection.ProjectOutputProfile(contract, validationArtifacts, readiness: null, capabilities, outputTarget);
+            ? HdrAwareOutputProjection.ProjectOutputProfile(contract, readiness: null, capabilities, outputTarget)
+            : HdrAwareOutputProjection.ProjectOutputProfile(contract, validationArtifacts, readiness: null, capabilities, outputTarget);
     }
 
     private static ExportColorOptionProjection CreateExportColorOption(

@@ -325,15 +325,10 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Equal("C:\\Validation\\templates\\output-validation-session.schema-v4.sample.json", snapshot.Workspace.SampleTemplatePath);
         Assert.Equal("C:\\Validation\\guidance\\mvp-checklist.md", snapshot.Workspace.ReleaseChecklistPath);
         Assert.Equal("C:\\Validation\\guidance\\hdr-notes.md", snapshot.Workspace.HdrSdrScenariosPath);
-        Assert.Null(snapshot.Workspace.SettingsAccessibilityGuidePath);
-        Assert.Equal("C:\\Validation\\templates\\resource-trend-session-template.md", snapshot.Workspace.ResourceTrendTemplatePath);
-        Assert.Equal("C:\\Validation\\collect-resource-trend-samples.ps1", snapshot.Workspace.ResourceTrendScriptPath);
         Assert.Equal(templateJson, files[snapshot.Workspace.SampleTemplatePath!]);
         Assert.Contains("Session Metadata", files["C:\\Validation\\templates\\hdr-sdr-validation-session-template.md"], StringComparison.Ordinal);
         Assert.Contains("MVP Validation Checklist", files[snapshot.Workspace.ReleaseChecklistPath!], StringComparison.Ordinal);
         Assert.Contains("HDR Notes", files[snapshot.Workspace.HdrSdrScenariosPath!], StringComparison.Ordinal);
-        Assert.Contains("Session Metadata", files[snapshot.Workspace.ResourceTrendTemplatePath!], StringComparison.Ordinal);
-        Assert.Contains("Collects repeated resource trend samples", files[snapshot.Workspace.ResourceTrendScriptPath!], StringComparison.Ordinal);
         Assert.Contains("templates\\hdr-sdr-validation-session-template.md", files[snapshot.Workspace.GuidanceFilePath], StringComparison.Ordinal);
         Assert.Contains("guidance\\mvp-checklist.md", files[snapshot.Workspace.GuidanceFilePath], StringComparison.Ordinal);
         Assert.Contains("guidance\\hdr-notes.md", files[snapshot.Workspace.GuidanceFilePath], StringComparison.Ordinal);
@@ -470,159 +465,6 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.False(result.IsSuccess);
         Assert.Contains("template", result.TechnicalDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Null(result.DraftPath);
-    }
-
-    [Fact]
-    public void CreateResourceTrendDraft_WritesPrefilledMarkdownIntoWorkspaceRoot()
-    {
-        var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000.csv"] = "TimestampUtc,ProcessId,PrivateBytes",
-            ["C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000-summary.json"] =
-                """
-                {
-                  "processId": 4242,
-                  "processName": "Lumiere.App",
-                  "durationSeconds": 900,
-                  "sampleIntervalSeconds": 5,
-                  "sampleCount": 180,
-                  "csvPath": "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000.csv",
-                  "metrics": {
-                    "privateBytes": { "baseline": 1000000, "final": 1200000, "delta": 200000, "min": 950000, "max": 1250000 },
-                    "gpuTotalCommittedBytes": { "baseline": 500000, "final": 550000, "delta": 50000, "min": 490000, "max": 560000 }
-                  }
-                }
-                """,
-            ["C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid7777-20260625-120000-summary.json"] =
-                """
-                {
-                  "processId": 7777,
-                  "processName": "Lumiere.App",
-                  "durationSeconds": 900,
-                  "sampleIntervalSeconds": 5,
-                  "sampleCount": 180,
-                  "csvPath": "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid7777-20260625-120000.csv",
-                  "metrics": {
-                    "privateBytes": { "baseline": 7000000, "final": 9000000, "delta": 2000000, "min": 6900000, "max": 9100000 }
-                  }
-                }
-                """,
-        };
-        var source = new FileOutputValidationArtifactSource(
-            "C:\\Validation",
-            "*.json",
-            directoryExists: path => directories.Contains(path) || path == "C:\\Validation\\resource-trends",
-            fileExists: files.ContainsKey,
-            createDirectory: path => directories.Add(path),
-            enumerateFiles: (path, pattern) => path == "C:\\Validation\\resource-trends" && pattern == "*-summary.json"
-                ?
-                [
-                    "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid7777-20260625-120000-summary.json",
-                    "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000-summary.json",
-                ]
-                : [],
-            readAllText: path => files[path],
-            writeAllText: (path, content) => files[path] = content,
-            resolveTemplateSourceText: () => "{ \"schemaVersion\": 4 }",
-            getNow: () => new DateTimeOffset(2026, 06, 23, 11, 30, 00, TimeSpan.FromHours(8)),
-            prepareWorkspace: true);
-
-        var result = source.CreateResourceTrendDraft(
-            new ResourceTrendValidationDraftRequest(
-                "2.3.4+72c3be7",
-                OutputTarget.Both,
-                CaptureSessionState.Capturing(
-                    CaptureTarget.CreateForTest(
-                        new Windows.Graphics.SizeInt32
-                        {
-                            Width = 3840,
-                            Height = 2160,
-                        },
-                        "HDR Display",
-                        CaptureTargetKind.Display),
-                    Lumiere.Graphics.Hdr.PreviewReadinessStatus.Ready(
-                        "HDR preview path is validated.",
-                        "Target-aware readiness passed.")),
-                4242,
-                "& \"C:\\Validation\\collect-resource-trend-samples.ps1\" -ProcessId 4242 -DurationSeconds 900 -SampleIntervalSeconds 5 -OutputDirectory \"C:\\Validation\\resource-trends\"",
-                new OutputValidationCurrentSessionHint(
-                    "NVIDIA RTX 5080",
-                    ["150%"],
-                    "2 displays; active target HDR Display at 0,0 3840x2160")));
-
-        Assert.True(result.IsSuccess);
-        Assert.Equal("C:\\Validation\\resource-trend-session-2026-06-23.md", result.DraftPath);
-        Assert.True(files.ContainsKey(result.DraftPath!));
-        Assert.Contains("- Output configuration: Both", files[result.DraftPath!], StringComparison.Ordinal);
-        Assert.Contains("- Lumiere process ID: 4242 (current session)", files[result.DraftPath!], StringComparison.Ordinal);
-        Assert.Contains("resource-trend-Lumiere.App-pid4242-20260624-120000.csv", files[result.DraftPath!], StringComparison.Ordinal);
-        Assert.DoesNotContain("resource-trend-Lumiere.App-pid7777-20260625-120000.csv", files[result.DraftPath!], StringComparison.Ordinal);
-        Assert.Contains("| Private bytes | 1000000 | 1200000 | 200000 | 950000 | 1250000 | REPLACE_WITH_PASS_FAIL_LIMITATION | Imported from sampler summary. |", files[result.DraftPath!], StringComparison.Ordinal);
-        Assert.Contains("after reviewing 180 imported sampler samples", files[result.DraftPath!], StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void CreateResourceTrendDraft_KeepsNotRunWhenImportedSummaryCsvIsMissing()
-    {
-        var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000-summary.json"] =
-                """
-                {
-                  "processId": 4242,
-                  "processName": "Lumiere.App",
-                  "durationSeconds": 900,
-                  "sampleIntervalSeconds": 5,
-                  "sampleCount": 180,
-                  "csvPath": "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000.csv",
-                  "metrics": {
-                    "handles": { "baseline": 100, "final": 104, "delta": 4, "min": 99, "max": 105 },
-                    "privateBytes": { "baseline": 1000000, "final": 1200000, "delta": 200000, "min": 950000, "max": 1250000 }
-                  }
-                }
-                """,
-        };
-        var source = new FileOutputValidationArtifactSource(
-            "C:\\Validation",
-            "*.json",
-            directoryExists: path => directories.Contains(path) || path == "C:\\Validation\\resource-trends",
-            fileExists: files.ContainsKey,
-            createDirectory: path => directories.Add(path),
-            enumerateFiles: (path, pattern) => path == "C:\\Validation\\resource-trends" && pattern == "*-summary.json"
-                ?
-                [
-                    "C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000-summary.json",
-                ]
-                : [],
-            readAllText: path => files[path],
-            writeAllText: (path, content) => files[path] = content,
-            resolveTemplateSourceText: () => "{ \"schemaVersion\": 4 }",
-            getNow: () => new DateTimeOffset(2026, 06, 23, 11, 30, 00, TimeSpan.FromHours(8)),
-            prepareWorkspace: true);
-
-        var result = source.CreateResourceTrendDraft(
-            new ResourceTrendValidationDraftRequest(
-                "2.3.4+72c3be7",
-                OutputTarget.Both,
-                CaptureSessionState.Idle(),
-                4242));
-
-        Assert.True(result.IsSuccess);
-        Assert.NotNull(result.DraftPath);
-        Assert.Contains(
-            "Public gate `Long-run lifecycle evidence`: NOT RUN until imported sampler evidence is complete",
-            files[result.DraftPath!],
-            StringComparison.Ordinal);
-        Assert.Contains(
-            "CSV path is missing or unreadable: C:\\Validation\\resource-trends\\resource-trend-Lumiere.App-pid4242-20260624-120000.csv",
-            files[result.DraftPath!],
-            StringComparison.Ordinal);
-        Assert.Contains(
-            "- Session classification: NOT RUN (imported sampler summary is incomplete:",
-            files[result.DraftPath!],
-            StringComparison.Ordinal);
     }
 
     [Fact]

@@ -12,7 +12,7 @@ public sealed class OutputResultProjectionTests
     [Fact]
     public void Project_WithoutOutputShowsReadyState()
     {
-        var fidelity = PerfectHdrFidelityProjection.ProjectOutputProfile("HDR10").FidelityClaim;
+        var fidelity = HdrAwareOutputProjection.ProjectOutputProfile("HDR10").FidelityClaim;
 
         var projection = OutputResultProjection.Project(null, fidelity);
 
@@ -27,7 +27,7 @@ public sealed class OutputResultProjectionTests
     {
         var output = OutputResult.ClipboardSuccess(1024)
             .WithRequestedProfile(OutputProfileContract.FromSettingsValue("HDR10"));
-        var fidelity = PerfectHdrFidelityProjection.ProjectOutputProfile("HDR10").FidelityClaim;
+        var fidelity = HdrAwareOutputProjection.ProjectOutputProfile("HDR10").FidelityClaim;
 
         var projection = OutputResultProjection.Project(output, fidelity);
 
@@ -98,7 +98,7 @@ public sealed class OutputResultProjectionTests
             ArtifactFor("Windows Photos"),
             ArtifactFor("Microsoft Edge"),
         ];
-        var selectedProfile = PerfectHdrFidelityProjection.ProjectOutputProfile(
+        var selectedProfile = HdrAwareOutputProjection.ProjectOutputProfile(
             OutputProfileContract.FromSettingsValue("HDR10"),
             artifacts,
             readiness: null,
@@ -120,7 +120,7 @@ public sealed class OutputResultProjectionTests
     {
         var output = OutputResult.FromTargets(
             OutputTargetResult.Success(OutputTarget.Folder, "Saved", artifactPath: "C:\\Captures\\a.png"));
-        var fidelity = PerfectHdrFidelityProjection.ProjectOutputProfile("sRGB").FidelityClaim;
+        var fidelity = HdrAwareOutputProjection.ProjectOutputProfile("sRGB").FidelityClaim;
 
         var projection = OutputResultProjection.Project(output, fidelity);
 
@@ -135,7 +135,7 @@ public sealed class OutputResultProjectionTests
         var output = OutputResult.FromTargets(
             OutputTargetResult.Success(OutputTarget.Clipboard, "Copied"),
             OutputTargetResult.Failed(OutputTarget.Folder, "Folder unavailable"));
-        var fidelity = PerfectHdrFidelityProjection.ProjectOutputProfile("sRGB").FidelityClaim;
+        var fidelity = HdrAwareOutputProjection.ProjectOutputProfile("sRGB").FidelityClaim;
 
         var projection = OutputResultProjection.Project(output, fidelity);
 
@@ -204,7 +204,7 @@ public sealed class OutputResultProjectionTests
     public void Project_FailedOutputUsesWarningSeverity()
     {
         var output = OutputResult.ClipboardFailed("Clipboard write denied.");
-        var fidelity = PerfectHdrFidelityProjection.ProjectOutputProfile("sRGB").FidelityClaim;
+        var fidelity = HdrAwareOutputProjection.ProjectOutputProfile("sRGB").FidelityClaim;
 
         var projection = OutputResultProjection.Project(output, fidelity);
 

@@ -32,7 +32,7 @@ public sealed record OutputResultProjection(
 
         var profile = outputResult is null
             ? null
-            : PerfectHdrFidelityProjection.ProjectOutputProfile(outputResult.EffectiveProfile);
+            : HdrAwareOutputProjection.ProjectOutputProfile(outputResult.EffectiveProfile);
         return new OutputResultProjection(
             ProjectTitle(outputResult),
             ProjectDetail(outputResult),
@@ -43,7 +43,7 @@ public sealed record OutputResultProjection(
     public static OutputResultProjection Project(OutputResult? outputResult, CaptureTarget? captureTarget = null) =>
         Project(
             outputResult,
-            PerfectHdrFidelityProjection.ProjectOutputProfile(outputResult?.EffectiveProfile
+            HdrAwareOutputProjection.ProjectOutputProfile(outputResult?.EffectiveProfile
                 ?? OutputProfileContract.SrgbCompatibilityPng).FidelityClaim,
             captureTarget);
 
@@ -166,7 +166,7 @@ public sealed record OutputResultProjection(
             "; ",
             outputResult.TargetProfiles.Select(profile =>
             {
-                var contract = PerfectHdrFidelityProjection.ProjectOutputProfile(profile.EffectiveProfile).Contract;
+                var contract = HdrAwareOutputProjection.ProjectOutputProfile(profile.EffectiveProfile).Contract;
                 return $"{FormatTarget(profile.Target)} {FormatFormatContract(contract)}";
             }));
 

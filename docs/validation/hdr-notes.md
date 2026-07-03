@@ -12,6 +12,8 @@ The MVP is HDR-aware, not HDR-certified. It keeps the native FP16/scRGB preview 
 - HDR display behavior depends on the active target display, Windows HDR setting, driver, display capabilities, and color management.
 - An artifact being written successfully does not prove visual match or HDR preservation.
 - Clipboard compatibility and HDR-preserved file export are different product paths.
+- The MVP visual-match conversion should not pass by simply darkening the image: it must first avoid obvious overexposure, washed-out output, and gray output, then preserve usable shadow detail and overall contrast where practical.
+- The first visual-match tone mapper should be simple, fixed-parameter, explainable, and testable: keep ordinary SDR-range content visually stable where practical, smoothly compress HDR highlights above the SDR range instead of hard-clamping them, then apply the sRGB transfer for compatible output.
 
 ## JPEG XR And HDR-Preserved Export
 

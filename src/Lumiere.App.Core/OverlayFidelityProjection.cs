@@ -16,12 +16,12 @@ public static class OverlayFidelityProjection
 
         var contract = OutputProfileContract.FromSettingsValue(exportColorFormat);
         var profile = validationArtifacts is null
-            ? PerfectHdrFidelityProjection.ProjectOutputProfile(
+            ? HdrAwareOutputProjection.ProjectOutputProfile(
                 contract,
                 readiness,
                 executionCapabilities,
                 outputTarget)
-            : PerfectHdrFidelityProjection.ProjectOutputProfile(
+            : HdrAwareOutputProjection.ProjectOutputProfile(
                 contract,
                 validationArtifacts,
                 readiness,

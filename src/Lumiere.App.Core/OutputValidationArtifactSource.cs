@@ -7,8 +7,6 @@ public interface IOutputValidationArtifactSource
     OutputValidationArtifactSnapshot Load();
 
     OutputValidationDraftResult CreateDraft(OutputValidationDraftRequest request);
-
-    OutputValidationDraftResult CreateResourceTrendDraft(ResourceTrendValidationDraftRequest request);
 }
 
 public sealed record OutputValidationArtifactSnapshot(
@@ -46,9 +44,6 @@ public sealed record OutputValidationWorkspaceState(
     string? SampleTemplatePath,
     string? ReleaseChecklistPath,
     string? HdrSdrScenariosPath,
-    string? SettingsAccessibilityGuidePath,
-    string? ResourceTrendTemplatePath,
-    string? ResourceTrendScriptPath,
     IReadOnlyList<OutputValidationWorkspaceIssue> Issues)
 {
     public static OutputValidationWorkspaceState Unavailable { get; } =
@@ -58,9 +53,6 @@ public sealed record OutputValidationWorkspaceState(
             string.Empty,
             string.Empty,
             string.Empty,
-            null,
-            null,
-            null,
             null,
             null,
             null,
@@ -122,14 +114,6 @@ public sealed record OutputValidationDraftResult(
         new(false, null, technicalDetail);
 }
 
-public sealed record ResourceTrendValidationDraftRequest(
-    string? BuildVersion,
-    OutputTarget OutputTarget,
-    Lumiere.Capture.CaptureSessionState SessionState,
-    int ProcessId,
-    string? ResourceTrendCommand = null,
-    OutputValidationCurrentSessionHint? CurrentSessionHint = null);
-
 public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifactSource
 {
     internal const string WorkspaceReadmeFileName = "README.txt";
@@ -137,8 +121,6 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
     internal const string HdrSdrSessionTemplateFileName = "hdr-sdr-validation-session-template.md";
     internal const string MvpChecklistFileName = "mvp-checklist.md";
     internal const string HdrNotesFileName = "hdr-notes.md";
-    internal const string ResourceTrendTemplateFileName = "resource-trend-session-template.md";
-    internal const string ResourceTrendScriptFileName = "collect-resource-trend-samples.ps1";
 
     private readonly string directoryPath;
     private readonly string searchPattern;
@@ -298,47 +280,6 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
                     artifact,
                     Path.GetFileName(filePath)));
             writeAllText(filePath, artifact.ToJson());
-            return OutputValidationDraftResult.Success(filePath);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
-        {
-            return OutputValidationDraftResult.Failed($"{ex.GetType().Name}: {ex.Message}");
-        }
-    }
-
-    public OutputValidationDraftResult CreateResourceTrendDraft(ResourceTrendValidationDraftRequest request)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        var workspace = prepareWorkspace
-            ? EnsureWorkspace()
-            : OutputValidationWorkspaceState.Unavailable;
-        if (!workspace.IsReady)
-        {
-            var detail = workspace.Issues.Count == 0
-                ? "Validation workspace is not ready on this machine."
-                : string.Join(" ", workspace.Issues.Select(issue => issue.Detail));
-            return OutputValidationDraftResult.Failed(detail);
-        }
-
-        if (string.IsNullOrWhiteSpace(workspace.ResourceTrendTemplatePath)
-            || !fileExists(workspace.ResourceTrendTemplatePath))
-        {
-            return OutputValidationDraftResult.Failed("Resource trend session template is not available in the local validation workspace.");
-        }
-
-        try
-        {
-            var template = readAllText(workspace.ResourceTrendTemplatePath);
-            var now = getNow();
-            var content = ResourceTrendValidationDraftFactory.Create(
-                request,
-                workspace.DirectoryPath,
-                now,
-                template,
-                SelectLatestResourceTrendSummary(workspace, request.ProcessId));
-            var filePath = AllocateResourceTrendDraftPath(workspace.DirectoryPath, now);
-            writeAllText(filePath, content);
             return OutputValidationDraftResult.Success(filePath);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
@@ -585,9 +526,6 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         var hdrSdrSessionTemplatePath = Path.Combine(templatesDirectoryPath, HdrSdrSessionTemplateFileName);
         var releaseChecklistPath = Path.Combine(guidanceDirectoryPath, MvpChecklistFileName);
         var hdrSdrScenariosPath = Path.Combine(guidanceDirectoryPath, HdrNotesFileName);
-        string? settingsAccessibilityGuidePath = null;
-        var resourceTrendTemplatePath = Path.Combine(templatesDirectoryPath, ResourceTrendTemplateFileName);
-        var resourceTrendScriptPath = Path.Combine(directoryPath, ResourceTrendScriptFileName);
         var issues = new List<OutputValidationWorkspaceIssue>();
 
         EnsureDirectory(directoryPath, "Validation artifact directory could not be prepared.", issues);
@@ -617,8 +555,6 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
                 "HDR notes source could not be loaded from the current build.",
                 "HDR notes could not be seeded.",
                 issues);
-            EnsureResourceTrendTemplate(resourceTrendTemplatePath, issues);
-            EnsureResourceTrendScript(resourceTrendScriptPath, issues);
         }
 
         return new OutputValidationWorkspaceState(
@@ -630,9 +566,6 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
             fileExists(sampleTemplatePath) ? sampleTemplatePath : null,
             fileExists(releaseChecklistPath) ? releaseChecklistPath : null,
             fileExists(hdrSdrScenariosPath) ? hdrSdrScenariosPath : null,
-            null,
-            fileExists(resourceTrendTemplatePath) ? resourceTrendTemplatePath : null,
-            fileExists(resourceTrendScriptPath) ? resourceTrendScriptPath : null,
             issues);
     }
 
@@ -711,36 +644,6 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         }
     }
 
-    private void EnsureResourceTrendTemplate(
-        string resourceTrendTemplatePath,
-        ICollection<OutputValidationWorkspaceIssue> issues)
-    {
-        if (fileExists(resourceTrendTemplatePath))
-        {
-            return;
-        }
-
-        var templateContent = LoadEmbeddedText("Lumiere.App.Validation.ResourceTrend.resource-trend-session-template.md");
-        if (string.IsNullOrWhiteSpace(templateContent))
-        {
-            issues.Add(new OutputValidationWorkspaceIssue(
-                resourceTrendTemplatePath,
-                "Resource trend session template source could not be loaded from the current build."));
-            return;
-        }
-
-        try
-        {
-            writeAllText(resourceTrendTemplatePath, templateContent);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
-        {
-            issues.Add(new OutputValidationWorkspaceIssue(
-                resourceTrendTemplatePath,
-                $"Resource trend session template could not be seeded. {ex.GetType().Name}: {ex.Message}"));
-        }
-    }
-
     private void EnsureSeededTemplate(
         string path,
         string resourceName,
@@ -780,36 +683,6 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         }
     }
 
-    private void EnsureResourceTrendScript(
-        string resourceTrendScriptPath,
-        ICollection<OutputValidationWorkspaceIssue> issues)
-    {
-        if (fileExists(resourceTrendScriptPath))
-        {
-            return;
-        }
-
-        var scriptContent = LoadEmbeddedText("Lumiere.App.Validation.ResourceTrend.collect-resource-trend-samples.ps1");
-        if (string.IsNullOrWhiteSpace(scriptContent))
-        {
-            issues.Add(new OutputValidationWorkspaceIssue(
-                resourceTrendScriptPath,
-                "Resource trend sampler script source could not be loaded from the current build."));
-            return;
-        }
-
-        try
-        {
-            writeAllText(resourceTrendScriptPath, scriptContent);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
-        {
-            issues.Add(new OutputValidationWorkspaceIssue(
-                resourceTrendScriptPath,
-                $"Resource trend sampler script could not be seeded. {ex.GetType().Name}: {ex.Message}"));
-        }
-    }
-
     private static string? LoadEmbeddedTemplateText()
         => LoadEmbeddedText("Lumiere.App.Validation.Output.output-validation-session.schema-v4.sample.json");
 
@@ -842,10 +715,9 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
                 "2. Or use Lumiere's Create draft action to generate a prefilled local draft in this folder.",
                 "3. Review guidance\\mvp-checklist.md and guidance\\hdr-notes.md before counting Windows manual evidence toward the MVP.",
                 "4. Use templates\\hdr-sdr-validation-session-template.md only when recording deeper HDR notes for future export work.",
-                "5. Use templates\\resource-trend-session-template.md plus collect-resource-trend-samples.ps1 only for future long-run validation sessions.",
-                "6. Rename or copy templates as needed, replace every REPLACE_WITH_* placeholder, and keep manual evidence honest.",
-                "7. Reload evidence from Lumiere after recording real observations.",
-                "8. Do not treat template files or incomplete sessions as passing release evidence.",
+                "5. Rename or copy templates as needed, replace every REPLACE_WITH_* placeholder, and keep manual evidence honest.",
+                "6. Reload evidence from Lumiere after recording real observations.",
+                "7. Do not treat template files or incomplete sessions as passing MVP evidence.",
                 string.Empty,
                 "Seeded local guides:",
                 "- guidance\\mvp-checklist.md",
@@ -873,67 +745,6 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         }
 
         throw new InvalidOperationException("Could not allocate a unique validation draft file name.");
-    }
-
-    private string AllocateResourceTrendDraftPath(string workspaceDirectoryPath, DateTimeOffset now)
-    {
-        var stem = $"resource-trend-session-{now.ToLocalTime():yyyy-MM-dd}";
-        var candidate = Path.Combine(workspaceDirectoryPath, $"{stem}.md");
-        if (!fileExists(candidate))
-        {
-            return candidate;
-        }
-
-        for (var suffix = 2; suffix < 1000; suffix++)
-        {
-            candidate = Path.Combine(workspaceDirectoryPath, $"{stem}-{suffix}.md");
-            if (!fileExists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new InvalidOperationException("Could not allocate a unique resource trend draft file name.");
-    }
-
-    private ResourceTrendSummaryArtifact? SelectLatestResourceTrendSummary(
-        OutputValidationWorkspaceState workspace,
-        int processId)
-    {
-        var resourceTrendDirectoryPath = Path.Combine(workspace.DirectoryPath, "resource-trends");
-        if (!directoryExists(resourceTrendDirectoryPath))
-        {
-            return null;
-        }
-
-        ResourceTrendSummaryArtifact? latestAnyProcess = null;
-        foreach (var path in enumerateFiles(resourceTrendDirectoryPath, "*-summary.json")
-            .OrderDescending(StringComparer.OrdinalIgnoreCase))
-        {
-            try
-            {
-                var parsedSummary = ResourceTrendSummaryArtifact.FromJson(readAllText(path), path);
-                var summary = parsedSummary with
-                {
-                    CsvPathStatus = parsedSummary.HasRecordedCsvPath
-                        ? fileExists(parsedSummary.CsvPath)
-                            ? ResourceTrendEvidencePathStatus.Present
-                            : ResourceTrendEvidencePathStatus.Missing
-                        : ResourceTrendEvidencePathStatus.Missing,
-                };
-                latestAnyProcess ??= summary;
-                if (summary.MatchesProcessId(processId))
-                {
-                    return summary;
-                }
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException or System.Text.Json.JsonException)
-            {
-                continue;
-            }
-        }
-
-        return latestAnyProcess;
     }
 
     private string AllocateScenarioNotesPath(string evidenceDirectoryPath, string draftStem)

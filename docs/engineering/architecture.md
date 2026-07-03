@@ -32,6 +32,7 @@ Platform APIs should stay in their boundary module. UI code can consume projecti
 - Do not route the main preview through an SDR screenshot-library foundation.
 - Treat HDR display capability as target-aware, not as a single global assumption.
 - Output artifact success is not the same as HDR preservation.
+- sRGB Visual Match conversion must live in a shared output component used by clipboard, folder, and both-target output, so the MVP does not drift into target-specific tone mapping behavior.
 - Public HDR-preserved claims require a named output path, documented conversion/metadata policy, target app assumptions, and Windows manual validation.
 
 ## Resource And Diagnostics Rules

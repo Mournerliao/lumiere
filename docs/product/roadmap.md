@@ -4,13 +4,17 @@ This roadmap keeps Lumiere focused on a useful MVP first, then grows toward stro
 
 ## Phase 1: HDR-Aware MVP
 
-Goal: ship the core Windows screenshot tool.
+Goal: ship the core Windows screenshot tool with one official output path: sRGB Visual Match.
+
+Execution checklist: `docs/engineering/mvp-development-plan.md`.
 
 - Fast region and fullscreen capture.
 - Main window, tray, and shortcut entry points.
 - Clipboard and folder output.
 - FP16/scRGB-oriented preview path.
 - Honest HDR state and output copy.
+- HDR-to-sRGB visual-match conversion that avoids obvious overexposure, washed-out output, or gray output in common supported paths.
+- P3 and HDR10 remain planned profiles in the model and roadmap, but they are not normal MVP UI choices or supported MVP modes.
 - Lightweight Windows validation for the supported paths.
 
 ## Phase 2: Single HDR-Preserved Export Path

@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Lumiere.Graphics.Tests.App;
 
-public sealed class PerfectHdrFidelityProjectionTests
+public sealed class HdrAwareOutputProjectionTests
 {
     [Theory]
     [InlineData(null, "sRGB")]
@@ -18,7 +18,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     [InlineData("wide", "P3")]
     public void NormalizeExportColorFormat_MapsKnownProfilesAndFallsBackToSrgb(string? input, string expected)
     {
-        var normalized = PerfectHdrFidelityProjection.NormalizeExportColorFormat(input);
+        var normalized = HdrAwareOutputProjection.NormalizeExportColorFormat(input);
 
         Assert.Equal(expected, normalized);
     }
@@ -26,7 +26,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     [Fact]
     public void ProjectOutputProfile_Hdr10IsValidationScopedAndUnvalidated()
     {
-        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile("HDR10");
+        var profile = HdrAwareOutputProjection.ProjectOutputProfile("HDR10");
 
         Assert.Equal("HDR10", profile.Label);
         Assert.Equal("Validate", profile.StatusLabel);
@@ -45,7 +45,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     [Fact]
     public void ProjectOutputProfile_SrgbIsCompatibilityConvertedFallback()
     {
-        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile("sRGB");
+        var profile = HdrAwareOutputProjection.ProjectOutputProfile("sRGB");
 
         Assert.Equal("sRGB", profile.Label);
         Assert.Equal("Compat", profile.StatusLabel);
@@ -61,7 +61,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     [Fact]
     public void ProjectOutputProfile_SurfacesTypedFormatContractLabels()
     {
-        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile("sRGB");
+        var profile = HdrAwareOutputProjection.ProjectOutputProfile("sRGB");
 
         Assert.Equal("R16G16B16A16 float", profile.Contract.SourcePixelFormatLabel);
         Assert.Equal("RGBA8 sRGB", profile.Contract.DestinationPixelFormatLabel);
@@ -77,7 +77,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     {
         var contract = OutputProfileContract.FromSettingsValue("HDR10");
 
-        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(contract);
+        var profile = HdrAwareOutputProjection.ProjectOutputProfile(contract);
 
         Assert.Equal(contract.Label, profile.Label);
         Assert.Equal(contract.SourceFormatPolicy, profile.Contract.SourcePolicy);
@@ -99,7 +99,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             ArtifactWithIncompleteViewerEvidence("Microsoft Edge"),
         };
 
-        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(
+        var profile = HdrAwareOutputProjection.ProjectOutputProfile(
             OutputProfileContract.Hdr10Pq,
             artifacts,
             readiness: null,
@@ -123,7 +123,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             FormatContract = CompleteHdr10Contract,
         };
 
-        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(contract);
+        var profile = HdrAwareOutputProjection.ProjectOutputProfile(contract);
 
         Assert.Equal(FidelityClaimKind.Unvalidated, profile.FidelityClaim.Kind);
         Assert.Contains("blocked", profile.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
@@ -146,7 +146,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             ],
         };
 
-        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(contract);
+        var profile = HdrAwareOutputProjection.ProjectOutputProfile(contract);
 
         Assert.Equal(FidelityClaimKind.HdrPreserved, profile.FidelityClaim.Kind);
         Assert.Contains("validated HDR-preserved", profile.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
@@ -173,7 +173,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             "Target-aware display capability could not be matched to a DXGI output.",
             PreviewReadinessReason.TargetDisplayUnresolved);
 
-        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(contract, readiness);
+        var profile = HdrAwareOutputProjection.ProjectOutputProfile(contract, readiness);
 
         Assert.Equal(FidelityClaimKind.Unvalidated, profile.FidelityClaim.Kind);
         Assert.Equal("Unvalidated", profile.FidelityClaim.Label);
@@ -184,9 +184,9 @@ public sealed class PerfectHdrFidelityProjectionTests
     [Fact]
     public void ProjectValidation_RequiresPublicHdrFidelityEvidenceBeforeRelease()
     {
-        var validation = PerfectHdrFidelityProjection.ProjectValidation();
+        var validation = HdrAwareOutputProjection.ProjectValidation();
 
-        Assert.Equal(PerfectHdrFidelityProjection.ReleaseTarget, validation.ReleaseTarget);
+        Assert.Equal(HdrAwareOutputProjection.ReleaseTarget, validation.ReleaseTarget);
         Assert.Contains("evidence", validation.Summary, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("sRGB", validation.OutputProfileGate.ProfileLabel);
         Assert.Equal("Compat", validation.OutputProfileGate.StatusLabel);
@@ -201,7 +201,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     [Fact]
     public void ProjectValidation_IncludesNamedViewerCompatibilityMatrix()
     {
-        var validation = PerfectHdrFidelityProjection.ProjectValidation();
+        var validation = HdrAwareOutputProjection.ProjectValidation();
 
         Assert.Contains("Named viewers", validation.ViewerMatrixSummary, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(validation.ViewerMatrix, viewer => viewer.Name == "Microsoft Paint" && viewer.Status == ValidationEvidenceStatus.NotRun);
@@ -223,7 +223,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     [Fact]
     public void ProjectValidation_ViewerMatrixSeparatesArtifactVisualAndHdrEvidence()
     {
-        var validation = PerfectHdrFidelityProjection.ProjectValidation(OutputProfileContract.SrgbCompatibilityPng);
+        var validation = HdrAwareOutputProjection.ProjectValidation(OutputProfileContract.SrgbCompatibilityPng);
 
         Assert.All(
             validation.ViewerMatrix,
@@ -257,7 +257,7 @@ public sealed class PerfectHdrFidelityProjectionTests
                 PassingHdrViewer("Windows Photos"),
             ]));
 
-        var validation = PerfectHdrFidelityProjection.ProjectValidation(contract);
+        var validation = HdrAwareOutputProjection.ProjectValidation(contract);
 
         Assert.Contains(validation.ViewerMatrix, viewer =>
             viewer.Name == "Windows Photos"
@@ -270,7 +270,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Contains(validation.ViewerMatrix, viewer =>
             viewer.Name == "Microsoft Paint"
             && viewer.Status == ValidationEvidenceStatus.NotRun);
-        Assert.Equal(FidelityClaimKind.Unvalidated, PerfectHdrFidelityProjection.ProjectOutputProfile(contract).FidelityClaim.Kind);
+        Assert.Equal(FidelityClaimKind.Unvalidated, HdrAwareOutputProjection.ProjectOutputProfile(contract).FidelityClaim.Kind);
     }
 
     [Fact]
@@ -318,8 +318,8 @@ public sealed class PerfectHdrFidelityProjectionTests
             TargetHdrEvidence = CompleteTargetHdrEvidence,
         };
 
-        var validation = PerfectHdrFidelityProjection.ProjectValidation(contract, artifact);
-        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(artifact.ApplyTo(contract));
+        var validation = HdrAwareOutputProjection.ProjectValidation(contract, artifact);
+        var profile = HdrAwareOutputProjection.ProjectOutputProfile(artifact.ApplyTo(contract));
 
         Assert.Contains(validation.ViewerMatrix, viewer =>
             viewer.Name == "Windows Photos"
@@ -343,7 +343,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             FormatContract = CompleteHdr10Contract,
         };
 
-        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+        var validation = HdrAwareOutputProjection.ProjectValidation(
             contract,
             [
                 ArtifactFor("Microsoft Paint"),
@@ -364,7 +364,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             FormatContract = CompleteHdr10Contract,
         };
 
-        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+        var validation = HdrAwareOutputProjection.ProjectValidation(
             contract,
             [
                 ArtifactFor("Microsoft Paint"),
@@ -393,7 +393,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     [Fact]
     public void ProjectValidation_ReportsTargetAppMatrixLimitedWhenNamedViewerEvidenceIsIncomplete()
     {
-        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+        var validation = HdrAwareOutputProjection.ProjectValidation(
             OutputProfileContract.SrgbCompatibilityPng,
             [
                 SdrArtifactFor("Microsoft Paint"),
@@ -414,7 +414,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     [Fact]
     public void ProjectValidation_ReportsTargetAppVersionsLimitedWhenNamedVersionEvidenceIsMissing()
     {
-        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+        var validation = HdrAwareOutputProjection.ProjectValidation(
             OutputProfileContract.Hdr10Pq,
             [
                 ArtifactFor("Microsoft Paint") with
@@ -457,7 +457,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             ],
         };
 
-        var validation = PerfectHdrFidelityProjection.ProjectValidation(OutputProfileContract.Hdr10Pq, artifact);
+        var validation = HdrAwareOutputProjection.ProjectValidation(OutputProfileContract.Hdr10Pq, artifact);
         var viewer = Assert.Single(validation.ViewerMatrix, item => item.Name == "Windows Photos");
 
         Assert.Contains("Output target scope: Folder.", viewer.Detail, StringComparison.OrdinalIgnoreCase);
@@ -483,7 +483,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             ],
         };
 
-        var validation = PerfectHdrFidelityProjection.ProjectValidation(contract);
+        var validation = HdrAwareOutputProjection.ProjectValidation(contract);
         var profileRow = Assert.Single(
             validation.Rows,
             row => row.Label == "HDR-preserved profile");
@@ -500,7 +500,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     [Fact]
     public void ProjectValidation_ReportsVisualMatchPassedWhenAllNamedViewerEvidencePasses()
     {
-        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+        var validation = HdrAwareOutputProjection.ProjectValidation(
             OutputProfileContract.SrgbCompatibilityPng,
             [
                 SdrArtifactFor("Microsoft Paint"),
@@ -518,7 +518,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     [Fact]
     public void ProjectValidation_ReportsVisualMatchLimitedWhenSomeNamedViewerEvidenceIsMissing()
     {
-        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+        var validation = HdrAwareOutputProjection.ProjectValidation(
             OutputProfileContract.SrgbCompatibilityPng,
             [
                 SdrArtifactFor("Microsoft Paint"),
@@ -536,7 +536,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     [Fact]
     public void ProjectValidation_SurfacesManualFormatContractEvidenceWithoutClaimingHdrPreserved()
     {
-        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+        var validation = HdrAwareOutputProjection.ProjectValidation(
             OutputProfileContract.Hdr10Pq,
             [
                 ArtifactWithFormatContract("Windows Photos"),
@@ -559,7 +559,7 @@ public sealed class PerfectHdrFidelityProjectionTests
         {
             EvidencePaths = [],
         };
-        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+        var validation = HdrAwareOutputProjection.ProjectValidation(
             OutputProfileContract.Hdr10Pq,
             [
                 artifact,
@@ -583,7 +583,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             FormatContract = CompleteHdr10Contract,
         };
 
-        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(
+        var profile = HdrAwareOutputProjection.ProjectOutputProfile(
             contract,
             [
                 ArtifactFor("Microsoft Paint"),
@@ -597,7 +597,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     [Fact]
     public void ProjectOutputProfile_RuntimeCapabilitiesBlockHdrPreservedClaimEvenWithCompleteArtifacts()
     {
-        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(
+        var profile = HdrAwareOutputProjection.ProjectOutputProfile(
             OutputProfileContract.Hdr10Pq,
             [
                 ArtifactFor("Microsoft Paint"),
@@ -625,7 +625,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             ArtifactWithFormatContract("Microsoft Edge"),
         ];
 
-        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(
+        var profile = HdrAwareOutputProjection.ProjectOutputProfile(
             OutputProfileContract.Hdr10Pq,
             artifacts,
             readiness: null,
@@ -650,7 +650,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             ArtifactWithFormatContract("Microsoft Edge"),
         ];
 
-        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(
+        var profile = HdrAwareOutputProjection.ProjectOutputProfile(
             OutputProfileContract.Hdr10Pq,
             artifacts,
             readiness: null,
@@ -667,7 +667,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     [Fact]
     public void ProjectOutputProfile_ClaimsHdrPreservedOnlyWhenArtifactsAndRuntimeCapabilitiesPass()
     {
-        var profile = PerfectHdrFidelityProjection.ProjectOutputProfile(
+        var profile = HdrAwareOutputProjection.ProjectOutputProfile(
             OutputProfileContract.Hdr10Pq,
             [
                 ArtifactWithFormatContract("Microsoft Paint"),
@@ -695,7 +695,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     [Fact]
     public void ProjectValidation_RuntimeCapabilitiesKeepCompleteHdrArtifactsLimitedUntilExecutable()
     {
-        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+        var validation = HdrAwareOutputProjection.ProjectValidation(
             OutputProfileContract.Hdr10Pq,
             [
                 ArtifactWithFormatContract("Microsoft Paint"),
@@ -728,7 +728,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             ArtifactFor("Microsoft Edge"),
         ];
 
-        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+        var validation = HdrAwareOutputProjection.ProjectValidation(
             OutputProfileContract.Hdr10Pq,
             artifacts,
             ValidateOnlyHdr10Capabilities(artifacts));
@@ -742,7 +742,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     [Fact]
     public void ProjectValidation_RuntimeCapabilitiesSurfaceReadyGateWhenExecutableHdr10Passes()
     {
-        var validation = PerfectHdrFidelityProjection.ProjectValidation(
+        var validation = HdrAwareOutputProjection.ProjectValidation(
             OutputProfileContract.Hdr10Pq,
             [
                 ArtifactWithFormatContract("Microsoft Paint"),
@@ -762,7 +762,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     [Fact]
     public void ProjectValidationRecord_UsesBuildVersionAndKeepsManualValidationNotRun()
     {
-        var record = PerfectHdrFidelityProjection.ProjectValidationRecord("v2.3.4");
+        var record = HdrAwareOutputProjection.ProjectValidationRecord("v2.3.4");
 
         Assert.Equal("Build v2.3.4", record.BuildLabel);
         Assert.Equal(ValidationEvidenceStatus.Limited, record.AutomatedEvidenceStatus);
@@ -788,13 +788,10 @@ public sealed class PerfectHdrFidelityProjectionTests
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\output-validation-session.schema-v4.sample.json",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\mvp-checklist.md",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-notes.md",
-                null,
-                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\resource-trend-session-template.md",
-                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\collect-resource-trend-samples.ps1",
                 []),
         };
 
-        var record = PerfectHdrFidelityProjection.ProjectValidationRecord("v2.3.4", snapshot);
+        var record = HdrAwareOutputProjection.ProjectValidationRecord("v2.3.4", snapshot);
 
         Assert.Equal(ValidationEvidenceStatus.Limited, record.WindowsManualValidationStatus);
         Assert.Contains("Validation workspace:", record.WindowsManualValidationDetail);
@@ -804,16 +801,8 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\output-validation-session.schema-v4.sample.json", record.ValidationTemplatePath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\mvp-checklist.md", record.ReleaseChecklistPath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-notes.md", record.HdrSdrScenariosPath);
-        Assert.Null(record.SettingsAccessibilityGuidePath);
-        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\resource-trend-session-template.md", record.ResourceTrendTemplatePath);
-        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\collect-resource-trend-samples.ps1", record.ResourceTrendScriptPath);
         Assert.True(record.CanOpenReleaseChecklist);
         Assert.True(record.CanOpenHdrSdrScenarios);
-        Assert.False(record.CanOpenSettingsAccessibilityGuide);
-        Assert.True(record.CanOpenResourceTrendTemplate);
-        Assert.True(record.CanOpenResourceTrendScript);
-        Assert.True(record.CanCopyResourceTrendCommand);
-        Assert.True(record.CanCreateResourceTrendDraft);
     }
 
     [Fact]
@@ -830,15 +819,12 @@ public sealed class PerfectHdrFidelityProjectionTests
                 null,
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\mvp-checklist.md",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-notes.md",
-                null,
-                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\resource-trend-session-template.md",
-                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\collect-resource-trend-samples.ps1",
                 [new OutputValidationWorkspaceIssue(
                     "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\output-validation-session.schema-v4.sample.json",
                     "Validation sample template source could not be loaded from the current build.")]),
         };
 
-        var record = PerfectHdrFidelityProjection.ProjectValidationRecord("v2.3.4", snapshot);
+        var record = HdrAwareOutputProjection.ProjectValidationRecord("v2.3.4", snapshot);
 
         Assert.Equal(ValidationEvidenceStatus.Limited, record.WindowsManualValidationStatus);
         Assert.Contains("workspace is not ready", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
@@ -848,16 +834,8 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Null(record.ValidationTemplatePath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\mvp-checklist.md", record.ReleaseChecklistPath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-notes.md", record.HdrSdrScenariosPath);
-        Assert.Null(record.SettingsAccessibilityGuidePath);
-        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\resource-trend-session-template.md", record.ResourceTrendTemplatePath);
-        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\collect-resource-trend-samples.ps1", record.ResourceTrendScriptPath);
         Assert.True(record.CanOpenReleaseChecklist);
         Assert.True(record.CanOpenHdrSdrScenarios);
-        Assert.False(record.CanOpenSettingsAccessibilityGuide);
-        Assert.True(record.CanOpenResourceTrendTemplate);
-        Assert.True(record.CanOpenResourceTrendScript);
-        Assert.True(record.CanCopyResourceTrendCommand);
-        Assert.True(record.CanCreateResourceTrendDraft);
     }
 
     [Fact]
@@ -867,7 +845,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             [ArtifactFor("Windows Photos")],
             []);
 
-        var record = PerfectHdrFidelityProjection.ProjectValidationRecord("2.3.4+deadbee", snapshot);
+        var record = HdrAwareOutputProjection.ProjectValidationRecord("2.3.4+deadbee", snapshot);
 
         Assert.Equal(ValidationEvidenceStatus.Limited, record.WindowsManualValidationStatus);
         Assert.Contains("not aligned with the current build", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
@@ -878,7 +856,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     [Fact]
     public void ProjectValidationEvidenceSummary_WithArtifactsSurfacesLatestCoverageAndFollowUp()
     {
-        var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(
+        var summary = HdrAwareOutputProjection.ProjectValidationEvidenceSummary(
             [
                 ArtifactFor("Microsoft Paint") with
                 {
@@ -929,19 +907,19 @@ public sealed class PerfectHdrFidelityProjectionTests
         Assert.Contains("Public gate gaps:", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Target-aware HDR", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("REL-HDR-01", summary.GapDetail, StringComparison.Ordinal);
-        Assert.Contains("Long-run lifecycle", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("MVP stability smoke", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("REL-STAB-02", summary.GapDetail, StringComparison.Ordinal);
         Assert.Contains("Next recommended runs:", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Next Windows run:", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Review HDR notes", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Record any export-profile", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Create trend draft", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Record repeated capture/output observations", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
     public void ProjectValidationEvidenceSummary_CallsOutMissingHdr10ViewerTargets()
     {
-        var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(
+        var summary = HdrAwareOutputProjection.ProjectValidationEvidenceSummary(
             [
                 ArtifactFor("Microsoft Paint") with
                 {
@@ -966,7 +944,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     [Fact]
     public void ProjectValidationEvidenceSummary_CallsOutMissingTargetAppVersions()
     {
-        var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(
+        var summary = HdrAwareOutputProjection.ProjectValidationEvidenceSummary(
             [
                 ArtifactFor("Windows Photos") with
                 {
@@ -980,7 +958,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     [Fact]
     public void ProjectValidationEvidenceSummary_CallsOutIncompleteTargetHdrColorSpace()
     {
-        var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(
+        var summary = HdrAwareOutputProjection.ProjectValidationEvidenceSummary(
             [
                 ArtifactFor("Windows Photos") with
                 {
@@ -998,7 +976,7 @@ public sealed class PerfectHdrFidelityProjectionTests
     [Fact]
     public void ProjectValidationEvidenceSummary_CallsOutMissingManualSessionEvidencePaths()
     {
-        var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(
+        var summary = HdrAwareOutputProjection.ProjectValidationEvidenceSummary(
             [
                 ArtifactFor("Windows Photos") with
                 {
@@ -1025,7 +1003,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             ],
         };
 
-        var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(snapshot, "2.3.4+485bc31");
+        var summary = HdrAwareOutputProjection.ProjectValidationEvidenceSummary(snapshot, "2.3.4+485bc31");
 
         Assert.Equal(ValidationEvidenceStatus.Pass, summary.BuildAlignment.Status);
         Assert.Equal("Matched current build", summary.BuildAlignment.StatusLabel);
@@ -1048,7 +1026,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             ],
         };
 
-        var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(snapshot, "2.3.4+deadbee");
+        var summary = HdrAwareOutputProjection.ProjectValidationEvidenceSummary(snapshot, "2.3.4+deadbee");
 
         Assert.Equal(ValidationEvidenceStatus.Limited, summary.BuildAlignment.Status);
         Assert.Equal("Stale for current build", summary.BuildAlignment.StatusLabel);
@@ -1073,7 +1051,7 @@ public sealed class PerfectHdrFidelityProjectionTests
             ],
         };
 
-        var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(snapshot);
+        var summary = HdrAwareOutputProjection.ProjectValidationEvidenceSummary(snapshot);
 
         Assert.Equal(ValidationEvidenceStatus.Limited, summary.Status);
         Assert.Contains("1 file", summary.Summary, StringComparison.OrdinalIgnoreCase);
@@ -1096,7 +1074,7 @@ public sealed class PerfectHdrFidelityProjectionTests
                     "Workspace-local markdown evidence is incomplete: evidence\\draft-scenario-session.md. Remove the draft NOT RUN sentinel after recording observed Windows manual results."),
             ]);
 
-        var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(snapshot);
+        var summary = HdrAwareOutputProjection.ProjectValidationEvidenceSummary(snapshot);
 
         Assert.Equal(ValidationEvidenceStatus.NotRun, summary.Status);
         Assert.Contains("were found but none loaded", summary.Summary, StringComparison.OrdinalIgnoreCase);
@@ -1121,15 +1099,12 @@ public sealed class PerfectHdrFidelityProjectionTests
                 null,
                 null,
                 null,
-                null,
-                null,
-                null,
                 [new OutputValidationWorkspaceIssue(
                     "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\output-validation-session.schema-v4.sample.json",
                     "Validation sample template source could not be loaded from the current build.")]),
         };
 
-        var summary = PerfectHdrFidelityProjection.ProjectValidationEvidenceSummary(snapshot);
+        var summary = HdrAwareOutputProjection.ProjectValidationEvidenceSummary(snapshot);
 
         Assert.Equal(ValidationEvidenceStatus.NotRun, summary.Status);
         Assert.Contains("workspace is not ready", summary.Summary, StringComparison.OrdinalIgnoreCase);

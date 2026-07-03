@@ -129,7 +129,7 @@ public sealed class MainPanelProjectionTests
         Assert.Equal("sRGB", projection.OutputProfile.Label);
         Assert.Equal("Compat", projection.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.FidelityClaim.Kind);
-        Assert.Equal(PerfectHdrFidelityProjection.ReleaseTarget, projection.ReleaseTarget);
+        Assert.Equal(HdrAwareOutputProjection.ReleaseTarget, projection.ReleaseTarget);
     }
 
     [Fact]

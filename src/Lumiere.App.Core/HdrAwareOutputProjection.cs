@@ -4,7 +4,7 @@ using Lumiere.Graphics.Output;
 
 namespace Lumiere.App;
 
-public static class PerfectHdrFidelityProjection
+public static class HdrAwareOutputProjection
 {
     public const string ReleaseTarget = "HDR-aware MVP";
 
@@ -799,9 +799,6 @@ public static class PerfectHdrFidelityProjection
                 null,
                 "%LOCALAPPDATA%\\Lumiere\\validation\\output\\guidance\\mvp-checklist.md",
                 "%LOCALAPPDATA%\\Lumiere\\validation\\output\\guidance\\hdr-notes.md",
-                null,
-                null,
-                null,
                 []);
         }
         var workspaceSummary = CreateWorkspaceSummary(workspace);
@@ -811,9 +808,6 @@ public static class PerfectHdrFidelityProjection
             ValidationTemplatePath = workspace.HasSampleTemplate ? workspace.SampleTemplatePath : null,
             ReleaseChecklistPath = workspace.ReleaseChecklistPath,
             HdrSdrScenariosPath = workspace.HdrSdrScenariosPath,
-            SettingsAccessibilityGuidePath = workspace.SettingsAccessibilityGuidePath,
-            ResourceTrendTemplatePath = workspace.ResourceTrendTemplatePath,
-            ResourceTrendScriptPath = workspace.ResourceTrendScriptPath,
         };
 
         if (!workspace.IsReady)
@@ -1024,9 +1018,9 @@ public static class PerfectHdrFidelityProjection
             ["REL-HDR-06", "REL-A11Y-01", "REL-A11Y-02", "REL-A11Y-03", "REL-A11Y-04", "REL-A11Y-05"],
             "Record any export-profile, keyboard, high-contrast, or DPI limitations that affect the MVP."),
         new(
-            "Long-run lifecycle",
+            "MVP stability smoke",
             ["REL-STAB-01", "REL-STAB-02"],
-            "Use Create trend draft plus Copy trend cmd before counting long-run evidence."),
+            "Record repeated capture/output observations in the MVP checklist before counting stability evidence."),
     ];
 
     private static string CreateCoverageDetail(IReadOnlyList<OutputValidationSessionArtifact> artifacts)
@@ -2020,12 +2014,6 @@ public sealed record ValidationRecordProjection(
 
     public string? HdrSdrScenariosPath { get; init; }
 
-    public string? SettingsAccessibilityGuidePath { get; init; }
-
-    public string? ResourceTrendTemplatePath { get; init; }
-
-    public string? ResourceTrendScriptPath { get; init; }
-
     public bool CanOpenValidationWorkspace => !string.IsNullOrWhiteSpace(ValidationWorkspacePath);
 
     public bool CanOpenValidationTemplate => !string.IsNullOrWhiteSpace(ValidationTemplatePath);
@@ -2034,26 +2022,12 @@ public sealed record ValidationRecordProjection(
 
     public bool CanOpenHdrSdrScenarios => !string.IsNullOrWhiteSpace(HdrSdrScenariosPath);
 
-    public bool CanOpenSettingsAccessibilityGuide => !string.IsNullOrWhiteSpace(SettingsAccessibilityGuidePath);
-
-    public bool CanOpenResourceTrendTemplate => !string.IsNullOrWhiteSpace(ResourceTrendTemplatePath);
-
-    public bool CanOpenResourceTrendScript => !string.IsNullOrWhiteSpace(ResourceTrendScriptPath);
-
-    public bool CanCopyResourceTrendCommand =>
-        !string.IsNullOrWhiteSpace(ValidationWorkspacePath)
-        && !string.IsNullOrWhiteSpace(ResourceTrendScriptPath);
-
-    public bool CanCreateResourceTrendDraft =>
-        CanCopyResourceTrendCommand
-        && !string.IsNullOrWhiteSpace(ResourceTrendTemplatePath);
-
     public string WorkspaceSummary =>
         string.IsNullOrWhiteSpace(ValidationWorkspacePath)
             ? EvidenceDocumentPath
             : string.IsNullOrWhiteSpace(ValidationTemplatePath)
                 ? $"Workspace: {ValidationWorkspacePath}"
-                : $"Workspace: {ValidationWorkspacePath} | Template: {ValidationTemplatePath} | Guides: {ReleaseChecklistPath ?? HdrSdrScenariosPath ?? SettingsAccessibilityGuidePath ?? "not seeded"}";
+                : $"Workspace: {ValidationWorkspacePath} | Template: {ValidationTemplatePath} | Guides: {ReleaseChecklistPath ?? HdrSdrScenariosPath ?? "not seeded"}";
 }
 
 public enum ValidationEvidenceStatus

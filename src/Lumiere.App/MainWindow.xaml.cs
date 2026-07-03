@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
 using Lumiere.Capture;
@@ -22,7 +21,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using Vortice.Direct3D11;
-using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
@@ -1829,23 +1827,15 @@ public sealed partial class MainWindow : Window
         SettingsExportProfileHelpText.Text = output.ExportColorHelpText;
         ApplyOutputProfileContractProjection(output.SelectedProfileContract);
 
-        if (output.ExportColorOptions?.Count >= 3)
+        if (output.ExportColorOptions?.Count >= 1)
         {
             ApplyExportColorOption(
                 output.ExportColorOptions[0],
-                SettingsExportHdr10RadioButton,
-                SettingsExportHdr10Text,
-                SettingsExportHdr10StatusText);
-            ApplyExportColorOption(
-                output.ExportColorOptions[1],
-                SettingsExportP3RadioButton,
-                SettingsExportP3Text,
-                SettingsExportP3StatusText);
-            ApplyExportColorOption(
-                output.ExportColorOptions[2],
                 SettingsExportSrgbRadioButton,
                 SettingsExportSrgbText,
                 SettingsExportSrgbStatusText);
+            SettingsExportHdr10RadioButton.IsEnabled = false;
+            SettingsExportP3RadioButton.IsEnabled = false;
         }
         else
         {
@@ -1855,42 +1845,11 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private async void OnValidationOpenWorkspaceClick(object sender, RoutedEventArgs e)
-    {
-        var snapshot = LoadOutputValidationArtifacts();
-        var path = snapshot.Workspace.IsConfigured
-            ? snapshot.Workspace.DirectoryPath
-            : PerfectHdrFidelityProjection.ProjectValidationRecord(
-                aboutInfoProvider.Version,
-                snapshot).ValidationWorkspacePath;
-        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "validation workspace");
-    }
-
-    private async void OnValidationOpenTemplateClick(object sender, RoutedEventArgs e)
-    {
-        var snapshot = LoadOutputValidationArtifacts();
-        var path = snapshot.Workspace.SampleTemplatePath
-            ?? PerfectHdrFidelityProjection.ProjectValidationRecord(
-                aboutInfoProvider.Version,
-                snapshot).ValidationTemplatePath;
-        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "validation template");
-    }
-
-    private async void OnValidationOpenResourceTrendTemplateClick(object sender, RoutedEventArgs e)
-    {
-        var snapshot = LoadOutputValidationArtifacts();
-        var path = snapshot.Workspace.ResourceTrendTemplatePath
-            ?? PerfectHdrFidelityProjection.ProjectValidationRecord(
-                aboutInfoProvider.Version,
-                snapshot).ResourceTrendTemplatePath;
-        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "resource trend template");
-    }
-
     private async void OnValidationOpenReleaseChecklistClick(object sender, RoutedEventArgs e)
     {
         var snapshot = LoadOutputValidationArtifacts();
         var path = snapshot.Workspace.ReleaseChecklistPath
-            ?? PerfectHdrFidelityProjection.ProjectValidationRecord(
+            ?? HdrAwareOutputProjection.ProjectValidationRecord(
                 aboutInfoProvider.Version,
                 snapshot).ReleaseChecklistPath;
         await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "MVP validation checklist");
@@ -1900,56 +1859,10 @@ public sealed partial class MainWindow : Window
     {
         var snapshot = LoadOutputValidationArtifacts();
         var path = snapshot.Workspace.HdrSdrScenariosPath
-            ?? PerfectHdrFidelityProjection.ProjectValidationRecord(
+            ?? HdrAwareOutputProjection.ProjectValidationRecord(
                 aboutInfoProvider.Version,
                 snapshot).HdrSdrScenariosPath;
         await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "HDR notes");
-    }
-
-    private async void OnValidationOpenSettingsAccessibilityGuideClick(object sender, RoutedEventArgs e)
-    {
-        var snapshot = LoadOutputValidationArtifacts();
-        var path = snapshot.Workspace.SettingsAccessibilityGuidePath
-            ?? PerfectHdrFidelityProjection.ProjectValidationRecord(
-                aboutInfoProvider.Version,
-                snapshot).SettingsAccessibilityGuidePath;
-        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "HDR notes");
-    }
-
-    private async void OnValidationOpenResourceTrendScriptClick(object sender, RoutedEventArgs e)
-    {
-        var snapshot = LoadOutputValidationArtifacts();
-        var path = snapshot.Workspace.ResourceTrendScriptPath
-            ?? PerfectHdrFidelityProjection.ProjectValidationRecord(
-                aboutInfoProvider.Version,
-                snapshot).ResourceTrendScriptPath;
-        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "resource trend script");
-    }
-
-    private void OnValidationCopyResourceTrendCommandClick(object sender, RoutedEventArgs e)
-    {
-        var snapshot = LoadOutputValidationArtifacts();
-        var record = PerfectHdrFidelityProjection.ProjectValidationRecord(
-            aboutInfoProvider.Version,
-            snapshot);
-        var command = ResourceTrendValidationCommandProjection.Create(
-            record.ResourceTrendScriptPath,
-            record.ValidationWorkspacePath,
-            Process.GetCurrentProcess().Id);
-        if (string.IsNullOrWhiteSpace(command))
-        {
-            Logger.LogWarning(
-                "operation=ValidationWorkspace, stage=CopyTrendCommandSkipped, detail=Command inputs are unavailable.");
-            return;
-        }
-
-        var dataPackage = new DataPackage();
-        dataPackage.SetText(command);
-        Clipboard.SetContent(dataPackage);
-        Logger.LogInformation(
-            "operation=ValidationWorkspace, stage=CopyTrendCommandSucceeded, processId={ProcessId}, workspace={WorkspacePath}",
-            Process.GetCurrentProcess().Id,
-            record.ValidationWorkspacePath);
     }
 
     private async void OnValidationCreateDraftClick(object sender, RoutedEventArgs e)
@@ -1978,41 +1891,6 @@ public sealed partial class MainWindow : Window
             settingsProvider.OutputTarget,
             requestedProfile.Label);
         await OpenValidationPathAsync(result.DraftPath, ArtifactShellActionKind.Open, "validation draft");
-    }
-
-    private async void OnValidationCreateResourceTrendDraftClick(object sender, RoutedEventArgs e)
-    {
-        var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
-        var snapshot = LoadOutputValidationArtifacts();
-        var record = PerfectHdrFidelityProjection.ProjectValidationRecord(
-            aboutInfoProvider.Version,
-            snapshot);
-        var result = outputValidationArtifactSource.CreateResourceTrendDraft(
-            new ResourceTrendValidationDraftRequest(
-                aboutInfoProvider.Version,
-                settingsProvider.OutputTarget,
-                currentState,
-                Process.GetCurrentProcess().Id,
-                ResourceTrendValidationCommandProjection.Create(
-                    record.ResourceTrendScriptPath,
-                    record.ValidationWorkspacePath,
-                    Process.GetCurrentProcess().Id),
-                CreateCurrentSessionValidationHint()));
-
-        if (!result.IsSuccess)
-        {
-            Logger.LogWarning(
-                "operation=ValidationWorkspace, stage=CreateTrendDraftFailed, detail={Detail}",
-                result.TechnicalDetail);
-            return;
-        }
-
-        Logger.LogInformation(
-            "operation=ValidationWorkspace, stage=CreateTrendDraftSucceeded, path={Path}, outputTarget={OutputTarget}, processId={ProcessId}",
-            result.DraftPath,
-            settingsProvider.OutputTarget,
-            Process.GetCurrentProcess().Id);
-        await OpenValidationPathAsync(result.DraftPath, ArtifactShellActionKind.Open, "resource trend draft");
     }
 
     private OutputValidationCurrentSessionHint CreateCurrentSessionValidationHint() =>
@@ -2068,7 +1946,7 @@ public sealed partial class MainWindow : Window
     private async void OnValidationOpenLatestEvidenceClick(object sender, RoutedEventArgs e)
     {
         var snapshot = LoadOutputValidationArtifacts();
-        var path = PerfectHdrFidelityProjection
+        var path = HdrAwareOutputProjection
             .ProjectValidationEvidenceSummary(snapshot)
             .LatestArtifactPath;
         await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "latest validation evidence");
@@ -2130,25 +2008,6 @@ public sealed partial class MainWindow : Window
         ApplyValidationRow(validation.Rows.ElementAtOrDefault(3), ValidationRow4Label, ValidationRow4Detail, ValidationRow4Status);
         ApplyValidationRow(validation.Rows.ElementAtOrDefault(4), ValidationRow5Label, ValidationRow5Detail, ValidationRow5Status);
         ApplyValidationRow(validation.Rows.ElementAtOrDefault(5), ValidationRow6Label, ValidationRow6Detail, ValidationRow6Status);
-        ValidationViewerMatrixSummaryText.Text = validation.ViewerMatrixSummary;
-        ApplyValidationViewerRow(
-            validation.ViewerMatrix.ElementAtOrDefault(0),
-            ValidationViewerRow1Label,
-            ValidationViewerRow1Breakdown,
-            ValidationViewerRow1Detail,
-            ValidationViewerRow1Status);
-        ApplyValidationViewerRow(
-            validation.ViewerMatrix.ElementAtOrDefault(1),
-            ValidationViewerRow2Label,
-            ValidationViewerRow2Breakdown,
-            ValidationViewerRow2Detail,
-            ValidationViewerRow2Status);
-        ApplyValidationViewerRow(
-            validation.ViewerMatrix.ElementAtOrDefault(2),
-            ValidationViewerRow3Label,
-            ValidationViewerRow3Breakdown,
-            ValidationViewerRow3Detail,
-            ValidationViewerRow3Status);
         ValidationEvidenceSummaryHeadingText.Text = validation.EvidenceSummary.Heading;
         ValidationEvidenceSummaryText.Text = validation.EvidenceSummary.Summary;
         ValidationEvidenceSummaryStatus.Text = FormatValidationStatus(validation.EvidenceSummary.Status);
@@ -2193,31 +2052,6 @@ public sealed partial class MainWindow : Window
         AutomationProperties.SetHelpText(label, row.Detail);
     }
 
-    private static void ApplyValidationViewerRow(
-        ValidationViewerMatrixRowProjection? row,
-        TextBlock label,
-        TextBlock breakdown,
-        TextBlock detail,
-        TextBlock status)
-    {
-        if (row is null)
-        {
-            label.Text = string.Empty;
-            breakdown.Text = string.Empty;
-            detail.Text = string.Empty;
-            status.Text = string.Empty;
-            return;
-        }
-
-        label.Text = row.Name;
-        breakdown.Text = row.StatusBreakdown;
-        detail.Text = row.Detail;
-        status.Text = FormatValidationStatus(row.Status);
-        status.Foreground = GetValidationStatusBrush(row.Status);
-        AutomationProperties.SetHelpText(label, row.AutomationSummary);
-        AutomationProperties.SetHelpText(breakdown, row.AutomationSummary);
-    }
-
     private void ApplyValidationRecord(ValidationRecordProjection record)
     {
         ValidationRecordBuildText.Text = record.BuildLabel;
@@ -2228,26 +2062,9 @@ public sealed partial class MainWindow : Window
         ValidationRecordManualStatus.Text = FormatValidationStatus(record.WindowsManualValidationStatus);
         ValidationRecordManualStatus.Foreground = GetValidationStatusBrush(record.WindowsManualValidationStatus);
         ValidationRecordEvidencePathText.Text = record.EvidenceDocumentPath;
-        ValidationOpenWorkspaceButton.IsEnabled = record.CanOpenValidationWorkspace;
-        ValidationOpenTemplateButton.IsEnabled = record.CanOpenValidationTemplate;
         ValidationOpenReleaseChecklistButton.IsEnabled = record.CanOpenReleaseChecklist;
         ValidationOpenHdrSdrScenariosButton.IsEnabled = record.CanOpenHdrSdrScenarios;
-        ValidationOpenSettingsAccessibilityGuideButton.IsEnabled = record.CanOpenSettingsAccessibilityGuide;
-        ValidationOpenResourceTrendTemplateButton.IsEnabled = record.CanOpenResourceTrendTemplate;
-        ValidationOpenResourceTrendScriptButton.IsEnabled = record.CanOpenResourceTrendScript;
-        ValidationCopyResourceTrendCommandButton.IsEnabled = record.CanCopyResourceTrendCommand;
         ValidationCreateDraftButton.IsEnabled = record.CanOpenValidationWorkspace;
-        ValidationCreateResourceTrendDraftButton.IsEnabled = record.CanCreateResourceTrendDraft;
-        ToolTipService.SetToolTip(
-            ValidationOpenWorkspaceButton,
-            record.CanOpenValidationWorkspace
-                ? $"Open local validation workspace: {record.ValidationWorkspacePath}"
-                : "Local validation workspace is not available for this session.");
-        ToolTipService.SetToolTip(
-            ValidationOpenTemplateButton,
-            record.CanOpenValidationTemplate
-                ? $"Open seeded validation template: {record.ValidationTemplatePath}"
-                : "Seeded validation template is not available for this session.");
         ToolTipService.SetToolTip(
             ValidationOpenReleaseChecklistButton,
             record.CanOpenReleaseChecklist
@@ -2259,45 +2076,10 @@ public sealed partial class MainWindow : Window
                 ? $"Open seeded HDR notes: {record.HdrSdrScenariosPath}"
                 : "Seeded HDR notes are not available for this session.");
         ToolTipService.SetToolTip(
-            ValidationOpenSettingsAccessibilityGuideButton,
-            record.CanOpenSettingsAccessibilityGuide
-                ? $"Open seeded HDR notes: {record.SettingsAccessibilityGuidePath}"
-                : "Seeded HDR notes are not available for this session.");
-        ToolTipService.SetToolTip(
             ValidationCreateDraftButton,
             record.CanOpenValidationWorkspace
-                ? $"Create a local validation draft in {record.ValidationWorkspacePath} using the current output target and selected profile."
+                ? $"Create a local MVP validation draft in {record.ValidationWorkspacePath} using the current output target and selected profile."
                 : "Local validation workspace is not available for this session.");
-        ToolTipService.SetToolTip(
-            ValidationCreateResourceTrendDraftButton,
-            record.CanCreateResourceTrendDraft
-                ? $"Create a long-run resource trend session draft in {record.ValidationWorkspacePath} using the current session PID and workspace-local sampler command."
-                : "Resource trend draft creation is unavailable until the workspace, template, and sampler script are ready.");
-        ToolTipService.SetToolTip(
-            ValidationOpenResourceTrendTemplateButton,
-            record.CanOpenResourceTrendTemplate
-                ? $"Open seeded resource trend session template: {record.ResourceTrendTemplatePath}"
-                : "Seeded resource trend session template is not available for this session.");
-        ToolTipService.SetToolTip(
-            ValidationOpenResourceTrendScriptButton,
-            record.CanOpenResourceTrendScript
-                ? $"Open seeded resource trend sampler script: {record.ResourceTrendScriptPath}"
-                : "Seeded resource trend sampler script is not available for this session.");
-        ToolTipService.SetToolTip(
-            ValidationCopyResourceTrendCommandButton,
-            record.CanCopyResourceTrendCommand
-                ? $"Copy the current-process resource trend sampler command using {record.ResourceTrendScriptPath}."
-                : "Resource trend sampler command is unavailable until the workspace and script are ready.");
-        AutomationProperties.SetHelpText(
-            ValidationOpenWorkspaceButton,
-            record.CanOpenValidationWorkspace
-                ? $"Open the local validation workspace at {record.ValidationWorkspacePath}."
-                : "Local validation workspace is not available for this session.");
-        AutomationProperties.SetHelpText(
-            ValidationOpenTemplateButton,
-            record.CanOpenValidationTemplate
-                ? $"Open the seeded validation template at {record.ValidationTemplatePath}."
-                : "Seeded validation template is not available for this session.");
         AutomationProperties.SetHelpText(
             ValidationOpenReleaseChecklistButton,
             record.CanOpenReleaseChecklist
@@ -2309,35 +2091,10 @@ public sealed partial class MainWindow : Window
                 ? $"Open the seeded HDR notes at {record.HdrSdrScenariosPath}."
                 : "Seeded HDR notes are not available for this session.");
         AutomationProperties.SetHelpText(
-            ValidationOpenSettingsAccessibilityGuideButton,
-            record.CanOpenSettingsAccessibilityGuide
-                ? $"Open the seeded HDR notes at {record.SettingsAccessibilityGuidePath}."
-                : "Seeded HDR notes are not available for this session.");
-        AutomationProperties.SetHelpText(
             ValidationCreateDraftButton,
             record.CanOpenValidationWorkspace
-                ? $"Create a local validation draft in {record.ValidationWorkspacePath} using the current output target and selected profile."
+                ? $"Create a local MVP validation draft in {record.ValidationWorkspacePath} using the current output target and selected profile."
                 : "Local validation workspace is not available for this session.");
-        AutomationProperties.SetHelpText(
-            ValidationCreateResourceTrendDraftButton,
-            record.CanCreateResourceTrendDraft
-                ? "Create a long-run resource trend session draft using the current process ID, output configuration, and app-local validation workspace."
-                : "Resource trend draft creation is unavailable until the workspace, template, and sampler script are ready.");
-        AutomationProperties.SetHelpText(
-            ValidationOpenResourceTrendTemplateButton,
-            record.CanOpenResourceTrendTemplate
-                ? $"Open the seeded resource trend session template at {record.ResourceTrendTemplatePath}."
-                : "Seeded resource trend session template is not available for this session.");
-        AutomationProperties.SetHelpText(
-            ValidationOpenResourceTrendScriptButton,
-            record.CanOpenResourceTrendScript
-                ? $"Open the seeded resource trend sampler script at {record.ResourceTrendScriptPath}."
-                : "Seeded resource trend sampler script is not available for this session.");
-        AutomationProperties.SetHelpText(
-            ValidationCopyResourceTrendCommandButton,
-            record.CanCopyResourceTrendCommand
-                ? "Copy the current-process resource trend sampler command for the app-local validation workspace."
-                : "Resource trend sampler command is unavailable until the workspace and script are ready.");
         AutomationProperties.SetHelpText(
             ValidationRecordBuildText,
             $"{record.BuildLabel}. {record.AutomatedEvidenceDetail} {record.WindowsManualValidationDetail} Evidence document: {record.EvidenceDocumentPath}. {record.WorkspaceSummary}");
