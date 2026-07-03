@@ -56,11 +56,11 @@ Checkbox meaning: checked means the repo or current working tree contains the im
 - [x] Define the first tone mapper as simple, fixed-parameter, explainable, and regression-testable.
 - [x] Require ordinary SDR-range content to remain visually stable where practical.
 - [x] Require HDR highlights to be smoothly compressed instead of hard-clamped.
-- [ ] Add platform-neutral tests for SDR-range stability.
-- [ ] Add platform-neutral tests for smooth highlight compression above the SDR range.
-- [ ] Add platform-neutral tests for alpha/channel ordering and crop consistency.
-- [ ] Replace hard clamp / simple gamma conversion with the first Default Visual Match tone mapper.
-- [ ] Verify clipboard and folder output use identical converted pixels before target delivery.
+- [x] Add platform-neutral tests for SDR-range stability.
+- [x] Add platform-neutral tests for smooth highlight compression above the SDR range.
+- [x] Add platform-neutral tests for alpha/channel ordering and crop consistency.
+- [x] Replace hard clamp / simple gamma conversion with the first Default Visual Match tone mapper.
+- [x] Verify clipboard and folder output use identical converted pixels before target delivery.
 
 ## Phase 4: MVP UI And Product Copy
 

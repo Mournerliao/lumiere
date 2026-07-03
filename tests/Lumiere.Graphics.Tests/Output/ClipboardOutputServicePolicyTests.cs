@@ -105,10 +105,53 @@ public sealed class ClipboardOutputServicePolicyTests
         Assert.Contains("cannot create HDR10", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task EncodeArtifactAsync_ReusesCachedSrgbVisualMatchArtifactForSameCrop()
+    {
+        using var frame = new CapturedFrameTexture(null, 16, 16, "Test frame");
+        var converter = new CountingSrgbVisualMatchConverter();
+        var encoder = new SrgbVisualMatchPngEncoder(converter);
+        var cache = new OutputArtifactCache();
+        var crop = new CropPixelRect(1, 2, 3, 4);
+
+        var first = await encoder.EncodeArtifactAsync(
+            frame,
+            crop,
+            OutputProfileContract.SrgbCompatibilityPng,
+            artifactCache: cache);
+        var second = await encoder.EncodeArtifactAsync(
+            frame,
+            crop,
+            OutputProfileContract.SrgbCompatibilityPng,
+            artifactCache: cache);
+
+        Assert.Same(first, second);
+        Assert.Equal(1, converter.Calls);
+        Assert.Same(frame, converter.Texture);
+        Assert.Equal(crop, converter.CropRegion);
+    }
+
     private sealed class ThrowingSrgbVisualMatchConverter : ISrgbVisualMatchConverter
     {
         public SrgbVisualMatchImage Convert(CapturedFrameTexture texture, CropPixelRect? cropRegion) =>
             throw new InvalidOperationException("Converter should not run for rejected profiles.");
+    }
+
+    private sealed class CountingSrgbVisualMatchConverter : ISrgbVisualMatchConverter
+    {
+        public int Calls { get; private set; }
+
+        public CapturedFrameTexture? Texture { get; private set; }
+
+        public CropPixelRect? CropRegion { get; private set; }
+
+        public SrgbVisualMatchImage Convert(CapturedFrameTexture texture, CropPixelRect? cropRegion)
+        {
+            Calls++;
+            Texture = texture;
+            CropRegion = cropRegion;
+            return new SrgbVisualMatchImage(1, 1, [0, 0, 255, 255]);
+        }
     }
 
     private static OutputFormatContract CompleteHdr10Contract { get; } =

@@ -16,9 +16,9 @@ public static class SrgbVisualMatchPixelConverter
             var sourceOffset = pixelIndex * CapturedFrameReadback.BytesPerPixel;
             var destOffset = pixelIndex * SrgbVisualMatchImage.BytesPerPixel;
 
-            var r = LinearToSrgb(ReadHalf(readback.PixelData, sourceOffset));
-            var g = LinearToSrgb(ReadHalf(readback.PixelData, sourceOffset + 2));
-            var b = LinearToSrgb(ReadHalf(readback.PixelData, sourceOffset + 4));
+            var r = LinearToSrgb(ToneMapForVisualMatch(ReadHalf(readback.PixelData, sourceOffset)));
+            var g = LinearToSrgb(ToneMapForVisualMatch(ReadHalf(readback.PixelData, sourceOffset + 2)));
+            var b = LinearToSrgb(ToneMapForVisualMatch(ReadHalf(readback.PixelData, sourceOffset + 4)));
             var a = ReadHalf(readback.PixelData, sourceOffset + 6);
 
             bgra8Data[destOffset] = ToByte(b);
@@ -28,6 +28,22 @@ public static class SrgbVisualMatchPixelConverter
         }
 
         return new SrgbVisualMatchImage(readback.Width, readback.Height, bgra8Data);
+    }
+
+    private static Half ToneMapForVisualMatch(Half linear)
+    {
+        var f = (float)linear;
+        if (f <= 1f)
+        {
+            return linear;
+        }
+
+        const float shoulderHeadroom = 0.08f;
+        const float shoulderTransitionWidth = 0.25f;
+
+        var shoulder = 1f - shoulderHeadroom / (f + shoulderHeadroom);
+        var transition = SmoothStep(Math.Clamp((f - 1f) / shoulderTransitionWidth, 0f, 1f));
+        return (Half)Lerp(1f, shoulder, transition);
     }
 
     private static Half LinearToSrgb(Half linear)
@@ -46,6 +62,12 @@ public static class SrgbVisualMatchPixelConverter
         var bits = BitConverter.ToUInt16(source, offset);
         return BitConverter.UInt16BitsToHalf(bits);
     }
+
+    private static float Lerp(float from, float to, float amount) =>
+        from + ((to - from) * amount);
+
+    private static float SmoothStep(float amount) =>
+        amount * amount * (3f - (2f * amount));
 
     private static byte ToByte(Half value) =>
         (byte)(Math.Clamp((float)value, 0f, 1f) * 255);
