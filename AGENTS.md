@@ -6,12 +6,12 @@ Lumiere is a native Windows HDR-aware screenshot tool built with WinUI 3, Window
 
 ## Start Here
 
-- Product scope: `docs/product/mvp.md`
-- Roadmap: `docs/product/roadmap.md`
-- Architecture boundaries: `docs/engineering/architecture.md`
-- Workflows: `docs/engineering/workflows.md`
-- MVP validation: `docs/validation/mvp-checklist.md`
-- HDR notes: `docs/validation/hdr-notes.md`
+- Product scope: `knowledge/product/mvp.md`
+- Roadmap: `knowledge/product/roadmap.md`
+- Architecture boundaries: `knowledge/engineering/architecture.md`
+- Workflows: `knowledge/engineering/workflows.md`
+- MVP validation: `knowledge/validation/mvp-checklist.md`
+- HDR notes: `knowledge/validation/hdr-notes.md`
 
 ## Platform Constraints
 

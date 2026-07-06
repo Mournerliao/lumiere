@@ -295,7 +295,7 @@ public sealed class TrayMenuProjectionTests
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation passed.",
-            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            EvidencePaths: [$"knowledge/validation/evidence/{viewerName}.md"],
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
             OutputProfileRecords:

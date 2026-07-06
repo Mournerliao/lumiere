@@ -724,8 +724,8 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
                 "- guidance\\hdr-notes.md",
                 string.Empty,
                 "Repo references:",
-                "- docs/validation/mvp-checklist.md",
-                "- docs/validation/hdr-notes.md"]);
+                "- knowledge/validation/mvp-checklist.md",
+                "- knowledge/validation/hdr-notes.md"]);
 
     private string AllocateDraftPath(string workspaceDirectoryPath, string fileNameStem)
     {

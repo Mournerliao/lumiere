@@ -6,7 +6,7 @@ This roadmap keeps Lumiere focused on a useful MVP first, then grows toward stro
 
 Goal: ship the core Windows screenshot tool with one official output path: sRGB Visual Match.
 
-Execution checklist: `docs/engineering/mvp-development-plan.md`.
+Execution checklist: `knowledge/engineering/mvp-development-plan.md`.
 
 - Fast region and fullscreen capture.
 - Main window, tray, and shortcut entry points.

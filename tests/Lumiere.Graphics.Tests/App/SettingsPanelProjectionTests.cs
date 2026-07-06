@@ -761,7 +761,7 @@ public sealed class SettingsPanelProjectionTests
         Assert.Equal(ValidationEvidenceStatus.NotRun, projection.Validation.Record.WindowsManualValidationStatus);
         Assert.Contains("Windows CI", projection.Validation.Record.AutomatedEvidenceDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("manual validation", projection.Validation.Record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("docs/validation/mvp-checklist.md", projection.Validation.Record.EvidenceDocumentPath);
+        Assert.Contains("knowledge/validation/mvp-checklist.md", projection.Validation.Record.EvidenceDocumentPath);
     }
 
     [Fact]
@@ -1164,7 +1164,7 @@ public sealed class SettingsPanelProjectionTests
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation passed.",
-            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            EvidencePaths: [$"knowledge/validation/evidence/{viewerName}.md"],
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
             OutputProfileRecords:
@@ -1201,7 +1201,7 @@ public sealed class SettingsPanelProjectionTests
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation passed.",
-            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            EvidencePaths: [$"knowledge/validation/evidence/{viewerName}.md"],
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
             OutputProfileRecords:
@@ -1241,7 +1241,7 @@ public sealed class SettingsPanelProjectionTests
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation is incomplete.",
-            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            EvidencePaths: [$"knowledge/validation/evidence/{viewerName}.md"],
             KnownLimitations: ["Viewer evidence still incomplete."],
             FollowUpIssuesOrStories: ["11-3"],
             OutputProfileRecords:
@@ -1284,7 +1284,7 @@ public sealed class SettingsPanelProjectionTests
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} visual-match validation passed.",
-            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            EvidencePaths: [$"knowledge/validation/evidence/{viewerName}.md"],
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
             OutputProfileRecords:

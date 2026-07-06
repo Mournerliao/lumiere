@@ -157,7 +157,7 @@ public sealed class OverlayFidelityProjectionTests
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation passed.",
-            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            EvidencePaths: [$"knowledge/validation/evidence/{viewerName}.md"],
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
             OutputProfileRecords:
@@ -191,7 +191,7 @@ public sealed class OverlayFidelityProjectionTests
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation is incomplete.",
-            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            EvidencePaths: [$"knowledge/validation/evidence/{viewerName}.md"],
             KnownLimitations: ["Viewer evidence still incomplete."],
             FollowUpIssuesOrStories: ["11-3"],
             OutputProfileRecords:

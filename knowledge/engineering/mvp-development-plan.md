@@ -8,8 +8,8 @@ Checkbox meaning: checked means the repo or current working tree contains the im
 
 - Update this checklist in the same change set as the code or documentation it tracks.
 - Keep each item small enough to review, but large enough to deliver a coherent capability.
-- When an item changes product or architecture language, update `CONTEXT.md` or `docs/decisions/` in the same session.
-- When an item changes release confidence, update `docs/validation/mvp-checklist.md` in the same session.
+- When an item changes product or architecture language, update `CONTEXT.md` or `knowledge/decisions/` in the same session.
+- When an item changes release confidence, update `knowledge/validation/mvp-checklist.md` in the same session.
 - Keep P3 and HDR10 as planned profiles until an explicit later decision promotes one of them to a supported output path.
 
 ## Phase 0: Direction And Cleanup
@@ -76,7 +76,7 @@ Checkbox meaning: checked means the repo or current working tree contains the im
 - [x] Simplify Overlay copy and controls for capture flow: crop size, confirm/cancel, and concise status only; hide technical/fidelity details from normal overlay interaction.
 - [x] Replace user-facing copy that says `fidelity claim`, `profile gate`, `contract`, `evidence`, or `HDR-preserved` in normal UI with MVP-safe language focused on `sRGB Visual Match`, compatibility output, and HDR readiness.
 - [x] Add projection/UI tests that assert normal main window, settings, tray, and overlay copy do not expose HDR10/P3 as selectable output modes or validation-engineering terminology.
-- [x] Keep validation/help documentation available outside the normal MVP UI so Windows manual validation remains traceable without making the app feel like a test harness.
+- [x] Keep validation/help documentation available outside the normal MVP UI so Windows manual validation remains traceable without making the app feel like an internal validation surface.
 - [x] Remove or reword any remaining normal-UI copy that suggests three supported color modes.
 
 ## Phase 5: Lightweight Visual Validation

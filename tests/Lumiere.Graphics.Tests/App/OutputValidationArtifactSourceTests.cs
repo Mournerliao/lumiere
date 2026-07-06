@@ -595,7 +595,7 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Contains("artifact or evidence files", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Contains("bad.json", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Contains("JsonException", projection.Validation.Record.WindowsManualValidationDetail);
-        Assert.Equal("docs/validation/mvp-checklist.md", projection.Validation.Record.EvidenceDocumentPath);
+        Assert.Equal("knowledge/validation/mvp-checklist.md", projection.Validation.Record.EvidenceDocumentPath);
         Assert.Equal("%LOCALAPPDATA%\\Lumiere\\validation\\output", projection.Validation.Record.ValidationWorkspacePath);
         Assert.Equal("Build", projection.MainPanel.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
@@ -650,7 +650,7 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Contains("2 output validation artifact", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Contains("Validation workspace:", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Contains("MVP release", projection.Validation.Record.WindowsManualValidationDetail);
-        Assert.Equal("docs/validation/mvp-checklist.md", projection.Validation.Record.EvidenceDocumentPath);
+        Assert.Equal("knowledge/validation/mvp-checklist.md", projection.Validation.Record.EvidenceDocumentPath);
     }
 
     private static OutputValidationSessionArtifact CreateArtifact(string date, string viewerName) =>
@@ -669,7 +669,7 @@ public sealed class OutputValidationArtifactSourceTests
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-04"],
             ResultSummary: $"{viewerName} validation passed.",
-            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            EvidencePaths: [$"knowledge/validation/evidence/{viewerName}.md"],
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
             OutputProfileRecords:

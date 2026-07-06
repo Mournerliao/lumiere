@@ -6,7 +6,7 @@
   "windowsVersion": "Windows 11 24H2 build REPLACE_WITH_BUILD",
   "device": "REPLACE_WITH_DEVICE_MODEL",
   "gpu": "REPLACE_WITH_GPU_MODEL_AND_DRIVER",
-  "displaySetup": "REPLACE_WITH_FULL_DISPLAY_SETUP including HDR/SDR state notes from docs/validation/hdr-notes.md when relevant",
+  "displaySetup": "REPLACE_WITH_FULL_DISPLAY_SETUP including HDR/SDR state notes from knowledge/validation/hdr-notes.md when relevant",
   "hdrState": "REPLACE_WITH_OBSERVED_WINDOWS_HDR_STATE",
   "dpiScales": [
     "REPLACE_WITH_DPI_SCALE"

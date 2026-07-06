@@ -52,7 +52,7 @@ Lumiere's design system is a native Windows product UI system. Design serves cap
 
 Use these labels in design and review notes when discussing platform behavior:
 
-- Mac edit: design/docs/platform-neutral work only.
+- Mac edit: design, knowledge-base, and platform-neutral work only.
 - Windows CI: restore/build/test/format on Windows.
 - Windows manual validation: real Windows hardware and HDR display behavior checked.
 - Public HDR fidelity validation: target-aware HDR state, supported output profile contract, compatibility matrix, and release copy reviewed against recorded evidence.

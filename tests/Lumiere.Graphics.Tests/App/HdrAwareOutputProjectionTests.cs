@@ -297,7 +297,7 @@ public sealed class HdrAwareOutputProjectionTests
             TargetAppsTested: ["Windows Photos"],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: "Windows Photos HDR validation passed.",
-            EvidencePaths: ["docs/validation/evidence/photos.md"],
+            EvidencePaths: ["knowledge/validation/evidence/photos.md"],
             KnownLimitations: ["Paint and Microsoft Edge not yet validated"],
             FollowUpIssuesOrStories: ["Validate remaining viewers"],
             OutputProfileRecords:
@@ -769,7 +769,7 @@ public sealed class HdrAwareOutputProjectionTests
         Assert.Equal(ValidationEvidenceStatus.NotRun, record.WindowsManualValidationStatus);
         Assert.Contains("Windows CI", record.AutomatedEvidenceDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("manual validation", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("docs/validation/mvp-checklist.md", record.EvidenceDocumentPath);
+        Assert.Contains("knowledge/validation/mvp-checklist.md", record.EvidenceDocumentPath);
         Assert.DoesNotContain("HDR-preserved", record.AutomatedEvidenceDetail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
     }
@@ -829,7 +829,7 @@ public sealed class HdrAwareOutputProjectionTests
         Assert.Equal(ValidationEvidenceStatus.Limited, record.WindowsManualValidationStatus);
         Assert.Contains("workspace is not ready", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("sample template source", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal("docs/validation/mvp-checklist.md", record.EvidenceDocumentPath);
+        Assert.Equal("knowledge/validation/mvp-checklist.md", record.EvidenceDocumentPath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output", record.ValidationWorkspacePath);
         Assert.Null(record.ValidationTemplatePath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\mvp-checklist.md", record.ReleaseChecklistPath);
@@ -1140,7 +1140,7 @@ public sealed class HdrAwareOutputProjectionTests
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation passed.",
-            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            EvidencePaths: [$"knowledge/validation/evidence/{viewerName}.md"],
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
             OutputProfileRecords:
@@ -1177,7 +1177,7 @@ public sealed class HdrAwareOutputProjectionTests
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation passed.",
-            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            EvidencePaths: [$"knowledge/validation/evidence/{viewerName}.md"],
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
             OutputProfileRecords:
@@ -1217,7 +1217,7 @@ public sealed class HdrAwareOutputProjectionTests
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation is incomplete.",
-            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            EvidencePaths: [$"knowledge/validation/evidence/{viewerName}.md"],
             KnownLimitations: ["Viewer evidence still incomplete."],
             FollowUpIssuesOrStories: ["11-3"],
             OutputProfileRecords:
@@ -1260,7 +1260,7 @@ public sealed class HdrAwareOutputProjectionTests
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} visual-match validation passed.",
-            EvidencePaths: [$"docs/validation/evidence/{viewerName}.md"],
+            EvidencePaths: [$"knowledge/validation/evidence/{viewerName}.md"],
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
             OutputProfileRecords:

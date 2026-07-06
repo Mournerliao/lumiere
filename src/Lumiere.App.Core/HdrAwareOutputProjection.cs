@@ -723,7 +723,7 @@ public static class HdrAwareOutputProjection
             "Windows CI restore, build, unit tests, and format gates can support implementation confidence only.",
             ValidationEvidenceStatus.NotRun,
             "Windows manual validation for MVP capture, output, and HDR honesty is not run.",
-            "docs/validation/mvp-checklist.md");
+            "knowledge/validation/mvp-checklist.md");
     }
 
     public static ValidationEvidenceSummaryProjection ProjectValidationEvidenceSummary(
@@ -822,7 +822,7 @@ public static class HdrAwareOutputProjection
                     string.IsNullOrWhiteSpace(detail)
                         ? "Validation workspace is not ready on this machine. Lumiere could not prepare the local output-validation folder."
                         : $"Validation workspace is not ready on this machine. {detail}",
-                EvidenceDocumentPath = "docs/validation/mvp-checklist.md",
+                EvidenceDocumentPath = "knowledge/validation/mvp-checklist.md",
             };
         }
 
@@ -834,7 +834,7 @@ public static class HdrAwareOutputProjection
                 WindowsManualValidationStatus = ValidationEvidenceStatus.Limited,
                 WindowsManualValidationDetail =
                     $"{validationSnapshot.Artifacts.Count} output validation artifact(s) loaded, but {validationSnapshot.LoadIssues.Count} file(s) were ignored. Fix ignored artifact or evidence files before counting Windows manual output evidence. {DescribeBuildAlignmentForRecord(buildAlignment)} {workspaceSummary} First issue: {Path.GetFileName(firstIssue.Path)}: {firstIssue.Detail}",
-                EvidenceDocumentPath = "docs/validation/mvp-checklist.md",
+                EvidenceDocumentPath = "knowledge/validation/mvp-checklist.md",
             };
         }
 
@@ -845,7 +845,7 @@ public static class HdrAwareOutputProjection
                 WindowsManualValidationStatus = ValidationEvidenceStatus.Limited,
                 WindowsManualValidationDetail =
                     $"{validationSnapshot.Artifacts.Count} output validation artifact(s) loaded for this session. {DescribeBuildAlignmentForRecord(buildAlignment)} {workspaceSummary} MVP release still requires usable capture/output behavior and honest HDR copy.",
-                EvidenceDocumentPath = "docs/validation/mvp-checklist.md",
+                EvidenceDocumentPath = "knowledge/validation/mvp-checklist.md",
             };
         }
 
@@ -854,7 +854,7 @@ public static class HdrAwareOutputProjection
             WindowsManualValidationStatus = ValidationEvidenceStatus.Limited,
             WindowsManualValidationDetail =
                 $"{workspaceSummary} No output validation artifact is loaded for this session yet; copy the seeded sample, replace placeholders, and reload Lumiere after recording real Windows observations.",
-            EvidenceDocumentPath = "docs/validation/mvp-checklist.md",
+            EvidenceDocumentPath = "knowledge/validation/mvp-checklist.md",
         };
     }
 

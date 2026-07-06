@@ -4,14 +4,16 @@ Lumiere is a native Windows desktop screenshot tool focused on HDR-aware capture
 
 Lumiere does not currently claim broad HDR-preserved export support. HDR-preserved file export remains a future milestone that requires a narrow supported path, documented conversion and metadata policy, named viewer assumptions, and Windows manual validation.
 
-## Current Docs
+## Project Knowledge
 
-- [MVP product scope](docs/product/mvp.md)
-- [Product roadmap](docs/product/roadmap.md)
-- [Architecture](docs/engineering/architecture.md)
-- [Engineering workflows](docs/engineering/workflows.md)
-- [MVP validation checklist](docs/validation/mvp-checklist.md)
-- [HDR notes](docs/validation/hdr-notes.md)
+`knowledge/` is Lumiere's long-lived project knowledge base. Keep product intent, engineering boundaries, validation notes, and decision records there as the project evolves.
+
+- [MVP product scope](knowledge/product/mvp.md)
+- [Product roadmap](knowledge/product/roadmap.md)
+- [Architecture](knowledge/engineering/architecture.md)
+- [Engineering workflows](knowledge/engineering/workflows.md)
+- [MVP validation checklist](knowledge/validation/mvp-checklist.md)
+- [HDR notes](knowledge/validation/hdr-notes.md)
 
 ## Platform Constraints
 
@@ -34,7 +36,7 @@ src/
   Lumiere.Infrastructure/  Interop, diagnostics, result types, UI-thread helpers
   Lumiere.Settings/        Local preferences
 tests/                     Test projects mirroring source boundaries
-docs/                      Current product, engineering, validation, and decision docs
+knowledge/                 Long-lived product, engineering, validation, and decision knowledge
 ```
 
 ## Developer Workflow
