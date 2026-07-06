@@ -126,28 +126,20 @@ public sealed record OutputResultProjection(
         CaptureTarget? captureTarget)
     {
         var targetPrefix = CaptureTargetScopeProjection.PrefixOutputDetail(captureTarget, null);
-        var gatePrefix = profile is null
-            ? string.Empty
-            : $"Selected profile gate: {profile.StatusLabel}. {profile.Detail} ";
         var profilePrefix = profile is null
-            ? "Output profile: not selected."
+            ? "Output mode: not selected."
             : HasMixedTargetProfiles(outputResult)
-                ? $"Output profiles: {FormatPerTargetProfiles(outputResult!)}."
+                ? $"Output modes: {FormatPerTargetProfiles(outputResult!)}."
             : outputResult?.UsesCompatibilityProfileFallback is true
-                ? $"Output profile: requested {outputResult.RequestedProfile.Label}; using {outputResult.EffectiveProfile.Label} compatibility fallback."
-                : $"Output profile: {profile.Label}.";
-        var viewerEvidence = outputResult is null
-            ? string.Empty
-            : HasMixedTargetProfiles(outputResult)
-                ? $" Per-target viewer evidence: {FormatPerTargetViewerEvidence(outputResult!)}."
-            : $" Viewer evidence: {FormatViewerEvidence(outputResult.EffectiveProfile)}.";
+                ? $"Requested {outputResult.RequestedProfile.Label}; using {outputResult.EffectiveProfile.Label} Visual Match output."
+                : $"Output mode: {profile.Label} Visual Match.";
         var formatContract = profile is null
             ? string.Empty
             : HasMixedTargetProfiles(outputResult)
-                ? $" Per-target formats: {FormatPerTargetFormatContracts(outputResult!)}."
-            : $" Effective format: {FormatFormatContract(profile.Contract)}.";
+                ? $" Formats: {FormatPerTargetFormatContracts(outputResult!)}."
+            : $" Format: {FormatFormatContract(profile.Contract)}.";
 
-        var detail = $"{gatePrefix}{profilePrefix} Fidelity claim: {fidelityClaim.Label}. {fidelityClaim.Detail}{formatContract}{viewerEvidence}";
+        var detail = $"{profilePrefix} Output handling: {FormatFidelityClaim(fidelityClaim)}.{formatContract}";
         return string.IsNullOrWhiteSpace(targetPrefix)
             ? detail
             : $"{targetPrefix} {detail}";
@@ -185,16 +177,14 @@ public sealed record OutputResultProjection(
                 return $"{FormatTarget(profile.Target)} {FormatFormatContract(contract)}";
             }));
 
-    private static string FormatPerTargetViewerEvidence(OutputResult outputResult) =>
-        string.Join(
-            "; ",
-            outputResult.TargetProfiles.Select(profile =>
-                $"{FormatTarget(profile.Target)} {FormatViewerEvidence(profile.EffectiveProfile)}"));
-
-    private static string FormatViewerEvidence(OutputProfileContract profile) =>
-        string.Join(
-            ", ",
-            profile.ViewerEvidence.Select(viewer => $"{viewer.Name} {FormatEvidenceStatus(viewer.ArtifactHandlingStatus)}"));
+    private static string FormatFidelityClaim(FidelityClaimProjection fidelityClaim) =>
+        fidelityClaim.Kind switch
+        {
+            FidelityClaimKind.VisualMatch => "sRGB Visual Match output",
+            FidelityClaimKind.Converted => "compatibility output",
+            FidelityClaimKind.HdrPreserved => "validated HDR output",
+            _ => "no completed output yet",
+        };
 
     private static string FormatTarget(OutputTarget target) =>
         target switch
@@ -204,15 +194,6 @@ public sealed record OutputResultProjection(
             _ => target.ToString(),
         };
 
-    private static string FormatEvidenceStatus(OutputCompatibilityEvidenceStatus status) =>
-        status switch
-        {
-            OutputCompatibilityEvidenceStatus.Pass => "PASS",
-            OutputCompatibilityEvidenceStatus.Limited => "PASS with limitation",
-            OutputCompatibilityEvidenceStatus.Fail => "FAIL",
-            OutputCompatibilityEvidenceStatus.NotApplicable => "N/A",
-            _ => "NOT RUN",
-        };
 }
 
 public enum OutputResultProjectionSeverity

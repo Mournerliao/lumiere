@@ -68,8 +68,16 @@ Checkbox meaning: checked means the repo or current working tree contains the im
 - [x] Keep P3/HDR10 out of normal user-selectable MVP modes.
 - [x] Use low-interruption honesty: normal output feedback may mention sRGB Visual Match, while HDR-preserved limitations live in settings, validation, or help surfaces.
 - [x] Keep validation/help copy clear that HDR-preserved export is not yet supported.
-- [ ] Review main window, tray, overlay, and output-result copy after shared conversion lands.
-- [ ] Remove or reword any remaining normal-UI copy that suggests three supported color modes.
+- [x] Review main window, tray, overlay, and output-result copy after shared conversion lands.
+- [x] Redesign the main panel around two primary actions, one concise HDR readiness line, and one recent output result; remove normal-surface fidelity/profile/contract dashboard language.
+- [x] Remove HDR10/P3 export controls from normal Settings markup and code-behind, not just collapsed UI.
+- [x] Move validation evidence, draft creation, artifact reload, and checklist-opening controls out of normal Settings into a future internal/debug validation surface.
+- [x] Simplify Tray copy to capture commands plus one concise status line; remove profile/fidelity/evidence rows from the normal tray menu.
+- [x] Simplify Overlay copy and controls for capture flow: crop size, confirm/cancel, and concise status only; hide technical/fidelity details from normal overlay interaction.
+- [x] Replace user-facing copy that says `fidelity claim`, `profile gate`, `contract`, `evidence`, or `HDR-preserved` in normal UI with MVP-safe language focused on `sRGB Visual Match`, compatibility output, and HDR readiness.
+- [x] Add projection/UI tests that assert normal main window, settings, tray, and overlay copy do not expose HDR10/P3 as selectable output modes or validation-engineering terminology.
+- [x] Keep validation/help documentation available outside the normal MVP UI so Windows manual validation remains traceable without making the app feel like a test harness.
+- [x] Remove or reword any remaining normal-UI copy that suggests three supported color modes.
 
 ## Phase 5: Lightweight Visual Validation
 

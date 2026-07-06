@@ -19,7 +19,7 @@ public sealed class OutputResultProjectionTests
         Assert.Equal("Ready", projection.Title);
         Assert.Equal("No capture output has completed yet.", projection.Detail);
         Assert.Equal(OutputResultProjectionSeverity.Neutral, projection.Severity);
-        Assert.Contains("Fidelity claim: Unvalidated", projection.FidelityDetail);
+        Assert.Contains("no completed output yet", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -34,9 +34,9 @@ public sealed class OutputResultProjectionTests
         Assert.Equal("Copied", projection.Title);
         Assert.Equal("Clipboard copied as sRGB Visual Match", projection.Detail);
         Assert.Equal(OutputResultProjectionSeverity.Success, projection.Severity);
-        Assert.Contains("requested HDR10", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("using sRGB", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Fidelity claim: Unvalidated", projection.FidelityDetail);
+        Assert.Contains("Requested HDR10", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("using sRGB Visual Match output", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("no completed output yet", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", projection.Title, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", projection.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
@@ -51,25 +51,24 @@ public sealed class OutputResultProjectionTests
         var projection = OutputResultProjection.Project(output);
 
         Assert.Equal("Copied", projection.Title);
-        Assert.Contains("requested P3", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("using sRGB", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Fidelity claim: Converted", projection.FidelityDetail);
+        Assert.Contains("Requested P3", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("using sRGB Visual Match output", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("compatibility output", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void Project_FidelityDetailIncludesViewerEvidenceGap()
+    public void Project_FidelityDetailOmitsViewerEvidenceGapFromNormalCopy()
     {
         var output = OutputResult.ClipboardSuccess(1024)
             .WithRequestedProfile(OutputProfileContract.FromSettingsValue("sRGB"));
 
         var projection = OutputResultProjection.Project(output);
 
-        Assert.Contains("viewer evidence", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("NOT RUN", projection.FidelityDetail, StringComparison.Ordinal);
-        Assert.Contains("Microsoft Paint", projection.FidelityDetail, StringComparison.Ordinal);
-        Assert.Contains("Windows Photos", projection.FidelityDetail, StringComparison.Ordinal);
-        Assert.Contains("Microsoft Edge", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.DoesNotContain("viewer evidence", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Microsoft Paint", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.DoesNotContain("Windows Photos", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.DoesNotContain("Microsoft Edge", projection.FidelityDetail, StringComparison.Ordinal);
         Assert.DoesNotContain("HDR-preserved", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -81,8 +80,8 @@ public sealed class OutputResultProjectionTests
 
         var projection = OutputResultProjection.Project(output);
 
-        Assert.Contains("requested HDR10", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("using sRGB", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Requested HDR10", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("using sRGB Visual Match output", projection.FidelityDetail, StringComparison.Ordinal);
         Assert.Contains("RGBA8 sRGB", projection.FidelityDetail, StringComparison.Ordinal);
         Assert.Contains("Transfer: sRGB", projection.FidelityDetail, StringComparison.Ordinal);
         Assert.Contains("Primaries: BT.709", projection.FidelityDetail, StringComparison.Ordinal);
@@ -108,11 +107,11 @@ public sealed class OutputResultProjectionTests
 
         var projection = OutputResultProjection.Project(output, selectedProfile);
 
-        Assert.Contains("requested HDR10", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Validate", projection.FidelityDetail, StringComparison.Ordinal);
-        Assert.Contains("Windows manual viewer evidence", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("using sRGB", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Fidelity claim: Converted", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("Requested HDR10", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.DoesNotContain("Validate", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.DoesNotContain("Windows manual viewer evidence", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("using sRGB Visual Match output", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("compatibility output", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -171,11 +170,11 @@ public sealed class OutputResultProjectionTests
 
         var projection = OutputResultProjection.Project(output);
 
-        Assert.Contains("Output profiles:", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("Output modes:", projection.FidelityDetail, StringComparison.Ordinal);
         Assert.Contains("Clipboard sRGB", projection.FidelityDetail, StringComparison.Ordinal);
         Assert.Contains("Folder HDR10", projection.FidelityDetail, StringComparison.Ordinal);
-        Assert.Contains("Per-target formats:", projection.FidelityDetail, StringComparison.Ordinal);
-        Assert.Contains("Per-target viewer evidence:", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("Formats:", projection.FidelityDetail, StringComparison.Ordinal);
+        Assert.DoesNotContain("viewer evidence", projection.FidelityDetail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

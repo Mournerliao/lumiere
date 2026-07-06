@@ -522,29 +522,6 @@ public sealed partial class MainWindow : Window
             settingsProvider.CopyAsImage);
     }
 
-    private void OnSettingsExportProfileChecked(object sender, RoutedEventArgs e)
-    {
-        if (applyingSettingsProjection || sender is not RadioButton radioButton || radioButton.Tag is not string format)
-        {
-            return;
-        }
-
-        if (string.Equals(settingsProvider.ExportColorFormat, format, StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        settingsWriter.SetExportColorFormat(format);
-        var currentState = captureService?.CurrentSessionState ?? CaptureSessionState.Idle();
-        ApplySettingsProjection(currentState);
-        UpdateMainPanelProjection(currentState, lastOutputResult);
-        UpdateTrayMenu(currentState);
-        overlayWindow?.ApplyState(CreateOverlayState(currentState));
-        Logger.LogDebug(
-            "Export color preference updated in settings: format={ExportColorFormat}",
-            settingsProvider.ExportColorFormat);
-    }
-
     private async Task ExecuteCaptureFromUiAsync(CaptureCommandMode mode)
     {
         var probeCommand = mode == CaptureCommandMode.Region
@@ -1736,11 +1713,6 @@ public sealed partial class MainWindow : Window
                 SettingsHdrAlertsToggleSwitch,
                 projection.HdrAlertsEnabled ? "HDR alerts: on" : "HDR alerts: off");
             AutomationProperties.SetHelpText(SettingsHdrAlertsToggleSwitch, "Show warnings when HDR is unavailable, degraded, unsupported, or failed.");
-            SettingsTargetAwareStateLabel.Text = projection.TargetAwareStateLabel;
-            SettingsTargetAwareStateHelpText.Text = projection.TargetAwareStateHelpText;
-            AutomationProperties.SetName(SettingsTargetAwareStateLabel, $"Target-aware state: {projection.TargetAwareStateLabel}");
-            AutomationProperties.SetHelpText(SettingsTargetAwareStateLabel, projection.TargetAwareStateHelpText);
-            ApplyTargetEvidenceProjection(projection.TargetEvidence);
             ApplyDestinationSelectionProjection(projection.Output);
 
             var showSavePath = projection.Output.IsFolderSelected || projection.Output.IsBothSelected;
@@ -1778,9 +1750,6 @@ public sealed partial class MainWindow : Window
             AutomationProperties.SetHelpText(SettingsCopyAsImageToggleSwitch, projection.Output.CopyAsImageHelpText);
             ToolTipService.SetToolTip(SettingsCopyAsImageToggleSwitch, projection.Output.CopyAsImageHelpText);
 
-            ApplyExportColorProjection(projection.Output);
-            ApplyValidationProjection(projection.Validation);
-
             SettingsAboutAppNameText.Text = projection.About.AppName;
             SettingsAboutVersionText.Text = projection.About.Version;
             SettingsAboutDescriptionText.Text = projection.About.Description;
@@ -1805,44 +1774,6 @@ public sealed partial class MainWindow : Window
         AutomationProperties.SetName(SettingsDestinationRadioButtons, "Destination");
         AutomationProperties.SetHelpText(SettingsDestinationRadioButtons, helpText);
         ToolTipService.SetToolTip(SettingsDestinationRadioButtons, helpText);
-    }
-
-    private void ApplyTargetEvidenceProjection(TargetEvidenceProjection evidence)
-    {
-        SettingsTargetEvidenceScopeText.Text = evidence.ScopeLabel;
-        SettingsTargetEvidenceTargetText.Text = evidence.TargetLabel;
-        SettingsTargetEvidenceStageText.Text = $"Readiness stage: {evidence.ReadinessStageLabel}";
-        SettingsTargetEvidenceDetailText.Text = evidence.Detail;
-        var helpText = $"{evidence.ScopeLabel}. {evidence.TargetLabel}. Readiness stage: {evidence.ReadinessStageLabel}. {evidence.Detail}";
-        AutomationProperties.SetName(SettingsTargetEvidenceScopeText, evidence.ScopeLabel);
-        AutomationProperties.SetHelpText(SettingsTargetEvidenceScopeText, helpText);
-        ToolTipService.SetToolTip(SettingsTargetEvidenceDetailText, helpText);
-    }
-
-    private void ApplyExportColorProjection(OutputSettingsProjection output)
-    {
-        AutomationProperties.SetName(SettingsExportOptionsPanel, $"Export profile: {output.ExportColorDisplayValue}");
-        AutomationProperties.SetHelpText(SettingsExportOptionsPanel, output.ExportColorHelpText);
-        ToolTipService.SetToolTip(SettingsExportOptionsPanel, output.ExportColorHelpText);
-        SettingsExportProfileHelpText.Text = output.ExportColorHelpText;
-        ApplyOutputProfileContractProjection(output.SelectedProfileContract);
-
-        if (output.ExportColorOptions?.Count >= 1)
-        {
-            ApplyExportColorOption(
-                output.ExportColorOptions[0],
-                SettingsExportSrgbRadioButton,
-                SettingsExportSrgbText,
-                SettingsExportSrgbStatusText);
-            SettingsExportHdr10RadioButton.IsEnabled = false;
-            SettingsExportP3RadioButton.IsEnabled = false;
-        }
-        else
-        {
-            SettingsExportHdr10RadioButton.IsEnabled = false;
-            SettingsExportP3RadioButton.IsEnabled = false;
-            SettingsExportSrgbRadioButton.IsEnabled = false;
-        }
     }
 
     private async void OnValidationOpenReleaseChecklistClick(object sender, RoutedEventArgs e)
@@ -1957,149 +1888,6 @@ public sealed partial class MainWindow : Window
         ReloadOutputValidationArtifacts();
     }
 
-    private void ApplyOutputProfileContractProjection(OutputProfileContractProjection contract)
-    {
-        SettingsOutputContractSourceText.Text = contract.SourcePolicy;
-        SettingsOutputContractDestinationText.Text = contract.DestinationPolicy;
-        SettingsOutputContractConversionText.Text = contract.ConversionPolicy;
-        SettingsOutputContractMetadataText.Text = contract.MetadataPolicy;
-        SettingsOutputContractViewerText.Text = contract.ViewerCompatibilityPolicy;
-        var contractSummary =
-            $"Selected profile contract. Source format: {contract.SourcePixelFormatLabel}. Destination format: {contract.DestinationPixelFormatLabel}. Transfer: {contract.TransferFunctionLabel}. Primaries: {contract.ColorPrimariesLabel}. Conversion mode: {contract.ConversionPolicyLabel}. Metadata mode: {contract.MetadataPolicyLabel}. Target apps: {contract.TargetAppAssumptionLabel}. Source: {contract.SourcePolicy}. Destination: {contract.DestinationPolicy}. Viewer: {contract.ViewerCompatibilityPolicy}";
-        AutomationProperties.SetHelpText(SettingsExportProfileHelpText, contractSummary);
-        ToolTipService.SetToolTip(SettingsExportProfileHelpText, contractSummary);
-    }
-
-    private void ApplyExportColorOption(
-        ExportColorOptionProjection option,
-        RadioButton button,
-        TextBlock label,
-        TextBlock statusLabel)
-    {
-        label.Text = option.Label;
-        statusLabel.Text = option.StatusLabel;
-        button.IsChecked = option.IsSelected;
-        button.IsEnabled = option.IsInteractive;
-        label.Foreground = option.IsSelected
-            ? (Brush)Application.Current.Resources["TextBrush"]
-            : (Brush)Application.Current.Resources["MutedTextBrush"];
-        statusLabel.Foreground = option.IsSelected
-            ? (Brush)Application.Current.Resources["TextBrush"]
-            : (Brush)Application.Current.Resources["MutedTextBrush"];
-        AutomationProperties.SetName(button, $"Export option: {option.Label}");
-        AutomationProperties.SetHelpText(button, option.AccessibilityHelpText);
-        ToolTipService.SetToolTip(button, option.AccessibilityHelpText);
-    }
-
-    private void ApplyValidationProjection(ValidationPanelProjection validation)
-    {
-        ValidationReleaseTargetText.Text = validation.ReleaseTarget;
-        ValidationSummaryText.Text = validation.Summary;
-        ValidationGateLabel.Text = $"Current output gate: {validation.OutputProfileGate.ProfileLabel}";
-        ValidationGateDetail.Text = validation.OutputProfileGate.Detail;
-        ValidationGateStatus.Text = validation.OutputProfileGate.StatusLabel.ToUpperInvariant();
-        ValidationGateStatus.Foreground = GetValidationStatusBrush(validation.OutputProfileGate.Status);
-        AutomationProperties.SetHelpText(
-            ValidationGateLabel,
-            $"{validation.OutputProfileGate.ProfileLabel}. {validation.OutputProfileGate.StatusLabel}. {validation.OutputProfileGate.Detail}");
-        ApplyValidationRow(validation.Rows.ElementAtOrDefault(0), ValidationRow1Label, ValidationRow1Detail, ValidationRow1Status);
-        ApplyValidationRow(validation.Rows.ElementAtOrDefault(1), ValidationRow2Label, ValidationRow2Detail, ValidationRow2Status);
-        ApplyValidationRow(validation.Rows.ElementAtOrDefault(2), ValidationRow3Label, ValidationRow3Detail, ValidationRow3Status);
-        ApplyValidationRow(validation.Rows.ElementAtOrDefault(3), ValidationRow4Label, ValidationRow4Detail, ValidationRow4Status);
-        ApplyValidationRow(validation.Rows.ElementAtOrDefault(4), ValidationRow5Label, ValidationRow5Detail, ValidationRow5Status);
-        ApplyValidationRow(validation.Rows.ElementAtOrDefault(5), ValidationRow6Label, ValidationRow6Detail, ValidationRow6Status);
-        ValidationEvidenceSummaryHeadingText.Text = validation.EvidenceSummary.Heading;
-        ValidationEvidenceSummaryText.Text = validation.EvidenceSummary.Summary;
-        ValidationEvidenceSummaryStatus.Text = FormatValidationStatus(validation.EvidenceSummary.Status);
-        ValidationEvidenceSummaryStatus.Foreground = GetValidationStatusBrush(validation.EvidenceSummary.Status);
-        ValidationEvidenceCoverageText.Text = validation.EvidenceSummary.CoverageDetail;
-        ValidationEvidenceGapText.Text = validation.EvidenceSummary.GapDetail;
-        ValidationOpenLatestEvidenceButton.IsEnabled = validation.EvidenceSummary.CanOpenLatestArtifact;
-        ToolTipService.SetToolTip(
-            ValidationOpenLatestEvidenceButton,
-            validation.EvidenceSummary.CanOpenLatestArtifact
-                ? $"Open latest loaded validation evidence: {validation.EvidenceSummary.LatestArtifactPath}"
-                : "No loaded validation evidence file is available for this session.");
-        AutomationProperties.SetHelpText(
-            ValidationOpenLatestEvidenceButton,
-            validation.EvidenceSummary.CanOpenLatestArtifact
-                ? $"Open the latest loaded validation evidence file at {validation.EvidenceSummary.LatestArtifactPath}."
-                : "No loaded validation evidence file is available for this session.");
-        AutomationProperties.SetHelpText(
-            ValidationEvidenceSummaryHeadingText,
-            $"{validation.EvidenceSummary.Summary} {validation.EvidenceSummary.CoverageDetail} {validation.EvidenceSummary.GapDetail}");
-        ApplyValidationRecord(validation.Record);
-    }
-
-    private static void ApplyValidationRow(
-        ValidationEvidenceRowProjection? row,
-        TextBlock label,
-        TextBlock detail,
-        TextBlock status)
-    {
-        if (row is null)
-        {
-            label.Text = string.Empty;
-            detail.Text = string.Empty;
-            status.Text = string.Empty;
-            return;
-        }
-
-        label.Text = row.Label;
-        detail.Text = row.Detail;
-        status.Text = FormatValidationStatus(row.Status);
-        status.Foreground = GetValidationStatusBrush(row.Status);
-        AutomationProperties.SetHelpText(label, row.Detail);
-    }
-
-    private void ApplyValidationRecord(ValidationRecordProjection record)
-    {
-        ValidationRecordBuildText.Text = record.BuildLabel;
-        ValidationRecordAutomatedDetail.Text = record.AutomatedEvidenceDetail;
-        ValidationRecordAutomatedStatus.Text = FormatValidationStatus(record.AutomatedEvidenceStatus);
-        ValidationRecordAutomatedStatus.Foreground = GetValidationStatusBrush(record.AutomatedEvidenceStatus);
-        ValidationRecordManualDetail.Text = record.WindowsManualValidationDetail;
-        ValidationRecordManualStatus.Text = FormatValidationStatus(record.WindowsManualValidationStatus);
-        ValidationRecordManualStatus.Foreground = GetValidationStatusBrush(record.WindowsManualValidationStatus);
-        ValidationRecordEvidencePathText.Text = record.EvidenceDocumentPath;
-        ValidationOpenReleaseChecklistButton.IsEnabled = record.CanOpenReleaseChecklist;
-        ValidationOpenHdrSdrScenariosButton.IsEnabled = record.CanOpenHdrSdrScenarios;
-        ValidationCreateDraftButton.IsEnabled = record.CanOpenValidationWorkspace;
-        ToolTipService.SetToolTip(
-            ValidationOpenReleaseChecklistButton,
-            record.CanOpenReleaseChecklist
-                ? $"Open seeded MVP validation checklist: {record.ReleaseChecklistPath}"
-                : "Seeded MVP validation checklist is not available for this session.");
-        ToolTipService.SetToolTip(
-            ValidationOpenHdrSdrScenariosButton,
-            record.CanOpenHdrSdrScenarios
-                ? $"Open seeded HDR notes: {record.HdrSdrScenariosPath}"
-                : "Seeded HDR notes are not available for this session.");
-        ToolTipService.SetToolTip(
-            ValidationCreateDraftButton,
-            record.CanOpenValidationWorkspace
-                ? $"Create a local MVP validation draft in {record.ValidationWorkspacePath} using the current output target and selected profile."
-                : "Local validation workspace is not available for this session.");
-        AutomationProperties.SetHelpText(
-            ValidationOpenReleaseChecklistButton,
-            record.CanOpenReleaseChecklist
-                ? $"Open the seeded MVP validation checklist at {record.ReleaseChecklistPath}."
-                : "Seeded MVP validation checklist is not available for this session.");
-        AutomationProperties.SetHelpText(
-            ValidationOpenHdrSdrScenariosButton,
-            record.CanOpenHdrSdrScenarios
-                ? $"Open the seeded HDR notes at {record.HdrSdrScenariosPath}."
-                : "Seeded HDR notes are not available for this session.");
-        AutomationProperties.SetHelpText(
-            ValidationCreateDraftButton,
-            record.CanOpenValidationWorkspace
-                ? $"Create a local MVP validation draft in {record.ValidationWorkspacePath} using the current output target and selected profile."
-                : "Local validation workspace is not available for this session.");
-        AutomationProperties.SetHelpText(
-            ValidationRecordBuildText,
-            $"{record.BuildLabel}. {record.AutomatedEvidenceDetail} {record.WindowsManualValidationDetail} Evidence document: {record.EvidenceDocumentPath}. {record.WorkspaceSummary}");
-    }
-
     private async Task OpenValidationPathAsync(
         string? path,
         ArtifactShellActionKind action,
@@ -2180,8 +1968,6 @@ public sealed partial class MainWindow : Window
             outputContextTarget: lastOutputTarget);
         var isIdle = state.Status is CaptureSessionStatus.Idle;
         var statusBrush = GetTrustStatusBrush(projection.TrustSeverity);
-        var fidelityBrush = GetTrustStatusBrush(projection.FidelityClaim.Severity);
-
         SelectCaptureTargetButton.IsEnabled = projection.CanStartCapture;
         RegionSelectButton.IsEnabled = projection.CanStartCapture;
         SelectCaptureTargetButton.Title = (!isIdle && activeCaptureMode is CaptureCommandMode.Fullscreen)
@@ -2208,20 +1994,6 @@ public sealed partial class MainWindow : Window
         TargetHdrStatusDetail.Text = projection.TrustMessage;
         AutomationProperties.SetHelpText(TargetHdrStatusPill, projection.TrustMessage);
 
-        FidelityClaimStatusGlyph.Glyph = GetTrustStatusGlyph(projection.FidelityClaim.Icon);
-        FidelityClaimStatusGlyph.Foreground = fidelityBrush;
-        FidelityClaimStatusDot.Fill = fidelityBrush;
-        FidelityClaimStatusLabel.Text = projection.FidelityClaim.Label;
-        FidelityClaimStatusLabel.Foreground = fidelityBrush;
-        FidelityClaimStatusDetail.Text = projection.FidelityClaim.Detail;
-        AutomationProperties.SetHelpText(FidelityClaimStatusPill, projection.FidelityClaim.Detail);
-
-        OutputProfileLabel.Text = $"Output profile: {projection.OutputProfile.Label}";
-        OutputProfileDetail.Text = projection.OutputProfile.Detail;
-        OutputProfileStatusLabel.Text = projection.OutputProfile.StatusLabel;
-        ToolTipService.SetToolTip(OutputProfilePanel, projection.OutputProfile.Detail);
-        AutomationProperties.SetHelpText(OutputProfilePanel, projection.OutputProfile.Detail);
-
         ApplyOutputResultProjection(projection.OutputResult);
 
         isHdrAlertVisible = ApplyHdrAlert(projection);
@@ -2235,7 +2007,6 @@ public sealed partial class MainWindow : Window
     {
         OutputResultTitle.Text = outputResult.Title;
         OutputResultDetail.Text = outputResult.Detail;
-        OutputResultFidelityDetail.Text = outputResult.FidelityDetail;
         var brush = outputResult.Severity switch
         {
             OutputResultProjectionSeverity.Success => (Brush)Application.Current.Resources["SuccessBrush"],
@@ -2246,7 +2017,7 @@ public sealed partial class MainWindow : Window
         AutomationProperties.SetName(OutputResultPanel, OutputResultTitle.Text);
         AutomationProperties.SetHelpText(
             OutputResultPanel,
-            $"{outputResult.Detail} {outputResult.FidelityDetail}");
+            outputResult.Detail);
     }
 
     private bool ApplyHdrAlert(MainPanelProjection projection)

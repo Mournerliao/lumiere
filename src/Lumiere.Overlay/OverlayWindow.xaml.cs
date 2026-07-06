@@ -97,8 +97,6 @@ public sealed partial class OverlayWindow : Window
         StatusMessageTextBlock.Visibility = string.IsNullOrEmpty(state.Message)
             ? Visibility.Collapsed
             : Visibility.Visible;
-        FidelityLabelTextBlock.Text = state.FidelityCue.Label;
-        FidelityDetailTextBlock.Text = state.FidelityCue.Detail;
         UpdateTechnicalDetail();
         ApplyStatusStyle(OverlayStatusStyle.FromStatus(state.Status));
         ApplyCropSelectionAvailability(state);
@@ -413,16 +411,12 @@ public sealed partial class OverlayWindow : Window
     {
         StatusPanelBorder.Background = CreateBrush(style.BackgroundArgb);
         StatusPanelBorder.BorderBrush = CreateBrush(style.BorderArgb);
-        FidelityPanelBorder.Background = CreateBrush(style.BackgroundArgb);
-        FidelityPanelBorder.BorderBrush = CreateBrush(style.BorderArgb);
+        CaptureActionPanelBorder.Background = CreateBrush(style.BackgroundArgb);
+        CaptureActionPanelBorder.BorderBrush = CreateBrush(style.BorderArgb);
     }
 
     private void UpdateTechnicalDetail()
     {
-        TechnicalDetailTextBlock.Text = string.Join(
-            " ",
-            new[] { currentState.TechnicalDetail, presenterTechnicalDetail }
-                .Where(detail => !string.IsNullOrWhiteSpace(detail)));
     }
 
     private void ApplyCropSelectionAvailability(OverlayState state)
@@ -660,13 +654,6 @@ public sealed partial class OverlayWindow : Window
 
             preInvalidCropState = null;
         }
-    }
-
-    private void OnToggleTechnicalDetailsClick(object sender, RoutedEventArgs args)
-    {
-        var isExpanded = TechnicalDetailsBorder.Visibility == Visibility.Visible;
-        TechnicalDetailsBorder.Visibility = isExpanded ? Visibility.Collapsed : Visibility.Visible;
-        ToggleTechnicalDetailsButton.Content = isExpanded ? "Technical details >" : "Technical details v";
     }
 
     private void OnClosed(object sender, WindowEventArgs args)

@@ -93,9 +93,9 @@ public sealed class MainPanelProjectionTests
         Assert.Equal("Converted", projection.FidelityClaim.Label);
         Assert.Contains("compatibility fallback", projection.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("implementation prerequisites", projection.OutputProfile.Detail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("requested HDR10", projection.OutputResult.FidelityDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("using sRGB", projection.OutputResult.FidelityDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Fidelity claim: Converted", projection.OutputResult.FidelityDetail);
+        Assert.Contains("Requested HDR10", projection.OutputResult.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("using sRGB Visual Match output", projection.OutputResult.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("compatibility output", projection.OutputResult.FidelityDetail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", projection.TrustLabel, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", projection.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", projection.OutputResult.FidelityDetail, StringComparison.OrdinalIgnoreCase);
@@ -116,7 +116,7 @@ public sealed class MainPanelProjectionTests
 
         Assert.Equal("Output complete", projection.TrustLabel);
         Assert.Contains("Captured display: Test Display.", projection.OutputResult.FidelityDetail, StringComparison.Ordinal);
-        Assert.Contains("Fidelity claim: Converted", projection.OutputResult.FidelityDetail, StringComparison.Ordinal);
+        Assert.Contains("compatibility output", projection.OutputResult.FidelityDetail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
