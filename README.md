@@ -8,12 +8,11 @@ Lumiere does not currently claim broad HDR-preserved export support. HDR-preserv
 
 `knowledge/` is Lumiere's long-lived project knowledge base. Keep product intent, engineering boundaries, validation notes, and decision records there as the project evolves.
 
+- [Knowledge index](knowledge/README.md)
 - [MVP product scope](knowledge/product/mvp.md)
-- [Product roadmap](knowledge/product/roadmap.md)
 - [Architecture](knowledge/engineering/architecture.md)
 - [Engineering workflows](knowledge/engineering/workflows.md)
 - [MVP validation checklist](knowledge/validation/mvp-checklist.md)
-- [HDR notes](knowledge/validation/hdr-notes.md)
 
 ## Platform Constraints
 
