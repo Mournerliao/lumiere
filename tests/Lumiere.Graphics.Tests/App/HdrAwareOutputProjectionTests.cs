@@ -52,7 +52,7 @@ public sealed class HdrAwareOutputProjectionTests
         Assert.False(profile.IsReadOnly);
         Assert.Equal(FidelityClaimKind.Converted, profile.FidelityClaim.Kind);
         Assert.Equal("Converted", profile.FidelityClaim.Label);
-        Assert.Contains("compatibility", profile.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Compatible output", profile.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("Compatibility-converted sRGB artifact", profile.Contract.DestinationPolicy);
         Assert.Contains("no HDR metadata", profile.Contract.MetadataPolicy, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("broad release target", profile.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);
@@ -569,7 +569,7 @@ public sealed class HdrAwareOutputProjectionTests
             row => row.Label == "HDR-preserved profile");
 
         Assert.Equal(ValidationEvidenceStatus.NotRun, profileRow.Status);
-        Assert.Contains("At least one supported profile", profileRow.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("HDR-preserved export remains blocked", profileRow.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("format contract evidence", profileRow.Detail, StringComparison.OrdinalIgnoreCase);
     }
 

@@ -154,7 +154,7 @@ public sealed class SettingsPanelProjectionTests
         Assert.Equal("Target unresolved", projection.TargetEvidence.ScopeLabel);
         Assert.Equal("No active target", projection.TargetEvidence.TargetLabel);
         Assert.Contains("select a target", projection.TargetEvidence.Detail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("global HDR guess", projection.TargetEvidence.Detail, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("global HDR guess", projection.TargetEvidence.Detail, StringComparison.OrdinalIgnoreCase);
     }
 
     [Theory]
@@ -308,7 +308,7 @@ public sealed class SettingsPanelProjectionTests
         Assert.False(projection.Output.ExportColorOptions[0].IsReadOnly);
         Assert.True(projection.Output.ExportColorOptions[0].IsSelected);
         Assert.True(projection.Output.ExportColorOptions[0].IsInteractive);
-        Assert.Contains("Compatibility output", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Compatible output", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("selected and available", projection.Output.ExportColorOptions[0].AccessibilityHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("design reference", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("validation-scoped", projection.Output.ExportColorHelpText, StringComparison.OrdinalIgnoreCase);
@@ -368,7 +368,7 @@ public sealed class SettingsPanelProjectionTests
 
         Assert.Equal("sRGB", projection.Output.ExportColorDisplayValue);
         Assert.Equal("Compat", projection.Output.ExportColorOptions[0].StatusLabel);
-        Assert.Contains("Compatibility output", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Compatible output", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("Compat", projection.MainPanel.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
     }
@@ -395,7 +395,7 @@ public sealed class SettingsPanelProjectionTests
             executionCapabilities: ValidateOnlyHdr10Capabilities(artifacts));
 
         Assert.Equal("Compat", projection.Output.ExportColorOptions[0].StatusLabel);
-        Assert.Contains("Compatibility output", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Compatible output", projection.Output.ExportColorOptions[0].HelpText, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("Ready", projection.MainPanel.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
         Assert.Contains("folder artifacts separately", projection.MainPanel.FidelityClaim.Detail, StringComparison.OrdinalIgnoreCase);

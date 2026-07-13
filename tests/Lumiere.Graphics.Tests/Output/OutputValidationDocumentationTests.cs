@@ -1,3 +1,4 @@
+using Lumiere.App;
 using Lumiere.Graphics.Output;
 using Xunit;
 
@@ -9,7 +10,7 @@ public sealed class OutputValidationDocumentationTests
     public void OutputValidationDocs_RecordFutureFormatAcceptanceFields()
     {
         var repoRoot = LocateRepositoryRoot();
-        var document = File.ReadAllText(Path.Combine(repoRoot, "docs", "validation", "hdr-notes.md"));
+        var document = File.ReadAllText(Path.Combine(repoRoot, "knowledge", "validation", "hdr-notes.md"));
 
         Assert.Contains("does not claim that every output preserves HDR data", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("exact format", document, StringComparison.OrdinalIgnoreCase);
@@ -19,6 +20,22 @@ public sealed class OutputValidationDocumentationTests
         Assert.Contains("Windows manual validation", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("JPEG XR", document, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("compatible-output wording", document, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("Lumiere.App.Validation.Guidance.mvp-checklist.md", "# MVP Validation Checklist")]
+    [InlineData("Lumiere.App.Validation.Guidance.hdr-notes.md", "# HDR Notes")]
+    public void OutputValidationGuidance_IsAvailableThroughStableResourceName(
+        string resourceName,
+        string expectedHeading)
+    {
+        using var stream = typeof(FileOutputValidationArtifactSource).Assembly.GetManifestResourceStream(resourceName);
+
+        Assert.NotNull(stream);
+        using var reader = new StreamReader(stream);
+        var document = reader.ReadToEnd();
+
+        Assert.Contains(expectedHeading, document, StringComparison.Ordinal);
     }
 
     [Fact]
