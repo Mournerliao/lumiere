@@ -7,24 +7,24 @@ namespace Lumiere.Graphics.Tests.Output;
 public sealed class OutputValidationDocumentationTests
 {
     [Fact]
-    public void OutputValidationDocs_RecordFutureFormatAcceptanceFields()
+    public void OutputClaimsContract_RecordsFutureFormatAcceptanceFields()
     {
         var repoRoot = LocateRepositoryRoot();
-        var document = File.ReadAllText(Path.Combine(repoRoot, "knowledge", "validation", "hdr-notes.md"));
+        var document = File.ReadAllText(Path.Combine(repoRoot, "knowledge", "contracts", "claims.md"));
 
-        Assert.Contains("does not claim that every output preserves HDR data", document, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("exact format", document, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Conversion or tone-mapping policy", document, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Metadata policy", document, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Named viewer assumptions", document, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Windows manual validation", document, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("JPEG XR", document, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("compatible-output wording", document, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("HDR-aware, not HDR-certified", document, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("exact format and extension", document, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("source and destination pixel formats", document, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("transfer function", document, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("tone/gamut policy", document, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("metadata policy", document, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("named viewer assumptions", document, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Windows hardware evidence", document, StringComparison.OrdinalIgnoreCase);
     }
 
     [Theory]
-    [InlineData("Lumiere.App.Validation.Guidance.mvp-checklist.md", "# MVP Validation Checklist")]
-    [InlineData("Lumiere.App.Validation.Guidance.hdr-notes.md", "# HDR Notes")]
+    [InlineData("Lumiere.App.Validation.Guidance.mvp-release-evidence-template.md", "# MVP Release Evidence Template")]
+    [InlineData("Lumiere.App.Validation.Guidance.hdr-validation-scenarios.md", "# HDR Validation Scenarios")]
     public void OutputValidationGuidance_IsAvailableThroughStableResourceName(
         string resourceName,
         string expectedHeading)

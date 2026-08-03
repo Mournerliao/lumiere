@@ -414,7 +414,7 @@ public sealed class OutputPolicyTests
             TargetAppsTested: ["Microsoft Paint", "Windows Photos", "Microsoft Edge"],
             ChecklistIdsCovered: ["REL-OUT-04"],
             ResultSummary: "HDR10 output profile validation passed.",
-            EvidencePaths: ["knowledge/validation/evidence/hdr10-output.md"],
+            EvidencePaths: ["knowledge/evidence/hdr10-output.md"],
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
             OutputProfileRecords:
@@ -456,7 +456,7 @@ public sealed class OutputPolicyTests
             TargetAppsTested: ["Microsoft Paint", "Windows Photos", "Microsoft Edge"],
             ChecklistIdsCovered: ["REL-OUT-04"],
             ResultSummary: "HDR10 output profile validation is incomplete.",
-            EvidencePaths: ["knowledge/validation/evidence/hdr10-output-incomplete.md"],
+            EvidencePaths: ["knowledge/evidence/hdr10-output-incomplete.md"],
             KnownLimitations: ["Viewer metadata evidence still missing."],
             FollowUpIssuesOrStories: ["11-3"],
             OutputProfileRecords:

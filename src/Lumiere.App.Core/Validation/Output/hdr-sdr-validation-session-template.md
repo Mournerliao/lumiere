@@ -1,6 +1,6 @@
 # HDR / SDR Validation Session Template
 
-Use this template for optional deeper HDR validation runs beyond the MVP checklist.
+Use this template for optional deeper HDR validation runs beyond the MVP evidence template.
 
 Draft status: NOT RUN until each status row is replaced with observed Windows manual validation evidence.
 

@@ -297,7 +297,7 @@ public sealed class HdrAwareOutputProjectionTests
             TargetAppsTested: ["Windows Photos"],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: "Windows Photos HDR validation passed.",
-            EvidencePaths: ["knowledge/validation/evidence/photos.md"],
+            EvidencePaths: ["knowledge/evidence/photos.md"],
             KnownLimitations: ["Paint and Microsoft Edge not yet validated"],
             FollowUpIssuesOrStories: ["Validate remaining viewers"],
             OutputProfileRecords:
@@ -769,7 +769,7 @@ public sealed class HdrAwareOutputProjectionTests
         Assert.Equal(ValidationEvidenceStatus.NotRun, record.WindowsManualValidationStatus);
         Assert.Contains("Windows CI", record.AutomatedEvidenceDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("manual validation", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("knowledge/validation/mvp-checklist.md", record.EvidenceDocumentPath);
+        Assert.Contains("knowledge/evidence/templates/mvp-release-evidence-template.md", record.EvidenceDocumentPath);
         Assert.DoesNotContain("HDR-preserved", record.AutomatedEvidenceDetail, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("HDR-preserved", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
     }
@@ -786,8 +786,8 @@ public sealed class HdrAwareOutputProjectionTests
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\evidence",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\README.txt",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\output-validation-session.schema-v4.sample.json",
-                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\mvp-checklist.md",
-                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-notes.md",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\mvp-release-evidence-template.md",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-validation-scenarios.md",
                 []),
         };
 
@@ -799,9 +799,9 @@ public sealed class HdrAwareOutputProjectionTests
         Assert.Contains("No output validation artifact is loaded", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output", record.ValidationWorkspacePath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\output-validation-session.schema-v4.sample.json", record.ValidationTemplatePath);
-        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\mvp-checklist.md", record.ReleaseChecklistPath);
-        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-notes.md", record.HdrSdrScenariosPath);
-        Assert.True(record.CanOpenReleaseChecklist);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\mvp-release-evidence-template.md", record.ReleaseEvidenceTemplatePath);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-validation-scenarios.md", record.HdrSdrScenariosPath);
+        Assert.True(record.CanOpenReleaseEvidenceTemplate);
         Assert.True(record.CanOpenHdrSdrScenarios);
     }
 
@@ -817,8 +817,8 @@ public sealed class HdrAwareOutputProjectionTests
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\evidence",
                 "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\README.txt",
                 null,
-                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\mvp-checklist.md",
-                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-notes.md",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\mvp-release-evidence-template.md",
+                "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-validation-scenarios.md",
                 [new OutputValidationWorkspaceIssue(
                     "C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\templates\\output-validation-session.schema-v4.sample.json",
                     "Validation sample template source could not be loaded from the current build.")]),
@@ -829,12 +829,12 @@ public sealed class HdrAwareOutputProjectionTests
         Assert.Equal(ValidationEvidenceStatus.Limited, record.WindowsManualValidationStatus);
         Assert.Contains("workspace is not ready", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("sample template source", record.WindowsManualValidationDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal("knowledge/validation/mvp-checklist.md", record.EvidenceDocumentPath);
+        Assert.Equal("knowledge/evidence/templates/mvp-release-evidence-template.md", record.EvidenceDocumentPath);
         Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output", record.ValidationWorkspacePath);
         Assert.Null(record.ValidationTemplatePath);
-        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\mvp-checklist.md", record.ReleaseChecklistPath);
-        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-notes.md", record.HdrSdrScenariosPath);
-        Assert.True(record.CanOpenReleaseChecklist);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\mvp-release-evidence-template.md", record.ReleaseEvidenceTemplatePath);
+        Assert.Equal("C:\\Users\\Tester\\AppData\\Local\\Lumiere\\validation\\output\\guidance\\hdr-validation-scenarios.md", record.HdrSdrScenariosPath);
+        Assert.True(record.CanOpenReleaseEvidenceTemplate);
         Assert.True(record.CanOpenHdrSdrScenarios);
     }
 
@@ -911,7 +911,7 @@ public sealed class HdrAwareOutputProjectionTests
         Assert.Contains("REL-STAB-02", summary.GapDetail, StringComparison.Ordinal);
         Assert.Contains("Next recommended runs:", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Next Windows run:", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Review HDR notes", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Review HDR validation scenarios", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Record any export-profile", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Record repeated capture/output observations", summary.GapDetail, StringComparison.OrdinalIgnoreCase);
     }
@@ -1140,7 +1140,7 @@ public sealed class HdrAwareOutputProjectionTests
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation passed.",
-            EvidencePaths: [$"knowledge/validation/evidence/{viewerName}.md"],
+            EvidencePaths: [$"knowledge/evidence/{viewerName}.md"],
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
             OutputProfileRecords:
@@ -1177,7 +1177,7 @@ public sealed class HdrAwareOutputProjectionTests
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation passed.",
-            EvidencePaths: [$"knowledge/validation/evidence/{viewerName}.md"],
+            EvidencePaths: [$"knowledge/evidence/{viewerName}.md"],
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
             OutputProfileRecords:
@@ -1217,7 +1217,7 @@ public sealed class HdrAwareOutputProjectionTests
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation is incomplete.",
-            EvidencePaths: [$"knowledge/validation/evidence/{viewerName}.md"],
+            EvidencePaths: [$"knowledge/evidence/{viewerName}.md"],
             KnownLimitations: ["Viewer evidence still incomplete."],
             FollowUpIssuesOrStories: ["11-3"],
             OutputProfileRecords:
@@ -1260,7 +1260,7 @@ public sealed class HdrAwareOutputProjectionTests
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} visual-match validation passed.",
-            EvidencePaths: [$"knowledge/validation/evidence/{viewerName}.md"],
+            EvidencePaths: [$"knowledge/evidence/{viewerName}.md"],
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
             OutputProfileRecords:

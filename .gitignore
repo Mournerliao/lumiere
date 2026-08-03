@@ -25,6 +25,9 @@ project.lock.json
 project.assets.json
 *.binlog
 
+# Local code-index data
+.codegraph/
+
 # Windows packaging output
 AppPackages/
 BundleArtifacts/
@@ -51,7 +54,7 @@ desktop.ini
 .env.*
 !.env.example
 
-# AI tool configs (project uses AGENTS.md as the single source)
+# Local AI tool state (repository policy lives in AGENTS.md and knowledge/)
 .workbuddy/
 .agents/
 .claude/

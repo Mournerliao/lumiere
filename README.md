@@ -1,76 +1,37 @@
 # Lumiere
 
-Lumiere is a native Windows desktop screenshot tool focused on HDR-aware capture and preview. The first release target is a usable MVP: fast screenshots, honest HDR status, an FP16/scRGB-oriented preview path, and compatible clipboard/file output.
+Lumiere is a native Windows HDR-aware screenshot tool built with WinUI 3,
+Windows App SDK, Windows Graphics Capture, Direct3D 11, DXGI, and Vortice.
+The first release focuses on fast region/fullscreen capture, target-aware HDR state,
+an FP16/scRGB-oriented preview path, and compatible sRGB Visual Match output.
 
-Lumiere does not currently claim broad HDR-preserved export support. HDR-preserved file export remains a future milestone that requires a narrow supported path, documented conversion and metadata policy, named viewer assumptions, and Windows manual validation.
+Lumiere does not currently claim broad HDR-preserved export support.
 
-## Project Knowledge
+## Start Here
 
-`knowledge/` is Lumiere's long-lived project knowledge base. Keep product intent, engineering boundaries, validation notes, and decision records there as the project evolves.
+- [Current project state](knowledge/state/CURRENT.md)
+- [Knowledge map](knowledge/README.md)
+- [Product contract](knowledge/contracts/product.md)
+- [Windows development runbook](knowledge/runbooks/windows-development.md)
+- [Validation evidence](knowledge/evidence/README.md)
 
-- [Knowledge index](knowledge/README.md)
-- [MVP product scope](knowledge/product/mvp.md)
-- [Architecture](knowledge/engineering/architecture.md)
-- [Engineering workflows](knowledge/engineering/workflows.md)
-- [MVP validation checklist](knowledge/validation/mvp-checklist.md)
+The repository uses a lightweight Contract → Frontier → Evidence workflow.
+GitHub Issues own non-trivial tasks; contracts own stable boundaries; evidence owns
+observed validation; Git owns history.
 
-## Platform Constraints
+## Platform
 
-- Target runtime: `.NET 10` with `net10.0-windows10.0.19041.0`.
-- Primary architecture: `x64` / `win-x64`; do not use `Any CPU`.
-- Production UI must remain native WinUI 3 / Windows App SDK.
-- Capture and preview must remain based on Windows Graphics Capture, Direct3D 11, DXGI, and Vortice.
-- Main preview work should preserve the FP16/scRGB HDR direction.
-- Public HDR-preserved claims require target-aware display evidence, documented output semantics, target-app compatibility, and Windows manual validation.
-- Do not introduce Electron, Tauri, WPF bitmap-first, WinForms, GDI screenshot-library foundations, web UI, cloud upload, or telemetry.
+`.NET 10` · `net10.0-windows10.0.19041.0` · `x64` / `win-x64` · WinUI 3 ·
+Windows App SDK · WGC · D3D11 · DXGI · Vortice
+
+Windows is required for full build/runtime validation and real HDR evidence. Follow
+the Windows runbook rather than copying validation commands into additional docs.
 
 ## Repository Layout
 
 ```text
-src/
-  Lumiere.App/             WinUI startup and window composition
-  Lumiere.Overlay/         Fullscreen overlay and crop UI behavior
-  Lumiere.Capture/         Windows Graphics Capture lifecycle
-  Lumiere.Graphics/        D3D11/DXGI rendering and presentation
-  Lumiere.Infrastructure/  Interop, diagnostics, result types, UI-thread helpers
-  Lumiere.Settings/        Local preferences
-tests/                     Test projects mirroring source boundaries
-knowledge/                 Long-lived product, engineering, validation, and decision knowledge
+src/        application, capture, graphics, interop, overlay, and settings modules
+tests/      automated tests mirroring source boundaries
+knowledge/  contracts, current state, ADRs, runbooks, evidence, and research
+scripts/    deterministic engineering entry points
 ```
-
-## Developer Workflow
-
-Development and full validation require Windows:
-
-- Visual Studio 2022 with WinUI / Windows App SDK desktop development workloads.
-- .NET 10 SDK.
-- Windows SDK `10.0.26100.x` or a documented compatible Windows SDK.
-
-macOS is suitable for editing, documentation, refactoring, and platform-neutral test design. Windows is required for WinUI restore/build validation and real WGC, DXGI, D3D11, HDR display, tray, shortcut, clipboard, and multi-monitor behavior.
-
-Before review on Windows, run:
-
-```bash
-dotnet restore Lumiere.sln --disable-parallel --verbosity minimal /nr:false
-dotnet build Lumiere.sln -p:Platform=x64 --no-restore --verbosity minimal /nr:false
-dotnet test tests/Lumiere.Graphics.Tests/Lumiere.Graphics.Tests.csproj -p:Platform=x64 --no-restore --verbosity minimal /nr:false
-dotnet format Lumiere.sln --verify-no-changes --verbosity minimal
-```
-
-For local app launch, prefer:
-
-```bash
-dotnet run --project src/Lumiere.App/Lumiere.App.csproj -p:Platform=x64
-```
-
-Use `--no-restore` only after a successful restore in the same workspace state.
-
-## Commit Convention
-
-Use concise Conventional Commit prefixes:
-
-- `feat:` for user-visible capability or product behavior.
-- `fix:` for defects.
-- `docs:` for documentation-only changes.
-- `chore:` for scaffold, build, repository, or maintenance work.
-- `test:` for test-only changes.

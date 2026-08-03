@@ -1,80 +1,55 @@
 # AGENTS.md
 
-## Project Overview
+Lumiere is a native Windows HDR-aware screenshot tool built with WinUI 3,
+Windows App SDK, Windows Graphics Capture, Direct3D 11, DXGI, and Vortice.
+This file is a map, not a project manual.
 
-Lumiere is a native Windows HDR-aware screenshot tool built with WinUI 3, Windows App SDK, Direct3D 11, DXGI, Windows Graphics Capture, and Vortice. The MVP goal is fast native screenshot capture with honest HDR state and compatible output, not a broad HDR-preserved claim.
+## Start
 
-## Start Here
+Read only:
 
-- Knowledge index: `knowledge/README.md`
-- Product scope: `knowledge/product/mvp.md`
-- Roadmap: `knowledge/product/roadmap.md`
-- Architecture boundaries: `knowledge/engineering/architecture.md`
-- Workflows: `knowledge/engineering/workflows.md`
-- MVP validation: `knowledge/validation/mvp-checklist.md`
-- HDR notes: `knowledge/validation/hdr-notes.md`
+1. `knowledge/README.md` — knowledge ownership map.
+2. `knowledge/state/CURRENT.md` — one-screen project state and frontier.
+3. The referenced GitHub Issue, when one exists.
 
-## Platform Constraints
+Then follow that task's links and load only relevant contracts, ADRs, runbooks,
+or evidence. Do not preload the knowledge base.
 
-- Target: `.NET 10` / `net10.0-windows10.0.19041.0` / `x64` only.
-- Windows-only production stack: WGC, DXGI, D3D11, WinUI 3.
-- Preserve the FP16/scRGB preview direction.
-- Do not introduce SDR-first screenshot-library foundations.
-- Public HDR-preserved claims require target-aware display evidence, documented output semantics, target-app compatibility, and Windows manual validation.
+## Operating Model
 
-## Architecture
+Lumiere uses **Contract → Frontier → Evidence**:
 
-| Module | Responsibility |
-|---|---|
-| `Lumiere.App` | WinUI startup, dependency composition, windows, app-level projections |
-| `Lumiere.Graphics` | D3D11 device, DXGI swap chain, HDR constants and graphics contracts |
-| `Lumiere.Capture` | WGC target selection, frame pool lifecycle, capture state |
-| `Lumiere.Infrastructure` | COM/WinRT interop, diagnostics, typed results, UI-thread helpers |
-| `Lumiere.Overlay` | Fullscreen overlay, crop UI, overlay cues |
-| `Lumiere.Settings` | Local preferences and settings projections |
+- Contracts define what is correct.
+- GitHub Issues own non-trivial work, acceptance criteria, dependencies, and status.
+- `CURRENT.md` owns only current project posture; Git owns history.
+- Evidence records what actually passed.
+- ADRs record durable decisions and trade-offs.
 
-Platform APIs must stay in their boundary module. Expose narrow interfaces upward.
+Work through `Orient → Classify → Execute → Verify → Handoff`. Use the risk and
+truth levels in `knowledge/contracts/engineering.md`. Default to one writer;
+planner, evaluator, sub-agent, and Ralph mechanisms are conditional escalation tools.
 
-## Coding Constraints
+## Required Boundaries
 
-- Use structured logging through `ILogger` via `LumiereLoggerFactory`; never use `Console.WriteLine`.
-- Manage COM/DXGI/D3D11/WGC resources with deterministic disposal.
-- Follow existing patterns before introducing new abstractions.
-- Keep output artifact success separate from HDR-preserved claims.
+- Follow `knowledge/contracts/architecture.md` for platform and module ownership.
+- Follow `knowledge/contracts/claims.md` for output semantics and HDR language.
+- Follow `knowledge/contracts/ui.md` for native UI work.
+- Follow existing code patterns before introducing abstractions.
+- Use deterministic native-resource disposal and structured `ILogger` logging.
+- Keep artifact success, visual match, and HDR preservation separate.
 
-## Validation Commands
+## Verification And Handoff
 
-```bash
-dotnet restore Lumiere.sln --disable-parallel --verbosity minimal /nr:false
-dotnet build Lumiere.sln -p:Platform=x64 --no-restore --verbosity minimal /nr:false
-dotnet test tests/Lumiere.Graphics.Tests/Lumiere.Graphics.Tests.csproj -p:Platform=x64 --no-restore --verbosity minimal /nr:false
-dotnet format Lumiere.sln --verify-no-changes --verbosity minimal
-```
+- Use `knowledge/runbooks/windows-development.md` for build, test, launch, and recovery.
+- Use `knowledge/evidence/templates/mvp-release-evidence-template.md` for release evidence.
+- Never count a template, cached result, or agent declaration as passing evidence.
+- Leave each slice clean and reviewable. Record only completed behavior, exact checks,
+  remaining acceptance criteria/blockers, and the next concrete action.
 
-## NuGet Restore/Run Guidance
+## Knowledge Hygiene
 
-For ad-hoc local app launch, prefer:
+Update only the artifact that owns the changed fact. Do not create duplicate
+backlogs, checkbox task ledgers, session/loop logs, generated context dumps, or
+transcript memory. Update `CURRENT.md` only when frontier or verification posture changes.
 
-```bash
-dotnet run --project src/Lumiere.App/Lumiere.App.csproj -p:Platform=x64
-```
-
-Use `--no-restore` only after a successful restore in the same workspace state.
-
-If `dotnet build`, `dotnet test`, or `dotnet run` fails with `NETSDK1064` and says a package was not found after restore, treat it as a stale or partial NuGet restore/cache issue before debugging source code. Stop using `--no-restore`, run:
-
-```bash
-dotnet restore Lumiere.sln --disable-parallel --verbosity minimal /nr:false --force
-```
-
-Then retry the original command.
-
-## Commit Convention
-
-```text
-feat:  user-visible capability
-fix:   defect fix
-docs:  documentation only
-chore: scaffold, build, repo maintenance
-test:  test-only changes
-```
+Use Conventional Commit prefixes: `feat:`, `fix:`, `docs:`, `chore:`, and `test:`.

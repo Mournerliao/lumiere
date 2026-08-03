@@ -1,0 +1,62 @@
+name: Agent task
+description: A bounded, acceptance-ready implementation or validation slice
+title: "[Task]: "
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: State one observable user or system outcome.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context pointers
+      description: Link relevant contracts, ADRs, evidence, or external specs; do not copy them.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: List concrete behaviors that must be observed before closing.
+      placeholder: "- [ ] ..."
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk level
+      options:
+        - L1 — normal feature or fix
+        - L2 — cross-module, lifetime, output semantic, or public claim
+        - L3 — multi-session work requiring dependent slices
+        - L4 — bounded machine-verifiable automation
+    validations:
+      required: true
+  - type: checkboxes
+    id: truth
+    attributes:
+      label: Required truth level
+      options:
+        - label: Repository done
+        - label: Windows verified
+        - label: Hardware evidenced
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: Name exact commands, runtime scenarios, and evidence required.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies or blockers
+      description: Link native blocked-by relationships or state that there are none.
+    validations:
+      required: true
+blank_issues_enabled: true

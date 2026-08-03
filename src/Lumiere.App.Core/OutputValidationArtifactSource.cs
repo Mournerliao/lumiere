@@ -42,7 +42,7 @@ public sealed record OutputValidationWorkspaceState(
     string EvidenceDirectoryPath,
     string GuidanceFilePath,
     string? SampleTemplatePath,
-    string? ReleaseChecklistPath,
+    string? ReleaseEvidenceTemplatePath,
     string? HdrSdrScenariosPath,
     IReadOnlyList<OutputValidationWorkspaceIssue> Issues)
 {
@@ -119,8 +119,8 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
     internal const string WorkspaceReadmeFileName = "README.txt";
     internal const string SampleTemplateFileName = "output-validation-session.schema-v4.sample.json";
     internal const string HdrSdrSessionTemplateFileName = "hdr-sdr-validation-session-template.md";
-    internal const string MvpChecklistFileName = "mvp-checklist.md";
-    internal const string HdrNotesFileName = "hdr-notes.md";
+    internal const string MvpReleaseEvidenceTemplateFileName = "mvp-release-evidence-template.md";
+    internal const string HdrValidationScenariosFileName = "hdr-validation-scenarios.md";
 
     private readonly string directoryPath;
     private readonly string searchPattern;
@@ -524,8 +524,8 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
         var guidanceFilePath = Path.Combine(directoryPath, WorkspaceReadmeFileName);
         var sampleTemplatePath = Path.Combine(templatesDirectoryPath, SampleTemplateFileName);
         var hdrSdrSessionTemplatePath = Path.Combine(templatesDirectoryPath, HdrSdrSessionTemplateFileName);
-        var releaseChecklistPath = Path.Combine(guidanceDirectoryPath, MvpChecklistFileName);
-        var hdrSdrScenariosPath = Path.Combine(guidanceDirectoryPath, HdrNotesFileName);
+        var releaseEvidenceTemplatePath = Path.Combine(guidanceDirectoryPath, MvpReleaseEvidenceTemplateFileName);
+        var hdrSdrScenariosPath = Path.Combine(guidanceDirectoryPath, HdrValidationScenariosFileName);
         var issues = new List<OutputValidationWorkspaceIssue>();
 
         EnsureDirectory(directoryPath, "Validation artifact directory could not be prepared.", issues);
@@ -544,16 +544,16 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
                 "HDR/SDR validation session template could not be seeded.",
                 issues);
             EnsureSeededGuidance(
-                releaseChecklistPath,
-                "Lumiere.App.Validation.Guidance.mvp-checklist.md",
-                "MVP validation checklist source could not be loaded from the current build.",
-                "MVP validation checklist could not be seeded.",
+                releaseEvidenceTemplatePath,
+                "Lumiere.App.Validation.Guidance.mvp-release-evidence-template.md",
+                "MVP release evidence template source could not be loaded from the current build.",
+                "MVP release evidence template could not be seeded.",
                 issues);
             EnsureSeededGuidance(
                 hdrSdrScenariosPath,
-                "Lumiere.App.Validation.Guidance.hdr-notes.md",
-                "HDR notes source could not be loaded from the current build.",
-                "HDR notes could not be seeded.",
+                "Lumiere.App.Validation.Guidance.hdr-validation-scenarios.md",
+                "HDR validation scenarios source could not be loaded from the current build.",
+                "HDR validation scenarios could not be seeded.",
                 issues);
         }
 
@@ -564,7 +564,7 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
             evidenceDirectoryPath,
             guidanceFilePath,
             fileExists(sampleTemplatePath) ? sampleTemplatePath : null,
-            fileExists(releaseChecklistPath) ? releaseChecklistPath : null,
+            fileExists(releaseEvidenceTemplatePath) ? releaseEvidenceTemplatePath : null,
             fileExists(hdrSdrScenariosPath) ? hdrSdrScenariosPath : null,
             issues);
     }
@@ -708,24 +708,24 @@ public sealed class FileOutputValidationArtifactSource : IOutputValidationArtifa
                 "- Store real Windows manual output validation artifacts for the current machine.",
                 "- Keep draft templates under templates\\ so the runtime loader does not count them as evidence.",
                 "- Save supporting notes, screenshots, or logs under evidence\\ as needed.",
-                "- Seed the current MVP checklist and HDR notes into guidance\\ for this machine.",
+                "- Seed the current MVP evidence template and HDR validation scenarios into guidance\\ for this machine.",
                 string.Empty,
                 "Workflow:",
                 "1. Copy templates\\output-validation-session.schema-v4.sample.json into this output\\ folder.",
                 "2. Or use Lumiere's Create draft action to generate a prefilled local draft in this folder.",
-                "3. Review guidance\\mvp-checklist.md and guidance\\hdr-notes.md before counting Windows manual evidence toward the MVP.",
-                "4. Use templates\\hdr-sdr-validation-session-template.md only when recording deeper HDR notes for future export work.",
+                "3. Review guidance\\mvp-release-evidence-template.md and guidance\\hdr-validation-scenarios.md before counting Windows manual evidence toward the MVP.",
+                "4. Use templates\\hdr-sdr-validation-session-template.md only when recording deeper HDR observations for future export work.",
                 "5. Rename or copy templates as needed, replace every REPLACE_WITH_* placeholder, and keep manual evidence honest.",
                 "6. Reload evidence from Lumiere after recording real observations.",
                 "7. Do not treat template files or incomplete sessions as passing MVP evidence.",
                 string.Empty,
                 "Seeded local guides:",
-                "- guidance\\mvp-checklist.md",
-                "- guidance\\hdr-notes.md",
+                "- guidance\\mvp-release-evidence-template.md",
+                "- guidance\\hdr-validation-scenarios.md",
                 string.Empty,
                 "Repo references:",
-                "- knowledge/validation/mvp-checklist.md",
-                "- knowledge/validation/hdr-notes.md"]);
+                "- knowledge/evidence/templates/mvp-release-evidence-template.md",
+                "- knowledge/evidence/templates/hdr-validation-scenarios.md"]);
 
     private string AllocateDraftPath(string workspaceDirectoryPath, string fileNameStem)
     {

@@ -273,7 +273,7 @@ public sealed class Hdr10JxrViewerValidationEvidenceTests
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-04", "REL-HDR-04"],
             ResultSummary: $"{viewerName} HDR10 JXR validation passed.",
-            EvidencePaths: [$"knowledge/validation/evidence/{viewerName}.md"],
+            EvidencePaths: [$"knowledge/evidence/{viewerName}.md"],
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
             OutputProfileRecords:

@@ -1777,14 +1777,14 @@ public sealed partial class MainWindow : Window
         ToolTipService.SetToolTip(SettingsDestinationRadioButtons, helpText);
     }
 
-    private async void OnValidationOpenReleaseChecklistClick(object sender, RoutedEventArgs e)
+    private async void OnValidationOpenReleaseEvidenceTemplateClick(object sender, RoutedEventArgs e)
     {
         var snapshot = LoadOutputValidationArtifacts();
-        var path = snapshot.Workspace.ReleaseChecklistPath
+        var path = snapshot.Workspace.ReleaseEvidenceTemplatePath
             ?? HdrAwareOutputProjection.ProjectValidationRecord(
                 aboutInfoProvider.Version,
-                snapshot).ReleaseChecklistPath;
-        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "MVP validation checklist");
+                snapshot).ReleaseEvidenceTemplatePath;
+        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "MVP release evidence template");
     }
 
     private async void OnValidationOpenHdrSdrScenariosClick(object sender, RoutedEventArgs e)
@@ -1794,7 +1794,7 @@ public sealed partial class MainWindow : Window
             ?? HdrAwareOutputProjection.ProjectValidationRecord(
                 aboutInfoProvider.Version,
                 snapshot).HdrSdrScenariosPath;
-        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "HDR notes");
+        await OpenValidationPathAsync(path, ArtifactShellActionKind.Open, "HDR validation scenarios");
     }
 
     private async void OnValidationCreateDraftClick(object sender, RoutedEventArgs e)

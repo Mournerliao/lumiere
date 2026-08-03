@@ -723,7 +723,7 @@ public static class HdrAwareOutputProjection
             "Windows CI restore, build, unit tests, and format gates can support implementation confidence only.",
             ValidationEvidenceStatus.NotRun,
             "Windows manual validation for MVP capture, output, and HDR honesty is not run.",
-            "knowledge/validation/mvp-checklist.md");
+            "knowledge/evidence/templates/mvp-release-evidence-template.md");
     }
 
     public static ValidationEvidenceSummaryProjection ProjectValidationEvidenceSummary(
@@ -797,8 +797,8 @@ public static class HdrAwareOutputProjection
                 "%LOCALAPPDATA%\\Lumiere\\validation\\output\\evidence",
                 "%LOCALAPPDATA%\\Lumiere\\validation\\output\\README.txt",
                 null,
-                "%LOCALAPPDATA%\\Lumiere\\validation\\output\\guidance\\mvp-checklist.md",
-                "%LOCALAPPDATA%\\Lumiere\\validation\\output\\guidance\\hdr-notes.md",
+                "%LOCALAPPDATA%\\Lumiere\\validation\\output\\guidance\\mvp-release-evidence-template.md",
+                "%LOCALAPPDATA%\\Lumiere\\validation\\output\\guidance\\hdr-validation-scenarios.md",
                 []);
         }
         var workspaceSummary = CreateWorkspaceSummary(workspace);
@@ -806,7 +806,7 @@ public static class HdrAwareOutputProjection
         {
             ValidationWorkspacePath = string.IsNullOrWhiteSpace(workspace.DirectoryPath) ? null : workspace.DirectoryPath,
             ValidationTemplatePath = workspace.HasSampleTemplate ? workspace.SampleTemplatePath : null,
-            ReleaseChecklistPath = workspace.ReleaseChecklistPath,
+            ReleaseEvidenceTemplatePath = workspace.ReleaseEvidenceTemplatePath,
             HdrSdrScenariosPath = workspace.HdrSdrScenariosPath,
         };
 
@@ -822,7 +822,7 @@ public static class HdrAwareOutputProjection
                     string.IsNullOrWhiteSpace(detail)
                         ? "Validation workspace is not ready on this machine. Lumiere could not prepare the local output-validation folder."
                         : $"Validation workspace is not ready on this machine. {detail}",
-                EvidenceDocumentPath = "knowledge/validation/mvp-checklist.md",
+                EvidenceDocumentPath = "knowledge/evidence/templates/mvp-release-evidence-template.md",
             };
         }
 
@@ -834,7 +834,7 @@ public static class HdrAwareOutputProjection
                 WindowsManualValidationStatus = ValidationEvidenceStatus.Limited,
                 WindowsManualValidationDetail =
                     $"{validationSnapshot.Artifacts.Count} output validation artifact(s) loaded, but {validationSnapshot.LoadIssues.Count} file(s) were ignored. Fix ignored artifact or evidence files before counting Windows manual output evidence. {DescribeBuildAlignmentForRecord(buildAlignment)} {workspaceSummary} First issue: {Path.GetFileName(firstIssue.Path)}: {firstIssue.Detail}",
-                EvidenceDocumentPath = "knowledge/validation/mvp-checklist.md",
+                EvidenceDocumentPath = "knowledge/evidence/templates/mvp-release-evidence-template.md",
             };
         }
 
@@ -845,7 +845,7 @@ public static class HdrAwareOutputProjection
                 WindowsManualValidationStatus = ValidationEvidenceStatus.Limited,
                 WindowsManualValidationDetail =
                     $"{validationSnapshot.Artifacts.Count} output validation artifact(s) loaded for this session. {DescribeBuildAlignmentForRecord(buildAlignment)} {workspaceSummary} MVP release still requires usable capture/output behavior and honest HDR copy.",
-                EvidenceDocumentPath = "knowledge/validation/mvp-checklist.md",
+                EvidenceDocumentPath = "knowledge/evidence/templates/mvp-release-evidence-template.md",
             };
         }
 
@@ -854,7 +854,7 @@ public static class HdrAwareOutputProjection
             WindowsManualValidationStatus = ValidationEvidenceStatus.Limited,
             WindowsManualValidationDetail =
                 $"{workspaceSummary} No output validation artifact is loaded for this session yet; copy the seeded sample, replace placeholders, and reload Lumiere after recording real Windows observations.",
-            EvidenceDocumentPath = "knowledge/validation/mvp-checklist.md",
+            EvidenceDocumentPath = "knowledge/evidence/templates/mvp-release-evidence-template.md",
         };
     }
 
@@ -866,7 +866,7 @@ public static class HdrAwareOutputProjection
         }
 
         return workspace.HasSampleTemplate
-            ? $"Validation workspace: {workspace.DirectoryPath}. Seeded sample: {workspace.SampleTemplatePath}. Local guides: MVP checklist and HDR notes."
+            ? $"Validation workspace: {workspace.DirectoryPath}. Seeded sample: {workspace.SampleTemplatePath}. Local guides: MVP evidence template and HDR validation scenarios."
             : $"Validation workspace: {workspace.DirectoryPath}.";
     }
 
@@ -998,21 +998,21 @@ public static class HdrAwareOutputProjection
             ? parsed
             : DateOnly.MinValue;
 
-    private sealed record MvpChecklistGapGroup(
+    private sealed record MvpEvidenceGapGroup(
         string Label,
         IReadOnlyList<string> ChecklistIds,
         string RecommendedAction);
 
-    private static readonly MvpChecklistGapGroup[] MvpChecklistGapGroups =
+    private static readonly MvpEvidenceGapGroup[] MvpEvidenceGapGroups =
     [
         new(
             "Target-aware HDR",
             ["REL-HDR-01", "REL-HDR-02", "REL-HDR-03", "REL-HDR-04", "REL-HDR-05"],
-            "Review HDR notes and record the missing target HDR observations."),
+            "Review HDR validation scenarios and record the missing target HDR observations."),
         new(
             "Viewer/output matrix",
             ["REL-OUT-01", "REL-OUT-02", "REL-OUT-03", "REL-OUT-04", "REL-OUT-05"],
-            "Review the MVP checklist and record the missing output-target runs."),
+            "Review the MVP evidence template and record the missing output-target runs."),
         new(
             "Export-profile accessibility and DPI",
             ["REL-HDR-06", "REL-A11Y-01", "REL-A11Y-02", "REL-A11Y-03", "REL-A11Y-04", "REL-A11Y-05"],
@@ -1020,7 +1020,7 @@ public static class HdrAwareOutputProjection
         new(
             "MVP stability smoke",
             ["REL-STAB-01", "REL-STAB-02"],
-            "Record repeated capture/output observations in the MVP checklist before counting stability evidence."),
+            "Record repeated capture/output observations in the MVP evidence template before counting stability evidence."),
     ];
 
     private static string CreateCoverageDetail(IReadOnlyList<OutputValidationSessionArtifact> artifacts)
@@ -1089,11 +1089,11 @@ public static class HdrAwareOutputProjection
             detailParts.Add($"HDR10 viewer target gaps: {FormatEvidenceList(runPlan.MissingViewerTargets, fallback: "named target apps")}.");
         }
 
-        var checklistCoverageGaps = DescribeMvpChecklistGaps(artifacts);
-        if (checklistCoverageGaps.Count > 0)
+        var evidenceCoverageGaps = DescribeMvpEvidenceGaps(artifacts);
+        if (evidenceCoverageGaps.Count > 0)
         {
-            detailParts.Add($"Public gate gaps: {string.Join("; ", checklistCoverageGaps.Select(gap => gap.LabelWithIds))}.");
-            detailParts.Add($"Next recommended runs: {string.Join(" ", checklistCoverageGaps.Select(gap => gap.RecommendedAction))}");
+            detailParts.Add($"Public gate gaps: {string.Join("; ", evidenceCoverageGaps.Select(gap => gap.LabelWithIds))}.");
+            detailParts.Add($"Next recommended runs: {string.Join(" ", evidenceCoverageGaps.Select(gap => gap.RecommendedAction))}");
         }
 
         var nextRun = runPlan.CreateNextWindowsRunRecommendation();
@@ -1117,11 +1117,11 @@ public static class HdrAwareOutputProjection
         return string.Join(" ", detailParts);
     }
 
-    private sealed record MvpChecklistGapDetail(
+    private sealed record MvpEvidenceGapDetail(
         string LabelWithIds,
         string RecommendedAction);
 
-    private static IReadOnlyList<MvpChecklistGapDetail> DescribeMvpChecklistGaps(
+    private static IReadOnlyList<MvpEvidenceGapDetail> DescribeMvpEvidenceGaps(
         IReadOnlyList<OutputValidationSessionArtifact> artifacts)
     {
         var covered = artifacts
@@ -1130,7 +1130,7 @@ public static class HdrAwareOutputProjection
             .Where(value => !string.IsNullOrWhiteSpace(value))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        return MvpChecklistGapGroups
+        return MvpEvidenceGapGroups
             .Select(group =>
             {
                 var missing = group.ChecklistIds
@@ -1139,7 +1139,7 @@ public static class HdrAwareOutputProjection
                 return (Group: group, Missing: missing);
             })
             .Where(result => result.Missing.Length > 0)
-            .Select(result => new MvpChecklistGapDetail(
+            .Select(result => new MvpEvidenceGapDetail(
                 $"{result.Group.Label} ({string.Join(", ", result.Missing)})",
                 result.Group.RecommendedAction))
             .ToArray();
@@ -2010,7 +2010,7 @@ public sealed record ValidationRecordProjection(
 
     public string? ValidationTemplatePath { get; init; }
 
-    public string? ReleaseChecklistPath { get; init; }
+    public string? ReleaseEvidenceTemplatePath { get; init; }
 
     public string? HdrSdrScenariosPath { get; init; }
 
@@ -2018,7 +2018,7 @@ public sealed record ValidationRecordProjection(
 
     public bool CanOpenValidationTemplate => !string.IsNullOrWhiteSpace(ValidationTemplatePath);
 
-    public bool CanOpenReleaseChecklist => !string.IsNullOrWhiteSpace(ReleaseChecklistPath);
+    public bool CanOpenReleaseEvidenceTemplate => !string.IsNullOrWhiteSpace(ReleaseEvidenceTemplatePath);
 
     public bool CanOpenHdrSdrScenarios => !string.IsNullOrWhiteSpace(HdrSdrScenariosPath);
 
@@ -2027,7 +2027,7 @@ public sealed record ValidationRecordProjection(
             ? EvidenceDocumentPath
             : string.IsNullOrWhiteSpace(ValidationTemplatePath)
                 ? $"Workspace: {ValidationWorkspacePath}"
-                : $"Workspace: {ValidationWorkspacePath} | Template: {ValidationTemplatePath} | Guides: {ReleaseChecklistPath ?? HdrSdrScenariosPath ?? "not seeded"}";
+                : $"Workspace: {ValidationWorkspacePath} | Template: {ValidationTemplatePath} | Guides: {ReleaseEvidenceTemplatePath ?? HdrSdrScenariosPath ?? "not seeded"}";
 }
 
 public enum ValidationEvidenceStatus

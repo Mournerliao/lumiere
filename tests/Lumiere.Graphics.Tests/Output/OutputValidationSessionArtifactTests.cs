@@ -23,7 +23,7 @@ public sealed class OutputValidationSessionArtifactTests
             TargetAppsTested: ["Windows Photos"],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: "Windows Photos preserved the HDR10 output path.",
-            EvidencePaths: ["knowledge/validation/evidence/photos-hdr10.md"],
+            EvidencePaths: ["knowledge/evidence/photos-hdr10.md"],
             KnownLimitations: ["Paint not yet validated"],
             FollowUpIssuesOrStories: ["Validate Paint and Microsoft Edge viewers"],
             OutputProfileRecords:
@@ -61,7 +61,7 @@ public sealed class OutputValidationSessionArtifactTests
         Assert.Equal("Windows Photos", targetAppVersion.Name);
         Assert.Equal("2026.11040.12001.0", targetAppVersion.Version);
         Assert.Equal(["REL-OUT-01"], roundTripped.ChecklistIdsCovered);
-        Assert.Equal(["knowledge/validation/evidence/photos-hdr10.md"], roundTripped.EvidencePaths);
+        Assert.Equal(["knowledge/evidence/photos-hdr10.md"], roundTripped.EvidencePaths);
         Assert.NotNull(roundTripped.TargetHdrEvidence);
         Assert.Equal("HDR primary", roundTripped.TargetHdrEvidence.TargetDisplayName);
         Assert.Equal("DesktopBounds", roundTripped.TargetHdrEvidence.MatchKind);
@@ -581,7 +581,7 @@ public sealed class OutputValidationSessionArtifactTests
             TargetAppsTested: ["Windows Photos"],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: "Manual validation session.",
-            EvidencePaths: ["knowledge/validation/evidence/session.md"],
+            EvidencePaths: ["knowledge/evidence/session.md"],
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
             OutputProfileRecords: records)

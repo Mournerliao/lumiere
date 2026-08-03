@@ -13,11 +13,11 @@
   <ItemGroup>
     <EmbeddedResource Include="Validation\Output\output-validation-session.schema-v4.sample.json" />
     <EmbeddedResource Include="Validation\Output\hdr-sdr-validation-session-template.md" />
-    <EmbeddedResource Include="..\..\knowledge\validation\mvp-checklist.md">
-      <LogicalName>Lumiere.App.Validation.Guidance.mvp-checklist.md</LogicalName>
+    <EmbeddedResource Include="..\..\knowledge\evidence\templates\mvp-release-evidence-template.md">
+      <LogicalName>Lumiere.App.Validation.Guidance.mvp-release-evidence-template.md</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\..\knowledge\validation\hdr-notes.md">
-      <LogicalName>Lumiere.App.Validation.Guidance.hdr-notes.md</LogicalName>
+    <EmbeddedResource Include="..\..\knowledge\evidence\templates\hdr-validation-scenarios.md">
+      <LogicalName>Lumiere.App.Validation.Guidance.hdr-validation-scenarios.md</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
 </Project>

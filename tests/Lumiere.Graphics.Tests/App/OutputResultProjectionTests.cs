@@ -239,7 +239,7 @@ public sealed class OutputResultProjectionTests
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation passed.",
-            EvidencePaths: [$"knowledge/validation/evidence/{viewerName}.md"],
+            EvidencePaths: [$"knowledge/evidence/{viewerName}.md"],
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
             OutputProfileRecords:
@@ -267,7 +267,7 @@ public sealed class OutputResultProjectionTests
             TargetAppsTested: ["Windows Photos"],
             ChecklistIdsCovered: ["REL-OUT-04"],
             ResultSummary: "HDR10 output profile validation passed.",
-            EvidencePaths: ["knowledge/validation/evidence/hdr10-output.md"],
+            EvidencePaths: ["knowledge/evidence/hdr10-output.md"],
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
             OutputProfileRecords:

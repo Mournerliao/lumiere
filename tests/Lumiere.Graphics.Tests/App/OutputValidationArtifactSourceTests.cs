@@ -323,15 +323,15 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Equal("C:\\Validation\\evidence", snapshot.Workspace.EvidenceDirectoryPath);
         Assert.Equal("C:\\Validation\\README.txt", snapshot.Workspace.GuidanceFilePath);
         Assert.Equal("C:\\Validation\\templates\\output-validation-session.schema-v4.sample.json", snapshot.Workspace.SampleTemplatePath);
-        Assert.Equal("C:\\Validation\\guidance\\mvp-checklist.md", snapshot.Workspace.ReleaseChecklistPath);
-        Assert.Equal("C:\\Validation\\guidance\\hdr-notes.md", snapshot.Workspace.HdrSdrScenariosPath);
+        Assert.Equal("C:\\Validation\\guidance\\mvp-release-evidence-template.md", snapshot.Workspace.ReleaseEvidenceTemplatePath);
+        Assert.Equal("C:\\Validation\\guidance\\hdr-validation-scenarios.md", snapshot.Workspace.HdrSdrScenariosPath);
         Assert.Equal(templateJson, files[snapshot.Workspace.SampleTemplatePath!]);
         Assert.Contains("Session Metadata", files["C:\\Validation\\templates\\hdr-sdr-validation-session-template.md"], StringComparison.Ordinal);
-        Assert.Contains("MVP Validation Checklist", files[snapshot.Workspace.ReleaseChecklistPath!], StringComparison.Ordinal);
-        Assert.Contains("HDR Notes", files[snapshot.Workspace.HdrSdrScenariosPath!], StringComparison.Ordinal);
+        Assert.Contains("MVP Release Evidence Template", files[snapshot.Workspace.ReleaseEvidenceTemplatePath!], StringComparison.Ordinal);
+        Assert.Contains("HDR Validation Scenarios", files[snapshot.Workspace.HdrSdrScenariosPath!], StringComparison.Ordinal);
         Assert.Contains("templates\\hdr-sdr-validation-session-template.md", files[snapshot.Workspace.GuidanceFilePath], StringComparison.Ordinal);
-        Assert.Contains("guidance\\mvp-checklist.md", files[snapshot.Workspace.GuidanceFilePath], StringComparison.Ordinal);
-        Assert.Contains("guidance\\hdr-notes.md", files[snapshot.Workspace.GuidanceFilePath], StringComparison.Ordinal);
+        Assert.Contains("guidance\\mvp-release-evidence-template.md", files[snapshot.Workspace.GuidanceFilePath], StringComparison.Ordinal);
+        Assert.Contains("guidance\\hdr-validation-scenarios.md", files[snapshot.Workspace.GuidanceFilePath], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -595,7 +595,7 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Contains("artifact or evidence files", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Contains("bad.json", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Contains("JsonException", projection.Validation.Record.WindowsManualValidationDetail);
-        Assert.Equal("knowledge/validation/mvp-checklist.md", projection.Validation.Record.EvidenceDocumentPath);
+        Assert.Equal("knowledge/evidence/templates/mvp-release-evidence-template.md", projection.Validation.Record.EvidenceDocumentPath);
         Assert.Equal("%LOCALAPPDATA%\\Lumiere\\validation\\output", projection.Validation.Record.ValidationWorkspacePath);
         Assert.Equal("Build", projection.MainPanel.OutputProfile.StatusLabel);
         Assert.Equal(FidelityClaimKind.Converted, projection.MainPanel.FidelityClaim.Kind);
@@ -650,7 +650,7 @@ public sealed class OutputValidationArtifactSourceTests
         Assert.Contains("2 output validation artifact", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Contains("Validation workspace:", projection.Validation.Record.WindowsManualValidationDetail);
         Assert.Contains("MVP release", projection.Validation.Record.WindowsManualValidationDetail);
-        Assert.Equal("knowledge/validation/mvp-checklist.md", projection.Validation.Record.EvidenceDocumentPath);
+        Assert.Equal("knowledge/evidence/templates/mvp-release-evidence-template.md", projection.Validation.Record.EvidenceDocumentPath);
     }
 
     private static OutputValidationSessionArtifact CreateArtifact(string date, string viewerName) =>
@@ -669,7 +669,7 @@ public sealed class OutputValidationArtifactSourceTests
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-04"],
             ResultSummary: $"{viewerName} validation passed.",
-            EvidencePaths: [$"knowledge/validation/evidence/{viewerName}.md"],
+            EvidencePaths: [$"knowledge/evidence/{viewerName}.md"],
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
             OutputProfileRecords:

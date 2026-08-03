@@ -581,7 +581,7 @@ public sealed class MainPanelProjectionTests
             TargetAppsTested: [viewerName],
             ChecklistIdsCovered: ["REL-OUT-01"],
             ResultSummary: $"{viewerName} HDR validation passed.",
-            EvidencePaths: [$"knowledge/validation/evidence/{viewerName}.md"],
+            EvidencePaths: [$"knowledge/evidence/{viewerName}.md"],
             KnownLimitations: [],
             FollowUpIssuesOrStories: [],
             OutputProfileRecords:
