@@ -3,7 +3,7 @@
 These files are generated from the selected canonical artwork at
 `assets/brand/lumiere-logo.png`.
 
-Application icon compositions place the white ferret at 90% scale, centered
+Application icon compositions place the white ferret at 100% scale, centered
 horizontally and anchored to the bottom, so the coral field retains balanced
 breathing room. Tray assets keep the fuller silhouette because 16px recognition
 takes priority over app-icon spacing.

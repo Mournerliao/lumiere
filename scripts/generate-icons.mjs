@@ -71,7 +71,7 @@ async function createAppArtwork() {
   }
 
   const canvasSize = 1024
-  const characterSize = Math.round(canvasSize * 0.9)
+  const characterSize = canvasSize
   const characterLeft = Math.round((canvasSize - characterSize) / 2)
   const character = await sharp(cutout, {
     raw: { width: info.width, height: info.height, channels: 4 },

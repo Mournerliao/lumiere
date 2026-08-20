@@ -6,7 +6,8 @@ not yet wired into the desktop application.
 
 ## Final selection
 
-`B1-glancing-lower-left.png` was selected as the Lumiere logo on 2026-08-20.
+`A2-peeking-lower-right.png` superseded the earlier B1 selection as the Lumiere
+logo on 2026-08-20.
 The unchanged canonical copy is stored at `assets/brand/lumiere-logo.png`.
 
 ## Generation route
