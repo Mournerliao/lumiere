@@ -22,7 +22,7 @@ public sealed class DirectMonitorCaptureTargetSelectionTests
         var result = await service.SelectTargetAsync();
 
         Assert.Equal(SelectionOutcome.Selected, result.Outcome);
-        Assert.Equal(@"\\.\DISPLAY2", result.Target!.DisplayIdentity!.MonitorDisplayName);
+        Assert.Equal(@"\\.\DISPLAY2", result.Target!.DisplayIdentity!.DeviceName);
         Assert.Equal(EngineReadinessState.Initializing, result.Readiness.State);
     }
 
