@@ -28,7 +28,7 @@
     "*.{css,html,json,jsonc,md,yaml,yml}": "prettier --write"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm lint-staged"
+    "pre-commit": "pnpm lint-staged --max-arg-length 7000"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

@@ -61,7 +61,13 @@ desktop.ini
 
 # Local AI tool state (repository policy lives in AGENTS.md and knowledge/)
 .workbuddy/
-.agents/
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/electron-apps/
+!.agents/skills/electron-apps/**
+!.agents/skills/react-best-practices/
+!.agents/skills/react-best-practices/**
 .claude/
 CLAUDE.md
 .cursorrules
