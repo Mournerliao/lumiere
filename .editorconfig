@@ -21,6 +21,10 @@ dotnet_style_qualification_for_method = false:suggestion
 dotnet_style_qualification_for_event = false:suggestion
 dotnet_diagnostic.CA1416.severity = suggestion
 
+[*.{js,mjs,cjs,ts,tsx,css,html}]
+end_of_line = lf
+indent_size = 2
+
 [*.{xaml,xml,props,targets,csproj,manifest}]
 indent_size = 2
 
@@ -34,4 +38,3 @@ trim_trailing_whitespace = false
 [*.{sh,ps1}]
 end_of_line = lf
 indent_size = 2
-

@@ -1,5 +1,4 @@
 import type {
-  CaptureRequest,
   CaptureResult,
   LumierePlatform,
   PlatformCapabilities,
@@ -10,8 +9,8 @@ import { PLATFORM_CONTRACT_VERSION } from '../shared/platform-contract'
 export class UnavailablePlatformHost implements PlatformHost {
   public constructor(private readonly platform: LumierePlatform) {}
 
-  public async getCapabilities(): Promise<PlatformCapabilities> {
-    return {
+  public getCapabilities(): Promise<PlatformCapabilities> {
+    return Promise.resolve({
       contractVersion: PLATFORM_CONTRACT_VERSION,
       platform: this.platform,
       hostStatus: 'unavailable',
@@ -23,18 +22,18 @@ export class UnavailablePlatformHost implements PlatformHost {
         message: `The ${this.platform} native capture host has not been connected yet.`,
         retryable: false,
       },
-    }
+    })
   }
 
-  public async capture(_request: CaptureRequest): Promise<CaptureResult> {
-    return {
+  public capture(): Promise<CaptureResult> {
+    return Promise.resolve({
       status: 'failed',
       failure: {
         code: 'host-unavailable',
         message: `The ${this.platform} native capture host has not been connected yet.`,
         retryable: false,
       },
-    }
+    })
   }
 }
 

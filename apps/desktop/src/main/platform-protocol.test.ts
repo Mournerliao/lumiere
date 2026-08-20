@@ -11,7 +11,7 @@ describe('platform host protocol', () => {
       await readFile(`${protocolDirectory}/v1.schema.json`, 'utf8'),
     ) as object
     const fixtureNames = (await readdir(`${protocolDirectory}/fixtures`))
-      .filter(name => name.endsWith('.json'))
+      .filter((name) => name.endsWith('.json'))
       .sort()
     const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema)
 
@@ -32,11 +32,13 @@ describe('platform host protocol', () => {
     ) as object
     const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema)
 
-    expect(validate({
-      version: 1,
-      id: 'invalid-1',
-      method: 'capture',
-      params: { mode: 'display', delivery: 'folder', rawFrame: true },
-    })).toBe(false)
+    expect(
+      validate({
+        version: 1,
+        id: 'invalid-1',
+        method: 'capture',
+        params: { mode: 'display', delivery: 'folder', rawFrame: true },
+      }),
+    ).toBe(false)
   })
 })

@@ -23,9 +23,13 @@ function createMainWindow(): BrowserWindow {
     },
   })
 
-  window.once('ready-to-show', () => window.show())
+  window.once('ready-to-show', () => {
+    window.show()
+  })
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
-  window.webContents.on('will-navigate', (event) => event.preventDefault())
+  window.webContents.on('will-navigate', (event) => {
+    event.preventDefault()
+  })
 
   if (!app.isPackaged && process.env.ELECTRON_RENDERER_URL) {
     void window.loadURL(process.env.ELECTRON_RENDERER_URL)
@@ -60,7 +64,7 @@ function registerPlatformIpc(window: BrowserWindow): void {
   })
 }
 
-app.whenReady().then(() => {
+void app.whenReady().then(() => {
   mainWindow = createMainWindow()
   registerPlatformIpc(mainWindow)
 

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import type { CaptureRequest, CaptureResult, PlatformCapabilities, PlatformHost } from '../shared/platform-contract'
+import type {
+  CaptureRequest,
+  CaptureResult,
+  PlatformCapabilities,
+  PlatformHost,
+} from '../shared/platform-contract'
 import { PLATFORM_CONTRACT_VERSION } from '../shared/platform-contract'
 import { createPlatformHandlers } from './platform-handlers'
 import { UnavailablePlatformHost } from './platform-host'
@@ -50,26 +55,26 @@ describe('platform handlers', () => {
 class RecordingPlatformHost implements PlatformHost {
   public readonly requests: CaptureRequest[] = []
 
-  public async getCapabilities(): Promise<PlatformCapabilities> {
-    return {
+  public getCapabilities(): Promise<PlatformCapabilities> {
+    return Promise.resolve({
       contractVersion: PLATFORM_CONTRACT_VERSION,
       platform: 'macos',
       hostStatus: 'available',
       captureModes: ['region', 'display'],
       hdrCapture: 'supported',
       outputProfiles: ['srgb-visual-match'],
-    }
+    })
   }
 
-  public async capture(request: CaptureRequest): Promise<CaptureResult> {
+  public capture(request: CaptureRequest): Promise<CaptureResult> {
     this.requests.push(request)
-    return {
+    return Promise.resolve({
       status: 'success',
       sourceDynamicRange: 'hdr',
       artifact: {
         profile: 'srgb-visual-match',
         delivery: request.delivery,
       },
-    }
+    })
   }
 }

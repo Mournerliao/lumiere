@@ -60,7 +60,7 @@ export interface LumierePlatformApi {
   capture(request: CaptureRequest): Promise<CaptureResult>
 }
 
-export interface PlatformHost extends LumierePlatformApi {}
+export type PlatformHost = LumierePlatformApi
 
 export type PlatformRequestEnvelope =
   | {

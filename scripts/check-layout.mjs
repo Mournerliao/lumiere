@@ -44,11 +44,11 @@ for (const path of forbiddenPaths) {
 
 if (missing.length > 0 || forbidden.length > 0) {
   if (missing.length > 0) {
-    console.error(`Missing required paths:\n${missing.map(path => `- ${path}`).join('\n')}`)
+    console.error(`Missing required paths:\n${missing.map((path) => `- ${path}`).join('\n')}`)
   }
 
   if (forbidden.length > 0) {
-    console.error(`Forbidden legacy paths:\n${forbidden.map(path => `- ${path}`).join('\n')}`)
+    console.error(`Forbidden legacy paths:\n${forbidden.map((path) => `- ${path}`).join('\n')}`)
   }
 
   process.exitCode = 1
@@ -58,8 +58,7 @@ async function exists(path) {
   try {
     await access(path)
     return true
-  }
-  catch {
+  } catch {
     return false
   }
 }

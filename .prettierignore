@@ -1,0 +1,9 @@
+**/artifacts/
+**/bin/
+**/node_modules/
+**/obj/
+**/out/
+**/TestResults/
+.github/ISSUE_TEMPLATE/
+knowledge/
+pnpm-lock.yaml

@@ -4,5 +4,6 @@ packages:
 allowBuilds:
   electron: true
   esbuild: true
+  simple-git-hooks: true
 
 confirmModulesPurge: false

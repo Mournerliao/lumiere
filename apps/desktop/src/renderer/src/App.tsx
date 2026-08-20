@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
-import type { CaptureMode, CaptureResult, PlatformCapabilities } from '../../shared/platform-contract'
+import type {
+  CaptureMode,
+  CaptureResult,
+  PlatformCapabilities,
+} from '../../shared/platform-contract'
 
 export function App(): React.JSX.Element {
   const [capabilities, setCapabilities] = useState<PlatformCapabilities | null>(null)
@@ -31,7 +35,9 @@ export function App(): React.JSX.Element {
           <h1>Lumiere</h1>
         </div>
         <span className={`host-state ${hostAvailable ? 'available' : ''}`}>
-          {capabilities ? `${capabilities.platform} host ${capabilities.hostStatus}` : 'Checking host'}
+          {capabilities
+            ? `${capabilities.platform} host ${capabilities.hostStatus}`
+            : 'Checking host'}
         </span>
       </header>
 
@@ -61,7 +67,7 @@ export function App(): React.JSX.Element {
         <span className="status-dot" />
         {result?.status === 'failed'
           ? result.failure.message
-          : capabilities?.unavailableReason?.message ?? 'Native capture host ready.'}
+          : (capabilities?.unavailableReason?.message ?? 'Native capture host ready.')}
       </footer>
     </main>
   )
