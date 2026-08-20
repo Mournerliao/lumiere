@@ -29,9 +29,10 @@ export function App(): React.JSX.Element {
 
   return (
     <main className="app-shell">
-      {window.lumierePlatform.platform === 'macos' ? (
-        <div className="window-drag-region" aria-hidden="true" />
-      ) : null}
+      <div
+        className={`window-drag-region window-drag-region--${window.lumierePlatform.platform}`}
+        aria-hidden="true"
+      />
 
       <section className="capture-surface" aria-labelledby="capture-title">
         <div className="capture-copy">

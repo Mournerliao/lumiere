@@ -59,12 +59,22 @@ button {
 .window-drag-region {
   position: absolute;
   z-index: 1;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.window-drag-region--macos {
   top: 0;
   right: 0;
   left: 78px;
   height: 52px;
-  -webkit-app-region: drag;
-  user-select: none;
+}
+
+.window-drag-region--windows {
+  top: env(titlebar-area-y, 0);
+  left: env(titlebar-area-x, 0);
+  width: env(titlebar-area-width, calc(100% - 138px));
+  height: env(titlebar-area-height, 46px);
 }
 
 .eyebrow {

@@ -18,7 +18,18 @@ function createMainWindow(): BrowserWindow {
     title: 'Lumiere',
     backgroundColor: '#1b1a18',
     ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset' as const } : {}),
-    ...(process.platform === 'win32' ? { icon: desktopIconPaths().appIcon } : {}),
+    ...(process.platform === 'win32'
+      ? {
+          autoHideMenuBar: true,
+          icon: desktopIconPaths().appIcon,
+          titleBarStyle: 'hidden' as const,
+          titleBarOverlay: {
+            color: '#1b1a18',
+            symbolColor: '#ece9e2',
+            height: 46,
+          },
+        }
+      : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
