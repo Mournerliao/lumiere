@@ -1,6 +1,6 @@
 using Lumiere.Windows.Graphics.Hdr;
-using Lumiere.Windows.Interop.Diagnostics;
 using Lumiere.Windows.Interop;
+using Lumiere.Windows.Interop.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;

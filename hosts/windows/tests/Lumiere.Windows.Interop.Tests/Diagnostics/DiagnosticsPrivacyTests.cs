@@ -1,5 +1,5 @@
-using Lumiere.Windows.Interop.Diagnostics;
 using Lumiere.Windows.Interop;
+using Lumiere.Windows.Interop.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Xunit;
 

@@ -54,8 +54,8 @@ public sealed record OutputResult(
         var skippedCount = targetResults.Count(target => target.Outcome == OutputOutcome.Skipped);
         var userMessage = (successCount, failedCount, skippedCount) switch
         {
-            (> 0, 0, 0) => "Output complete",
-            (> 0, > 0, _) => "Output partially complete",
+            ( > 0, 0, 0) => "Output complete",
+            ( > 0, > 0, _) => "Output partially complete",
             (0, > 0, _) => "Output failed",
             (0, 0, > 0) => "Output skipped",
             _ => "Output complete",
