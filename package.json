@@ -7,11 +7,13 @@
   },
   "scripts": {
     "build": "pnpm --filter @lumiere/desktop build",
-    "check": "pnpm check:layout && pnpm lint && pnpm format:check && pnpm --filter @lumiere/desktop check",
+    "check": "pnpm check:layout && pnpm icons:check && pnpm lint && pnpm format:check && pnpm --filter @lumiere/desktop check",
     "check:layout": "node ./scripts/check-layout.mjs",
     "dev": "pnpm --filter @lumiere/desktop dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "icons:generate": "node ./scripts/generate-icons.mjs",
+    "icons:check": "node ./scripts/check-icons.mjs",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "prepare": "simple-git-hooks",
@@ -38,6 +40,7 @@
     "lint-staged": "17.3.0",
     "prettier": "3.9.6",
     "simple-git-hooks": "2.13.1",
+    "sharp": "0.34.5",
     "typescript": "6.0.3",
     "typescript-eslint": "8.67.0"
   }
