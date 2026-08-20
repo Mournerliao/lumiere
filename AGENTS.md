@@ -1,7 +1,8 @@
 # AGENTS.md
 
-Lumiere is a native Windows HDR-aware screenshot tool built with WinUI 3,
-Windows App SDK, Windows Graphics Capture, Direct3D 11, DXGI, and Vortice.
+Lumiere is a Windows and macOS HDR-aware screenshot tool. It uses an Electron/React
+shell with native platform capture hosts: WGC/D3D11/DXGI on Windows and
+ScreenCaptureKit on macOS.
 This file is a map, not a project manual.
 
 ## Start
@@ -33,14 +34,15 @@ planner, evaluator, sub-agent, and Ralph mechanisms are conditional escalation t
 
 - Follow `knowledge/contracts/architecture.md` for platform and module ownership.
 - Follow `knowledge/contracts/claims.md` for output semantics and HDR language.
-- Follow `knowledge/contracts/ui.md` for native UI work.
+- Follow `knowledge/contracts/ui.md` for shared desktop UI work.
 - Follow existing code patterns before introducing abstractions.
 - Use deterministic native-resource disposal and structured `ILogger` logging.
 - Keep artifact success, visual match, and HDR preservation separate.
 
 ## Verification And Handoff
 
-- Use `knowledge/runbooks/windows-development.md` for build, test, launch, and recovery.
+- Use `knowledge/runbooks/cross-platform-development.md` for the shared shell and the
+  owning platform runbook for native build, runtime, and recovery.
 - Use `knowledge/evidence/templates/mvp-release-evidence-template.md` for release evidence.
 - Never count a template, cached result, or agent declaration as passing evidence.
 - Leave each slice clean and reviewable. Record only completed behavior, exact checks,

@@ -49,11 +49,14 @@ claimed. Templates, cached results, and incomplete artifacts never count as evid
 Truth levels are distinct:
 
 1. **Repository done** — implementation, relevant tests, format, and static checks pass.
-2. **Windows verified** — Windows restore/build/test and named runtime smoke pass.
-3. **Hardware evidenced** — WGC/DXGI/HDR behavior is observed on the named target
-   display and receiving apps and committed as evidence.
+2. **Platform verified** — the named Windows or macOS build/test and runtime smoke
+   pass. Windows verified and macOS verified are independent claims.
+3. **Hardware evidenced** — native capture, HDR behavior, sRGB Visual Match, and named
+   receiving apps are observed on the named platform/display and committed as evidence.
 
-Public HDR-preserved claims require level 3. Level 1 or 2 must never be projected upward.
+MVP release requires the applicable level on both platforms. Public HDR-preserved
+claims require level 3 for every named platform. One platform's evidence must never
+be projected to another, and level 1 or 2 must never be projected upward.
 
 ## Code Rules
 

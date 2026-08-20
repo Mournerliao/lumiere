@@ -1,37 +1,41 @@
 # Current Project State
 
-- Updated: 2026-08-03
-- Release target: HDR-aware MVP with sRGB Visual Match
+- Updated: 2026-08-20
+- Release target: Windows + macOS HDR-aware MVP with sRGB Visual Match
 - Operating model: Contract → Frontier → Evidence
 
 ## Current Position
 
-The repository contains the intended MVP capture baseline, shared sRGB Visual Match
-output conversion, default fixed tone mapper, clipboard/folder policies, settings,
-main/tray/shortcut entry points, and simplified native capture UI.
+The product has adopted an Electron/React shared shell with native capture hosts:
+existing C# WGC/D3D11/DXGI code is the Windows host foundation, and a Swift
+ScreenCaptureKit host will own macOS capture. The three-stage sequence is HDR-aware
+sRGB Visual Match MVP, one HDR-preserved export path, then measured cross-platform
+HDR fidelity.
 
-Packaging direction is settled as a traditional setup executable with custom install
-path support. Installer technology and artifact work have not started.
+GitHub Issue #1 owns the first foundation slice: contracts and ADR, secure Electron
+shell, narrow platform-host interface, and macOS-runnable repository checks. Native
+host integration and packaging have not started.
 
 ## Verification Truth
 
-- **Repository done:** implementation and platform-neutral tests are present, but the
-  current documentation migration has not yet been verified on Windows.
-- **Windows verified:** no passing release-candidate record exists for the current tree.
-- **Hardware evidenced:** no passing HDR visual-match record exists for the current tree.
+- **Repository done:** the secure Electron foundation, typed platform-host interface,
+  protocol tests, and production build pass on macOS; native hosts remain unconnected.
+- **macOS verified:** the production shell launches and truthfully reports the expected
+  `host-unavailable` state; macOS capture and HDR behavior remain unverified.
+- **Windows verified:** no passing cross-platform release-candidate record exists.
+- **Hardware evidenced:** no passing HDR Visual Match record exists for either platform.
 
-Do not describe the MVP as release-ready until the applicable evidence is committed.
+Do not describe the cross-platform MVP as release-ready until the applicable evidence
+is committed for both platforms.
 
 ## Frontier
 
-Run and record the Windows MVP release validation for the post-migration commit:
+Complete Issue #1 and leave its repository checks passing. Then open dependent vertical
+Issues in this order:
 
-1. Publish or claim one GitHub Issue using the repository task template.
-2. Run all commands in `knowledge/runbooks/windows-development.md`.
-3. Exercise launch, region/fullscreen capture, cancel, clipboard/folder/both output,
-   repeat loop, and clean exit.
-4. Record bright HDR, dark, and everyday desktop scenes using the evidence template.
-5. Fix blocking defects before starting packaging implementation.
-
-After Windows and hardware evidence pass, the next product frontier is installer
-technology selection and an internal installer artifact.
+1. Implement a minimal Swift ScreenCaptureKit host that reports permissions and writes
+   one sRGB Visual Match file on macOS, proving the new platform-host seam end to end.
+2. Connect the existing Windows engine through the same interface and re-run Windows
+   runtime/HDR validation.
+3. Add native clipboard/folder policies and the shared region/display interaction.
+4. Produce signed internal Windows and macOS artifacts, then gather release evidence.

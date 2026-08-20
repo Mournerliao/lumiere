@@ -1,8 +1,8 @@
-# Windows Development Runbook
+# Windows Native Development Runbook
 
-macOS is suitable for editing, documentation, refactoring, and platform-neutral test
-design. Windows is required for restore/build confidence and all WinUI, WGC, DXGI,
-D3D11, HDR, tray, shortcut, clipboard, and multi-monitor behavior.
+macOS is suitable for the shared shell, documentation, refactoring, and platform-neutral
+test design. Windows is required for restore/build confidence and all WGC, DXGI,
+D3D11, HDR, Windows tray/shortcut/clipboard, and multi-monitor behavior.
 
 ## Prerequisites
 
@@ -12,7 +12,8 @@ D3D11, HDR, tray, shortcut, clipboard, and multi-monitor behavior.
 
 ## Release-Candidate Gates
 
-From the repository root, run the versioned verification entry point:
+First run the shared-shell gates from `cross-platform-development.md`, then run the
+versioned Windows-native verification entry point:
 
 ```powershell
 pwsh ./scripts/verify-windows.ps1

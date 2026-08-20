@@ -42,6 +42,7 @@ body:
       options:
         - label: Repository done
         - label: Windows verified
+        - label: macOS verified
         - label: Hardware evidenced
     validations:
       required: true

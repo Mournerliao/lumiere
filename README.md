@@ -1,17 +1,18 @@
 # Lumiere
 
-Lumiere is a native Windows HDR-aware screenshot tool built with WinUI 3,
-Windows App SDK, Windows Graphics Capture, Direct3D 11, DXGI, and Vortice.
-The first release focuses on fast region/fullscreen capture, target-aware HDR state,
-an FP16/scRGB-oriented preview path, and compatible sRGB Visual Match output.
+Lumiere is a Windows and macOS HDR-aware screenshot tool. A shared Electron/React
+shell coordinates native capture hosts: WGC/D3D11/DXGI on Windows and
+ScreenCaptureKit on macOS. The first release focuses on fast region/display capture,
+honest target-aware HDR state, and compatible sRGB Visual Match output.
 
-Lumiere does not currently claim broad HDR-preserved export support.
+Lumiere does not currently claim HDR-preserved export support.
 
 ## Start Here
 
 - [Current project state](knowledge/state/CURRENT.md)
 - [Knowledge map](knowledge/README.md)
 - [Product contract](knowledge/contracts/product.md)
+- [Cross-platform development runbook](knowledge/runbooks/cross-platform-development.md)
 - [Windows development runbook](knowledge/runbooks/windows-development.md)
 - [Validation evidence](knowledge/evidence/README.md)
 
@@ -21,16 +22,17 @@ observed validation; Git owns history.
 
 ## Platform
 
-`.NET 10` · `net10.0-windows10.0.19041.0` · `x64` / `win-x64` · WinUI 3 ·
-Windows App SDK · WGC · D3D11 · DXGI · Vortice
+`Electron` · `React` · `TypeScript` · Windows native host (`.NET 10`, WGC,
+D3D11, DXGI, Vortice) · macOS native host (Swift, ScreenCaptureKit)
 
-Windows is required for full build/runtime validation and real HDR evidence. Follow
-the Windows runbook rather than copying validation commands into additional docs.
+macOS can build and validate the shared shell. Each native host and all HDR claims
+still require runtime and hardware evidence on its owning platform.
 
 ## Repository Layout
 
 ```text
-src/        application, capture, graphics, interop, overlay, and settings modules
+apps/       shared Electron desktop shell
+src/        existing Windows capture, graphics, interop, overlay, and settings modules
 tests/      automated tests mirroring source boundaries
 knowledge/  contracts, current state, ADRs, runbooks, evidence, and research
 scripts/    deterministic engineering entry points

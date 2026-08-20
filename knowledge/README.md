@@ -21,7 +21,8 @@ truth. Start with this map and disclose detail only when the current task needs 
 | What phase are we in and what is the frontier? | [`state/CURRENT.md`](state/CURRENT.md) |
 | What comes after the current release? | [`roadmap.md`](roadmap.md) |
 | Why was a durable choice made? | [`decisions/`](decisions/) |
-| How is Windows development performed? | [`runbooks/windows-development.md`](runbooks/windows-development.md) |
+| How is shared-shell development performed? | [`runbooks/cross-platform-development.md`](runbooks/cross-platform-development.md) |
+| How is Windows native development performed? | [`runbooks/windows-development.md`](runbooks/windows-development.md) |
 | What was actually verified? | [`evidence/`](evidence/) |
 | What external research informed a decision? | [`research/`](research/) |
 
