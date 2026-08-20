@@ -62,6 +62,32 @@ export interface LumierePlatformApi {
 
 export interface PlatformHost extends LumierePlatformApi {}
 
+export type PlatformRequestEnvelope =
+  | {
+      version: typeof PLATFORM_CONTRACT_VERSION
+      id: string
+      method: 'getCapabilities'
+      params: Record<string, never>
+    }
+  | {
+      version: typeof PLATFORM_CONTRACT_VERSION
+      id: string
+      method: 'capture'
+      params: CaptureRequest
+    }
+
+export type PlatformResponseEnvelope =
+  | {
+      version: typeof PLATFORM_CONTRACT_VERSION
+      id: string
+      result: PlatformCapabilities | CaptureResult
+    }
+  | {
+      version: typeof PLATFORM_CONTRACT_VERSION
+      id: string
+      error: PlatformFailure
+    }
+
 const captureModes: readonly CaptureMode[] = ['region', 'display']
 const outputDeliveries: readonly OutputDelivery[] = ['clipboard', 'folder', 'both']
 
