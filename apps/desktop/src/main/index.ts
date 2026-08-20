@@ -16,7 +16,8 @@ function createMainWindow(): BrowserWindow {
     minHeight: 560,
     show: false,
     title: 'Lumiere',
-    backgroundColor: '#f4f2ed',
+    backgroundColor: '#1b1a18',
+    ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset' as const } : {}),
     ...(process.platform === 'win32' ? { icon: desktopIconPaths().appIcon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),

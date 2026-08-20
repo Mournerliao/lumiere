@@ -1,8 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { LumierePlatformApi } from '../shared/platform-contract'
+import type { LumierePlatform, LumiereRendererApi } from '../shared/platform-contract'
 import { platformChannels } from '../shared/platform-contract'
 
-const platformApi: LumierePlatformApi = {
+const platform: LumierePlatform = process.platform === 'darwin' ? 'macos' : 'windows'
+
+const platformApi: LumiereRendererApi = {
+  platform,
   getCapabilities: () => ipcRenderer.invoke(platformChannels.getCapabilities),
   capture: (request) => ipcRenderer.invoke(platformChannels.capture, request),
 }

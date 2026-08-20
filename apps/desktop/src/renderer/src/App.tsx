@@ -29,18 +29,9 @@ export function App(): React.JSX.Element {
 
   return (
     <main className="app-shell">
-      <header className="masthead">
-        <div className="brand-mark" aria-hidden="true" />
-        <div>
-          <p className="eyebrow">HDR-aware capture</p>
-          <h1>Lumiere</h1>
-        </div>
-        <span className={`host-state ${hostAvailable ? 'available' : ''}`}>
-          {capabilities
-            ? `${capabilities.platform} host ${capabilities.hostStatus}`
-            : 'Checking host'}
-        </span>
-      </header>
+      {window.lumierePlatform.platform === 'macos' ? (
+        <div className="window-drag-region" aria-hidden="true" />
+      ) : null}
 
       <section className="capture-surface" aria-labelledby="capture-title">
         <div className="capture-copy">
