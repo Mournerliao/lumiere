@@ -1,11 +1,11 @@
-# Native UI Contract
+# Desktop UI Contract
 
 ## Direction
 
-Lumiere should feel like a calm, precise Windows 11 tool. Capture speed, accuracy,
-and trust take priority over decorative product presentation.
+Lumiere should feel like a calm, precise desktop tool on Windows and macOS. Capture
+speed, accuracy, and trust take priority over decorative product presentation.
 
-- Follow Fluent and WinUI 3 conventions.
+- Respect platform window, menu, shortcut, typography, focus, and permission conventions.
 - Use compact tool surfaces with clear hierarchy and stable dimensions.
 - Use accent color rarely and functionally for action, selection, focus, or critical status.
 - Keep motion brief, stateful, and non-blocking.
@@ -17,12 +17,14 @@ delays capture or confirmation.
 
 ## Controls And Layout
 
-- Prefer built-in WinUI controls before custom controls.
-- Use native settings, dialogs, flyouts, command bars, and navigation patterns.
-- Custom UI is appropriate for overlay, crop handles, magnifier, GPU preview,
-  and future annotation canvas.
+- Prefer semantic HTML controls and restrained shared styling before custom primitives.
+- Use Electron platform facilities for windows, menus, tray/menu-bar, and shortcuts;
+  use native hosts for capture permission and platform-owned failure flows.
+- Custom UI is appropriate for overlay, crop handles, magnifier, result preview,
+  and future annotation canvas, but does not establish HDR fidelity.
 - Overlay geometry and controls must remain stable while the pointer moves.
-- Support Windows theme behavior, keyboard access, visible focus, and platform contrast guidance.
+- Support platform theme behavior, keyboard access, visible focus, reduced motion,
+  zoom, and platform contrast guidance.
 
 ## Writing
 

@@ -34,7 +34,7 @@ research or verification where isolated context adds value.
 Long work must advance in reviewable vertical slices. A handoff contains only:
 
 - completed behavior and commit/worktree state;
-- exact evidence and commands run;
+- exact verification and commands run;
 - remaining acceptance criteria or blocker;
 - the next concrete action.
 
@@ -44,16 +44,20 @@ Do not preserve transcripts, exploratory reasoning, or session narration as proj
 
 Completion is determined by Issue acceptance criteria and applicable truth level,
 not by an agent's declaration. Tests should exercise the production behavior being
-claimed. Templates, cached results, and incomplete artifacts never count as evidence.
+claimed. Cached results and incomplete artifacts never count as current verification.
 
 Truth levels are distinct:
 
 1. **Repository done** — implementation, relevant tests, format, and static checks pass.
-2. **Windows verified** — Windows restore/build/test and named runtime smoke pass.
-3. **Hardware evidenced** — WGC/DXGI/HDR behavior is observed on the named target
-   display and receiving apps and committed as evidence.
+2. **Platform verified** — the named Windows or macOS build/test and runtime smoke
+   pass. Windows verified and macOS verified are independent claims.
+3. **Hardware verified** — native capture, HDR behavior, sRGB Visual Match, and named
+   receiving apps are observed on the named platform/display and recorded with the
+   release work when that phase is designed.
 
-Public HDR-preserved claims require level 3. Level 1 or 2 must never be projected upward.
+MVP release requires the applicable level on both platforms. Public HDR-preserved
+claims require level 3 for every named platform. One platform's verification must never
+be projected to another, and level 1 or 2 must never be projected upward.
 
 ## Code Rules
 

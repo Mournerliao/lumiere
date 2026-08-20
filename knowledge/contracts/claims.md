@@ -2,17 +2,17 @@
 
 ## Public Boundary
 
-Lumiere is HDR-aware, not HDR-certified. The native FP16/scRGB-oriented preview
-foundation and target-aware HDR state do not prove that an output artifact preserves HDR.
+Lumiere is HDR-aware, not HDR-certified. Native high-dynamic-range acquisition and
+target-aware HDR state do not prove that an output artifact preserves HDR.
 
 Approved language:
 
-- "HDR-aware Windows screenshots."
-- "Native capture and preview with an HDR-first graphics pipeline."
+- "HDR-aware screenshots for Windows and macOS."
+- "Native capture with a platform-aware HDR pipeline."
 - "sRGB output tuned for visual match in everyday clipboard and file use."
 - "HDR-preserved export is not yet a supported public path."
 
-Prohibited without named hardware and viewer evidence:
+Prohibited without named hardware and viewer verification on every claimed platform:
 
 - "Universal HDR fidelity."
 - "Three supported color modes."
@@ -21,9 +21,9 @@ Prohibited without named hardware and viewer evidence:
 
 ## MVP Output Semantics
 
-sRGB Visual Match is the only official MVP path. Clipboard and folder delivery
-must consume the same shared conversion result; target-specific tone mapping drift
-is a Lumiere defect.
+sRGB Visual Match is the only official MVP path. Clipboard and folder delivery on
+both platforms must consume the same fixed semantic conversion; target- or platform-
+specific tone mapping drift beyond recorded tolerance is a Lumiere defect.
 
 The default conversion must:
 
@@ -39,15 +39,23 @@ The MVP must not ship when Lumiere causes any of these in supported scenarios:
 
 - obvious overexposure, large dead-white regions, washed-out output, or gray output;
 - ordinary desktop UI that is visibly too dark, color-shifted, or collapsed in contrast;
-- obvious clipboard/folder visual drift for the same converted capture.
+- obvious clipboard/folder visual drift for the same converted capture;
+- unexplained Windows/macOS drift for the same fixed fixture beyond recorded tolerance.
 
 Narrow target-app recoloring/compression and loss of fine detail in an extreme HDR
 scene may be recorded as limitations only when Lumiere's source artifact is valid.
 
-## Future HDR-Preserved Export Gate
+## Stage Two: HDR-Preserved Export Gate
 
 Before publishing one HDR-preserved path, record its exact format and extension,
 source and destination pixel formats, transfer function, primaries, tone/gamut policy,
 metadata policy, named viewer assumptions, target-aware display state, and observed
-Windows hardware evidence. A codec or high-bit-depth pixel format existing is only
-implementation evidence, never product evidence.
+hardware verification on every claimed platform. A codec or high-bit-depth pixel
+format existing proves implementation only, never product behavior.
+
+## Stage Three: Cross-Platform HDR Fidelity Gate
+
+Cross-platform fidelity language requires fixed-scene verification across a named Windows
+and macOS display/viewer matrix. It must describe measured tolerances and known tone
+mapping differences. "Identical everywhere" and equivalent universal claims remain
+prohibited.

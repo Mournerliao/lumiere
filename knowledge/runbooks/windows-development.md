@@ -1,51 +1,39 @@
-# Windows Development Runbook
+# Windows Engine Development Runbook
 
-macOS is suitable for editing, documentation, refactoring, and platform-neutral test
-design. Windows is required for restore/build confidence and all WinUI, WGC, DXGI,
-D3D11, HDR, tray, shortcut, clipboard, and multi-monitor behavior.
+Windows development is paused. The repository contains three native libraries and no
+Windows executable. macOS is suitable for shared-shell work and static refactoring;
+Windows remains required for .NET restore, build, tests, formatting, WGC/D3D11/DXGI
+runtime behavior, clipboard behavior, and HDR hardware checks.
 
 ## Prerequisites
 
-- Visual Studio 2022 with WinUI / Windows App SDK desktop workloads
 - .NET 10 SDK
 - Windows SDK `10.0.26100.x` or a documented compatible version
+- x64 Windows
 
-## Release-Candidate Gates
+## Repository Gate
 
-From the repository root, run the versioned verification entry point:
+Run the shared gates first, then the Windows-owned entry point from repository root:
 
-```powershell
-pwsh ./scripts/verify-windows.ps1
+```sh
+pnpm install --frozen-lockfile
+pnpm check
+pnpm test
+pnpm build
 ```
 
-It restores once, builds x64, runs both test projects, and verifies formatting.
-
-Run the app with restore enabled unless the same workspace state restored successfully:
-
 ```powershell
-dotnet run --project src/Lumiere.App/Lumiere.App.csproj -p:Platform=x64
+pwsh ./hosts/windows/scripts/verify.ps1
 ```
 
-## NuGet Recovery
+The PowerShell script restores and builds `hosts/windows/Lumiere.Windows.sln`, runs
+the Capture, Graphics, and Interop test projects, and verifies formatting.
 
-If build, test, or run fails with `NETSDK1064` and a package is missing after restore,
-treat the cache as stale/partial before changing source:
+## Truth Boundary
 
-```powershell
-dotnet restore Lumiere.sln --disable-parallel --verbosity minimal /nr:false --force
-```
+A passing library build does not prove a runnable Windows host, native capture, HDR
+Visual Match, or hardware support. Those checks resume only after a Windows host
+executable implements `protocol/platform-host`.
 
-Then retry without `--no-restore`.
-
-## Embedded Resource Recovery
-
-If compilation fails with `CS1566` and names an old embedded-resource path, inspect
-evaluated items first:
-
-```powershell
-dotnet msbuild src/Lumiere.App.Core/Lumiere.App.Core.csproj -p:Platform=x64 -getItem:EmbeddedResource
-```
-
-When evaluated items are current but the compiler remains stale, shut down build
-servers, remove ignored `bin`/`obj`, restore, and retry. If it persists, capture an
-MSBuild binary log before changing source paths.
+If restore reports a partial NuGet cache, rerun restore with `--force` against the
+Windows solution before changing source.

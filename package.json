@@ -1,0 +1,16 @@
+{
+  "name": "lumiere",
+  "private": true,
+  "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "pnpm --filter @lumiere/desktop build",
+    "check": "pnpm check:layout && pnpm --filter @lumiere/desktop check",
+    "check:layout": "node ./scripts/check-layout.mjs",
+    "dev": "pnpm --filter @lumiere/desktop dev",
+    "start": "pnpm --filter @lumiere/desktop start",
+    "test": "pnpm --filter @lumiere/desktop test"
+  }
+}

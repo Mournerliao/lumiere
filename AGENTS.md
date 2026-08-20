@@ -1,7 +1,8 @@
 # AGENTS.md
 
-Lumiere is a native Windows HDR-aware screenshot tool built with WinUI 3,
-Windows App SDK, Windows Graphics Capture, Direct3D 11, DXGI, and Vortice.
+Lumiere is a Windows and macOS HDR-aware screenshot tool. It uses an Electron/React
+shell with native platform capture hosts: WGC/D3D11/DXGI on Windows and
+ScreenCaptureKit on macOS.
 This file is a map, not a project manual.
 
 ## Start
@@ -12,17 +13,18 @@ Read only:
 2. `knowledge/state/CURRENT.md` — one-screen project state and frontier.
 3. The referenced GitHub Issue, when one exists.
 
-Then follow that task's links and load only relevant contracts, ADRs, runbooks,
-or evidence. Do not preload the knowledge base.
+Then follow that task's links and load only relevant contracts, ADRs, or runbooks.
+Do not preload the knowledge base.
 
 ## Operating Model
 
-Lumiere uses **Contract → Frontier → Evidence**:
+Lumiere uses **Contract → Frontier → Verification**:
 
 - Contracts define what is correct.
 - GitHub Issues own non-trivial work, acceptance criteria, dependencies, and status.
 - `CURRENT.md` owns only current project posture; Git owns history.
-- Evidence records what actually passed.
+- Verification records exact commands and observed platform behavior in the owning
+  GitHub Issue and current-state handoff.
 - ADRs record durable decisions and trade-offs.
 
 Work through `Orient → Classify → Execute → Verify → Handoff`. Use the risk and
@@ -33,16 +35,17 @@ planner, evaluator, sub-agent, and Ralph mechanisms are conditional escalation t
 
 - Follow `knowledge/contracts/architecture.md` for platform and module ownership.
 - Follow `knowledge/contracts/claims.md` for output semantics and HDR language.
-- Follow `knowledge/contracts/ui.md` for native UI work.
+- Follow `knowledge/contracts/ui.md` for shared desktop UI work.
 - Follow existing code patterns before introducing abstractions.
 - Use deterministic native-resource disposal and structured `ILogger` logging.
 - Keep artifact success, visual match, and HDR preservation separate.
 
 ## Verification And Handoff
 
-- Use `knowledge/runbooks/windows-development.md` for build, test, launch, and recovery.
-- Use `knowledge/evidence/templates/mvp-release-evidence-template.md` for release evidence.
-- Never count a template, cached result, or agent declaration as passing evidence.
+- Use `knowledge/runbooks/cross-platform-development.md` for the shared shell and the
+  owning platform runbook for native build, runtime, and recovery.
+- Treat CI, local commands, and platform observations as distinct truth; one platform
+  never verifies another.
 - Leave each slice clean and reviewable. Record only completed behavior, exact checks,
   remaining acceptance criteria/blockers, and the next concrete action.
 

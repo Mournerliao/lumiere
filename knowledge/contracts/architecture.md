@@ -2,43 +2,59 @@
 
 ## Platform Baseline
 
-- Runtime: `.NET 10`
-- Target: `net10.0-windows10.0.19041.0`
-- Architecture: `x64` / `win-x64` only
-- UI: WinUI 3 and Windows App SDK
-- Capture: Windows Graphics Capture
-- Graphics: Direct3D 11, DXGI, and Vortice
+- Shared shell: Electron, React, TypeScript, and Chromium; Windows and macOS only.
+- Windows host: `.NET 10`, WGC, D3D11, DXGI, Vortice, `x64` / `win-x64`.
+- macOS host: Swift, ScreenCaptureKit, and native Apple color/GPU frameworks;
+  supported architecture and deployment target must be recorded before distribution.
+- MVP output: one shared semantic profile, RGBA8/sRGB Visual Match, delivered through
+  platform-native clipboard and file adapters.
 
-Do not introduce Electron, Tauri, WPF bitmap-first foundations, WinForms, GDI
-screenshot foundations, cloud upload, telemetry, or web UI as production architecture.
+Do not introduce Electron desktop capture, renderer Canvas, `NativeImage`, GDI,
+cloud upload, or telemetry as the official capture/conversion foundation.
 
 ## Module Boundaries
 
 | Module | Responsibility |
 |---|---|
-| `Lumiere.App` | WinUI startup, dependency composition, windows, app projections |
-| `Lumiere.App.Core` | Platform-neutral app projections and orchestration seams |
-| `Lumiere.Capture` | WGC target selection, frame-pool lifecycle, capture state |
-| `Lumiere.Graphics` | D3D11 device, DXGI swap chain, presentation, output conversion |
-| `Lumiere.Infrastructure` | COM/WinRT interop, diagnostics, typed platform adapters |
-| `Lumiere.Overlay` | Fullscreen overlay, crop interaction, concise capture cues |
-| `Lumiere.Settings` | Local preferences and settings projections |
+| `apps/desktop` | Electron lifecycle, shared React UI, secure preload, platform-host orchestration |
+| `protocol/platform-host` | Language-neutral process protocol, compatibility rules, schema, and fixtures |
+| `hosts/macos` | Future Swift ScreenCaptureKit adapter; currently documents the unimplemented seam |
+| `hosts/windows/src/Lumiere.Windows.Capture` | WGC target resolution, frame-pool lifecycle, capture state |
+| `hosts/windows/src/Lumiere.Windows.Graphics` | D3D11/DXGI device state, HDR-aware readback, sRGB Visual Match, native delivery |
+| `hosts/windows/src/Lumiere.Windows.Interop` | Required COM/WinRT adapters, diagnostics, and native-resource wrappers |
 
-Platform APIs stay in their owning module. UI may consume projections and narrow
-services but must not own DXGI, D3D11, WGC, or COM lifetime details.
+The macOS native host starts in `hosts/macos` when its first vertical slice is
+introduced. Windows has no executable while paused; its three libraries are source
+material for the future adapter, not a second product shell.
+
+Platform APIs stay in their owning module. The shell consumes the platform-host
+interface but must not own WGC, DXGI, D3D11, ScreenCaptureKit, Metal, ColorSync,
+COM/WinRT, or native-resource lifetime details. IPC may carry commands, typed state,
+diagnostics identifiers, and artifact paths; it must not carry raw HDR frames.
+
+## Electron Security Invariants
+
+- Load packaged local content only.
+- Keep renderer sandboxing and context isolation enabled and Node integration disabled.
+- Expose one named preload method per command; never expose `ipcRenderer` directly.
+- Validate IPC sender and payload before crossing the platform-host seam.
+- Deny unexpected navigation and window creation.
 
 ## HDR Invariants
 
-- Preserve the FP16/scRGB preview direction.
+- Preserve each platform's native high-dynamic-range acquisition semantics until the
+  shared sRGB Visual Match conversion is complete.
 - Assess HDR against the active target, not a global or first-monitor assumption.
-- Keep sRGB Visual Match conversion in one shared output component.
+- Keep sRGB Visual Match conversion behind each native host but governed by one shared
+  semantic contract and fixed regression fixtures.
 - Separate artifact delivery success, visual-match evidence, and HDR preservation.
+- Keep platform capability and verification independent; one adapter cannot certify another.
 - Require the claims contract before changing public HDR language.
 
 ## Resource And Diagnostics Invariants
 
-- Dispose COM, DXGI, D3D11, WGC, frame-pool, swap-chain, and capture resources deterministically.
-- Use `ILogger` through `LumiereLoggerFactory`; do not use `Console.WriteLine`.
+- Dispose COM, DXGI, D3D11, WGC, ScreenCaptureKit, Metal, and related native resources deterministically.
+- Use structured platform logging; do not use ad-hoc console output for native failures.
 - Prefer typed results and explicit state transitions for expected platform failures.
-- Automated tests may cover configuration, state, projection, and lifecycle seams;
-  real WGC/DXGI/HDR presentation remains a Windows hardware concern.
+- Automated tests may cover configuration, state, projection, protocol, and lifecycle
+  seams; real capture/HDR presentation remains a platform hardware concern.

@@ -4,6 +4,9 @@ obj/
 out/
 artifacts/
 TestResults/
+node_modules/
+coverage/
+.pnpm-store/
 *.nupkg
 *.snupkg
 
@@ -24,6 +27,7 @@ packages/
 project.lock.json
 project.assets.json
 *.binlog
+*.tsbuildinfo
 
 # Local code-index data
 .codegraph/

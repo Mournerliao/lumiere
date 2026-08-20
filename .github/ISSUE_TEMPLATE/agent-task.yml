@@ -1,5 +1,5 @@
 name: Agent task
-description: A bounded, acceptance-ready implementation or validation slice
+description: A bounded, acceptance-ready implementation or verification slice
 title: "[Task]: "
 body:
   - type: textarea
@@ -13,7 +13,7 @@ body:
     id: context
     attributes:
       label: Context pointers
-      description: Link relevant contracts, ADRs, evidence, or external specs; do not copy them.
+      description: Link relevant contracts, ADRs, runbooks, or external specs; do not copy them.
     validations:
       required: true
   - type: textarea
@@ -42,14 +42,15 @@ body:
       options:
         - label: Repository done
         - label: Windows verified
-        - label: Hardware evidenced
+        - label: macOS verified
+        - label: Hardware verified
     validations:
       required: true
   - type: textarea
     id: verification
     attributes:
       label: Verification
-      description: Name exact commands, runtime scenarios, and evidence required.
+      description: Name exact commands and runtime scenarios required.
     validations:
       required: true
   - type: textarea
