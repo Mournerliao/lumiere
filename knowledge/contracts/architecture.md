@@ -17,17 +17,15 @@ cloud upload, or telemetry as the official capture/conversion foundation.
 | Module | Responsibility |
 |---|---|
 | `apps/desktop` | Electron lifecycle, shared React UI, secure preload, platform-host orchestration |
-| `apps/desktop/src/shared` | Versioned command/result interface at the platform-host seam |
-| `Lumiere.App` | Transitional WinUI composition while the Windows host is extracted |
-| `Lumiere.App.Core` | Platform-neutral app projections and orchestration seams |
-| `Lumiere.Capture` | Windows WGC target selection, frame-pool lifecycle, capture state |
-| `Lumiere.Graphics` | Windows D3D11 device, DXGI presentation, output conversion |
-| `Lumiere.Infrastructure` | Windows COM/WinRT interop, diagnostics, typed platform adapters |
-| `Lumiere.Overlay` | Transitional Windows overlay and crop interaction |
-| `Lumiere.Settings` | Transitional Windows local preferences and settings projections |
+| `protocol/platform-host` | Language-neutral process protocol, compatibility rules, schema, and fixtures |
+| `hosts/macos` | Future Swift ScreenCaptureKit adapter; currently documents the unimplemented seam |
+| `hosts/windows/src/Lumiere.Windows.Capture` | WGC target resolution, frame-pool lifecycle, capture state |
+| `hosts/windows/src/Lumiere.Windows.Graphics` | D3D11/DXGI device state, HDR-aware readback, sRGB Visual Match, native delivery |
+| `hosts/windows/src/Lumiere.Windows.Interop` | Required COM/WinRT adapters, diagnostics, and native-resource wrappers |
 
-The macOS native host will live in its own platform-owned source tree when its first
-vertical slice is introduced. It must not be hidden inside renderer or preload code.
+The macOS native host starts in `hosts/macos` when its first vertical slice is
+introduced. Windows has no executable while paused; its three libraries are source
+material for the future adapter, not a second product shell.
 
 Platform APIs stay in their owning module. The shell consumes the platform-host
 interface but must not own WGC, DXGI, D3D11, ScreenCaptureKit, Metal, ColorSync,
@@ -50,7 +48,7 @@ diagnostics identifiers, and artifact paths; it must not carry raw HDR frames.
 - Keep sRGB Visual Match conversion behind each native host but governed by one shared
   semantic contract and fixed regression fixtures.
 - Separate artifact delivery success, visual-match evidence, and HDR preservation.
-- Keep platform capability and evidence independent; one adapter cannot certify another.
+- Keep platform capability and verification independent; one adapter cannot certify another.
 - Require the claims contract before changing public HDR language.
 
 ## Resource And Diagnostics Invariants

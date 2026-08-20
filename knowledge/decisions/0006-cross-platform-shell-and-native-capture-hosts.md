@@ -50,8 +50,8 @@ honest claims.
   clipboard delivery, and hardware capability stay behind native host adapters.
 - IPC transports commands and compact results such as status and artifact paths;
   raw HDR frames and native handles do not cross it.
-- The existing WinUI application is transitional. Its capture and graphics modules
-  remain source material for the Windows host until equivalent behavior is verified.
+- ADR 0007 removes the transitional WinUI application. The retained Windows Capture,
+  Graphics, and Interop libraries remain source material for the future host adapter.
 - The application accepts Electron's runtime size, process model, security updates,
   and packaging cost in exchange for a much faster shared UI feedback loop.
 - Renderer sandboxing, context isolation, disabled Node integration, named preload

@@ -1,7 +1,7 @@
 # Cross-Platform Development Runbook
 
-This runbook owns shared Electron shell checks. Native capture and HDR behavior must
-also follow the platform-specific runbook and evidence gate.
+This runbook owns shared Electron shell and protocol checks. Native capture and HDR
+behavior must also follow the owning platform runbook.
 
 ## Prerequisites
 
@@ -32,6 +32,6 @@ evidence. Do not substitute Electron desktop capture to make the buttons appear 
 
 ## Truth Boundary
 
-- Passing `check`, `test`, and `build` is repository evidence for the shared shell.
+- Passing `check`, `test`, and `build` verifies only the shared repository surface.
 - A shell launch on macOS or Windows does not verify the native host on the other OS.
-- HDR capture and Visual Match require fixed-scene hardware evidence on each claimed platform.
+- HDR capture and Visual Match require fixed-scene hardware verification on each claimed platform.

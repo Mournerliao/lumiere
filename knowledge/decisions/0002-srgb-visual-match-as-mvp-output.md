@@ -4,7 +4,7 @@ Date: 2026-07-03
 
 ## Decision
 
-Lumiere's MVP will release one official output path: sRGB Visual Match. P3 and HDR10 remain planned output profiles in the model and roadmap, but they should not appear as normal user-selectable MVP modes until implementation and Windows validation evidence exist.
+Lumiere's MVP will release one official output path: sRGB Visual Match. P3 and HDR-preserved export remain roadmap milestones only; they do not exist as dormant runtime profiles or user-selectable modes.
 
 ## Context
 

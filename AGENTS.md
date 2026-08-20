@@ -13,17 +13,18 @@ Read only:
 2. `knowledge/state/CURRENT.md` — one-screen project state and frontier.
 3. The referenced GitHub Issue, when one exists.
 
-Then follow that task's links and load only relevant contracts, ADRs, runbooks,
-or evidence. Do not preload the knowledge base.
+Then follow that task's links and load only relevant contracts, ADRs, or runbooks.
+Do not preload the knowledge base.
 
 ## Operating Model
 
-Lumiere uses **Contract → Frontier → Evidence**:
+Lumiere uses **Contract → Frontier → Verification**:
 
 - Contracts define what is correct.
 - GitHub Issues own non-trivial work, acceptance criteria, dependencies, and status.
 - `CURRENT.md` owns only current project posture; Git owns history.
-- Evidence records what actually passed.
+- Verification records exact commands and observed platform behavior in the owning
+  GitHub Issue and current-state handoff.
 - ADRs record durable decisions and trade-offs.
 
 Work through `Orient → Classify → Execute → Verify → Handoff`. Use the risk and
@@ -43,8 +44,8 @@ planner, evaluator, sub-agent, and Ralph mechanisms are conditional escalation t
 
 - Use `knowledge/runbooks/cross-platform-development.md` for the shared shell and the
   owning platform runbook for native build, runtime, and recovery.
-- Use `knowledge/evidence/templates/mvp-release-evidence-template.md` for release evidence.
-- Never count a template, cached result, or agent declaration as passing evidence.
+- Treat CI, local commands, and platform observations as distinct truth; one platform
+  never verifies another.
 - Leave each slice clean and reviewable. Record only completed behavior, exact checks,
   remaining acceptance criteria/blockers, and the next concrete action.
 

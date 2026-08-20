@@ -12,7 +12,7 @@ Approved language:
 - "sRGB output tuned for visual match in everyday clipboard and file use."
 - "HDR-preserved export is not yet a supported public path."
 
-Prohibited without named hardware and viewer evidence on every claimed platform:
+Prohibited without named hardware and viewer verification on every claimed platform:
 
 - "Universal HDR fidelity."
 - "Three supported color modes."
@@ -50,12 +50,12 @@ scene may be recorded as limitations only when Lumiere's source artifact is vali
 Before publishing one HDR-preserved path, record its exact format and extension,
 source and destination pixel formats, transfer function, primaries, tone/gamut policy,
 metadata policy, named viewer assumptions, target-aware display state, and observed
-hardware evidence on every claimed platform. A codec or high-bit-depth pixel format
-existing is only implementation evidence, never product evidence.
+hardware verification on every claimed platform. A codec or high-bit-depth pixel
+format existing proves implementation only, never product behavior.
 
 ## Stage Three: Cross-Platform HDR Fidelity Gate
 
-Cross-platform fidelity language requires fixed-scene evidence across a named Windows
+Cross-platform fidelity language requires fixed-scene verification across a named Windows
 and macOS display/viewer matrix. It must describe measured tolerances and known tone
 mapping differences. "Identical everywhere" and equivalent universal claims remain
 prohibited.

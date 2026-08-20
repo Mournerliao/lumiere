@@ -10,30 +10,30 @@ Lumiere does not currently claim HDR-preserved export support.
 ## Start Here
 
 - [Current project state](knowledge/state/CURRENT.md)
+- [Product roadmap](knowledge/roadmap.md)
 - [Knowledge map](knowledge/README.md)
 - [Product contract](knowledge/contracts/product.md)
 - [Cross-platform development runbook](knowledge/runbooks/cross-platform-development.md)
 - [Windows development runbook](knowledge/runbooks/windows-development.md)
-- [Validation evidence](knowledge/evidence/README.md)
 
-The repository uses a lightweight Contract → Frontier → Evidence workflow.
-GitHub Issues own non-trivial tasks; contracts own stable boundaries; evidence owns
-observed validation; Git owns history.
+The repository uses a lightweight Contract → Frontier → Verification workflow.
+GitHub Issues own non-trivial tasks and observed checks, contracts own stable
+boundaries, `CURRENT.md` owns the frontier, and Git owns history.
 
 ## Platform
 
 `Electron` · `React` · `TypeScript` · Windows native host (`.NET 10`, WGC,
 D3D11, DXGI, Vortice) · macOS native host (Swift, ScreenCaptureKit)
 
-macOS can build and validate the shared shell. Each native host and all HDR claims
-still require runtime and hardware evidence on its owning platform.
+macOS can build and verify the shared shell. Each native host and all HDR claims still
+require runtime and hardware verification on its owning platform.
 
 ## Repository Layout
 
 ```text
 apps/       shared Electron desktop shell
-src/        existing Windows capture, graphics, interop, overlay, and settings modules
-tests/      automated tests mirroring source boundaries
-knowledge/  contracts, current state, ADRs, runbooks, evidence, and research
-scripts/    deterministic engineering entry points
+protocol/   language-neutral platform-host schemas and fixtures
+hosts/      native macOS and Windows ownership trees
+knowledge/  contracts, current state, ADRs, roadmap, and runbooks
+scripts/    cross-repository structural checks
 ```
