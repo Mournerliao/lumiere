@@ -127,7 +127,6 @@ public sealed class SrgbVisualMatchPixelConverterTests
         return new CapturedFrameReadback(
             width,
             height,
-            OutputPixelFormat.R16G16B16A16Float,
             data);
     }
 

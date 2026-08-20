@@ -21,7 +21,6 @@ public sealed record CapturedFrameReadback
     public CapturedFrameReadback(
         int width,
         int height,
-        OutputPixelFormat pixelFormat,
         byte[] pixelData)
     {
         if (width <= 0)
@@ -32,11 +31,6 @@ public sealed record CapturedFrameReadback
         if (height <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(Height), Height, "Readback height must be positive.");
-        }
-
-        if (pixelFormat is not OutputPixelFormat.R16G16B16A16Float)
-        {
-            throw new ArgumentException("HDR readback requires R16G16B16A16 float pixel data.", nameof(PixelFormat));
         }
 
         ArgumentNullException.ThrowIfNull(pixelData);
@@ -50,7 +44,6 @@ public sealed record CapturedFrameReadback
 
         Width = width;
         Height = height;
-        PixelFormat = pixelFormat;
         PixelData = pixelData;
     }
 
@@ -59,8 +52,6 @@ public sealed record CapturedFrameReadback
     public int Width { get; }
 
     public int Height { get; }
-
-    public OutputPixelFormat PixelFormat { get; }
 
     public byte[] PixelData { get; }
 }
@@ -129,7 +120,6 @@ public sealed class CapturedFrameTextureReadback : ICapturedFrameTextureReadback
             return new CapturedFrameReadback(
                 pixelWidth,
                 pixelHeight,
-                OutputPixelFormat.R16G16B16A16Float,
                 pixelData);
         }
         finally
