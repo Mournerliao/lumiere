@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Button } from '@/components/motion/button/base'
 import type {
   CaptureMode,
   CaptureResult,
@@ -52,14 +53,26 @@ export function App(): React.JSX.Element {
         </div>
 
         <div className="capture-actions">
-          <button disabled={!hostAvailable || isCapturing} onClick={() => void capture('region')}>
+          <Button
+            variant="secondary"
+            size="lg"
+            pressScale={0.98}
+            disabled={!hostAvailable || isCapturing}
+            onClick={() => void capture('region')}
+          >
             Capture region
             <span>Drag to select</span>
-          </button>
-          <button disabled={!hostAvailable || isCapturing} onClick={() => void capture('display')}>
+          </Button>
+          <Button
+            variant="secondary"
+            size="lg"
+            pressScale={0.98}
+            disabled={!hostAvailable || isCapturing}
+            onClick={() => void capture('display')}
+          >
             Capture display
             <span>Use the active screen</span>
-          </button>
+          </Button>
         </div>
       </section>
 

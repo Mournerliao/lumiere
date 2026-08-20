@@ -17,6 +17,9 @@ delays capture or confirmation.
 
 ## Controls And Layout
 
+- Use Tailwind CSS 4 as the renderer styling foundation and the configured beUI
+  registry as the default source for reusable animated components. Copy only
+  components the product uses; the checked-in source is owned and adapted by Lumiere.
 - Prefer semantic HTML controls and restrained shared styling before custom primitives.
 - Use Electron platform facilities for windows, menus, tray/menu-bar, and shortcuts;
   use native hosts for capture permission and platform-owned failure flows.

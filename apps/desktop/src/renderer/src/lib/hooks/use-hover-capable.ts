@@ -1,0 +1,26 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+
+/**
+ * Returns true only on devices that have a true hover (mouse / trackpad).
+ * Touch devices fire phantom `:hover` on tap that sticks until tap-elsewhere
+ * — gate hover-only effects (scale lifts, magnetic pulls) behind this.
+ */
+export function useHoverCapable(): boolean {
+  const [canHover, setCanHover] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(hover: hover) and (pointer: fine)')
+    const update = (): void => {
+      setCanHover(mq.matches)
+    }
+    update()
+    mq.addEventListener('change', update)
+    return () => {
+      mq.removeEventListener('change', update)
+    }
+  }, [])
+
+  return canHover
+}

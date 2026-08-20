@@ -9,13 +9,21 @@
     "check": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "dev": "electron-vite dev",
     "start": "electron-vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "ui:add": "shadcn add",
+    "ui:dry-run": "shadcn add --dry-run",
+    "ui:update": "shadcn add --overwrite",
+    "ui:view": "shadcn view"
   },
   "dependencies": {
+    "clsx": "2.1.1",
+    "motion": "13.1.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "tailwind-merge": "3.6.0"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
     "@types/node": "26.2.0",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
@@ -23,6 +31,8 @@
     "ajv": "8.17.1",
     "electron": "43.4.1",
     "electron-vite": "5.0.0",
+    "shadcn": "4.18.0",
+    "tailwindcss": "4.3.3",
     "typescript": "6.0.3",
     "vite": "7.3.6",
     "vitest": "4.1.11"

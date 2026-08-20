@@ -1,4 +1,23 @@
+@import 'tailwindcss';
+
+@theme inline {
+  --color-background: var(--background);
+  --color-border: var(--border);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+}
+
 :root {
+  --background: #f4f2ed;
+  --border: rgb(49 44 37 / 14%);
+  --card: rgb(255 255 255 / 64%);
+  --foreground: #24231f;
+  --muted-foreground: #6f6a62;
+  --primary: #24231f;
+  --primary-foreground: #f4f2ed;
   color: #24231f;
   background: #f4f2ed;
   font-family:
@@ -175,6 +194,13 @@ h1 {
 
 @media (prefers-color-scheme: dark) {
   :root {
+    --background: #1b1a18;
+    --border: rgb(255 255 255 / 10%);
+    --card: rgb(255 255 255 / 5%);
+    --foreground: #ece9e2;
+    --muted-foreground: #aaa39a;
+    --primary: #ece9e2;
+    --primary-foreground: #1b1a18;
     color: #ece9e2;
     background: #1b1a18;
   }
