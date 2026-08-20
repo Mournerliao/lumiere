@@ -11,15 +11,16 @@
 }
 
 :root {
-  --background: #f4f2ed;
-  --border: rgb(49 44 37 / 14%);
-  --card: rgb(255 255 255 / 64%);
-  --foreground: #24231f;
-  --muted-foreground: #6f6a62;
-  --primary: #24231f;
-  --primary-foreground: #f4f2ed;
-  color: #24231f;
-  background: #f4f2ed;
+  --background: #1b1a18;
+  --border: rgb(255 255 255 / 10%);
+  --card: rgb(255 255 255 / 5%);
+  --foreground: #ece9e2;
+  --muted-foreground: #aaa39a;
+  --primary: #ece9e2;
+  --primary-foreground: #1b1a18;
+  color: var(--foreground);
+  color-scheme: dark;
+  background: var(--background);
   font-family:
     Inter,
     ui-sans-serif,
@@ -40,7 +41,7 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    radial-gradient(circle at 72% 18%, rgb(255 255 255 / 78%), transparent 32rem), #f4f2ed;
+    radial-gradient(circle at 72% 18%, rgb(94 78 57 / 18%), transparent 34rem), var(--background);
 }
 
 button {
@@ -71,7 +72,7 @@ button {
 
 .eyebrow {
   margin: 0 0 3px;
-  color: #777168;
+  color: var(--muted-foreground);
   font-size: 11px;
   font-weight: 650;
   letter-spacing: 0.12em;
@@ -91,14 +92,14 @@ h1 {
   padding: 7px 11px;
   border: 1px solid rgb(123 87 54 / 18%);
   border-radius: 999px;
-  color: #8b725d;
-  background: rgb(255 255 255 / 42%);
+  color: #c2a98f;
+  background: rgb(255 255 255 / 4%);
   font-size: 12px;
 }
 
 .host-state.available {
-  color: #42634a;
-  border-color: rgb(66 99 74 / 25%);
+  color: #91bd9b;
+  border-color: rgb(145 189 155 / 32%);
 }
 
 .capture-surface {
@@ -122,7 +123,7 @@ h1 {
 .capture-copy > p:last-child {
   max-width: 39ch;
   margin: 0;
-  color: #6f6a62;
+  color: var(--muted-foreground);
   font-size: 14px;
   line-height: 1.65;
 }
@@ -139,11 +140,10 @@ h1 {
   justify-content: space-between;
   min-height: 88px;
   padding: 22px 24px;
-  border: 1px solid rgb(49 44 37 / 14%);
+  border: 1px solid var(--border);
   border-radius: 14px;
-  color: #2b2924;
-  background: rgb(255 255 255 / 64%);
-  box-shadow: 0 16px 45px rgb(71 59 43 / 7%);
+  color: var(--foreground);
+  background: var(--card);
   font-size: 17px;
   font-weight: 610;
   text-align: left;
@@ -154,19 +154,19 @@ h1 {
 }
 
 .capture-actions button span {
-  color: #8b857c;
+  color: var(--muted-foreground);
   font-size: 12px;
   font-weight: 450;
 }
 
 .capture-actions button:not(:disabled):hover {
   transform: translateY(-1px);
-  border-color: rgb(100 73 43 / 32%);
-  background: rgb(255 255 255 / 88%);
+  border-color: rgb(210 175 128 / 34%);
+  background: rgb(255 255 255 / 8%);
 }
 
 .capture-actions button:focus-visible {
-  outline: 2px solid #8b663f;
+  outline: 2px solid #d0a66e;
   outline-offset: 3px;
 }
 
@@ -180,7 +180,7 @@ h1 {
   align-items: center;
   gap: 9px;
   min-height: 34px;
-  color: #7a746b;
+  color: var(--muted-foreground);
   font-size: 12px;
 }
 
@@ -190,40 +190,6 @@ h1 {
   border-radius: 50%;
   background: #b79368;
   box-shadow: 0 0 0 4px rgb(183 147 104 / 13%);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #1b1a18;
-    --border: rgb(255 255 255 / 10%);
-    --card: rgb(255 255 255 / 5%);
-    --foreground: #ece9e2;
-    --muted-foreground: #aaa39a;
-    --primary: #ece9e2;
-    --primary-foreground: #1b1a18;
-    color: #ece9e2;
-    background: #1b1a18;
-  }
-
-  body {
-    background: radial-gradient(circle at 72% 18%, rgb(94 78 57 / 18%), transparent 34rem), #1b1a18;
-  }
-
-  .capture-actions button {
-    color: #eeeae1;
-    border-color: rgb(255 255 255 / 10%);
-    background: rgb(255 255 255 / 5%);
-    box-shadow: none;
-  }
-
-  .capture-actions button:not(:disabled):hover {
-    border-color: rgb(210 175 128 / 34%);
-    background: rgb(255 255 255 / 8%);
-  }
-
-  .host-state {
-    background: rgb(255 255 255 / 4%);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
