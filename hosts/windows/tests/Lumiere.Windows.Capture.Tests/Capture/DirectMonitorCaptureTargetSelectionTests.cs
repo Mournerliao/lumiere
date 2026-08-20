@@ -14,7 +14,7 @@ public sealed class DirectMonitorCaptureTargetSelectionTests
         var service = new DirectMonitorCaptureTargetSelectionService(
             () => monitor,
             _ => CaptureTarget.CreateForTest(
-                new Windows.Graphics.SizeInt32 { Width = 1920, Height = 1080 },
+                new global::Windows.Graphics.SizeInt32 { Width = 1920, Height = 1080 },
                 "HDR display",
                 CaptureTargetKind.Display),
             () => true);

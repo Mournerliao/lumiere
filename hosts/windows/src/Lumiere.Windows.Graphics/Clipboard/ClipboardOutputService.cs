@@ -217,7 +217,7 @@ public sealed class ClipboardOutputService : IOutputService, IDisposable
             var dataPackage = new DataPackage();
             dataPackage.SetBitmap(reference);
 
-            Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dataPackage);
+            global::Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dataPackage);
         }
         catch
         {
