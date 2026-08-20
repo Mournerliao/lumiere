@@ -18,6 +18,7 @@ truth. Start with this map and disclose detail only when the current task needs 
 | Where do platform APIs and dependencies belong? | [`contracts/architecture.md`](contracts/architecture.md) |
 | How should engineering work be performed? | [`contracts/engineering.md`](contracts/engineering.md) |
 | How should the shared desktop UI look and behave? | [`contracts/ui.md`](contracts/ui.md) |
+| What must the MVP prototype cover? | [`design/mvp-prototype-spec.md`](design/mvp-prototype-spec.md) |
 | What phase are we in and what is the frontier? | [`state/CURRENT.md`](state/CURRENT.md) |
 | What route and milestone gates are we following? | [`roadmap.md`](roadmap.md) |
 | Why was a durable choice made? | [`decisions/`](decisions/) |
