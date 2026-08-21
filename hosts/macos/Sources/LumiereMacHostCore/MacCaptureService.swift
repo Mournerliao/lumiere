@@ -65,7 +65,11 @@ public actor MacCaptureService {
       )
     }
 
-    guard CGPreflightScreenCaptureAccess() || CGRequestScreenCaptureAccess() else {
+    let permission = ScreenRecordingPermission.resolve(
+      preflightGranted: CGPreflightScreenCaptureAccess(),
+      requestAccess: CGRequestScreenCaptureAccess
+    )
+    guard permission == .granted else {
       return .failed(
         HostFailure(
           code: .permissionDenied,
@@ -113,6 +117,8 @@ public actor MacCaptureService {
         delivery: parameters.delivery,
         filePath: fileURL.path
       )
+    } catch let error where CaptureErrorClassification.isCancellation(error) {
+      return .cancelled()
     } catch {
       return .failed(mapCaptureError(error))
     }
@@ -273,6 +279,32 @@ enum DisplayTargetSelection {
     fallbackDisplayID: CGDirectDisplayID
   ) -> CGDirectDisplayID {
     pointerDisplayID ?? mainScreenDisplayID ?? fallbackDisplayID
+  }
+}
+
+enum ScreenRecordingPermission: Equatable {
+  case granted
+  case deniedOrRestricted
+
+  static func resolve(
+    preflightGranted: Bool,
+    requestAccess: () -> Bool
+  ) -> ScreenRecordingPermission {
+    if preflightGranted {
+      return .granted
+    }
+    return requestAccess() ? .granted : .deniedOrRestricted
+  }
+}
+
+enum CaptureErrorClassification {
+  static func isCancellation(_ error: Error) -> Bool {
+    if error is CancellationError {
+      return true
+    }
+    let nsError = error as NSError
+    return nsError.domain == SCStreamErrorDomain
+      && nsError.code == SCStreamError.Code.userStopped.rawValue
   }
 }
 

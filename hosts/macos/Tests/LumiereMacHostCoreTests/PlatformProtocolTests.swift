@@ -1,4 +1,5 @@
 import Foundation
+import ScreenCaptureKit
 import Testing
 
 @testable import LumiereMacHostCore
@@ -136,4 +137,47 @@ func encodesStructuredFailureDiagnosticWithRequestIdentity() throws {
   #expect(object["requestID"] as? String == "capture-17")
   #expect(object["code"] as? String == "unexpected-failure")
   #expect(object["retryable"] as? Bool == true)
+}
+
+@Test
+func resolvesExplicitScreenRecordingPermissionPaths() {
+  var requestCount = 0
+  let alreadyGranted = ScreenRecordingPermission.resolve(preflightGranted: true) {
+    requestCount += 1
+    return false
+  }
+  #expect(alreadyGranted == .granted)
+  #expect(requestCount == 0)
+
+  let grantedAfterRequest = ScreenRecordingPermission.resolve(preflightGranted: false) {
+    requestCount += 1
+    return true
+  }
+  #expect(grantedAfterRequest == .granted)
+  #expect(requestCount == 1)
+
+  let deniedOrRestricted = ScreenRecordingPermission.resolve(preflightGranted: false) {
+    requestCount += 1
+    return false
+  }
+  #expect(deniedOrRestricted == .deniedOrRestricted)
+  #expect(requestCount == 2)
+}
+
+@Test
+func classifiesTaskAndUserStoppedErrorsAsCancellation() {
+  #expect(CaptureErrorClassification.isCancellation(CancellationError()))
+  #expect(
+    CaptureErrorClassification.isCancellation(
+      NSError(
+        domain: SCStreamErrorDomain,
+        code: SCStreamError.Code.userStopped.rawValue
+      )
+    )
+  )
+  #expect(
+    !CaptureErrorClassification.isCancellation(
+      NSError(domain: SCStreamErrorDomain, code: SCStreamError.Code.internalError.rawValue)
+    )
+  )
 }

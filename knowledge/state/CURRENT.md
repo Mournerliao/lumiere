@@ -38,7 +38,7 @@ acceptance criteria and implementation status for each vertical slice.
 ## Verification Truth
 
 - **Repository:** frozen install, layout and TypeScript checks, sixteen shell/protocol/process
-  tests, eight Swift protocol/capability/diagnostic tests, and the production build pass
+  tests, ten Swift protocol/capability/permission/diagnostic tests, and the production build pass
   locally on macOS.
 - **macOS development runtime:** the Electron display action drove ScreenCaptureKit to
   RGBA8 PNG files with alpha and an embedded sRGB IEC61966-2.1 profile on an Apple

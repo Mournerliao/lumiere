@@ -96,6 +96,15 @@ public struct CaptureResult: Codable, Equatable, Sendable {
       failure: failure
     )
   }
+
+  public static func cancelled() -> CaptureResult {
+    CaptureResult(
+      status: "cancelled",
+      sourceDynamicRange: nil,
+      artifact: nil,
+      failure: nil
+    )
+  }
 }
 
 public enum PlatformResult: Equatable, Sendable {
