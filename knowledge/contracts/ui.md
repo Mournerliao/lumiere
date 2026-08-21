@@ -17,6 +17,9 @@ delays capture or confirmation.
 
 ## Controls And Layout
 
+- Dark is the only delivered theme. Design tokens are generated from the Ardot prototype
+  into `apps/desktop/src/renderer/src/tokens.generated.css` and are never hand-edited;
+  see [`design/mvp-prototype-spec.md`](../design/mvp-prototype-spec.md) §15.
 - Use Tailwind CSS 4 as the renderer styling foundation and the configured beUI
   registry as the default source for reusable animated components. Copy only
   components the product uses; the checked-in source is owned and adapted by Lumiere.
