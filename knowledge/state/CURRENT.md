@@ -1,7 +1,7 @@
 # Current Project State
 
 - Updated: 2026-08-21
-- Current milestone: 1A — macOS native capture
+- Current milestone: 1B — Windows native host adapter
 - Release target: Windows + macOS HDR-aware MVP with sRGB Visual Match
 - Completed foundation record: [GitHub Issue #1](https://github.com/Mournerliao/lumiere/issues/1)
 - Operating model: Contract → Frontier → Verification
@@ -13,20 +13,20 @@ The repository has converged on the final `apps/`, `protocol/`, `hosts/`, and
 language-neutral platform-host v1 schema with executable fixtures, explicit unavailable
 behavior, dual-platform CI, and isolated native host trees.
 
-The macOS development shell now drives a Swift ScreenCaptureKit host through the
-platform-host v1 JSON Lines process interface. Display capture with folder delivery
-produces an RGBA8/sRGB PNG; region capture remains disabled. Windows development is
-paused with only the WGC, D3D11/DXGI, HDR-aware acquisition, sRGB Visual Match,
-delivery, interop, and resource lifecycle engine retained. WinUI and the old
-validation/HDR10-JXR paths are removed.
+The macOS development shell now drives an integrated Swift ScreenCaptureKit host
+through the platform-host v1 JSON Lines process interface. Display capture with folder
+delivery produces an RGBA8/sRGB PNG; region capture remains disabled. The active
+frontier is adapting the retained Windows WGC, D3D11/DXGI, HDR-aware acquisition,
+sRGB Visual Match, delivery, interop, and resource-lifecycle engine to the same host
+interface. WinUI and the old validation/HDR10-JXR paths remain removed.
 
 ## Progress At A Glance
 
 | Roadmap slice | Current state | What is true now | What remains before exit |
 |---|---|---|---|
 | 0. Foundation | Complete | Final layout, secure shell, language-neutral protocol, paused Windows engine; macOS and Windows CI pass | None |
-| 1A. macOS native capture | In progress ([#4](https://github.com/Mournerliao/lumiere/issues/4)) | Swift host, permission request, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | Review remaining acceptance criteria and prepare the slice for integration |
-| 1B. Windows host adapter | Paused | Three clean engine modules remain; no Windows executable exists | Resume with host process/interface adapter and Windows runtime verification |
+| 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
+| 1B. Windows host adapter | Ready ([#7](https://github.com/Mournerliao/lumiere/issues/7)) | Three clean engine modules remain; the acceptance-ready adapter frontier is open | Implement the platform-host process adapter, Electron integration, and Windows runtime verification |
 | 1C. Shared product surface | Shell placeholder only | Main capture surface renders and unavailable state is honest | Region overlay, display flow, tray/menu bar, shortcut, settings, clipboard/folder/both |
 | 1D. Distribution and release | Not started | Windows installer direction remains recorded | Windows installer, signed/notarized macOS artifact, clean-machine and hardware verification |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
@@ -48,8 +48,8 @@ acceptance criteria and implementation status for each vertical slice.
   lifecycle review fixes, the Electron path again produced a 2560×1440 sRGB PNG from
   the display under the pointer; the standalone rebuilt CLI remains a distinct TCC
   identity and returned the expected typed permission failure with correlated logging.
-- **GitHub CI:** macOS shell and Windows engine workflows pass on PR #2 at the
-  Milestone 0 completion frontier.
+- **GitHub CI:** macOS shell and Windows engine workflows pass on PR #6 at the
+  Milestone 1A integration frontier.
 - **Windows engine:** restore and build pass with zero warnings and errors; Capture 74,
   Graphics 43, and Interop 31 tests pass; `dotnet format --verify-no-changes` passes.
 - **Windows integration:** no passing Electron-host integration or release-candidate record exists.
@@ -63,7 +63,8 @@ release-ready until both owning platforms are explicitly verified.
 
 ## Frontier
 
-Milestone 0 is complete. The active frontier is GitHub Issue #4. The next concrete
-action is to review its remaining acceptance criteria, close any implementation or
-verification gaps, and prepare the macOS vertical slice for integration without
-projecting its result to Windows or release readiness.
+Milestone 1A is complete. The active frontier is GitHub Issue #7. The next concrete
+action is to add the .NET platform-host v1 executable around the retained Windows
+engine, integrate it with Electron, and verify repeat, cancellation, clean exit, and
+SDR/HDR-state behavior on the named Windows machine without projecting the result to
+distribution or release readiness.
