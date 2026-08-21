@@ -1,12 +1,15 @@
 import { app, BrowserWindow, ipcMain, type Tray } from 'electron'
 import { join } from 'node:path'
 import { applyMacDockIcon, createApplicationTray, desktopIconPaths } from './app-icons'
+import { MacOSPlatformHost } from './macos-platform-host'
+import { macOSHostCandidates } from './native-host-paths'
 import { createPlatformHandlers } from './platform-handlers'
 import { currentLumierePlatform, UnavailablePlatformHost } from './platform-host'
-import { platformChannels } from '../shared/platform-contract'
+import { platformChannels, type PlatformHost } from '../shared/platform-contract'
 
 let mainWindow: BrowserWindow | null = null
 let applicationTray: Tray | null = null
+let platformHost: PlatformHost | null = null
 
 function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
@@ -67,8 +70,8 @@ function showMainWindow(): BrowserWindow {
 }
 
 function registerPlatformIpc(window: BrowserWindow): void {
-  const host = new UnavailablePlatformHost(currentLumierePlatform())
-  const handlers = createPlatformHandlers(host)
+  platformHost ??= createPlatformHost()
+  const handlers = createPlatformHandlers(platformHost)
 
   ipcMain.removeHandler(platformChannels.getCapabilities)
   ipcMain.removeHandler(platformChannels.capture)
@@ -90,6 +93,22 @@ function registerPlatformIpc(window: BrowserWindow): void {
   })
 }
 
+function createPlatformHost(): PlatformHost {
+  const platform = currentLumierePlatform()
+  if (platform !== 'macos') {
+    return new UnavailablePlatformHost(platform)
+  }
+
+  return new MacOSPlatformHost(
+    macOSHostCandidates({
+      appPath: app.getAppPath(),
+      isPackaged: app.isPackaged,
+      resourcesPath: process.resourcesPath,
+      overridePath: process.env.LUMIERE_MAC_HOST_PATH,
+    }),
+  )
+}
+
 void app.whenReady().then(() => {
   mainWindow = createMainWindow()
   registerPlatformIpc(mainWindow)
@@ -105,5 +124,11 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     applicationTray?.destroy()
     app.quit()
+  }
+})
+
+app.on('before-quit', () => {
+  if (platformHost instanceof MacOSPlatformHost) {
+    platformHost.dispose()
   }
 })

@@ -18,14 +18,15 @@ cloud upload, or telemetry as the official capture/conversion foundation.
 |---|---|
 | `apps/desktop` | Electron lifecycle, shared React UI, secure preload, platform-host orchestration |
 | `protocol/platform-host` | Language-neutral process protocol, compatibility rules, schema, and fixtures |
-| `hosts/macos` | Future Swift ScreenCaptureKit adapter; currently documents the unimplemented seam |
+| `hosts/macos` | Swift ScreenCaptureKit adapter, HDR-aware acquisition, sRGB Visual Match conversion, and native delivery |
 | `hosts/windows/src/Lumiere.Windows.Capture` | WGC target resolution, frame-pool lifecycle, capture state |
 | `hosts/windows/src/Lumiere.Windows.Graphics` | D3D11/DXGI device state, HDR-aware readback, sRGB Visual Match, native delivery |
 | `hosts/windows/src/Lumiere.Windows.Interop` | Required COM/WinRT adapters, diagnostics, and native-resource wrappers |
 
-The macOS native host starts in `hosts/macos` when its first vertical slice is
-introduced. Windows has no executable while paused; its three libraries are source
-material for the future adapter, not a second product shell.
+The macOS native host lives in `hosts/macos` and communicates with Electron only
+through the platform-host process interface. Windows has no executable while paused;
+its three libraries are source material for the future adapter, not a second product
+shell.
 
 Platform APIs stay in their owning module. The shell consumes the platform-host
 interface but must not own WGC, DXGI, D3D11, ScreenCaptureKit, Metal, ColorSync,
