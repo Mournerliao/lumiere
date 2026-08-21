@@ -1,4 +1,5 @@
 **/artifacts/
+**/.build/
 **/bin/
 **/node_modules/
 **/obj/

@@ -62,9 +62,10 @@ helpers under `src/renderer/src/lib` carefully because an overwrite may affect s
 installed components. Preserve Lumiere-specific accessibility, reduced-motion, theme,
 and desktop interaction behavior when resolving upstream changes.
 
-Until a native host is connected, the shell must report `host-unavailable` and keep
-capture actions disabled. This is expected foundation behavior, not passing capture
-evidence. Do not substitute Electron desktop capture to make the buttons appear to work.
+When the platform's native host executable is unavailable, the shell must report
+`host-unavailable` and keep unsupported capture actions disabled. This is expected
+fallback behavior, not passing capture evidence. Do not substitute Electron desktop
+capture to make the buttons appear to work.
 
 ## Truth Boundary
 
