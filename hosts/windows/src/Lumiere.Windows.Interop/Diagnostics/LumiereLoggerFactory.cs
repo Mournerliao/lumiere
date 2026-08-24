@@ -2,13 +2,13 @@ using Microsoft.Extensions.Logging;
 
 namespace Lumiere.Windows.Interop.Diagnostics;
 
-public static class LumiereLoggerFactory
+internal static class LumiereLoggerFactory
 {
     public static readonly LogLevel DefaultMinimumLevel = LogLevel.Information;
     public static readonly int DefaultMaxFileSizeBytes = 10 * 1024 * 1024;
     public static readonly int DefaultRetentionDays = 7;
 
-    private static SimpleLoggerFactory? factory;
+    private static ILoggerFactory? factory;
     private static readonly object Sync = new();
     private static bool initialized;
 
@@ -39,11 +39,32 @@ public static class LumiereLoggerFactory
         }
     }
 
+    /// <summary>
+    /// Configures the process-owned logger factory before any native module creates a logger.
+    /// The future platform Host uses this seam to route structured diagnostics to stderr.
+    /// </summary>
+    public static void Configure(ILoggerFactory loggerFactory)
+    {
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+
+        lock (Sync)
+        {
+            if (initialized)
+            {
+                throw new InvalidOperationException(
+                    "Logging is already initialized. Configure logging before creating Windows engine modules.");
+            }
+
+            factory = loggerFactory;
+            initialized = true;
+        }
+    }
+
     public static void InitializeWithHeader(LogLevel minimumLevel, params string[] headerLines)
     {
         Initialize(minimumLevel);
 
-        var logger = factory!.CreateLogger(LogCategories.Interop);
+        var logger = Instance.CreateLogger(LogCategories.Interop);
         foreach (var line in headerLines)
         {
             logger.LogInformation("{Line}", line);
@@ -97,6 +118,8 @@ public static class LumiereLoggerFactory
 
         public void AddProvider(ILoggerProvider provider)
         {
+            throw new NotSupportedException(
+                "The fallback logger has fixed providers. Configure a process-owned ILoggerFactory before engine creation.");
         }
 
         public void Dispose()
@@ -122,8 +145,16 @@ public static class LumiereLoggerFactory
 
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull
         {
-            primary.BeginScope(state);
-            return secondary.BeginScope(state);
+            return new CompositeScope(primary.BeginScope(state), secondary.BeginScope(state));
+        }
+
+        private sealed class CompositeScope(IDisposable? primaryScope, IDisposable? secondaryScope) : IDisposable
+        {
+            public void Dispose()
+            {
+                secondaryScope?.Dispose();
+                primaryScope?.Dispose();
+            }
         }
 
         public bool IsEnabled(LogLevel logLevel) =>

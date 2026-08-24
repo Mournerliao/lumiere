@@ -5,7 +5,7 @@ using Vortice.DXGI;
 
 namespace Lumiere.Windows.Graphics.Devices;
 
-public sealed class GraphicsDeviceResources : IDisposable
+internal sealed class GraphicsDeviceResources : IDisposable
 {
     private bool disposed;
 

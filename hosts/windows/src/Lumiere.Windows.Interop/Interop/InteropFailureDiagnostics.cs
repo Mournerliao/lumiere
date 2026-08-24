@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Lumiere.Windows.Interop;
 
-public static class InteropFailureDiagnostics
+internal static class InteropFailureDiagnostics
 {
     private static readonly ILogger DefaultLogger = LumiereLoggerFactory.CreateLogger(LogCategories.Interop);
 

@@ -4,7 +4,7 @@ namespace Lumiere.Windows.Capture;
 /// Represents the capture mode for a capture command.
 /// Explicit enum prevents mode inference from UI context or button names.
 /// </summary>
-public enum CaptureCommandMode
+internal enum CaptureCommandMode
 {
     /// <summary>
     /// Fullscreen capture of the current display.

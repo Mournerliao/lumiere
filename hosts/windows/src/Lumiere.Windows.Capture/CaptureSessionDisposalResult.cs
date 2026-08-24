@@ -1,10 +1,16 @@
 namespace Lumiere.Windows.Capture;
 
-public sealed record CaptureSessionDisposalResult(
+internal sealed record CaptureSessionDisposalResult(
     bool FrameHandlerUnsubscribed,
     bool SessionStopped,
     bool FramePoolDisposed,
-    bool DeviceDisposed)
+    bool DeviceDisposed,
+    Exception? FirstException = null)
 {
-    public bool Completed => FrameHandlerUnsubscribed && SessionStopped && FramePoolDisposed && DeviceDisposed;
+    public bool Completed =>
+        FrameHandlerUnsubscribed
+        && SessionStopped
+        && FramePoolDisposed
+        && DeviceDisposed
+        && FirstException is null;
 }

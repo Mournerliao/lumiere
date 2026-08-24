@@ -2,7 +2,7 @@ using Lumiere.Windows.Graphics.Hdr;
 
 namespace Lumiere.Windows.Capture;
 
-public sealed record CaptureSessionState
+internal sealed record CaptureSessionState
 {
     private CaptureSessionState(
         CaptureSessionStatus status,

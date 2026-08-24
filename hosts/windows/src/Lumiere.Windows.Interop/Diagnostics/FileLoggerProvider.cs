@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Lumiere.Windows.Interop.Diagnostics;
 
-public sealed class FileLoggerProvider : ILoggerProvider
+internal sealed class FileLoggerProvider : ILoggerProvider
 {
     private readonly string logDirectory;
     private readonly int maxFileSizeBytes;

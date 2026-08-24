@@ -6,7 +6,7 @@ using Windows.Graphics.DirectX.Direct3D11;
 
 namespace Lumiere.Windows.Capture;
 
-public sealed class CaptureSessionResources : IDisposable
+internal sealed class CaptureSessionResources : IDisposable
 {
     private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Capture);
     private readonly Func<CaptureSessionDisposalResult> disposeAction;

@@ -2,7 +2,7 @@ using Half = System.Half;
 
 namespace Lumiere.Windows.Graphics.Output;
 
-public static class SrgbVisualMatchPixelConverter
+internal static class SrgbVisualMatchPixelConverter
 {
     public static SrgbVisualMatchImage ConvertRgba16FloatToBgra8(CapturedFrameReadback readback)
     {
@@ -33,17 +33,21 @@ public static class SrgbVisualMatchPixelConverter
     private static Half ToneMapForVisualMatch(Half linear)
     {
         var f = (float)linear;
-        if (f <= 1f)
+        if (f <= 0f)
         {
-            return linear;
+            return (Half)0f;
         }
 
         const float shoulderHeadroom = 0.08f;
-        const float shoulderTransitionWidth = 0.25f;
+        const float shoulderStart = 0.75f;
 
-        var shoulder = 1f - shoulderHeadroom / (f + shoulderHeadroom);
-        var transition = SmoothStep(Math.Clamp((f - 1f) / shoulderTransitionWidth, 0f, 1f));
-        return (Half)Lerp(1f, shoulder, transition);
+        if (f <= 1f)
+        {
+            var transition = SmoothStep(Math.Clamp((f - shoulderStart) / (1f - shoulderStart), 0f, 1f));
+            return (Half)(f * Lerp(1f, 1f - shoulderHeadroom, transition));
+        }
+
+        return (Half)(1f - (shoulderHeadroom / f));
     }
 
     private static Half LinearToSrgb(Half linear)

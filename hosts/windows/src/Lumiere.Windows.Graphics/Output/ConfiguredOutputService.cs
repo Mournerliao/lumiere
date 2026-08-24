@@ -1,20 +1,26 @@
+using Lumiere.Windows.Graphics.Clipboard;
+using Lumiere.Windows.Graphics.Devices;
+
 namespace Lumiere.Windows.Graphics.Output;
 
 /// <summary>
 /// Routes one explicit output request and shares its encoded artifact across targets.
 /// </summary>
-public sealed class ConfiguredOutputService : IOutputService
+internal sealed class ConfiguredOutputService : IOutputService
 {
     private static readonly TimeSpan DefaultTargetTimeout = TimeSpan.FromSeconds(10);
-    private readonly IOutputService clipboardOutput;
-    private readonly IOutputService folderOutput;
+    private readonly IOutputPngEncoder encoder;
+    private readonly IOutputTargetAdapter clipboardOutput;
+    private readonly IOutputTargetAdapter folderOutput;
     private readonly TimeSpan targetTimeout;
 
-    public ConfiguredOutputService(
-        IOutputService clipboardOutput,
-        IOutputService folderOutput,
+    internal ConfiguredOutputService(
+        IOutputPngEncoder encoder,
+        IOutputTargetAdapter clipboardOutput,
+        IOutputTargetAdapter folderOutput,
         TimeSpan? targetTimeout = null)
     {
+        this.encoder = encoder ?? throw new ArgumentNullException(nameof(encoder));
         this.clipboardOutput = clipboardOutput ?? throw new ArgumentNullException(nameof(clipboardOutput));
         this.folderOutput = folderOutput ?? throw new ArgumentNullException(nameof(folderOutput));
         this.targetTimeout = targetTimeout ?? DefaultTargetTimeout;
@@ -24,52 +30,38 @@ public sealed class ConfiguredOutputService : IOutputService
         }
     }
 
+    public static ConfiguredOutputService CreateDefault(GraphicsDeviceResources deviceResources)
+    {
+        ArgumentNullException.ThrowIfNull(deviceResources);
+        var encoder = new SrgbVisualMatchPngEncoder(
+            new SrgbVisualMatchConverter(
+                new CapturedFrameTextureReadback(deviceResources)));
+        return new ConfiguredOutputService(
+            encoder,
+            new ClipboardOutputService(),
+            new FolderOutputService());
+    }
+
     public async Task<OutputResult> ExecuteOutputAsync(
         OutputRequest request,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        request = request.Delivery is OutputTarget.Both && request.ArtifactCache is null
-            ? request with { ArtifactCache = new OutputArtifactCache() }
-            : request;
-
-        var results = new List<OutputTargetResult>();
-        if (request.Delivery is OutputTarget.Clipboard or OutputTarget.Both)
+        var outputs = RequestedOutputs(request).ToArray();
+        if (outputs.Length == 0)
         {
-            results.AddRange(await ExecuteTargetAsync(
-                OutputTarget.Clipboard,
-                clipboardOutput,
-                request,
-                cancellationToken));
+            return OutputResult.FromTargets(OutputTargetResult.Skipped(
+                request.Delivery,
+                "No output target was requested"));
         }
 
-        if (request.Delivery is OutputTarget.Folder or OutputTarget.Both)
-        {
-            results.AddRange(await ExecuteTargetAsync(
-                OutputTarget.Folder,
-                folderOutput,
-                request,
-                cancellationToken));
-        }
-
-        return OutputResult.FromTargets(results);
-    }
-
-    private async Task<IReadOnlyList<OutputTargetResult>> ExecuteTargetAsync(
-        OutputTarget target,
-        IOutputService output,
-        OutputRequest request,
-        CancellationToken cancellationToken)
-    {
+        OutputEncodedArtifact artifact;
         try
         {
-            using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeoutSource.CancelAfter(targetTimeout);
-            return (await output.ExecuteOutputAsync(request, timeoutSource.Token)).Targets;
-        }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-        {
-            return [OutputTargetResult.Failed(target, $"{target} output timed out")];
+            artifact = await encoder.EncodeArtifactAsync(
+                request.Texture,
+                request.CropRegion,
+                cancellationToken);
         }
         catch (OperationCanceledException)
         {
@@ -77,7 +69,61 @@ public sealed class ConfiguredOutputService : IOutputService
         }
         catch (Exception exception)
         {
-            return [OutputTargetResult.Failed(target, $"{target} output failed", exception.Message)];
+            return OutputResult.FromTargets(outputs.Select(output =>
+                OutputTargetResult.Failed(
+                    output.Target,
+                    $"{output.Target} output failed",
+                    exception.Message)));
+        }
+
+        var results = new List<OutputTargetResult>(outputs.Length);
+        foreach (var output in outputs)
+        {
+            results.Add(await ExecuteTargetAsync(output, request, artifact, cancellationToken));
+        }
+
+        return OutputResult.FromTargets(results);
+    }
+
+    private IEnumerable<IOutputTargetAdapter> RequestedOutputs(OutputRequest request)
+    {
+        if (request.ShouldWriteClipboard)
+        {
+            yield return clipboardOutput;
+        }
+
+        if (request.ShouldWriteFolder)
+        {
+            yield return folderOutput;
+        }
+    }
+
+    private async Task<OutputTargetResult> ExecuteTargetAsync(
+        IOutputTargetAdapter output,
+        OutputRequest request,
+        OutputEncodedArtifact artifact,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutSource.CancelAfter(targetTimeout);
+            return await output.DeliverAsync(request, artifact, timeoutSource.Token);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return OutputTargetResult.Failed(output.Target, $"{output.Target} output timed out");
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            return OutputTargetResult.Failed(
+                output.Target,
+                $"{output.Target} output failed",
+                exception.Message);
         }
     }
 }

@@ -20,7 +20,7 @@ Invoke-DotNet -TaskArguments @(
 )
 Invoke-DotNet -TaskArguments @(
     "build", $Solution,
-    "-p:Platform=x64", "--no-restore", "--verbosity", "minimal", "/nr:false"
+    "--configuration", "Release", "-p:Platform=x64", "--no-restore", "--verbosity", "minimal", "/nr:false"
 )
 
 foreach ($Project in @(
@@ -31,7 +31,7 @@ foreach ($Project in @(
     $ProjectPath = Join-Path $WindowsRoot "tests/$Project/$Project.csproj"
     Invoke-DotNet -TaskArguments @(
         "test", $ProjectPath,
-        "-p:Platform=x64", "--no-restore", "--verbosity", "minimal", "/nr:false"
+        "--configuration", "Release", "-p:Platform=x64", "--no-build", "--no-restore", "--verbosity", "minimal", "/nr:false"
     )
 }
 

@@ -3,7 +3,7 @@ using Lumiere.Windows.Graphics.Hdr;
 
 namespace Lumiere.Windows.Capture;
 
-public sealed class CaptureTargetSelectionResult
+internal sealed class CaptureTargetSelectionResult
 {
     private CaptureTargetSelectionResult(
         SelectionOutcome outcome,

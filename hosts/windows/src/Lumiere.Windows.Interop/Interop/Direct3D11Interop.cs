@@ -5,7 +5,7 @@ using WinRT;
 
 namespace Lumiere.Windows.Interop;
 
-public static class Direct3D11Interop
+internal static class Direct3D11Interop
 {
     private const string OperationName = "CreateDirect3D11DeviceFromDXGIDevice";
 

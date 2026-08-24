@@ -1,9 +1,8 @@
 # Windows Engine Development Runbook
 
-Windows development is paused. The repository contains three native libraries and no
-Windows executable. macOS is suitable for shared-shell work and static refactoring;
-Windows remains required for .NET restore, build, tests, formatting, WGC/D3D11/DXGI
-runtime behavior, clipboard behavior, and HDR hardware checks.
+Windows host adaptation is active. The repository contains three native libraries and
+no Windows executable yet. Windows is required for .NET restore, Release build, tests,
+formatting, WGC/D3D11/DXGI runtime behavior, clipboard behavior, and HDR hardware checks.
 
 ## Prerequisites
 
@@ -26,7 +25,7 @@ pnpm build
 pwsh ./hosts/windows/scripts/verify.ps1
 ```
 
-The PowerShell script restores and builds `hosts/windows/Lumiere.Windows.sln`, runs
+The PowerShell script restores and Release-builds `hosts/windows/Lumiere.Windows.sln`, runs
 the Capture, Graphics, and Interop test projects, and verifies formatting.
 
 ## Truth Boundary

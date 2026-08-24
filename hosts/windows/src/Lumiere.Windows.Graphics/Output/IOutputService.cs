@@ -4,7 +4,7 @@ namespace Lumiere.Windows.Graphics.Output;
 /// Abstraction for output operations (clipboard, file, or both).
 /// Concrete implementations handle the actual output target logic.
 /// </summary>
-public interface IOutputService
+internal interface IOutputService
 {
     /// <summary>
     /// Executes an output operation for the given captured frame.

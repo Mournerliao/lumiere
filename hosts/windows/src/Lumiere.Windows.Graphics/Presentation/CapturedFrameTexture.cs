@@ -2,7 +2,7 @@ using Vortice.Direct3D11;
 
 namespace Lumiere.Windows.Graphics.Presentation;
 
-public sealed class CapturedFrameTexture : IDisposable
+internal sealed class CapturedFrameTexture : IDisposable
 {
     private bool disposed;
 

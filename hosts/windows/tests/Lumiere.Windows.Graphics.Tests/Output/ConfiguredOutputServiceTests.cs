@@ -7,11 +7,12 @@ namespace Lumiere.Windows.Graphics.Tests.Output;
 public sealed class ConfiguredOutputServiceTests
 {
     [Fact]
-    public async Task BothRoutesTheSameRequestCacheToBothTargets()
+    public async Task BothTargetsReceiveOneEncodedArtifact()
     {
-        var clipboard = new RecordingOutputService(OutputTarget.Clipboard);
-        var folder = new RecordingOutputService(OutputTarget.Folder);
-        var service = new ConfiguredOutputService(clipboard, folder);
+        var encoder = new RecordingEncoder();
+        var clipboard = new RecordingOutputTarget(OutputTarget.Clipboard);
+        var folder = new RecordingOutputTarget(OutputTarget.Folder);
+        var service = new ConfiguredOutputService(encoder, clipboard, folder);
         using var texture = new CapturedFrameTexture(null, 10, 10, "test");
 
         var result = await service.ExecuteOutputAsync(new OutputRequest
@@ -22,21 +23,37 @@ public sealed class ConfiguredOutputServiceTests
         });
 
         Assert.True(result.IsSuccess);
-        Assert.NotNull(clipboard.Request!.ArtifactCache);
-        Assert.Same(clipboard.Request.ArtifactCache, folder.Request!.ArtifactCache);
+        Assert.Equal(1, encoder.EncodeCount);
+        Assert.Same(clipboard.Artifact, folder.Artifact);
     }
 
-    private sealed class RecordingOutputService(OutputTarget target) : IOutputService
+    private sealed class RecordingEncoder : IOutputPngEncoder
     {
-        public OutputRequest? Request { get; private set; }
+        public int EncodeCount { get; private set; }
 
-        public Task<OutputResult> ExecuteOutputAsync(
-            OutputRequest request,
+        public Task<OutputEncodedArtifact> EncodeArtifactAsync(
+            CapturedFrameTexture texture,
+            CropPixelRect? cropRegion,
             CancellationToken cancellationToken = default)
         {
-            Request = request;
-            return Task.FromResult(OutputResult.FromTargets(
-                OutputTargetResult.Success(target, "complete")));
+            EncodeCount++;
+            return Task.FromResult(new OutputEncodedArtifact([1, 2, 3], "png"));
+        }
+    }
+
+    private sealed class RecordingOutputTarget(OutputTarget target) : IOutputTargetAdapter
+    {
+        public OutputTarget Target => target;
+
+        public OutputEncodedArtifact? Artifact { get; private set; }
+
+        public Task<OutputTargetResult> DeliverAsync(
+            OutputRequest request,
+            OutputEncodedArtifact artifact,
+            CancellationToken cancellationToken)
+        {
+            Artifact = artifact;
+            return Task.FromResult(OutputTargetResult.Success(target, "complete"));
         }
     }
 }

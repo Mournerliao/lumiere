@@ -3,7 +3,7 @@ using Vortice.Direct3D11;
 
 namespace Lumiere.Windows.Graphics.Devices;
 
-public sealed record GraphicsDeviceCreationOptions
+internal sealed record GraphicsDeviceCreationOptions
 {
     public DeviceCreationFlags CreationFlags { get; init; } = DeviceCreationFlags.BgraSupport;
 

@@ -1,6 +1,6 @@
 namespace Lumiere.Windows.Graphics.Output;
 
-public sealed record SrgbVisualMatchImage
+internal sealed record SrgbVisualMatchImage
 {
     public SrgbVisualMatchImage(int width, int height, byte[] bgra8PixelData)
     {

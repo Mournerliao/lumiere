@@ -3,7 +3,7 @@ using Windows.Graphics.DirectX;
 
 namespace Lumiere.Windows.Graphics.Hdr;
 
-public static class HdrConstants
+internal static class HdrConstants
 {
     public static DirectXPixelFormat WgcFramePoolPixelFormat => DirectXPixelFormat.R16G16B16A16Float;
 

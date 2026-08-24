@@ -1,6 +1,6 @@
 namespace Lumiere.Windows.Capture;
 
-public sealed record DisplayOutputIdentity
+internal sealed record DisplayOutputIdentity
 {
     public DisplayOutputIdentity(string deviceName, int width, int height)
         : this(deviceName, left: null, top: null, width, height)

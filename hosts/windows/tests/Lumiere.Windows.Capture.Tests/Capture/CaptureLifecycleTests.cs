@@ -45,6 +45,22 @@ public sealed class CaptureLifecycleTests
     }
 
     [Fact]
+    public void DisposalCoordinatorContinuesAfterAnEarlierStepFails()
+    {
+        var laterSteps = 0;
+
+        var result = CaptureSessionDisposalCoordinator.DisposeOnce(
+            () => throw new InvalidOperationException("unsubscribe failed"),
+            () => laterSteps++,
+            () => laterSteps++,
+            () => laterSteps++);
+
+        Assert.Equal(3, laterSteps);
+        Assert.False(result.Completed);
+        Assert.IsType<InvalidOperationException>(result.FirstException);
+    }
+
+    [Fact]
     public void CaptureSessionResourcesDisposesOnlyOnce()
     {
         var disposeCount = 0;

@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace Lumiere.Windows.Interop;
 
-public static class MonitorSelectionInterop
+internal static class MonitorSelectionInterop
 {
     private const string User32Library = "user32.dll";
 

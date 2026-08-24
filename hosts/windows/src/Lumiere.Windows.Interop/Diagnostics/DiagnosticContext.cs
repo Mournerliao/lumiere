@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Lumiere.Windows.Interop.Diagnostics;
 
-public static class DiagnosticContext
+internal static class DiagnosticContext
 {
     public static DiagnosticRecord CaptureFailure(
         string stage,

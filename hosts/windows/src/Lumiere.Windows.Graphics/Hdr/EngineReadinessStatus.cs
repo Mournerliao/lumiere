@@ -1,6 +1,6 @@
 namespace Lumiere.Windows.Graphics.Hdr;
 
-public sealed record EngineReadinessStatus
+internal sealed record EngineReadinessStatus
 {
     private EngineReadinessStatus(
         EngineReadinessState state,
@@ -67,7 +67,7 @@ public sealed record EngineReadinessStatus
         new(EngineReadinessState.Failed, stage, userMessage, technicalDetail);
 }
 
-public enum EngineReadinessReason
+internal enum EngineReadinessReason
 {
     None = 0,
     TargetDisplayUnresolved,

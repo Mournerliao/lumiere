@@ -2,7 +2,7 @@ using Lumiere.Windows.Graphics.Hdr;
 
 namespace Lumiere.Windows.Graphics.Devices;
 
-public sealed class GraphicsDeviceException : InvalidOperationException
+internal sealed class GraphicsDeviceException : InvalidOperationException
 {
     public GraphicsDeviceException(
         string operationName,

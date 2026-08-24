@@ -4,7 +4,7 @@ namespace Lumiere.Windows.Capture;
 /// Represents a capture command with explicit mode (fullscreen or region).
 /// Immutable record to ensure thread safety and prevent mutation after creation.
 /// </summary>
-public sealed record CaptureCommand
+internal sealed record CaptureCommand
 {
     private CaptureCommand(CaptureCommandMode mode, CaptureTarget? target = null)
     {

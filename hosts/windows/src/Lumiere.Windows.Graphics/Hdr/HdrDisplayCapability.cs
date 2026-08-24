@@ -44,7 +44,7 @@ public sealed record HdrDisplayCapability(
     /// Compatibility path: when no target hint is available, this reflects
     /// the first enumerated output only.
     /// </summary>
-    public static HdrDisplayCapability Probe(IDXGIFactory2 factory)
+    internal static HdrDisplayCapability Probe(IDXGIFactory2 factory)
     {
         var outputs = ProbeOutputs(factory);
         return outputs.Count == 0
@@ -52,7 +52,7 @@ public sealed record HdrDisplayCapability(
             : FromOutputSnapshot(outputs[0], HdrDisplayMatchKind.FirstOutput);
     }
 
-    public static HdrDisplayCapability Probe(
+    internal static HdrDisplayCapability Probe(
         IDXGIFactory2 factory,
         string? targetDisplayName,
         int targetWidth,
@@ -62,7 +62,7 @@ public sealed record HdrDisplayCapability(
         return SelectForTarget(outputs, targetDisplayName, targetWidth, targetHeight);
     }
 
-    public static HdrDisplayCapability Probe(
+    internal static HdrDisplayCapability Probe(
         IDXGIFactory2 factory,
         string? targetDisplayName,
         int? targetLeft,
@@ -77,19 +77,33 @@ public sealed record HdrDisplayCapability(
     private static IReadOnlyList<HdrDisplayOutputSnapshot> ProbeOutputs(IDXGIFactory2 factory)
     {
         ArgumentNullException.ThrowIfNull(factory);
-
-        IDXGIAdapter? adapter = null;
+        var outputs = new List<HdrDisplayOutputSnapshot>();
 
         try
         {
-            var hr = factory.EnumAdapters(0, out adapter);
-            if (hr.Failure || adapter is null)
+            for (uint adapterIndex = 0; ; adapterIndex++)
             {
-                Logger.LogWarning("HDR display probe (factory): EnumAdapters(0) failed (hr={HResult}); returning an unknown result.", FormatHResult(hr.Code));
-                return [];
+                IDXGIAdapter? adapter = null;
+                var hr = factory.EnumAdapters(adapterIndex, out adapter);
+                if (hr.Failure || adapter is null)
+                {
+                    if (adapterIndex == 0)
+                    {
+                        Logger.LogWarning(
+                            "HDR display probe (factory): EnumAdapters(0) failed (hr={HResult}); returning an unknown result.",
+                            FormatHResult(hr.Code));
+                    }
+
+                    break;
+                }
+
+                using (adapter)
+                {
+                    outputs.AddRange(ProbeAdapterOutputs(adapter));
+                }
             }
 
-            return ProbeAdapterOutputs(adapter);
+            return outputs;
         }
         catch (Exception exception)
         {
@@ -101,10 +115,6 @@ public sealed record HdrDisplayCapability(
             diagnostic.LogTo(Logger);
 
             return [];
-        }
-        finally
-        {
-            adapter?.Dispose();
         }
     }
 
@@ -168,7 +178,7 @@ public sealed record HdrDisplayCapability(
     public static HdrDisplayCapability Unknown() =>
         new(HdrDisplayState.Unknown, null, null, HdrDisplayMatchKind.NotMatched);
 
-    public static HdrDisplayCapability SelectForTarget(
+    internal static HdrDisplayCapability SelectForTarget(
         IReadOnlyList<HdrDisplayOutputSnapshot> outputs,
         string? targetDisplayName,
         int targetWidth,
@@ -181,7 +191,7 @@ public sealed record HdrDisplayCapability(
             targetWidth,
             targetHeight);
 
-    public static HdrDisplayCapability SelectForTarget(
+    internal static HdrDisplayCapability SelectForTarget(
         IReadOnlyList<HdrDisplayOutputSnapshot> outputs,
         string? targetDisplayName,
         int? targetLeft,
@@ -282,7 +292,7 @@ public sealed record HdrDisplayCapability(
         hResult == 0 ? string.Empty : $"0x{hResult:X8}";
 }
 
-public sealed record HdrDisplayOutputSnapshot(
+internal sealed record HdrDisplayOutputSnapshot(
     string DeviceName,
     int Left,
     int Top,

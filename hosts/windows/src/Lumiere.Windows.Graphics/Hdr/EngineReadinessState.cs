@@ -1,6 +1,6 @@
 namespace Lumiere.Windows.Graphics.Hdr;
 
-public enum EngineReadinessState
+internal enum EngineReadinessState
 {
     Unknown = 0,
     Initializing,

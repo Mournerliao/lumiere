@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Lumiere.Windows.Interop.Diagnostics;
 
-public sealed class SessionDiagnosticScope : IDisposable
+internal sealed class SessionDiagnosticScope : IDisposable
 {
     private readonly IDisposable? scope;
     private int disposed;

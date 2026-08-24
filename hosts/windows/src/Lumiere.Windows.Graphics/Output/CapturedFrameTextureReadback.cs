@@ -9,14 +9,14 @@ using Vortice.Mathematics;
 
 namespace Lumiere.Windows.Graphics.Output;
 
-public interface ICapturedFrameTextureReadback
+internal interface ICapturedFrameTextureReadback
 {
     CapturedFrameReadback ReadRgba16Float(
         CapturedFrameTexture texture,
         CropPixelRect? cropRegion);
 }
 
-public sealed record CapturedFrameReadback
+internal sealed record CapturedFrameReadback
 {
     public CapturedFrameReadback(
         int width,
@@ -56,7 +56,7 @@ public sealed record CapturedFrameReadback
     public byte[] PixelData { get; }
 }
 
-public sealed class CapturedFrameTextureReadback : ICapturedFrameTextureReadback
+internal sealed class CapturedFrameTextureReadback : ICapturedFrameTextureReadback
 {
     private readonly GraphicsDeviceResources deviceResources;
 

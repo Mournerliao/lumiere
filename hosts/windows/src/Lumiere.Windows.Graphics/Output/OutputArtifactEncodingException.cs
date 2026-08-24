@@ -1,6 +1,6 @@
 namespace Lumiere.Windows.Graphics.Output;
 
-public sealed class OutputArtifactEncodingException : InvalidOperationException
+internal sealed class OutputArtifactEncodingException : InvalidOperationException
 {
     public OutputArtifactEncodingException(string message)
         : base(message)

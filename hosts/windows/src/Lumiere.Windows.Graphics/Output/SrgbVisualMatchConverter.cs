@@ -2,14 +2,14 @@ using Lumiere.Windows.Graphics.Presentation;
 
 namespace Lumiere.Windows.Graphics.Output;
 
-public interface ISrgbVisualMatchConverter
+internal interface ISrgbVisualMatchConverter
 {
     SrgbVisualMatchImage Convert(
         CapturedFrameTexture texture,
         CropPixelRect? cropRegion);
 }
 
-public sealed class SrgbVisualMatchConverter : ISrgbVisualMatchConverter
+internal sealed class SrgbVisualMatchConverter : ISrgbVisualMatchConverter
 {
     private readonly ICapturedFrameTextureReadback readback;
 

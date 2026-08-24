@@ -3,7 +3,7 @@ using Windows.Graphics.Capture;
 
 namespace Lumiere.Windows.Interop;
 
-public static class GraphicsCaptureMonitorInterop
+internal static class GraphicsCaptureMonitorInterop
 {
     private const string OperationName = "IGraphicsCaptureItemInterop.CreateForMonitor";
     private const string GraphicsCaptureItemRuntimeClassName = "Windows.Graphics.Capture.GraphicsCaptureItem";

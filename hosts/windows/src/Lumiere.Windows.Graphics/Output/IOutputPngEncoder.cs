@@ -2,32 +2,15 @@ using Lumiere.Windows.Graphics.Presentation;
 
 namespace Lumiere.Windows.Graphics.Output;
 
-public interface IOutputPngEncoder
+internal interface IOutputPngEncoder
 {
-    Task<byte[]> EncodePngAsync(
+    Task<OutputEncodedArtifact> EncodeArtifactAsync(
         CapturedFrameTexture texture,
         CropPixelRect? cropRegion,
         CancellationToken cancellationToken = default);
-
-    async Task<OutputEncodedArtifact> EncodeArtifactAsync(
-        CapturedFrameTexture texture,
-        CropPixelRect? cropRegion,
-        CancellationToken cancellationToken = default,
-        OutputArtifactCache? artifactCache = null)
-    {
-        ArgumentNullException.ThrowIfNull(texture);
-        var key = OutputArtifactCacheKey.Create(cropRegion, texture.Width, texture.Height);
-
-        async Task<OutputEncodedArtifact> EncodeAsync() =>
-            new(await EncodePngAsync(texture, cropRegion, cancellationToken), "png");
-
-        return artifactCache is null
-            ? await EncodeAsync()
-            : await artifactCache.GetOrCreateAsync(key, EncodeAsync);
-    }
 }
 
-public sealed record OutputEncodedArtifact(byte[] Bytes, string FileExtension)
+internal sealed record OutputEncodedArtifact(byte[] Bytes, string FileExtension)
 {
     public const string Profile = "srgb-visual-match";
 

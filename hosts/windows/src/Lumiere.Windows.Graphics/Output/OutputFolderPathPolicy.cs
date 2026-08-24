@@ -2,7 +2,7 @@ using System.Globalization;
 
 namespace Lumiere.Windows.Graphics.Output;
 
-public sealed class OutputFolderPathPolicy
+internal sealed class OutputFolderPathPolicy
 {
     private const string FilePrefix = "Lumiere";
     private readonly Func<DateTimeOffset> nowProvider;

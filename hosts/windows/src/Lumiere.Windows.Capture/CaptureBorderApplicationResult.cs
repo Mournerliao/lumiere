@@ -1,6 +1,6 @@
 namespace Lumiere.Windows.Capture;
 
-public sealed record CaptureBorderApplicationResult(
+internal sealed record CaptureBorderApplicationResult(
     bool RequestedBorderless,
     bool Attempted,
     bool Succeeded,

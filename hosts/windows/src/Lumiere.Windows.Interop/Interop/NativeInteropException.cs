@@ -2,7 +2,7 @@ using System.Globalization;
 
 namespace Lumiere.Windows.Interop;
 
-public sealed class NativeInteropException : InvalidOperationException
+internal sealed class NativeInteropException : InvalidOperationException
 {
     public NativeInteropException(
         string operationName,

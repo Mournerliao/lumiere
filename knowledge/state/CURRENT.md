@@ -1,6 +1,6 @@
 # Current Project State
 
-- Updated: 2026-08-21
+- Updated: 2026-08-25
 - Current milestone: 1B — Windows native host adapter
 - Release target: Windows + macOS HDR-aware MVP with sRGB Visual Match
 - Completed foundation record: [GitHub Issue #1](https://github.com/Mournerliao/lumiere/issues/1)
@@ -15,10 +15,12 @@ behavior, dual-platform CI, and isolated native host trees.
 
 The macOS development shell now drives an integrated Swift ScreenCaptureKit host
 through the platform-host v1 JSON Lines process interface. Display capture with folder
-delivery produces an RGBA8/sRGB PNG; region capture remains disabled. The active
-frontier is adapting the retained Windows WGC, D3D11/DXGI, HDR-aware acquisition,
-sRGB Visual Match, delivery, interop, and resource-lifecycle engine to the same host
-interface. WinUI and the old validation/HDR10-JXR paths remain removed.
+delivery produces an RGBA8/sRGB PNG; region capture remains disabled. The Windows
+engine now exposes one deep display-capture operation that owns target resolution,
+target-aware HDR probing, first-frame acquisition, one sRGB Visual Match conversion,
+delivery, cancellation, and teardown. The active frontier remains adapting that engine
+to the platform-host process interface. WinUI and the old validation/HDR10-JXR paths
+remain removed.
 
 ## Progress At A Glance
 
@@ -26,7 +28,7 @@ interface. WinUI and the old validation/HDR10-JXR paths remain removed.
 |---|---|---|---|
 | 0. Foundation | Complete | Final layout, secure shell, language-neutral protocol, paused Windows engine; macOS and Windows CI pass | None |
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
-| 1B. Windows host adapter | Ready ([#7](https://github.com/Mournerliao/lumiere/issues/7)) | Three clean engine modules remain; the acceptance-ready adapter frontier is open | Implement the platform-host process adapter, Electron integration, and Windows runtime verification |
+| 1B. Windows host adapter | In progress ([#7](https://github.com/Mournerliao/lumiere/issues/7)) | The engine has one narrow capture interface, single-conversion delivery, target-aware multi-adapter HDR probing, and deterministic operation teardown | Implement the JSON Lines Host executable, Electron integration, and Windows runtime verification |
 | 1C. Shared product surface | Shell placeholder only | Main capture surface renders and unavailable state is honest | Region overlay, display flow, tray/menu bar, shortcut, settings, clipboard/folder/both |
 | 1D. Distribution and release | Not started | Windows installer direction remains recorded | Windows installer, signed/notarized macOS artifact, clean-machine and hardware verification |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
@@ -50,8 +52,9 @@ acceptance criteria and implementation status for each vertical slice.
   identity and returned the expected typed permission failure with correlated logging.
 - **GitHub CI:** macOS shell and Windows engine workflows pass on PR #6 at the
   Milestone 1A integration frontier.
-- **Windows engine:** restore and build pass with zero warnings and errors; Capture 74,
-  Graphics 43, and Interop 31 tests pass; `dotnet format --verify-no-changes` passes.
+- **Windows engine:** restore and Release build pass with warnings treated as errors;
+  Capture 69, Graphics 42, and Interop 31 tests pass; `dotnet format --verify-no-changes`
+  passes.
 - **Windows integration:** no passing Electron-host integration or release-candidate record exists.
 - **Hardware verified:** the macOS Retina XDR path passed fixed bright and dark scene
   observations. The bright ramp preserved ten distinct grayscale steps from 25 through

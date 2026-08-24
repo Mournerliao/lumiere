@@ -1,6 +1,6 @@
 namespace Lumiere.Windows.Graphics.Hdr;
 
-public enum EngineReadinessStage
+internal enum EngineReadinessStage
 {
     Unknown = 0,
     Capture,

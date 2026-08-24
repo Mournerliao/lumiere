@@ -6,7 +6,7 @@ namespace Lumiere.Windows.Capture;
 /// Represents the result of attempting to execute a capture command.
 /// Follows the established CaptureStartResult pattern for consistency.
 /// </summary>
-public sealed class CaptureCommandResult
+internal sealed class CaptureCommandResult
 {
     private CaptureCommandResult(
         CaptureCommandOutcome outcome,

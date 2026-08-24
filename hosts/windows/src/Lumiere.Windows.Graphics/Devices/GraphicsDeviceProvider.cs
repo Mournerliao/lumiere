@@ -8,7 +8,7 @@ using Vortice.DXGI;
 
 namespace Lumiere.Windows.Graphics.Devices;
 
-public sealed class GraphicsDeviceProvider
+internal sealed class GraphicsDeviceProvider
 {
     private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Graphics);
     private const string OperationName = "D3D11CreateDevice";

@@ -3,7 +3,7 @@ using Windows.Graphics.Capture;
 
 namespace Lumiere.Windows.Capture;
 
-public sealed record CaptureBorderOptions(bool IsSystemBorderRequired)
+internal sealed record CaptureBorderOptions(bool IsSystemBorderRequired)
 {
     private const string GraphicsCaptureSessionTypeName = "Windows.Graphics.Capture.GraphicsCaptureSession";
     private const string IsBorderRequiredPropertyName = "IsBorderRequired";

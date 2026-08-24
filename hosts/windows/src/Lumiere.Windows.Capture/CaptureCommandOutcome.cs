@@ -3,7 +3,7 @@ namespace Lumiere.Windows.Capture;
 /// <summary>
 /// Represents the outcome of attempting to execute a capture command.
 /// </summary>
-public enum CaptureCommandOutcome
+internal enum CaptureCommandOutcome
 {
     /// <summary>
     /// The command was accepted and will be executed.

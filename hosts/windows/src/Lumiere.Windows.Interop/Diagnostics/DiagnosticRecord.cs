@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Lumiere.Windows.Interop.Diagnostics;
 
-public sealed record DiagnosticRecord
+internal sealed record DiagnosticRecord
 {
     public required string Operation { get; init; }
     public required string Stage { get; init; }

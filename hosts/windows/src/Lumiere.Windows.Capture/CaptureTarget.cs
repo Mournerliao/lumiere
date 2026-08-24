@@ -3,7 +3,7 @@ using Windows.Graphics.Capture;
 
 namespace Lumiere.Windows.Capture;
 
-public sealed class CaptureTarget
+internal sealed class CaptureTarget
 {
     internal const int MaxTextureDimension = 16_384;
 

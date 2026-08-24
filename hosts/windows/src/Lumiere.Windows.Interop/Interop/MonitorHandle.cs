@@ -1,6 +1,6 @@
 namespace Lumiere.Windows.Interop;
 
-public sealed record MonitorHandle(
+internal sealed record MonitorHandle(
     IntPtr RawHandle,
     string DisplayName,
     int? Left = null,

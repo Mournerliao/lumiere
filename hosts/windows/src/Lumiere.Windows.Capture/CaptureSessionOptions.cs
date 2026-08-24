@@ -4,7 +4,7 @@ using Windows.Graphics.DirectX;
 
 namespace Lumiere.Windows.Capture;
 
-public sealed class CaptureSessionOptions
+internal sealed class CaptureSessionOptions
 {
     public const int DefaultBufferCount = 2;
 

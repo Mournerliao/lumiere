@@ -1,6 +1,6 @@
 namespace Lumiere.Windows.Capture;
 
-public enum CaptureSessionStatus
+internal enum CaptureSessionStatus
 {
     Idle = 0,
     SelectingTarget,

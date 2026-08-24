@@ -11,7 +11,7 @@ using Windows.Graphics.DirectX.Direct3D11;
 
 namespace Lumiere.Windows.Capture;
 
-public sealed class CaptureService
+internal sealed class CaptureService
 {
     private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Capture);
     private readonly GraphicsDeviceResources deviceResources;
@@ -189,8 +189,7 @@ public sealed class CaptureService
     public CaptureStartResult StartCapture(
         CaptureTarget target,
         Action<CapturedFrameTexture> onFrameArrived,
-        Action<EngineReadinessStatus>? onFrameFailed = null,
-        Action<string>? onFrameDiagnostic = null)
+        Action<EngineReadinessStatus>? onFrameFailed = null)
     {
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(onFrameArrived);
@@ -244,7 +243,6 @@ public sealed class CaptureService
                     sender,
                     onFrameArrived,
                     onFrameFailed,
-                    onFrameDiagnostic,
                     frameFailureGate);
             };
             framePool.FrameArrived += frameArrivedHandler;
@@ -264,14 +262,17 @@ public sealed class CaptureService
         }
         catch (Exception exception)
         {
-            if (framePool is not null && frameArrivedHandler is not null)
-            {
-                framePool.FrameArrived -= frameArrivedHandler;
-            }
-
-            (session as IDisposable)?.Dispose();
-            (framePool as IDisposable)?.Dispose();
-            (direct3DDevice as IDisposable)?.Dispose();
+            _ = CaptureSessionDisposalCoordinator.DisposeOnce(
+                () =>
+                {
+                    if (framePool is not null && frameArrivedHandler is not null)
+                    {
+                        framePool.FrameArrived -= frameArrivedHandler;
+                    }
+                },
+                () => (session as IDisposable)?.Dispose(),
+                () => (framePool as IDisposable)?.Dispose(),
+                () => (direct3DDevice as IDisposable)?.Dispose());
 
             var diagnostic = DiagnosticContext.CaptureFailure(
                 stage: "StartCapture",
@@ -328,21 +329,15 @@ public sealed class CaptureService
         Direct3D11CaptureFramePool framePool,
         Action<CapturedFrameTexture> onFrameArrived,
         Action<EngineReadinessStatus>? onFrameFailed,
-        Action<string>? onFrameDiagnostic,
         FrameFailureGate frameFailureGate)
     {
         try
         {
-            onFrameDiagnostic?.Invoke("FrameArrived event received.");
-
             using var frame = framePool.TryGetNextFrame();
             if (frame is null)
             {
-                onFrameDiagnostic?.Invoke("FrameArrived event had no frame available.");
                 return;
             }
-
-            onFrameDiagnostic?.Invoke($"Captured frame received: {frame.ContentSize.Width}x{frame.ContentSize.Height}.");
 
             CapturedFrameTexture? capturedFrame = null;
 
@@ -353,7 +348,6 @@ public sealed class CaptureService
                     frame.ContentSize.Width,
                     frame.ContentSize.Height,
                     "Direct3D11CaptureFrame.Surface");
-                onFrameDiagnostic?.Invoke("Captured frame surface unwrapped as ID3D11Texture2D.");
                 onFrameArrived(capturedFrame);
                 capturedFrame = null;
             }

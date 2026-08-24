@@ -1,6 +1,6 @@
 namespace Lumiere.Windows.Capture;
 
-public enum SelectionOutcome
+internal enum SelectionOutcome
 {
     Selected = 0,
     Canceled,

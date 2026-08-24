@@ -4,7 +4,7 @@ using Windows.Graphics.DirectX.Direct3D11;
 
 namespace Lumiere.Windows.Interop;
 
-public static class Direct3D11SurfaceInterop
+internal static class Direct3D11SurfaceInterop
 {
     private const string OperationName = "IDirect3DDxgiInterfaceAccess.GetInterface";
     private static readonly Guid Direct3DDxgiInterfaceAccessId = new("A9B3D012-3DF2-4EE3-B8D1-8695F457D3C1");

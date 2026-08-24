@@ -7,7 +7,7 @@ namespace Lumiere.Windows.Graphics.Tests.Output;
 public sealed class SrgbVisualMatchPixelConverterTests
 {
     [Fact]
-    public void ConvertRgba16FloatToBgra8_PreservesSdrWhiteAndAlpha()
+    public void ConvertRgba16FloatToBgra8_ReservesHighlightHeadroomAndPreservesAlpha()
     {
         var readback = CreateReadback(1, 1, [(1f, 1f, 1f, 1f)]);
 
@@ -15,7 +15,7 @@ public sealed class SrgbVisualMatchPixelConverterTests
 
         Assert.Equal(1, image.Width);
         Assert.Equal(1, image.Height);
-        Assert.Equal([255, 255, 255, 255], image.Bgra8PixelData);
+        Assert.Equal([245, 245, 245, 255], image.Bgra8PixelData);
     }
 
     [Fact]
@@ -25,7 +25,7 @@ public sealed class SrgbVisualMatchPixelConverterTests
 
         var image = SrgbVisualMatchPixelConverter.ConvertRgba16FloatToBgra8(readback);
 
-        Assert.Equal([0, 0, 255, 127], image.Bgra8PixelData);
+        Assert.Equal([0, 0, 245, 127], image.Bgra8PixelData);
     }
 
     [Fact]
@@ -94,6 +94,23 @@ public sealed class SrgbVisualMatchPixelConverterTests
     }
 
     [Fact]
+    public void ConvertRgba16FloatToBgra8_IsMonotonicAcrossTheSdrWhitePoint()
+    {
+        var values = new[] { 0.75f, 0.9f, 1f, 1.05f, 1.1f, 1.25f, 2f, 4f, 8f };
+        var readback = CreateReadback(
+            values.Length,
+            1,
+            values.Select(value => (value, value, value, 1f)).ToArray());
+
+        var image = SrgbVisualMatchPixelConverter.ConvertRgba16FloatToBgra8(readback);
+        var encodedValues = Enumerable.Range(0, values.Length)
+            .Select(index => image.Bgra8PixelData[index * SrgbVisualMatchImage.BytesPerPixel])
+            .ToArray();
+
+        Assert.Equal(encodedValues.Order().ToArray(), encodedValues);
+    }
+
+    [Fact]
     public void Convert_UsesReadbackCropAndPreservesConvertedDimensions()
     {
         var crop = new CropPixelRect(2, 3, 4, 5);
@@ -107,7 +124,7 @@ public sealed class SrgbVisualMatchPixelConverterTests
         Assert.Equal(crop, readback.CropRegion);
         Assert.Equal(4, image.Width);
         Assert.Equal(5, image.Height);
-        Assert.Equal([0, 0, 255, 63], image.Bgra8PixelData[..4]);
+        Assert.Equal([0, 0, 245, 63], image.Bgra8PixelData[..4]);
     }
 
     private static CapturedFrameReadback CreateReadback(

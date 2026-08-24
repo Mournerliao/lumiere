@@ -1,6 +1,6 @@
 namespace Lumiere.Windows.Capture;
 
-public enum CaptureTargetKind
+internal enum CaptureTargetKind
 {
     Unknown = 0,
     Display,

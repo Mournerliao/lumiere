@@ -3,18 +3,16 @@ using Microsoft.Extensions.Logging;
 
 namespace Lumiere.Windows.Graphics.Output;
 
-public sealed class FolderOutputService : IOutputService
+internal sealed class FolderOutputService : IOutputTargetAdapter
 {
     private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Graphics);
-    private readonly IOutputPngEncoder encoder;
     private readonly OutputFolderPathPolicy pathPolicy;
     private readonly Func<string, bool> directoryExists;
     private readonly Func<string, bool> fileExists;
     private readonly Func<string, byte[], CancellationToken, Task> writeAllBytesAsync;
 
-    public FolderOutputService(IOutputPngEncoder encoder, OutputFolderPathPolicy? pathPolicy = null)
+    public FolderOutputService(OutputFolderPathPolicy? pathPolicy = null)
         : this(
-            encoder,
             pathPolicy ?? new OutputFolderPathPolicy(),
             Directory.Exists,
             File.Exists,
@@ -23,30 +21,26 @@ public sealed class FolderOutputService : IOutputService
     }
 
     internal FolderOutputService(
-        IOutputPngEncoder encoder,
         OutputFolderPathPolicy pathPolicy,
         Func<string, bool> directoryExists,
         Func<string, bool> fileExists,
         Func<string, byte[], CancellationToken, Task> writeAllBytesAsync)
     {
-        this.encoder = encoder ?? throw new ArgumentNullException(nameof(encoder));
         this.pathPolicy = pathPolicy ?? throw new ArgumentNullException(nameof(pathPolicy));
         this.directoryExists = directoryExists ?? throw new ArgumentNullException(nameof(directoryExists));
         this.fileExists = fileExists ?? throw new ArgumentNullException(nameof(fileExists));
         this.writeAllBytesAsync = writeAllBytesAsync ?? throw new ArgumentNullException(nameof(writeAllBytesAsync));
     }
 
-    public async Task<OutputResult> ExecuteOutputAsync(
+    public OutputTarget Target => OutputTarget.Folder;
+
+    public async Task<OutputTargetResult> DeliverAsync(
         OutputRequest request,
+        OutputEncodedArtifact artifact,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        if (!request.ShouldWriteFolder)
-        {
-            return OutputResult.FromTargets(OutputTargetResult.Skipped(
-                OutputTarget.Folder,
-                "Folder output was not requested"));
-        }
+        ArgumentNullException.ThrowIfNull(artifact);
 
         if (string.IsNullOrWhiteSpace(request.SaveDirectory)
             || !directoryExists(request.SaveDirectory))
@@ -56,11 +50,6 @@ public sealed class FolderOutputService : IOutputService
 
         try
         {
-            var artifact = await encoder.EncodeArtifactAsync(
-                request.Texture,
-                request.CropRegion,
-                cancellationToken,
-                request.ArtifactCache);
             var artifactPath = pathPolicy.CreateCandidatePath(
                 request.SaveDirectory,
                 request.TimestampNaming,
@@ -73,12 +62,12 @@ public sealed class FolderOutputService : IOutputService
                 artifactPath,
                 artifact.Bytes.Length,
                 OutputEncodedArtifact.Profile);
-            return OutputResult.FromTargets(OutputTargetResult.Success(
+            return OutputTargetResult.Success(
                 OutputTarget.Folder,
                 "Saved to folder",
                 $"Folder output success: {artifact.Bytes.Length} bytes",
                 artifactPath,
-                artifact.Bytes.Length));
+                artifact.Bytes.Length);
         }
         catch (OperationCanceledException)
         {
@@ -95,6 +84,6 @@ public sealed class FolderOutputService : IOutputService
         }
     }
 
-    private static OutputResult Failed(string message, string? detail = null) =>
-        OutputResult.FromTargets(OutputTargetResult.Failed(OutputTarget.Folder, message, detail));
+    private static OutputTargetResult Failed(string message, string? detail = null) =>
+        OutputTargetResult.Failed(OutputTarget.Folder, message, detail);
 }

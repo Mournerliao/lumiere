@@ -9,7 +9,7 @@ namespace Lumiere.Windows.Capture;
 /// <summary>
 /// Resolves the active monitor directly. Target-selection UI belongs to the shared shell.
 /// </summary>
-public sealed class DirectMonitorCaptureTargetSelectionService
+internal sealed class DirectMonitorCaptureTargetSelectionService
 {
     private const int E_NOTIMPL = unchecked((int)0x80004001);
     private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Capture);
@@ -27,10 +27,12 @@ public sealed class DirectMonitorCaptureTargetSelectionService
         this.isCaptureSupported = isCaptureSupported ?? GraphicsCaptureSession.IsSupported;
     }
 
-    public Task<CaptureTargetSelectionResult> SelectTargetAsync()
+    public Task<CaptureTargetSelectionResult> SelectTargetAsync(CancellationToken cancellationToken = default)
     {
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (!isCaptureSupported())
             {
                 return Task.FromResult(CaptureTargetSelectionResult.Unsupported(
@@ -41,6 +43,7 @@ public sealed class DirectMonitorCaptureTargetSelectionService
             }
 
             var monitor = monitorResolver();
+            cancellationToken.ThrowIfCancellationRequested();
             var target = EnsureDisplayIdentity(
                 monitor,
                 monitorTargetFactory(monitor)
@@ -57,6 +60,10 @@ public sealed class DirectMonitorCaptureTargetSelectionService
                     EngineReadinessStage.Capture,
                     "Direct monitor capture starting.",
                     $"Selected display: {target.DisplayName} ({target.Size.Width}x{target.Size.Height}).")));
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (NativeInteropException exception)
         {

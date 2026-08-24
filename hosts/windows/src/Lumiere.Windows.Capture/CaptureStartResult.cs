@@ -2,7 +2,7 @@ using Lumiere.Windows.Graphics.Hdr;
 
 namespace Lumiere.Windows.Capture;
 
-public sealed class CaptureStartResult
+internal sealed class CaptureStartResult
 {
     private CaptureStartResult(
         CaptureSessionResources? sessionResources,

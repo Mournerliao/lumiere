@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Lumiere.Windows.Interop.Diagnostics;
 
-public sealed class DebugLoggerProvider : ILoggerProvider
+internal sealed class DebugLoggerProvider : ILoggerProvider
 {
     public ILogger CreateLogger(string categoryName) =>
         new DebugLogger(categoryName);
