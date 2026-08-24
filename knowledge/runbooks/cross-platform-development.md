@@ -16,9 +16,26 @@ From the repository root:
 ```sh
 pnpm install --frozen-lockfile
 pnpm check
-pnpm test
+pnpm test:shared
 pnpm build
 ```
+
+`pnpm test` is a safe alias for `pnpm test:shared`. The shared suite contains only
+platform-neutral protocol, process-transport, handler, and pure path-policy tests. It
+must pass on both macOS and Windows.
+
+Platform-owned suites are deliberately separate:
+
+| Suite | Command | CI owner |
+| --- | --- | --- |
+| Shared protocol and process behavior | `pnpm test:shared` | macOS and Windows |
+| macOS desktop paths | `pnpm test:macos` | macOS only |
+| macOS native Host | `swift test --package-path hosts/macos` | macOS only |
+| Windows native Host/engine | `pwsh ./hosts/windows/scripts/verify.ps1` | Windows only |
+
+Name Electron tests that require macOS path or runtime semantics
+`*.macos.test.ts`. The shared Vitest configuration excludes that suffix, so adding a
+platform-specific test cannot silently widen the cross-platform gate.
 
 Run the shell during development:
 
@@ -53,7 +70,7 @@ worktree and inspect the upstream diff before overwriting local files:
 pnpm --filter @lumiere/desktop exec shadcn add @beui/button-base --diff
 pnpm --filter @lumiere/desktop ui:update @beui/button-base
 pnpm check
-pnpm test
+pnpm test:shared
 pnpm build
 ```
 
@@ -69,6 +86,9 @@ capture to make the buttons appear to work.
 
 ## Truth Boundary
 
-- Passing `check`, `test`, and `build` verifies only the shared repository surface.
+- Passing `check`, `test:shared`, and `build` verifies only the shared repository
+  surface.
+- macOS-only Vitest and Swift tests are evidence for macOS only; Windows .NET tests
+  are evidence for Windows only.
 - A shell launch on macOS or Windows does not verify the native host on the other OS.
 - HDR capture and Visual Match require fixed-scene hardware verification on each claimed platform.

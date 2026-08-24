@@ -30,5 +30,11 @@ jobs:
       - name: Verify shared shell
         run: |
           pnpm check
-          pnpm test
+          pnpm test:shared
           pnpm build
+
+      - name: Verify macOS desktop integration
+        run: pnpm test:macos
+
+      - name: Verify macOS Host
+        run: swift test --package-path hosts/macos

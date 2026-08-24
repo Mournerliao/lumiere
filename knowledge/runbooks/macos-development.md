@@ -28,12 +28,15 @@ global selection with `xcode-select` outside this repository or scope commands w
 From the repository root:
 
 ```sh
+pnpm test:macos
 swift build --package-path hosts/macos
 swift test --package-path hosts/macos
 ```
 
-The host targets macOS 15 or newer and builds for the active architecture. Universal
-distribution, signing, and notarization belong to Milestone 1D.
+The Vitest command owns macOS path semantics. Swift tests own the native Host. Both
+run only in macOS CI and are separate from the cross-platform `pnpm test:shared`
+suite. The host targets macOS 15 or newer and builds for the active architecture.
+Universal distribution, signing, and notarization belong to Milestone 1D.
 
 ## Protocol Smoke Test
 

@@ -17,7 +17,7 @@ Run the shared gates first, then the Windows-owned entry point from repository r
 ```sh
 pnpm install --frozen-lockfile
 pnpm check
-pnpm test
+pnpm test:shared
 pnpm build
 ```
 
@@ -26,7 +26,9 @@ pwsh ./hosts/windows/scripts/verify.ps1
 ```
 
 The PowerShell script restores and Release-builds `hosts/windows/Lumiere.Windows.sln`, runs
-the Capture, Graphics, and Interop test projects, and verifies formatting.
+the Capture, Graphics, and Interop test projects, and verifies formatting. This
+Windows-owned suite runs only in Windows CI; it is not part of the shared `pnpm test`
+alias and does not execute macOS tests.
 
 ## Truth Boundary
 

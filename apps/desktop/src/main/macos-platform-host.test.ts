@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events'
+import { execPath } from 'node:process'
 import { PassThrough } from 'node:stream'
 import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -49,7 +50,7 @@ describe('macOS platform host process transport', () => {
       })
     })
 
-    const host = new MacOSPlatformHost(['/bin/sh'], () => {
+    const host = new MacOSPlatformHost([execPath], () => {
       spawnCount += 1
       return process.asChildProcess()
     })
@@ -73,7 +74,7 @@ describe('macOS platform host process transport', () => {
     const firstProcess = new FakeNativeProcess()
     const secondProcess = new FakeNativeProcess()
     const processes = [firstProcess, secondProcess]
-    const host = new MacOSPlatformHost(['/bin/sh'], () => {
+    const host = new MacOSPlatformHost([execPath], () => {
       const process = processes.shift()
       if (!process) {
         throw new Error('Unexpected extra host spawn.')
@@ -130,7 +131,7 @@ describe('macOS platform host process transport', () => {
         },
       })
     })
-    const host = new MacOSPlatformHost(['/bin/sh'], () => process.asChildProcess())
+    const host = new MacOSPlatformHost([execPath], () => process.asChildProcess())
 
     await expect(host.capture({ mode: 'display', delivery: 'folder' })).resolves.toMatchObject({
       status: 'failed',
@@ -149,7 +150,7 @@ describe('macOS platform host process transport', () => {
         result: { status: 'cancelled', unexpected: true },
       })
     })
-    const host = new MacOSPlatformHost(['/bin/sh'], () => process.asChildProcess())
+    const host = new MacOSPlatformHost([execPath], () => process.asChildProcess())
 
     await expect(host.capture({ mode: 'display', delivery: 'folder' })).resolves.toMatchObject({
       status: 'failed',
@@ -162,7 +163,7 @@ describe('macOS platform host process transport', () => {
     const firstProcess = new FakeNativeProcess()
     const secondProcess = new FakeNativeProcess()
     const processes = [firstProcess, secondProcess]
-    const host = new MacOSPlatformHost(['/bin/sh'], () => {
+    const host = new MacOSPlatformHost([execPath], () => {
       const process = processes.shift()
       if (!process) {
         throw new Error('Unexpected extra host spawn.')
@@ -205,7 +206,7 @@ describe('macOS platform host process transport', () => {
     process.stdin.once('data', () => {
       process.emit('exit', 17, null)
     })
-    const host = new MacOSPlatformHost(['/bin/sh'], () => process.asChildProcess())
+    const host = new MacOSPlatformHost([execPath], () => process.asChildProcess())
 
     await expect(host.capture({ mode: 'display', delivery: 'folder' })).resolves.toMatchObject({
       status: 'failed',

@@ -39,9 +39,10 @@ acceptance criteria and implementation status for each vertical slice.
 
 ## Verification Truth
 
-- **Repository:** frozen install, layout and TypeScript checks, sixteen shell/protocol/process
-  tests, ten Swift protocol/capability/permission/diagnostic tests, and the production build pass
-  locally on macOS.
+- **Repository:** frozen install, layout and TypeScript checks, thirteen cross-platform
+  shell/protocol/process tests, three macOS path tests, ten Swift
+  protocol/capability/permission/diagnostic tests, and the production build pass locally on
+  macOS. Shared, macOS, and Windows test gates are explicit and platform-scoped.
 - **macOS development runtime:** the Electron display action drove ScreenCaptureKit to
   RGBA8 PNG files with alpha and an embedded sRGB IEC61966-2.1 profile on an Apple
   Silicon Mac. SDR capture was observed at 2560×1440 on an external display. Native

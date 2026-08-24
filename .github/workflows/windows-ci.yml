@@ -30,7 +30,7 @@ jobs:
       - name: Verify shared shell
         run: |
           pnpm check
-          pnpm test
+          pnpm test:shared
           pnpm build
 
       - name: Setup .NET
@@ -38,6 +38,6 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Verify repository
+      - name: Verify Windows Host
         shell: pwsh
         run: ./hosts/windows/scripts/verify.ps1

@@ -18,7 +18,9 @@
     "lint:fix": "eslint . --fix",
     "prepare": "simple-git-hooks",
     "start": "pnpm --filter @lumiere/desktop start",
-    "test": "pnpm --filter @lumiere/desktop test"
+    "test": "pnpm test:shared",
+    "test:macos": "pnpm --filter @lumiere/desktop test:macos",
+    "test:shared": "pnpm --filter @lumiere/desktop test:shared"
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts,tsx}": [
