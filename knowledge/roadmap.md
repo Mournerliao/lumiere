@@ -5,8 +5,11 @@ defines the durable route, milestone order, deliverables, and exit gates.
 
 ## Route
 
-Lumiere advances through four milestones. A later milestone may be researched early,
-but it does not become the implementation frontier until the preceding exit gate passes.
+Lumiere advances through four ordered milestone gates. A later milestone may be
+researched early, but it does not become an implementation lane until the preceding
+exit gate passes. Within an active milestone, shared, macOS, and Windows execution
+lanes may advance independently when their Issue dependencies and verification scope
+are explicit.
 
 | Milestone | Product outcome | Exit gate |
 |---|---|---|
@@ -37,8 +40,11 @@ but it does not become the implementation frontier until the preceding exit gate
 
 ## Milestone 1: Cross-Platform HDR-Aware MVP
 
-The MVP has four ordered vertical slices. Each slice must leave the product runnable;
-platform implementation may differ, but public output semantics remain shared.
+The MVP has four vertical slices contributing to one milestone gate. Native-platform
+and shared-product work may overlap so development can follow the currently available
+machine; each slice must leave its owned surface runnable, platform implementation may
+differ, and public output semantics remain shared. Slice 1D remains gated on both
+native Hosts and the shared product journeys required by 1A through 1C.
 
 ### 1A. macOS Native Capture
 
@@ -63,6 +69,10 @@ cancel, clean-exit, and HDR-state scenarios without regressing the native baseli
 Deliver region and display capture, shared overlay interaction, main window,
 tray/menu-bar, configured shortcut, settings, and clipboard/folder/both delivery.
 Platform permission and native failure flows remain owned by their native hosts.
+
+Shared shell and macOS-owned work may begin while the Windows adapter is still in
+progress. Windows completion of the same journeys remains dependent on 1B; macOS or
+shared repository evidence never satisfies the Windows side of this exit gate.
 
 Exit when both platforms complete the same named user journeys and all user-facing
 copy remains inside the approved HDR-aware/sRGB Visual Match claim boundary.

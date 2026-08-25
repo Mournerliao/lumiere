@@ -10,9 +10,21 @@ GitHub Issues are the control plane for non-trivial work. An executable Issue st
 - required repository, Windows, and hardware gates;
 - native Issue dependencies for blockers.
 
-The frontier is one open, unassigned, acceptance-ready Issue with no open blocker.
-Small L0 maintenance changes may be performed directly when creating an Issue would
-cost more than the change.
+Lumiere uses environment-aware execution lanes because native runtime truth is tied
+to the machine currently available:
+
+- the **shared lane** owns platform-neutral shell, protocol, state, and product-surface
+  work and may run on macOS or Windows;
+- the **macOS lane** owns Swift Host and macOS runtime or hardware work;
+- the **Windows lane** owns .NET Host and Windows runtime or hardware work.
+
+Each lane may have one open, acceptance-ready frontier Issue, and `CURRENT.md` names
+the next concrete action for every active lane. Dependencies between lane Issues must
+be explicit. Multiple eligible lane frontiers do not authorize concurrent writers on
+overlapping files: one writer or worktree advances one current working Issue at a time,
+then leaves a clean, structured handoff before switching lanes or machines. Small L0
+maintenance changes may be performed directly when creating an Issue would cost more
+than the change.
 
 ## Risk-Adaptive Execution
 
@@ -22,8 +34,9 @@ Classify work before implementation:
 - **L1** — normal feature or fix: use one Issue with explicit acceptance criteria.
 - **L2** — cross-module, lifetime, output-semantic, or public-claim change: research
   or specify first, add an ADR for a durable choice, and use fresh-context review.
-- **L3** — multi-session work: split dependent vertical Issues and advance one
-  unblocked frontier at a time with a structured handoff.
+- **L3** — multi-session work: split dependent vertical Issues, advance one current
+  working Issue per writer or worktree, and switch execution lanes only through a
+  structured handoff.
 - **L4** — bounded automation/Ralph loop: require machine-verifiable acceptance,
   an iteration cap, and no unapproved deployment or destructive action.
 
@@ -39,6 +52,12 @@ Long work must advance in reviewable vertical slices. A handoff contains only:
 - the next concrete action.
 
 Do not preserve transcripts, exploratory reasoning, or session narration as project state.
+
+Shared implementation may be written on either supported platform, but its truth is
+still scoped by the checks actually run. Cross-platform CI can establish repository
+truth; menus, shortcuts, windows, permissions, native capture, delivery, HDR behavior,
+and hardware observations require the owning platform. Work in one lane never closes
+another lane's acceptance criteria.
 
 ## Completion
 
