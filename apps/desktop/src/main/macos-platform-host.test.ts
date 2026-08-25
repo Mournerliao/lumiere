@@ -24,26 +24,24 @@ describe('macOS platform host process transport', () => {
 
       const [capabilitiesRequest, captureRequest] = requests
       process.respond({
-        version: 1,
+        version: 2,
         id: captureRequest.id,
         result: {
-          status: 'success',
+          status: 'completed',
           sourceDynamicRange: 'hdr',
-          artifact: {
-            profile: 'srgb-visual-match',
-            delivery: 'folder',
-            filePath: '/tmp/capture.png',
-          },
+          outputProfile: 'srgb-visual-match',
+          deliveries: [{ target: 'folder', status: 'success', filePath: '/tmp/capture.png' }],
         },
       })
       process.respond({
-        version: 1,
+        version: 2,
         id: capabilitiesRequest.id,
         result: {
-          contractVersion: 1,
+          contractVersion: 2,
           platform: 'macos',
           hostStatus: 'available',
           captureModes: ['display'],
+          deliveryTargets: ['folder'],
           hdrCapture: 'supported',
           outputProfiles: ['srgb-visual-match'],
         },
@@ -62,8 +60,8 @@ describe('macOS platform host process transport', () => {
       captureModes: ['display'],
     })
     await expect(capturePromise).resolves.toMatchObject({
-      status: 'success',
-      artifact: { filePath: '/tmp/capture.png' },
+      status: 'completed',
+      deliveries: [{ filePath: '/tmp/capture.png' }],
     })
     expect(spawnCount).toBe(1)
     host.dispose()
@@ -100,13 +98,14 @@ describe('macOS platform host process transport', () => {
     secondProcess.stdin.once('data', (chunk: Buffer) => {
       const request = JSON.parse(chunk.toString('utf8')) as Record<string, unknown>
       secondProcess.respond({
-        version: 1,
+        version: 2,
         id: request.id,
         result: {
-          contractVersion: 1,
+          contractVersion: 2,
           platform: 'macos',
           hostStatus: 'available',
           captureModes: ['display'],
+          deliveryTargets: ['folder'],
           hdrCapture: 'unavailable',
           outputProfiles: ['srgb-visual-match'],
         },
@@ -121,7 +120,7 @@ describe('macOS platform host process transport', () => {
     process.stdin.once('data', (chunk: Buffer) => {
       const request = JSON.parse(chunk.toString('utf8')) as Record<string, unknown>
       process.respond({
-        version: 1,
+        version: 2,
         id: request.id,
         result: { status: 'cancelled' },
         error: {
@@ -145,7 +144,7 @@ describe('macOS platform host process transport', () => {
     process.stdin.once('data', (chunk: Buffer) => {
       const request = JSON.parse(chunk.toString('utf8')) as Record<string, unknown>
       process.respond({
-        version: 1,
+        version: 2,
         id: request.id,
         result: { status: 'cancelled', unexpected: true },
       })
@@ -183,13 +182,14 @@ describe('macOS platform host process transport', () => {
       const request = JSON.parse(chunk.toString('utf8')) as Record<string, unknown>
       firstProcess.emit('exit', 17, null)
       secondProcess.respond({
-        version: 1,
+        version: 2,
         id: request.id,
         result: {
-          contractVersion: 1,
+          contractVersion: 2,
           platform: 'macos',
           hostStatus: 'available',
           captureModes: ['display'],
+          deliveryTargets: ['folder'],
           hdrCapture: 'supported',
           outputProfiles: ['srgb-visual-match'],
         },

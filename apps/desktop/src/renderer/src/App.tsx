@@ -58,7 +58,7 @@ export function App(): React.JSX.Element {
   const supportsDisplayCapture =
     snapshot?.hostAvailable === true && snapshot.captureModes.includes('display')
   const activeNotice =
-    result?.status === 'failed'
+    result?.status === 'failed' || result?.status === 'partial'
       ? result.notice
       : loadFailed
         ? CAPTURE_LOAD_FAILURE

@@ -1,11 +1,13 @@
 import Foundation
 
-public let platformContractVersion = 1
+public let platformContractVersion = 2
 
 public enum HostFailureCode: String, Codable, Sendable {
   case hostUnavailable = "host-unavailable"
   case permissionDenied = "permission-denied"
   case captureUnavailable = "capture-unavailable"
+  case deliveryUnavailable = "delivery-unavailable"
+  case deliveryFailed = "delivery-failed"
   case invalidRequest = "invalid-request"
   case unexpectedFailure = "unexpected-failure"
 }
@@ -33,9 +35,46 @@ public enum OutputDelivery: String, Codable, Sendable {
   case both
 }
 
+public enum DeliveryTarget: String, Codable, Sendable {
+  case clipboard
+  case folder
+}
+
+public struct LogicalSize: Codable, Equatable, Sendable {
+  public let width: Double
+  public let height: Double
+}
+
+public struct CaptureTarget: Codable, Equatable, Sendable {
+  public let id: String
+  public let logicalSize: LogicalSize
+}
+
+public struct CaptureGeometry: Codable, Equatable, Sendable {
+  public let coordinateSpace: String
+  public let x: Double
+  public let y: Double
+  public let width: Double
+  public let height: Double
+}
+
 public struct CaptureParameters: Codable, Equatable, Sendable {
   public let mode: CaptureMode
   public let delivery: OutputDelivery
+  public let targetId: String?
+  public let geometry: CaptureGeometry?
+
+  public init(
+    mode: CaptureMode,
+    delivery: OutputDelivery,
+    targetId: String? = nil,
+    geometry: CaptureGeometry? = nil
+  ) {
+    self.mode = mode
+    self.delivery = delivery
+    self.targetId = targetId
+    self.geometry = geometry
+  }
 }
 
 public enum PlatformMethod: String, Codable, Sendable {
@@ -55,35 +94,70 @@ public struct PlatformCapabilities: Codable, Equatable, Sendable {
   public let platform: String
   public let hostStatus: String
   public let captureModes: [CaptureMode]
+  public let deliveryTargets: [DeliveryTarget]
   public let hdrCapture: String
   public let outputProfiles: [String]
+  public let activeTarget: CaptureTarget?
+  public let unavailableReason: HostFailure?
+
+  public init(
+    contractVersion: Int,
+    platform: String,
+    hostStatus: String,
+    captureModes: [CaptureMode],
+    deliveryTargets: [DeliveryTarget],
+    hdrCapture: String,
+    outputProfiles: [String],
+    activeTarget: CaptureTarget? = nil,
+    unavailableReason: HostFailure? = nil
+  ) {
+    self.contractVersion = contractVersion
+    self.platform = platform
+    self.hostStatus = hostStatus
+    self.captureModes = captureModes
+    self.deliveryTargets = deliveryTargets
+    self.hdrCapture = hdrCapture
+    self.outputProfiles = outputProfiles
+    self.activeTarget = activeTarget
+    self.unavailableReason = unavailableReason
+  }
 }
 
-public struct CaptureArtifact: Codable, Equatable, Sendable {
-  public let profile: String
-  public let delivery: OutputDelivery
+public struct DeliveryResult: Codable, Equatable, Sendable {
+  public let target: DeliveryTarget
+  public let status: String
   public let filePath: String?
+  public let failure: HostFailure?
+
+  public static func clipboardSuccess() -> DeliveryResult {
+    DeliveryResult(target: .clipboard, status: "success", filePath: nil, failure: nil)
+  }
+
+  public static func folderSuccess(filePath: String) -> DeliveryResult {
+    DeliveryResult(target: .folder, status: "success", filePath: filePath, failure: nil)
+  }
+
+  public static func failed(target: DeliveryTarget, failure: HostFailure) -> DeliveryResult {
+    DeliveryResult(target: target, status: "failed", filePath: nil, failure: failure)
+  }
 }
 
 public struct CaptureResult: Codable, Equatable, Sendable {
   public let status: String
   public let sourceDynamicRange: String?
-  public let artifact: CaptureArtifact?
+  public let outputProfile: String?
+  public let deliveries: [DeliveryResult]?
   public let failure: HostFailure?
 
-  public static func success(
+  public static func completed(
     dynamicRange: String,
-    delivery: OutputDelivery,
-    filePath: String
+    deliveries: [DeliveryResult]
   ) -> CaptureResult {
     CaptureResult(
-      status: "success",
+      status: "completed",
       sourceDynamicRange: dynamicRange,
-      artifact: CaptureArtifact(
-        profile: "srgb-visual-match",
-        delivery: delivery,
-        filePath: filePath
-      ),
+      outputProfile: "srgb-visual-match",
+      deliveries: deliveries,
       failure: nil
     )
   }
@@ -92,7 +166,8 @@ public struct CaptureResult: Codable, Equatable, Sendable {
     CaptureResult(
       status: "failed",
       sourceDynamicRange: nil,
-      artifact: nil,
+      outputProfile: nil,
+      deliveries: nil,
       failure: failure
     )
   }
@@ -101,7 +176,8 @@ public struct CaptureResult: Codable, Equatable, Sendable {
     CaptureResult(
       status: "cancelled",
       sourceDynamicRange: nil,
-      artifact: nil,
+      outputProfile: nil,
+      deliveries: nil,
       failure: nil
     )
   }
@@ -186,7 +262,7 @@ public enum PlatformRequestDecoder {
     try requireExactKeys(envelope, expected: ["version", "id", "method", "params"])
 
     guard let version = envelope["version"] as? Int, version == platformContractVersion else {
-      throw PlatformProtocolError.invalidEnvelope("Protocol version must be 1.")
+      throw PlatformProtocolError.invalidEnvelope("Protocol version must be 2.")
     }
 
     guard let id = envelope["id"] as? String, !id.isEmpty else {
@@ -208,26 +284,84 @@ public enum PlatformRequestDecoder {
       try requireExactKeys(parameters, expected: [])
       return PlatformRequest(version: version, id: id, method: method, capture: nil)
     case .capture:
-      try requireExactKeys(parameters, expected: ["mode", "delivery"])
-      guard let modeValue = parameters["mode"] as? String,
-        let mode = CaptureMode(rawValue: modeValue)
-      else {
-        throw PlatformProtocolError.invalidEnvelope("Capture mode must be region or display.")
-      }
-      guard let deliveryValue = parameters["delivery"] as? String,
-        let delivery = OutputDelivery(rawValue: deliveryValue)
-      else {
-        throw PlatformProtocolError.invalidEnvelope(
-          "Capture delivery must be clipboard, folder, or both."
-        )
-      }
-      return PlatformRequest(
-        version: version,
-        id: id,
-        method: method,
-        capture: CaptureParameters(mode: mode, delivery: delivery)
+      let capture = try decodeCaptureParameters(parameters)
+      return PlatformRequest(version: version, id: id, method: method, capture: capture)
+    }
+  }
+
+  private static func decodeCaptureParameters(
+    _ parameters: [String: Any]
+  ) throws -> CaptureParameters {
+    guard let modeValue = parameters["mode"] as? String,
+      let mode = CaptureMode(rawValue: modeValue)
+    else {
+      throw PlatformProtocolError.invalidEnvelope("Capture mode must be region or display.")
+    }
+    guard let deliveryValue = parameters["delivery"] as? String,
+      let delivery = OutputDelivery(rawValue: deliveryValue)
+    else {
+      throw PlatformProtocolError.invalidEnvelope(
+        "Capture delivery must be clipboard, folder, or both."
       )
     }
+
+    if mode == .display {
+      try requireExactKeys(parameters, expected: ["mode", "delivery"])
+      return CaptureParameters(mode: mode, delivery: delivery)
+    }
+
+    try requireExactKeys(
+      parameters,
+      expected: ["mode", "delivery", "targetId", "geometry"]
+    )
+    guard let targetId = parameters["targetId"] as? String, !targetId.isEmpty,
+      let geometryObject = parameters["geometry"] as? [String: Any]
+    else {
+      throw PlatformProtocolError.invalidEnvelope(
+        "Region capture requires a non-empty target id and geometry."
+      )
+    }
+    let geometry = try decodeGeometry(geometryObject)
+    return CaptureParameters(
+      mode: mode,
+      delivery: delivery,
+      targetId: targetId,
+      geometry: geometry
+    )
+  }
+
+  private static func decodeGeometry(_ object: [String: Any]) throws -> CaptureGeometry {
+    try requireExactKeys(
+      object,
+      expected: ["coordinateSpace", "x", "y", "width", "height"]
+    )
+    guard object["coordinateSpace"] as? String == "target-logical",
+      let x = finiteNumber(object["x"]), x >= 0,
+      let y = finiteNumber(object["y"]), y >= 0,
+      let width = finiteNumber(object["width"]), width > 0,
+      let height = finiteNumber(object["height"]), height > 0
+    else {
+      throw PlatformProtocolError.invalidEnvelope(
+        "Region geometry must be a positive target-logical rectangle."
+      )
+    }
+    return CaptureGeometry(
+      coordinateSpace: "target-logical",
+      x: x,
+      y: y,
+      width: width,
+      height: height
+    )
+  }
+
+  private static func finiteNumber(_ value: Any?) -> Double? {
+    guard let number = value as? NSNumber,
+      CFGetTypeID(number) != CFBooleanGetTypeID(),
+      number.doubleValue.isFinite
+    else {
+      return nil
+    }
+    return number.doubleValue
   }
 
   private static func requireExactKeys(

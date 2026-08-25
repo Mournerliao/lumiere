@@ -4,11 +4,12 @@ import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import type {
   CaptureRequest,
   CaptureResult,
+  DeliveryResult,
   PlatformCapabilities,
   PlatformFailure,
   PlatformHost,
 } from '../shared/platform-contract'
-import { PLATFORM_CONTRACT_VERSION } from '../shared/platform-contract'
+import { deliveryTargetsFor, PLATFORM_CONTRACT_VERSION } from '../shared/platform-contract'
 
 const requestTimeoutMilliseconds = 15_000
 
@@ -44,7 +45,9 @@ export class MacOSPlatformHost implements PlatformHost {
 
   public async capture(request: CaptureRequest): Promise<CaptureResult> {
     try {
-      return parseCaptureResult(await this.request('capture', request))
+      const result = parseCaptureResult(await this.request('capture', request))
+      validateCaptureDeliveries(request, result)
+      return result
     } catch (error) {
       return {
         status: 'failed',
@@ -269,6 +272,7 @@ function unavailableCapabilities(error: unknown): PlatformCapabilities {
     platform: 'macos',
     hostStatus: 'unavailable',
     captureModes: [],
+    deliveryTargets: [],
     hdrCapture: 'unavailable',
     outputProfiles: ['srgb-visual-match'],
     unavailableReason: failureFromError(error),
@@ -292,6 +296,7 @@ function parseCapabilities(value: unknown): PlatformCapabilities {
     throw new Error('The macOS host returned invalid capabilities.')
   }
   const captureModes = value.captureModes
+  const deliveryTargets = value.deliveryTargets
   const outputProfiles = value.outputProfiles
   if (
     value.contractVersion !== PLATFORM_CONTRACT_VERSION ||
@@ -300,6 +305,9 @@ function parseCapabilities(value: unknown): PlatformCapabilities {
     !Array.isArray(captureModes) ||
     !captureModes.every((mode) => mode === 'region' || mode === 'display') ||
     new Set(captureModes).size !== captureModes.length ||
+    !Array.isArray(deliveryTargets) ||
+    !deliveryTargets.every((target) => target === 'clipboard' || target === 'folder') ||
+    new Set(deliveryTargets).size !== deliveryTargets.length ||
     (value.hdrCapture !== 'supported' &&
       value.hdrCapture !== 'unavailable' &&
       value.hdrCapture !== 'unvalidated') ||
@@ -308,9 +316,18 @@ function parseCapabilities(value: unknown): PlatformCapabilities {
     outputProfiles[0] !== 'srgb-visual-match' ||
     !hasExactKeys(
       value,
-      ['contractVersion', 'platform', 'hostStatus', 'captureModes', 'hdrCapture', 'outputProfiles'],
-      ['unavailableReason'],
+      [
+        'contractVersion',
+        'platform',
+        'hostStatus',
+        'captureModes',
+        'deliveryTargets',
+        'hdrCapture',
+        'outputProfiles',
+      ],
+      ['activeTarget', 'unavailableReason'],
     ) ||
+    (captureModes.includes('region') && value.activeTarget === undefined) ||
     (value.hostStatus === 'unavailable' && value.unavailableReason === undefined)
   ) {
     throw new Error('The macOS host returned invalid capabilities.')
@@ -318,6 +335,9 @@ function parseCapabilities(value: unknown): PlatformCapabilities {
 
   if (value.unavailableReason !== undefined) {
     parseFailure(value.unavailableReason)
+  }
+  if (value.activeTarget !== undefined) {
+    parseCaptureTarget(value.activeTarget)
   }
 
   return value as unknown as PlatformCapabilities
@@ -340,21 +360,77 @@ function parseCaptureResult(value: unknown): CaptureResult {
     return { status: 'cancelled' }
   }
   if (
-    value.status !== 'success' ||
+    value.status !== 'completed' ||
     (value.sourceDynamicRange !== 'sdr' && value.sourceDynamicRange !== 'hdr') ||
-    !isRecord(value.artifact) ||
-    !hasExactKeys(value, ['status', 'sourceDynamicRange', 'artifact']) ||
-    value.artifact.profile !== 'srgb-visual-match' ||
-    (value.artifact.delivery !== 'clipboard' &&
-      value.artifact.delivery !== 'folder' &&
-      value.artifact.delivery !== 'both') ||
-    (value.artifact.filePath !== undefined &&
-      (typeof value.artifact.filePath !== 'string' || value.artifact.filePath.length === 0)) ||
-    !hasExactKeys(value.artifact, ['profile', 'delivery'], ['filePath'])
+    value.outputProfile !== 'srgb-visual-match' ||
+    !Array.isArray(value.deliveries) ||
+    value.deliveries.length === 0 ||
+    !hasExactKeys(value, ['status', 'sourceDynamicRange', 'outputProfile', 'deliveries'])
   ) {
     throw new Error('The macOS host returned an invalid capture result.')
   }
-  return value as unknown as CaptureResult
+  const deliveries = value.deliveries.map(parseDeliveryResult)
+  if (new Set(deliveries.map(({ target }) => target)).size !== deliveries.length) {
+    throw new Error('The macOS host returned duplicate delivery results.')
+  }
+  return {
+    status: 'completed',
+    sourceDynamicRange: value.sourceDynamicRange,
+    outputProfile: 'srgb-visual-match',
+    deliveries,
+  }
+}
+
+function parseDeliveryResult(value: unknown): DeliveryResult {
+  if (!isRecord(value) || (value.target !== 'clipboard' && value.target !== 'folder')) {
+    throw new Error('The macOS host returned an invalid delivery result.')
+  }
+  if (value.status === 'failed' && hasExactKeys(value, ['target', 'status', 'failure'])) {
+    return { target: value.target, status: 'failed', failure: parseFailure(value.failure) }
+  }
+  if (value.status !== 'success') {
+    throw new Error('The macOS host returned an invalid delivery result.')
+  }
+  if (value.target === 'clipboard' && hasExactKeys(value, ['target', 'status'])) {
+    return { target: 'clipboard', status: 'success' }
+  }
+  if (
+    value.target === 'folder' &&
+    typeof value.filePath === 'string' &&
+    value.filePath.length > 0 &&
+    hasExactKeys(value, ['target', 'status', 'filePath'])
+  ) {
+    return { target: 'folder', status: 'success', filePath: value.filePath }
+  }
+  throw new Error('The macOS host returned an invalid delivery result.')
+}
+
+function validateCaptureDeliveries(request: CaptureRequest, result: CaptureResult): void {
+  if (result.status !== 'completed') {
+    return
+  }
+  const expected = deliveryTargetsFor(request.delivery)
+  if (
+    result.deliveries.length !== expected.length ||
+    !expected.every((target) => result.deliveries.some((delivery) => delivery.target === target))
+  ) {
+    throw new Error('The macOS host returned delivery results that do not match the request.')
+  }
+}
+
+function parseCaptureTarget(value: unknown): void {
+  if (
+    !isRecord(value) ||
+    typeof value.id !== 'string' ||
+    value.id.length === 0 ||
+    !isRecord(value.logicalSize) ||
+    !isPositiveFiniteNumber(value.logicalSize.width) ||
+    !isPositiveFiniteNumber(value.logicalSize.height) ||
+    !hasExactKeys(value.logicalSize, ['width', 'height']) ||
+    !hasExactKeys(value, ['id', 'logicalSize'])
+  ) {
+    throw new Error('The macOS host returned an invalid active target.')
+  }
 }
 
 function parseFailure(value: unknown): PlatformFailure {
@@ -365,6 +441,8 @@ function parseFailure(value: unknown): PlatformFailure {
     'host-unavailable',
     'permission-denied',
     'capture-unavailable',
+    'delivery-unavailable',
+    'delivery-failed',
     'invalid-request',
     'unexpected-failure',
   ]
@@ -379,6 +457,10 @@ function parseFailure(value: unknown): PlatformFailure {
     throw new Error('The macOS host returned an invalid failure.')
   }
   return value as unknown as PlatformFailure
+}
+
+function isPositiveFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

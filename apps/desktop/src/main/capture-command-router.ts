@@ -8,10 +8,12 @@ import type {
   CaptureMode,
   LumierePlatform,
   OutputDelivery,
+  DeliveryResult,
   PlatformCapabilities,
   PlatformFailure,
   PlatformHost,
 } from '../shared/platform-contract'
+import { deliveryTargetsFor } from '../shared/platform-contract'
 
 export interface CapturePreferences {
   delivery: OutputDelivery
@@ -34,7 +36,7 @@ export class CaptureCommandRouter {
     )
   }
 
-  public async capture(mode: CaptureMode): Promise<CaptureCommandResult> {
+  public async captureDisplay(): Promise<CaptureCommandResult> {
     if (this.captureInFlight) {
       return failedResult({
         tone: 'caution',
@@ -46,13 +48,17 @@ export class CaptureCommandRouter {
     this.captureInFlight = true
     try {
       const capabilities = await this.host.getCapabilities()
-      const unavailable = captureUnavailableNotice(capabilities, mode)
+      const unavailable = captureUnavailableNotice(
+        capabilities,
+        'display',
+        this.preferences.delivery,
+      )
       if (unavailable) {
         return failedResult(unavailable)
       }
 
       const result = await this.host.capture({
-        mode,
+        mode: 'display',
         delivery: this.preferences.delivery,
       })
 
@@ -63,11 +69,7 @@ export class CaptureCommandRouter {
         return failedResult(noticeForFailure(result.failure))
       }
 
-      return {
-        status: 'success',
-        feedback: result.artifact.filePath ? 'Saved to “Lumiere”' : 'Capture delivered',
-        ...(result.artifact.filePath ? { filePath: result.artifact.filePath } : {}),
-      }
+      return projectDeliveryResult(result.deliveries)
     } catch {
       return failedResult({
         tone: 'critical',
@@ -134,6 +136,7 @@ function captureFolder(platform: LumierePlatform): string {
 function captureUnavailableNotice(
   capabilities: PlatformCapabilities,
   mode: CaptureMode,
+  delivery: OutputDelivery,
 ): CaptureNotice | null {
   if (capabilities.hostStatus !== 'available') {
     return {
@@ -148,6 +151,15 @@ function captureUnavailableNotice(
       title:
         mode === 'region' ? 'Region capture is not available yet' : 'Display capture unavailable',
       detail: 'Choose an available capture action and try again.',
+    }
+  }
+  if (
+    !deliveryTargetsFor(delivery).every((target) => capabilities.deliveryTargets.includes(target))
+  ) {
+    return {
+      tone: 'caution',
+      title: 'Current output is unavailable',
+      detail: 'Choose an available output destination and try again.',
     }
   }
   return null
@@ -173,6 +185,13 @@ function noticeForFailure(failure: PlatformFailure): CaptureNotice {
         title: 'Capture failed',
         detail: 'The display may have changed. Try again.',
       }
+    case 'delivery-unavailable':
+    case 'delivery-failed':
+      return {
+        tone: 'caution',
+        title: 'Couldn’t deliver capture',
+        detail: 'Check the output destination, then try again.',
+      }
     case 'invalid-request':
     case 'unexpected-failure':
       return {
@@ -181,6 +200,47 @@ function noticeForFailure(failure: PlatformFailure): CaptureNotice {
         detail: 'Try again. Restart Lumiere if the issue continues.',
       }
   }
+}
+
+function projectDeliveryResult(deliveries: readonly DeliveryResult[]): CaptureCommandResult {
+  const clipboard = deliveries.find(({ target }) => target === 'clipboard')
+  const folder = deliveries.find(({ target }) => target === 'folder')
+  const clipboardSucceeded = clipboard?.status === 'success'
+  const folderSucceeded = folder?.status === 'success'
+  const filePath =
+    folder?.target === 'folder' && folder.status === 'success' ? folder.filePath : undefined
+
+  if (deliveries.every(({ status }) => status === 'success')) {
+    const feedback =
+      clipboardSucceeded && folderSucceeded
+        ? 'Copied and saved to “Lumiere”'
+        : clipboardSucceeded
+          ? 'Copied to clipboard'
+          : 'Saved to “Lumiere”'
+    return { status: 'success', feedback, ...(filePath ? { filePath } : {}) }
+  }
+
+  if (deliveries.some(({ status }) => status === 'success')) {
+    const feedback = clipboardSucceeded
+      ? 'Copied to clipboard, but couldn’t save the file'
+      : 'Saved the file, but couldn’t copy it'
+    return {
+      status: 'partial',
+      feedback,
+      notice: {
+        tone: 'caution',
+        title: feedback,
+        detail: 'Check the failed output destination, then try again.',
+      },
+      ...(filePath ? { filePath } : {}),
+    }
+  }
+
+  return failedResult({
+    tone: 'caution',
+    title: 'Couldn’t deliver capture',
+    detail: 'Check the output destination, then try again.',
+  })
 }
 
 function failedResult(notice: CaptureNotice): CaptureCommandResult {

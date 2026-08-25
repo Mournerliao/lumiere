@@ -45,6 +45,11 @@ enum LumiereMacHostMain {
     {
       failure = captureFailure
       event = "capture-failed"
+    } else if case .capture(let captureResult)? = response.result,
+      let deliveryFailure = captureResult.deliveries?.compactMap(\.failure).first
+    {
+      failure = deliveryFailure
+      event = "delivery-failed"
     } else {
       return
     }

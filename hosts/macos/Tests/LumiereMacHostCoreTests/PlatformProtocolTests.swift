@@ -7,10 +7,10 @@ import Testing
 @Test
 func decodesGetCapabilitiesRequest() throws {
   let request = try PlatformRequestDecoder.decode(
-    line: #"{"version":1,"id":"capabilities-1","method":"getCapabilities","params":{}}"#
+    line: #"{"version":2,"id":"capabilities-1","method":"getCapabilities","params":{}}"#
   )
 
-  #expect(request.version == 1)
+  #expect(request.version == 2)
   #expect(request.id == "capabilities-1")
   #expect(request.method == .getCapabilities)
   #expect(request.capture == nil)
@@ -20,17 +20,30 @@ func decodesGetCapabilitiesRequest() throws {
 func decodesDisplayFolderCaptureRequest() throws {
   let request = try PlatformRequestDecoder.decode(
     line:
-      #"{"version":1,"id":"capture-1","method":"capture","params":{"mode":"display","delivery":"folder"}}"#
+      #"{"version":2,"id":"capture-1","method":"capture","params":{"mode":"display","delivery":"folder"}}"#
   )
 
   #expect(request.capture == CaptureParameters(mode: .display, delivery: .folder))
 }
 
 @Test
+func decodesTargetLocalRegionCaptureRequest() throws {
+  let request = try PlatformRequestDecoder.decode(
+    line:
+      #"{"version":2,"id":"capture-2","method":"capture","params":{"mode":"region","delivery":"both","targetId":"display-17","geometry":{"coordinateSpace":"target-logical","x":10.5,"y":20,"width":640,"height":360}}}"#
+  )
+
+  #expect(request.capture?.mode == .region)
+  #expect(request.capture?.targetId == "display-17")
+  #expect(request.capture?.geometry?.x == 10.5)
+  #expect(request.capture?.geometry?.width == 640)
+}
+
+@Test
 func rejectsUnknownFields() {
   #expect(throws: PlatformProtocolError.self) {
     try PlatformRequestDecoder.decode(
-      line: #"{"version":1,"id":"bad-1","method":"getCapabilities","params":{},"extra":true}"#
+      line: #"{"version":2,"id":"bad-1","method":"getCapabilities","params":{},"extra":true}"#
     )
   }
 }
@@ -39,7 +52,7 @@ func rejectsUnknownFields() {
 func rejectsUnknownProtocolVersion() {
   #expect(throws: PlatformProtocolError.self) {
     try PlatformRequestDecoder.decode(
-      line: #"{"version":2,"id":"bad-2","method":"getCapabilities","params":{}}"#
+      line: #"{"version":1,"id":"bad-2","method":"getCapabilities","params":{}}"#
     )
   }
 }
@@ -50,10 +63,11 @@ func encodesCapabilitiesResponseWithoutOptionalNulls() throws {
     id: "capabilities-1",
     result: .capabilities(
       PlatformCapabilities(
-        contractVersion: 1,
+        contractVersion: 2,
         platform: "macos",
         hostStatus: "available",
         captureModes: [.display],
+        deliveryTargets: [.folder],
         hdrCapture: "unvalidated",
         outputProfiles: ["srgb-visual-match"]
       )
@@ -65,7 +79,7 @@ func encodesCapabilitiesResponseWithoutOptionalNulls() throws {
     JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any]
   )
 
-  #expect(object["version"] as? Int == 1)
+  #expect(object["version"] as? Int == 2)
   #expect(object["id"] as? String == "capabilities-1")
   #expect(object["error"] == nil)
   let result = try #require(object["result"] as? [String: Any])

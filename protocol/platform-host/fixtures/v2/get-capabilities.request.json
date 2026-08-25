@@ -1,0 +1,6 @@
+{
+  "version": 2,
+  "id": "capabilities-2",
+  "method": "getCapabilities",
+  "params": {}
+}

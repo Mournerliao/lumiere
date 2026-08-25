@@ -5,21 +5,19 @@ import { describe, expect, it } from 'vitest'
 
 const protocolDirectory = resolve(process.cwd(), '../../protocol/platform-host')
 
-describe('platform host protocol', () => {
-  it('keeps every checked-in fixture conformant with the language-neutral schema', async () => {
-    const schema = JSON.parse(
-      await readFile(`${protocolDirectory}/v1.schema.json`, 'utf8'),
-    ) as object
-    const fixtureNames = (await readdir(`${protocolDirectory}/fixtures`))
+describe.each([1, 2])('platform host protocol v%i', (version) => {
+  it('keeps every checked-in fixture conformant with its language-neutral schema', async () => {
+    const validate = await validatorFor(version)
+    const fixtureDirectory = `${protocolDirectory}/fixtures/v${String(version)}`
+    const fixtureNames = (await readdir(fixtureDirectory))
       .filter((name) => name.endsWith('.json'))
       .sort()
-    const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema)
 
     expect(fixtureNames.length).toBeGreaterThanOrEqual(6)
 
     for (const fixtureName of fixtureNames) {
       const fixture = JSON.parse(
-        await readFile(`${protocolDirectory}/fixtures/${fixtureName}`, 'utf8'),
+        await readFile(`${fixtureDirectory}/${fixtureName}`, 'utf8'),
       ) as unknown
 
       expect(validate(fixture), `${fixtureName}: ${JSON.stringify(validate.errors)}`).toBe(true)
@@ -27,14 +25,11 @@ describe('platform host protocol', () => {
   })
 
   it('rejects protocol messages with unknown fields', async () => {
-    const schema = JSON.parse(
-      await readFile(`${protocolDirectory}/v1.schema.json`, 'utf8'),
-    ) as object
-    const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema)
+    const validate = await validatorFor(version)
 
     expect(
       validate({
-        version: 1,
+        version,
         id: 'invalid-1',
         method: 'capture',
         params: { mode: 'display', delivery: 'folder', rawFrame: true },
@@ -42,3 +37,10 @@ describe('platform host protocol', () => {
     ).toBe(false)
   })
 })
+
+async function validatorFor(version: number): Promise<ReturnType<Ajv2020['compile']>> {
+  const schema = JSON.parse(
+    await readFile(`${protocolDirectory}/v${String(version)}.schema.json`, 'utf8'),
+  ) as object
+  return new Ajv2020({ allErrors: true, strict: true }).compile(schema)
+}

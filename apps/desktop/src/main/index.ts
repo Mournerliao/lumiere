@@ -94,7 +94,7 @@ function registerPlatformIpc(window: BrowserWindow): void {
 
   ipcMain.handle(captureCommandChannels.captureDisplay, (event) => {
     assertTrustedSender(event)
-    return router.capture('display')
+    return router.captureDisplay()
   })
 }
 

@@ -19,8 +19,9 @@ swift build --package-path hosts/macos
 swift test --package-path hosts/macos
 ```
 
-The executable reads platform-host v1 JSON Lines requests from standard input, writes
+The executable reads platform-host v2 JSON Lines requests from standard input, writes
 protocol responses to standard output, and reserves standard error for structured
 diagnostics correlated by request ID. The current slice supports display capture with
-folder delivery; region selection and clipboard delivery remain later product-surface
-work.
+folder delivery, reports the active target snapshot and delivery availability, and
+returns one result per requested delivery target. Region selection and clipboard
+delivery remain later product-surface work.

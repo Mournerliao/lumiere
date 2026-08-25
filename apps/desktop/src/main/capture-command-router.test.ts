@@ -15,6 +15,7 @@ describe('CaptureCommandRouter', () => {
       platform: 'macos',
       hostStatus: 'available',
       captureModes: ['display'],
+      deliveryTargets: ['folder'],
       hdrCapture: 'unavailable',
       outputProfiles: ['srgb-visual-match'],
     })
@@ -34,16 +35,13 @@ describe('CaptureCommandRouter', () => {
 
   it('routes display capture to the current folder delivery', async () => {
     const host = new StubHost(availableCapabilities(), {
-      status: 'success',
+      status: 'completed',
       sourceDynamicRange: 'hdr',
-      artifact: {
-        profile: 'srgb-visual-match',
-        delivery: 'folder',
-        filePath: '/tmp/lumiere.png',
-      },
+      outputProfile: 'srgb-visual-match',
+      deliveries: [{ target: 'folder', status: 'success', filePath: '/tmp/lumiere.png' }],
     })
 
-    await expect(new CaptureCommandRouter('macos', host).capture('display')).resolves.toEqual({
+    await expect(new CaptureCommandRouter('macos', host).captureDisplay()).resolves.toEqual({
       status: 'success',
       feedback: 'Saved to “Lumiere”',
       filePath: '/tmp/lumiere.png',
@@ -61,7 +59,7 @@ describe('CaptureCommandRouter', () => {
       },
     })
 
-    const result = await new CaptureCommandRouter('macos', host).capture('display')
+    const result = await new CaptureCommandRouter('macos', host).captureDisplay()
 
     expect(result).toMatchObject({
       status: 'failed',
@@ -81,9 +79,9 @@ describe('CaptureCommandRouter', () => {
     const host = new StubHost(availableCapabilities(), capturePending)
     const router = new CaptureCommandRouter('macos', host)
 
-    const firstCapture = router.capture('display')
+    const firstCapture = router.captureDisplay()
     await Promise.resolve()
-    const secondCapture = await router.capture('display')
+    const secondCapture = await router.captureDisplay()
 
     expect(secondCapture).toMatchObject({
       status: 'failed',
@@ -92,15 +90,42 @@ describe('CaptureCommandRouter', () => {
     expect(host.requests).toHaveLength(1)
 
     finishCapture?.({
-      status: 'success',
+      status: 'completed',
       sourceDynamicRange: 'sdr',
-      artifact: {
-        profile: 'srgb-visual-match',
-        delivery: 'folder',
-        filePath: '/tmp/first.png',
-      },
+      outputProfile: 'srgb-visual-match',
+      deliveries: [{ target: 'folder', status: 'success', filePath: '/tmp/first.png' }],
     })
     await firstCapture
+  })
+
+  it('preserves a successful target when the second delivery fails', async () => {
+    const host = new StubHost(
+      { ...availableCapabilities(), deliveryTargets: ['clipboard', 'folder'] },
+      {
+        status: 'completed',
+        sourceDynamicRange: 'hdr',
+        outputProfile: 'srgb-visual-match',
+        deliveries: [
+          { target: 'clipboard', status: 'success' },
+          {
+            target: 'folder',
+            status: 'failed',
+            failure: {
+              code: 'delivery-failed',
+              message: 'The configured folder is not writable.',
+              retryable: true,
+            },
+          },
+        ],
+      },
+    )
+
+    await expect(
+      new CaptureCommandRouter('macos', host, { delivery: 'both' }).captureDisplay(),
+    ).resolves.toMatchObject({
+      status: 'partial',
+      feedback: 'Copied to clipboard, but couldn’t save the file',
+    })
   })
 })
 
@@ -130,6 +155,7 @@ function availableCapabilities(): PlatformCapabilities {
     platform: 'macos',
     hostStatus: 'available',
     captureModes: ['display'],
+    deliveryTargets: ['folder'],
     hdrCapture: 'supported',
     outputProfiles: ['srgb-visual-match'],
   }

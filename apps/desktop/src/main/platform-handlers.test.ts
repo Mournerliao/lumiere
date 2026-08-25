@@ -27,9 +27,33 @@ describe('platform handlers', () => {
     const host = new RecordingPlatformHost()
     const handlers = createPlatformHandlers(host)
 
-    await handlers.capture({ mode: 'region', delivery: 'both' })
+    await handlers.capture({
+      mode: 'region',
+      delivery: 'both',
+      targetId: 'display-17',
+      geometry: {
+        coordinateSpace: 'target-logical',
+        x: 10,
+        y: 20,
+        width: 640,
+        height: 360,
+      },
+    })
 
-    expect(host.requests).toEqual([{ mode: 'region', delivery: 'both' }])
+    expect(host.requests).toEqual([
+      {
+        mode: 'region',
+        delivery: 'both',
+        targetId: 'display-17',
+        geometry: {
+          coordinateSpace: 'target-logical',
+          x: 10,
+          y: 20,
+          width: 640,
+          height: 360,
+        },
+      },
+    ])
   })
 
   it('reports an unavailable native host without falling back to Electron capture', async () => {
@@ -39,7 +63,7 @@ describe('platform handlers', () => {
     const result = await handlers.capture({ mode: 'display', delivery: 'clipboard' })
 
     expect(capabilities).toMatchObject({
-      contractVersion: 1,
+      contractVersion: 2,
       platform: 'macos',
       hostStatus: 'unavailable',
       hdrCapture: 'unavailable',
@@ -61,6 +85,7 @@ class RecordingPlatformHost implements PlatformHost {
       platform: 'macos',
       hostStatus: 'available',
       captureModes: ['region', 'display'],
+      deliveryTargets: ['clipboard', 'folder'],
       hdrCapture: 'supported',
       outputProfiles: ['srgb-visual-match'],
     })
@@ -69,12 +94,18 @@ class RecordingPlatformHost implements PlatformHost {
   public capture(request: CaptureRequest): Promise<CaptureResult> {
     this.requests.push(request)
     return Promise.resolve({
-      status: 'success',
+      status: 'completed',
       sourceDynamicRange: 'hdr',
-      artifact: {
-        profile: 'srgb-visual-match',
-        delivery: request.delivery,
-      },
+      outputProfile: 'srgb-visual-match',
+      deliveries:
+        request.delivery === 'both'
+          ? [
+              { target: 'clipboard', status: 'success' },
+              { target: 'folder', status: 'success', filePath: '/tmp/lumiere.png' },
+            ]
+          : request.delivery === 'clipboard'
+            ? [{ target: 'clipboard', status: 'success' }]
+            : [{ target: 'folder', status: 'success', filePath: '/tmp/lumiere.png' }],
     })
   }
 }

@@ -40,10 +40,10 @@ Universal distribution, signing, and notarization belong to Milestone 1D.
 
 ## Protocol Smoke Test
 
-Build the host, then send exactly one platform-host v1 JSON Lines request:
+Build the host, then send exactly one platform-host v2 JSON Lines request:
 
 ```sh
-printf '%s\n' '{"version":1,"id":"capabilities-smoke","method":"getCapabilities","params":{}}' \
+printf '%s\n' '{"version":2,"id":"capabilities-smoke","method":"getCapabilities","params":{}}' \
   | hosts/macos/.build/debug/LumiereMacHost
 ```
 
@@ -62,7 +62,8 @@ The display action should become available while the unsupported region action r
 disabled. The active target is the display under the pointer when the request reaches
 the native host, with the current main screen and then the system primary display used
 only as recovery fallbacks. A successful capture writes an RGBA8/sRGB PNG under
-`~/Pictures/Lumiere` and returns the exact path through the platform-host interface.
+`~/Pictures/Lumiere` using the `Lumiere-yyyy-MM-dd-HHmmss.png` rule and returns the
+exact path through the platform-host interface.
 
 ## Screen Recording Permission
 

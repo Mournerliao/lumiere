@@ -9,18 +9,21 @@
 ## Current Position
 
 The repository has converged on the final `apps/`, `protocol/`, `hosts/`, and
-`knowledge/` ownership layout. Lumiere has an Electron/React shared shell, a
-language-neutral platform-host v1 schema with executable fixtures, explicit unavailable
-behavior, dual-platform CI, and isolated native host trees.
+`knowledge/` ownership layout. Lumiere has an Electron/React shared shell,
+language-neutral platform-host schemas with versioned executable fixtures, explicit
+unavailable behavior, dual-platform CI, and isolated native host trees. Protocol v1 is
+frozen; v2 now owns target-local region geometry, delivery availability, per-target
+delivery outcomes, and the cancellation responsibility boundary.
 
 The compact shared main window now uses the approved generated tokens and drives an
 integrated Swift ScreenCaptureKit host through one main-process capture command router
-and the platform-host v1 JSON Lines process interface. The router owns capability
-gating, current folder delivery, in-flight state, and product failure mapping. Display
-capture with folder delivery produces an RGBA8/sRGB PNG; region capture remains
-honestly disabled. The Windows engine now exposes one deep display-capture operation
-that owns target resolution, target-aware HDR probing, first-frame acquisition, one
-sRGB Visual Match conversion, delivery, cancellation, and teardown. Milestone 1 now
+and the platform-host v2 JSON Lines process interface. The router owns capability and
+delivery gating, current folder delivery, in-flight state, per-target result projection,
+and product failure mapping. Display capture with folder delivery produces a timestamped
+RGBA8/sRGB PNG; region capture remains honestly disabled. The Windows engine now
+exposes one deep display-capture operation that owns target resolution, target-aware
+HDR probing, first-frame acquisition, one sRGB Visual Match conversion, delivery,
+cancellation, and teardown. Milestone 1 now
 advances through environment-aware execution lanes: Issue #7 owns the Windows Host
 adapter, while Issue #9 owns the shared product surface and macOS product journeys.
 WinUI and the old validation/HDR10-JXR paths remain removed.
@@ -32,7 +35,7 @@ WinUI and the old validation/HDR10-JXR paths remain removed.
 | 0. Foundation | Complete | Final layout, secure shell, language-neutral protocol, paused Windows engine; macOS and Windows CI pass | None |
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
 | 1B. Windows host adapter | In progress ([#7](https://github.com/Mournerliao/lumiere/issues/7)) | The engine has one narrow capture interface, single-conversion delivery, target-aware multi-adapter HDR probing, and deterministic operation teardown | Implement the JSON Lines Host executable, Electron integration, and Windows runtime verification |
-| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window, generated tokens, one main-process capture router, honest capability state, and the verified macOS display-to-folder journey | Add settings, overlay, tray/menu bar, shortcut, macOS region/clipboard/both, and independent Windows journeys after #7 |
+| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window, generated tokens, one main-process capture router, v2 target/delivery contract, honest capability state, and the verified macOS display-to-folder journey | Add settings, overlay, tray/menu bar, shortcut, macOS region/clipboard/both, and independent Windows journeys after #7 |
 | 1D. Distribution and release | Not started | Windows installer direction remains recorded | Windows installer, signed/notarized macOS artifact, clean-machine and hardware verification |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
 | 3. Cross-platform HDR fidelity | Planned; not started | Fidelity is separated from artifact success and HDR preservation | Define support matrix/tolerances and run fixed-scene verification |
@@ -42,8 +45,8 @@ acceptance criteria and implementation status for each vertical slice.
 
 ## Verification Truth
 
-- **Repository:** frozen install, layout and TypeScript checks, seventeen cross-platform
-  shell/protocol/process tests, three macOS path tests, ten Swift
+- **Repository:** frozen install, layout and TypeScript checks, twenty cross-platform
+  shell/protocol/process tests, three macOS path tests, eleven Swift
   protocol/capability/permission/diagnostic tests, and the production build pass locally on
   macOS. Shared, macOS, and Windows test gates are explicit and platform-scoped.
 - **macOS development runtime:** the Electron display action drove ScreenCaptureKit to
@@ -80,13 +83,14 @@ may expose one frontier per environment-eligible lane while each writer or workt
 advances only one current working Issue at a time.
 
 - **Shared/macOS lane — [Issue #9](https://github.com/Mournerliao/lumiere/issues/9):**
-  resolve region geometry, cancellation ownership, and per-target delivery outcomes in
-  the owning spec and platform-host contract before implementing the shared overlay or
-  macOS clipboard/both delivery on top of the established capture command router.
+  implement macOS clipboard and both-target delivery from the existing single sRGB
+  Visual Match conversion, return honest per-target results through protocol v2, and
+  switch the shared default to clipboard and folder only after both targets are
+  available.
 - **Windows lane — [Issue #7](https://github.com/Mournerliao/lumiere/issues/7):** add
-  the .NET platform-host v1 executable around the retained engine, integrate it with
-  Electron, and verify repeat, cancellation, clean exit, and SDR/HDR-state behavior on
-  the named Windows machine.
+  the .NET platform-host executable around the retained engine using the current v2
+  contract, integrate it with Electron, and verify repeat, cancellation, clean exit,
+  and SDR/HDR-state behavior on the named Windows machine.
 - **Milestone gate:** 1D distribution and release work remains blocked until both
   native lanes and the shared cross-platform journeys pass their independent criteria.
 

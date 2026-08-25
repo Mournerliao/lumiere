@@ -35,6 +35,12 @@ export type CaptureCommandResult =
       filePath?: string
     }
   | {
+      status: 'partial'
+      feedback: string
+      notice: CaptureNotice
+      filePath?: string
+    }
+  | {
       status: 'cancelled'
       feedback: string
     }

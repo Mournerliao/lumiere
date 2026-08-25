@@ -15,6 +15,7 @@ export class UnavailablePlatformHost implements PlatformHost {
       platform: this.platform,
       hostStatus: 'unavailable',
       captureModes: [],
+      deliveryTargets: [],
       hdrCapture: 'unavailable',
       outputProfiles: ['srgb-visual-match'],
       unavailableReason: {

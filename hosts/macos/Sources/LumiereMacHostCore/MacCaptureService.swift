@@ -33,14 +33,29 @@ public actor MacCaptureService {
   }
 
   private func capabilities() async -> PlatformCapabilities {
-    let target = await ActiveDisplayTargetResolver.resolve()
+    guard let target = await ActiveDisplayTargetResolver.resolve() else {
+      return PlatformCapabilities(
+        contractVersion: platformContractVersion,
+        platform: "macos",
+        hostStatus: "available",
+        captureModes: [],
+        deliveryTargets: [.folder],
+        hdrCapture: "unavailable",
+        outputProfiles: ["srgb-visual-match"]
+      )
+    }
     return PlatformCapabilities(
       contractVersion: platformContractVersion,
       platform: "macos",
       hostStatus: "available",
       captureModes: [.display],
+      deliveryTargets: [.folder],
       hdrCapture: target.supportsHDR ? "supported" : "unavailable",
-      outputProfiles: ["srgb-visual-match"]
+      outputProfiles: ["srgb-visual-match"],
+      activeTarget: CaptureTarget(
+        id: target.id,
+        logicalSize: LogicalSize(width: target.logicalWidth, height: target.logicalHeight)
+      )
     )
   }
 
@@ -58,7 +73,7 @@ public actor MacCaptureService {
     guard parameters.delivery == .folder else {
       return .failed(
         HostFailure(
-          code: .captureUnavailable,
+          code: .deliveryUnavailable,
           message: "The first macOS native slice supports folder delivery only.",
           retryable: false
         )
@@ -80,7 +95,15 @@ public actor MacCaptureService {
     }
 
     do {
-      let target = await ActiveDisplayTargetResolver.resolve()
+      guard let target = await ActiveDisplayTargetResolver.resolve() else {
+        return .failed(
+          HostFailure(
+            code: .captureUnavailable,
+            message: "No active display is available for capture.",
+            retryable: true
+          )
+        )
+      }
       let content = try await SCShareableContent.excludingDesktopWindows(
         false,
         onScreenWindowsOnly: true
@@ -112,10 +135,9 @@ public actor MacCaptureService {
       let fileURL = try outputURL()
       try writeVisualMatchPNG(image, to: fileURL, sourceIsHDR: capturesHDR)
 
-      return .success(
+      return .completed(
         dynamicRange: capturesHDR ? "hdr" : "sdr",
-        delivery: parameters.delivery,
-        filePath: fileURL.path
+        deliveries: [.folderSuccess(filePath: fileURL.path)]
       )
     } catch let error where CaptureErrorClassification.isCancellation(error) {
       return .cancelled()
@@ -132,7 +154,19 @@ public actor MacCaptureService {
       withIntermediateDirectories: true,
       attributes: nil
     )
-    return directory.appendingPathComponent("Lumiere-\(UUID().uuidString).png")
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.calendar = Calendar(identifier: .gregorian)
+    formatter.timeZone = .current
+    formatter.dateFormat = "yyyy-MM-dd-HHmmss"
+    let baseName = "Lumiere-\(formatter.string(from: Date()))"
+    var candidate = directory.appendingPathComponent("\(baseName).png")
+    var suffix = 2
+    while FileManager.default.fileExists(atPath: candidate.path) {
+      candidate = directory.appendingPathComponent("\(baseName)-\(suffix).png")
+      suffix += 1
+    }
+    return candidate
   }
 
   private func writeVisualMatchPNG(
@@ -218,6 +252,12 @@ public actor MacCaptureService {
 private struct ActiveDisplayTarget: Sendable {
   let displayID: CGDirectDisplayID
   let maximumPotentialHeadroom: CGFloat?
+  let logicalWidth: Double
+  let logicalHeight: Double
+
+  var id: String {
+    "display-\(displayID)"
+  }
 
   var supportsHDR: Bool {
     #if arch(arm64)
@@ -233,7 +273,7 @@ private struct ActiveDisplayTarget: Sendable {
 
 @MainActor
 private enum ActiveDisplayTargetResolver {
-  static func resolve() -> ActiveDisplayTarget {
+  static func resolve() -> ActiveDisplayTarget? {
     let screens = NSScreen.screens
     let pointerLocation = NSEvent.mouseLocation
     let pointerScreen = screens.first { screen in
@@ -247,13 +287,17 @@ private enum ActiveDisplayTargetResolver {
       mainScreenDisplayID: mainScreenDisplayID,
       fallbackDisplayID: fallbackDisplayID
     )
-    let headroom =
-      screens
-      .first(where: { displayID(for: $0) == selectedDisplayID })?
-      .maximumPotentialExtendedDynamicRangeColorComponentValue
+    let resolvedScreen = screens.first(where: { displayID(for: $0) == selectedDisplayID })
+    let headroom = resolvedScreen?.maximumPotentialExtendedDynamicRangeColorComponentValue
+    let logicalSize = resolvedScreen?.frame.size ?? CGDisplayBounds(selectedDisplayID).size
+    guard selectedDisplayID != 0, logicalSize.width > 0, logicalSize.height > 0 else {
+      return nil
+    }
     return ActiveDisplayTarget(
       displayID: selectedDisplayID,
-      maximumPotentialHeadroom: headroom
+      maximumPotentialHeadroom: headroom,
+      logicalWidth: Double(logicalSize.width),
+      logicalHeight: Double(logicalSize.height)
     )
   }
 

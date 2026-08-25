@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "id": "capture-display-2",
+  "method": "capture",
+  "params": {
+    "mode": "display",
+    "delivery": "folder"
+  }
+}
