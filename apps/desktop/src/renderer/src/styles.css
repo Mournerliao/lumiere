@@ -301,59 +301,19 @@ button {
 
 .settings-shell {
   display: grid;
-  min-height: 100vh;
-  grid-template-columns: 168px minmax(0, 1fr);
+  height: 100vh;
+  min-height: 0;
+  grid-template-rows: 44px 72px minmax(0, 1fr);
+  overflow: hidden;
   background: var(--surface-window);
 }
 
-.settings-sidebar {
-  min-width: 0;
-  border-right: 1px solid var(--border-subtle);
-  background: color-mix(in srgb, var(--surface-raised) 52%, var(--surface-window));
-  -webkit-app-region: drag;
-  user-select: none;
-}
-
-.settings-window-safe-area {
-  height: 52px;
-}
-
-.settings-navigation {
-  display: grid;
-  gap: 4px;
-  padding: 0 10px;
-}
-
-.settings-navigation-item {
-  display: flex;
-  min-height: 32px;
-  align-items: center;
-  padding: 0 10px;
-  border-radius: var(--Lumiere-Dark-radiusChip);
-  font-size: var(--Lumiere-Dark-fontSizeBody);
-  -webkit-app-region: no-drag;
-}
-
-.settings-navigation-item--active {
-  color: var(--text-primary);
-  background: var(--surface-hover);
-  font-weight: 580;
-}
-
-.settings-navigation-item--inactive {
-  color: var(--text-secondary);
-}
-
-.settings-content {
-  min-width: 0;
-}
-
 .settings-title-bar {
+  position: relative;
   display: flex;
-  height: 52px;
   align-items: center;
-  padding: 0 18px;
-  border-bottom: 1px solid var(--border-subtle);
+  justify-content: center;
+  background: color-mix(in srgb, var(--surface-raised) 26%, var(--surface-window));
   -webkit-app-region: drag;
   user-select: none;
 }
@@ -363,25 +323,160 @@ button {
   color: var(--text-primary);
   font-size: var(--Lumiere-Dark-fontSizeBody);
   font-weight: 650;
+  line-height: 1;
+}
+
+.settings-title-bar--windows {
+  justify-content: flex-start;
+  padding-left: 16px;
+}
+
+.settings-done {
+  position: absolute;
+  top: 8px;
+  right: 18px;
+  height: 28px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--Lumiere-Dark-radiusChip);
+  color: var(--accent-base);
+  background: transparent;
+  font-size: var(--Lumiere-Dark-fontSizeBody);
+  font-weight: 520;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.settings-title-bar--windows .settings-done {
+  right: 146px;
+}
+
+.settings-done:hover {
+  color: var(--accent-hover);
+}
+
+.settings-done:focus-visible {
+  outline: 2px solid var(--accent-base);
+  outline-offset: 1px;
+}
+
+.settings-dock-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 0 8px;
+}
+
+.settings-dock {
+  gap: 4px;
+  padding: 6px;
+  border-color: var(--border-subtle);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-window) 82%, black);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-app-region: no-drag;
+}
+
+.settings-dock-item {
+  isolation: isolate;
+  border-radius: 11px;
+  color: var(--text-tertiary);
+  transition: color 120ms ease;
+}
+
+.settings-dock-item:hover {
+  color: var(--text-secondary);
+}
+
+.settings-dock-item[aria-pressed='true'] {
+  color: var(--text-primary);
+}
+
+.settings-dock-item:focus-visible {
+  outline: 2px solid var(--accent-base);
+  outline-offset: 2px;
+}
+
+.settings-dock-item .dock-active-pill {
+  inset: 0;
+  border-radius: 11px;
+  background: var(--surface-raised);
+}
+
+.settings-dock-item svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.4;
+}
+
+.settings-content {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: 4px 14px 14px;
 }
 
 .settings-list {
-  padding: 0 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.settings-list--system .settings-row {
+  min-height: 44px;
 }
 
 .settings-row {
   display: grid;
-  min-height: 76px;
+  min-height: 43px;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--Lumiere-Dark-space4);
-  border-bottom: 1px solid var(--border-subtle);
+}
+
+.settings-row-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
 }
 
 .settings-row-label {
   color: var(--text-primary);
   font-size: var(--Lumiere-Dark-fontSizeBody);
   font-weight: 580;
+}
+
+.settings-row-hint {
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: var(--Lumiere-Dark-fontSizeCaption);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-row-value {
+  color: var(--text-secondary);
+  font-size: var(--Lumiere-Dark-fontSizeMeta);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.settings-row-value--ready {
+  color: var(--status-ready);
+}
+
+.settings-row-value--control {
+  min-height: 30px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--Lumiere-Dark-radiusChip);
+  color: var(--text-primary);
+  background: var(--surface-raised);
+  line-height: 1;
 }
 
 .settings-select {
@@ -433,9 +528,8 @@ button {
 }
 
 .settings-select-content {
-  right: 0;
-  left: auto;
-  min-width: max-content;
+  width: 100%;
+  min-width: 0;
   border-color: var(--border-default);
   border-radius: var(--Lumiere-Dark-radiusChip);
   background: var(--surface-menu, var(--surface-raised));
@@ -464,9 +558,20 @@ button {
 }
 
 .settings-error {
-  margin: var(--Lumiere-Dark-space4) 18px 0;
+  margin: 8px 0 0;
   color: var(--status-caution);
   font-size: var(--Lumiere-Dark-fontSizeCaption);
+}
+
+.settings-semantics-note {
+  margin: 0;
+  padding: 9px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--Lumiere-Dark-radiusControl);
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-raised) 38%, var(--surface-window));
+  font-size: var(--Lumiere-Dark-fontSizeCaption);
+  line-height: 1.35;
 }
 
 @keyframes capture-pulse {
@@ -482,6 +587,8 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .capture-action,
   .settings-link,
+  .settings-done,
+  .settings-dock-item,
   .settings-select-trigger,
   .settings-select-item {
     transition: none;

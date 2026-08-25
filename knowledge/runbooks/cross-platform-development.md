@@ -52,6 +52,7 @@ under `apps/desktop/src/renderer/src/components` and are owned by this repositor
 Installed beUI components:
 
 - `button-base`
+- `dock`
 - `select`
 
 Preview and add a component from the live registry:

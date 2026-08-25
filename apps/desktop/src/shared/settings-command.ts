@@ -3,7 +3,6 @@ import { deliveryTargetsFor, type DeliveryTarget, type OutputDelivery } from './
 export const settingsCommandChannels = {
   changed: 'settings:changed',
   getSnapshot: 'settings:get-snapshot',
-  openWindow: 'settings:open-window',
   setOutputDelivery: 'settings:set-output-delivery',
 } as const
 
@@ -15,7 +14,6 @@ export interface SettingsSnapshot {
 }
 
 export interface LumiereSettingsApi {
-  openSettings(): Promise<void>
   getSettingsSnapshot(): Promise<SettingsSnapshot>
   setOutputDelivery(delivery: OutputDelivery): Promise<SettingsSnapshot>
   onSettingsChanged(listener: (snapshot: SettingsSnapshot) => void): () => void

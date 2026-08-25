@@ -16,21 +16,19 @@ import {
 import type { PlatformHost } from '../shared/platform-contract'
 
 let mainWindow: BrowserWindow | null = null
-let settingsWindow: BrowserWindow | null = null
 let applicationTray: Tray | null = null
 let platformHost: PlatformHost | null = null
 let captureRouter: CaptureCommandRouter | null = null
 let settingsStore: SettingsStore | null = null
 
-function createRendererWindow(kind: 'main' | 'settings'): BrowserWindow {
-  const isSettings = kind === 'settings'
+function createRendererWindow(): BrowserWindow {
   const window = new BrowserWindow({
-    width: isSettings ? 600 : 480,
-    height: isSettings ? 279 : 370,
-    minWidth: isSettings ? 600 : 440,
-    minHeight: isSettings ? 279 : 340,
+    width: 480,
+    height: 370,
+    minWidth: 440,
+    minHeight: 340,
     show: false,
-    title: isSettings ? 'Lumiere Settings' : 'Lumiere',
+    title: 'Lumiere',
     backgroundColor: '#1f1d1b',
     ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset' as const } : {}),
     ...(process.platform === 'win32'
@@ -62,13 +60,9 @@ function createRendererWindow(kind: 'main' | 'settings'): BrowserWindow {
   })
 
   if (!app.isPackaged && process.env.ELECTRON_RENDERER_URL) {
-    const rendererUrl = new URL(process.env.ELECTRON_RENDERER_URL)
-    rendererUrl.hash = isSettings ? 'settings' : ''
-    void window.loadURL(rendererUrl.toString())
+    void window.loadURL(process.env.ELECTRON_RENDERER_URL)
   } else {
-    void window.loadFile(join(__dirname, '../renderer/index.html'), {
-      hash: isSettings ? 'settings' : '',
-    })
+    void window.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
   return window
@@ -76,25 +70,12 @@ function createRendererWindow(kind: 'main' | 'settings'): BrowserWindow {
 
 function showMainWindow(): BrowserWindow {
   if (!mainWindow || mainWindow.isDestroyed()) {
-    mainWindow = createRendererWindow('main')
+    mainWindow = createRendererWindow()
   }
 
   mainWindow.show()
   mainWindow.focus()
   return mainWindow
-}
-
-function showSettingsWindow(): BrowserWindow {
-  if (!settingsWindow || settingsWindow.isDestroyed()) {
-    settingsWindow = createRendererWindow('settings')
-    settingsWindow.on('closed', () => {
-      settingsWindow = null
-    })
-  }
-
-  settingsWindow.show()
-  settingsWindow.focus()
-  return settingsWindow
 }
 
 function registerIpc(): void {
@@ -108,12 +89,11 @@ function registerIpc(): void {
 
   ipcMain.removeHandler(captureCommandChannels.getSurfaceSnapshot)
   ipcMain.removeHandler(captureCommandChannels.captureDisplay)
-  ipcMain.removeHandler(settingsCommandChannels.openWindow)
   ipcMain.removeHandler(settingsCommandChannels.getSnapshot)
   ipcMain.removeHandler(settingsCommandChannels.setOutputDelivery)
 
   const assertTrustedSender = (event: Electron.IpcMainInvokeEvent): void => {
-    const trustedContents = [mainWindow, settingsWindow]
+    const trustedContents = [mainWindow]
       .filter((window): window is BrowserWindow => window !== null && !window.isDestroyed())
       .map((window) => window.webContents)
     if (
@@ -140,12 +120,6 @@ function registerIpc(): void {
     assertTrustedSender(event)
     assertNoArguments(args)
     return router.captureDisplay()
-  })
-
-  ipcMain.handle(settingsCommandChannels.openWindow, (event, ...args) => {
-    assertTrustedSender(event)
-    assertNoArguments(args)
-    showSettingsWindow()
   })
 
   ipcMain.handle(settingsCommandChannels.getSnapshot, (event, ...args) => {
@@ -187,7 +161,7 @@ async function getSettingsSnapshot(): Promise<SettingsSnapshot> {
 }
 
 function broadcastSettingsChanged(snapshot: SettingsSnapshot): void {
-  for (const window of [mainWindow, settingsWindow]) {
+  for (const window of [mainWindow]) {
     if (window && !window.isDestroyed()) {
       window.webContents.send(settingsCommandChannels.changed, snapshot)
     }
@@ -214,7 +188,7 @@ void app.whenReady().then(async () => {
   platformHost = createPlatformHost()
   settingsStore = new SettingsStore(join(app.getPath('userData'), 'settings.json'))
   await settingsStore.load()
-  mainWindow = createRendererWindow('main')
+  mainWindow = createRendererWindow()
   registerIpc()
   applyMacDockIcon()
   applicationTray = createApplicationTray(showMainWindow)

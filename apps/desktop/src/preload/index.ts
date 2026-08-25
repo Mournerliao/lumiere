@@ -9,7 +9,6 @@ const platformApi: LumiereRendererApi = {
   platform,
   getCaptureSurfaceSnapshot: () => ipcRenderer.invoke(captureCommandChannels.getSurfaceSnapshot),
   captureDisplay: () => ipcRenderer.invoke(captureCommandChannels.captureDisplay),
-  openSettings: () => ipcRenderer.invoke(settingsCommandChannels.openWindow),
   getSettingsSnapshot: () => ipcRenderer.invoke(settingsCommandChannels.getSnapshot),
   setOutputDelivery: (delivery) =>
     ipcRenderer.invoke(settingsCommandChannels.setOutputDelivery, delivery),

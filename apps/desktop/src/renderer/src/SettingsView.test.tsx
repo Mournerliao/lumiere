@@ -10,8 +10,21 @@ describe('SettingsView', () => {
           outputDelivery: 'clipboard',
           availableOutputDeliveries: ['clipboard'],
         }}
+        surfaceSnapshot={{
+          platform: 'macos',
+          hostAvailable: true,
+          captureModes: ['display'],
+          hdrStatus: 'ready',
+          output: {
+            delivery: 'clipboard',
+            label: 'Clipboard',
+            location: '~/Pictures/Lumiere',
+          },
+        }}
+        platform="macos"
         isSaving={false}
         error={null}
+        onDone={() => undefined}
         onOutputDeliveryChange={() => undefined}
       />,
     )
@@ -22,5 +35,9 @@ describe('SettingsView', () => {
     expect(markup).toContain('role="option" aria-selected="false" disabled=""')
     expect(markup).toContain('role="option" aria-selected="true" tabindex="-1"')
     expect(markup).not.toContain('<select')
+    expect(markup).toContain('aria-label="Output settings" aria-pressed="true"')
+    expect(markup).toContain('aria-label="Capture settings" aria-pressed="false"')
+    expect(markup).toContain('Save folder')
+    expect(markup).toContain('File naming')
   })
 })

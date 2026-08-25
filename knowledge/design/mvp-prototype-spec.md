@@ -237,9 +237,14 @@ Windows 使用系统托盘语义，macOS 使用菜单栏语义；文案、间距
 
 ### 7.4 设置
 
-设置窗采用全高侧边栏：侧边栏铺到窗口顶边，窗口控件落在侧边栏上方，页标题放在右栏顶部。
-两个平台走各自的原生实现，macOS 用 `titleBarStyle: 'hiddenInset'`，Windows 用 `titleBarStyle: 'hidden'`
-配 `titleBarOverlay`。侧边栏顶部必须为窗口控件预留安全区，并把该区域设为可拖拽，其中的控件单独排除。
+设置是 Lumiere 主窗口内的一种模式，不创建第二个 `BrowserWindow`。Capture 与 Settings 使用相同且稳定的
+窗口尺寸；从主界面的 Settings 入口进入设置，标题栏中的 Done 返回 Capture。macOS 继续使用
+`titleBarStyle: 'hiddenInset'`，Windows 继续使用 `titleBarStyle: 'hidden'` 配 `titleBarOverlay`，窗口拖拽区和
+原生窗口控件行为保持平台一致。
+
+设置分类使用居中的 beUI Dock：Output、Capture、System & About 分别使用输出、取景框和齿轮图标，活动项以
+滑动圆角块表示。标题栏与 Dock 之间保持清楚的区域间距，Dock 与首个设置项保持更紧密的内容间距。设置项通过
+留白分组，不使用逐行分割线；未实现或不可用的设置必须显示真实状态，不得伪装成可操作控件。
 
 不使用 macOS vibrancy 材质。截图工具的窗口经常出现在用户正在捕获的画面里，半透明会把背后内容带进
 输出；材质透出的颜色也让深色对比度不可预测。托盘弹出面板可以例外。
