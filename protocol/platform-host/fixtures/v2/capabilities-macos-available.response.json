@@ -6,7 +6,7 @@
     "platform": "macos",
     "hostStatus": "available",
     "captureModes": ["display"],
-    "deliveryTargets": ["folder"],
+    "deliveryTargets": ["clipboard", "folder"],
     "hdrCapture": "supported",
     "outputProfiles": ["srgb-visual-match"],
     "activeTarget": {

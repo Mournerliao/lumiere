@@ -2,7 +2,7 @@
 
 This directory owns the Swift ScreenCaptureKit adapter at the platform-host seam. It
 acquires HDR-aware frames, converts the official output to sRGB Visual Match, and
-performs native file delivery for the first macOS vertical slice.
+performs native clipboard and file delivery.
 
 The first implementation targets macOS 15 or newer. Swift Package Manager builds for
 the active architecture; distribution will record and verify the final universal
@@ -22,6 +22,6 @@ swift test --package-path hosts/macos
 The executable reads platform-host v2 JSON Lines requests from standard input, writes
 protocol responses to standard output, and reserves standard error for structured
 diagnostics correlated by request ID. The current slice supports display capture with
-folder delivery, reports the active target snapshot and delivery availability, and
-returns one result per requested delivery target. Region selection and clipboard
-delivery remain later product-surface work.
+clipboard, folder, or both-target delivery from one converted PNG, reports the active
+target snapshot and delivery availability, and returns one result per requested
+delivery target. Region selection remains later product-surface work.

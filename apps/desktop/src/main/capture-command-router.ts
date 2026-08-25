@@ -25,7 +25,7 @@ export class CaptureCommandRouter {
   public constructor(
     private readonly platform: LumierePlatform,
     private readonly host: PlatformHost,
-    private readonly preferences: CapturePreferences = { delivery: 'folder' },
+    private readonly preferences: CapturePreferences = { delivery: 'both' },
   ) {}
 
   public async getSurfaceSnapshot(): Promise<CaptureSurfaceSnapshot> {

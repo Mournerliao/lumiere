@@ -5,7 +5,6 @@ import CoreImage.CIFilterBuiltins
 import Foundation
 import ImageIO
 import ScreenCaptureKit
-import UniformTypeIdentifiers
 
 public actor MacCaptureService {
   public init() {}
@@ -39,7 +38,7 @@ public actor MacCaptureService {
         platform: "macos",
         hostStatus: "available",
         captureModes: [],
-        deliveryTargets: [.folder],
+        deliveryTargets: [.clipboard, .folder],
         hdrCapture: "unavailable",
         outputProfiles: ["srgb-visual-match"]
       )
@@ -49,7 +48,7 @@ public actor MacCaptureService {
       platform: "macos",
       hostStatus: "available",
       captureModes: [.display],
-      deliveryTargets: [.folder],
+      deliveryTargets: [.clipboard, .folder],
       hdrCapture: target.supportsHDR ? "supported" : "unavailable",
       outputProfiles: ["srgb-visual-match"],
       activeTarget: CaptureTarget(
@@ -65,16 +64,6 @@ public actor MacCaptureService {
         HostFailure(
           code: .captureUnavailable,
           message: "The first macOS native slice supports display capture only.",
-          retryable: false
-        )
-      )
-    }
-
-    guard parameters.delivery == .folder else {
-      return .failed(
-        HostFailure(
-          code: .deliveryUnavailable,
-          message: "The first macOS native slice supports folder delivery only.",
           retryable: false
         )
       )
@@ -132,12 +121,15 @@ public actor MacCaptureService {
         contentFilter: filter,
         configuration: configuration
       )
-      let fileURL = try outputURL()
-      try writeVisualMatchPNG(image, to: fileURL, sourceIsHDR: capturesHDR)
+      let visualMatchPNG = try makeVisualMatchPNG(image, sourceIsHDR: capturesHDR)
+      let deliveries = await MacCaptureDelivery.deliver(
+        visualMatchPNG,
+        to: parameters.delivery
+      )
 
       return .completed(
         dynamicRange: capturesHDR ? "hdr" : "sdr",
-        deliveries: [.folderSuccess(filePath: fileURL.path)]
+        deliveries: deliveries
       )
     } catch let error where CaptureErrorClassification.isCancellation(error) {
       return .cancelled()
@@ -146,34 +138,10 @@ public actor MacCaptureService {
     }
   }
 
-  private func outputURL() throws -> URL {
-    let pictures = FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask)[0]
-    let directory = pictures.appendingPathComponent("Lumiere", isDirectory: true)
-    try FileManager.default.createDirectory(
-      at: directory,
-      withIntermediateDirectories: true,
-      attributes: nil
-    )
-    let formatter = DateFormatter()
-    formatter.locale = Locale(identifier: "en_US_POSIX")
-    formatter.calendar = Calendar(identifier: .gregorian)
-    formatter.timeZone = .current
-    formatter.dateFormat = "yyyy-MM-dd-HHmmss"
-    let baseName = "Lumiere-\(formatter.string(from: Date()))"
-    var candidate = directory.appendingPathComponent("\(baseName).png")
-    var suffix = 2
-    while FileManager.default.fileExists(atPath: candidate.path) {
-      candidate = directory.appendingPathComponent("\(baseName)-\(suffix).png")
-      suffix += 1
-    }
-    return candidate
-  }
-
-  private func writeVisualMatchPNG(
+  private func makeVisualMatchPNG(
     _ source: CGImage,
-    to url: URL,
     sourceIsHDR: Bool
-  ) throws {
+  ) throws -> Data {
     guard let srgb = CGColorSpace(name: CGColorSpace.sRGB) else {
       throw CapturePipelineError.srgbColorSpaceUnavailable
     }
@@ -208,10 +176,10 @@ public actor MacCaptureService {
       throw CapturePipelineError.renderFailed
     }
 
-    guard
-      let destination = CGImageDestinationCreateWithURL(
-        url as CFURL,
-        UTType.png.identifier as CFString,
+    guard let data = CFDataCreateMutable(nil, 0),
+      let destination = CGImageDestinationCreateWithData(
+        data,
+        "public.png" as CFString,
         1,
         nil
       )
@@ -227,6 +195,7 @@ public actor MacCaptureService {
     guard CGImageDestinationFinalize(destination) else {
       throw CapturePipelineError.pngWriteFailed
     }
+    return data as Data
   }
 
   private func mapCaptureError(_ error: Error) -> HostFailure {

@@ -9,13 +9,13 @@ import type {
 import { PLATFORM_CONTRACT_VERSION } from '../shared/platform-contract'
 
 describe('CaptureCommandRouter', () => {
-  it('projects the current macOS display and folder state for the renderer', async () => {
+  it('projects the current macOS display and both-target default for the renderer', async () => {
     const host = new StubHost({
       contractVersion: PLATFORM_CONTRACT_VERSION,
       platform: 'macos',
       hostStatus: 'available',
       captureModes: ['display'],
-      deliveryTargets: ['folder'],
+      deliveryTargets: ['clipboard', 'folder'],
       hdrCapture: 'unavailable',
       outputProfiles: ['srgb-visual-match'],
     })
@@ -26,27 +26,30 @@ describe('CaptureCommandRouter', () => {
       captureModes: ['display'],
       hdrStatus: 'unavailable',
       output: {
-        delivery: 'folder',
-        label: 'Folder',
+        delivery: 'both',
+        label: 'Clipboard and folder',
         location: '~/Pictures/Lumiere',
       },
     })
   })
 
-  it('routes display capture to the current folder delivery', async () => {
+  it('routes display capture to the clipboard-and-folder default', async () => {
     const host = new StubHost(availableCapabilities(), {
       status: 'completed',
       sourceDynamicRange: 'hdr',
       outputProfile: 'srgb-visual-match',
-      deliveries: [{ target: 'folder', status: 'success', filePath: '/tmp/lumiere.png' }],
+      deliveries: [
+        { target: 'clipboard', status: 'success' },
+        { target: 'folder', status: 'success', filePath: '/tmp/lumiere.png' },
+      ],
     })
 
     await expect(new CaptureCommandRouter('macos', host).captureDisplay()).resolves.toEqual({
       status: 'success',
-      feedback: 'Saved to “Lumiere”',
+      feedback: 'Copied and saved to “Lumiere”',
       filePath: '/tmp/lumiere.png',
     })
-    expect(host.requests).toEqual([{ mode: 'display', delivery: 'folder' }])
+    expect(host.requests).toEqual([{ mode: 'display', delivery: 'both' }])
   })
 
   it('maps native failures to product copy instead of exposing host diagnostics', async () => {
@@ -93,7 +96,10 @@ describe('CaptureCommandRouter', () => {
       status: 'completed',
       sourceDynamicRange: 'sdr',
       outputProfile: 'srgb-visual-match',
-      deliveries: [{ target: 'folder', status: 'success', filePath: '/tmp/first.png' }],
+      deliveries: [
+        { target: 'clipboard', status: 'success' },
+        { target: 'folder', status: 'success', filePath: '/tmp/first.png' },
+      ],
     })
     await firstCapture
   })
@@ -127,6 +133,29 @@ describe('CaptureCommandRouter', () => {
       feedback: 'Copied to clipboard, but couldn’t save the file',
     })
   })
+
+  it('projects two target failures as delivery failure without losing either host fact', async () => {
+    const failed = (target: 'clipboard' | 'folder') => ({
+      target,
+      status: 'failed' as const,
+      failure: {
+        code: 'delivery-failed' as const,
+        message: `${target} failed`,
+        retryable: true,
+      },
+    })
+    const host = new StubHost(availableCapabilities(), {
+      status: 'completed',
+      sourceDynamicRange: 'sdr',
+      outputProfile: 'srgb-visual-match',
+      deliveries: [failed('clipboard'), failed('folder')],
+    })
+
+    await expect(new CaptureCommandRouter('macos', host).captureDisplay()).resolves.toMatchObject({
+      status: 'failed',
+      feedback: 'Couldn’t deliver capture',
+    })
+  })
 })
 
 class StubHost implements PlatformHost {
@@ -155,7 +184,7 @@ function availableCapabilities(): PlatformCapabilities {
     platform: 'macos',
     hostStatus: 'available',
     captureModes: ['display'],
-    deliveryTargets: ['folder'],
+    deliveryTargets: ['clipboard', 'folder'],
     hdrCapture: 'supported',
     outputProfiles: ['srgb-visual-match'],
   }
