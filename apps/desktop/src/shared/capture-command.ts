@@ -1,4 +1,5 @@
 import type { CaptureMode, LumierePlatform, OutputDelivery } from './platform-contract'
+import type { LumiereSettingsApi } from './settings-command'
 
 export const captureCommandChannels = {
   captureDisplay: 'capture:display',
@@ -50,7 +51,7 @@ export type CaptureCommandResult =
       notice: CaptureNotice
     }
 
-export interface LumiereRendererApi {
+export interface LumiereRendererApi extends LumiereSettingsApi {
   readonly platform: LumierePlatform
   getCaptureSurfaceSnapshot(): Promise<CaptureSurfaceSnapshot>
   captureDisplay(): Promise<CaptureCommandResult>

@@ -5,6 +5,9 @@ import type {
   CaptureNotice,
   CaptureSurfaceSnapshot,
 } from '../../shared/capture-command'
+import type { OutputDelivery } from '../../shared/platform-contract'
+import type { SettingsSnapshot } from '../../shared/settings-command'
+import { SettingsView } from './SettingsView'
 
 const CAPTURE_LOAD_FAILURE: CaptureNotice = {
   tone: 'critical',
@@ -13,6 +16,10 @@ const CAPTURE_LOAD_FAILURE: CaptureNotice = {
 }
 
 export function App(): React.JSX.Element {
+  return window.location.hash === '#settings' ? <SettingsWindow /> : <MainWindow />
+}
+
+function MainWindow(): React.JSX.Element {
   const [snapshot, setSnapshot] = useState<CaptureSurfaceSnapshot | null>(null)
   const [result, setResult] = useState<CaptureCommandResult | null>(null)
   const [isCapturing, setIsCapturing] = useState(false)
@@ -21,22 +28,37 @@ export function App(): React.JSX.Element {
 
   useEffect(() => {
     let isCurrent = true
-    void window.lumierePlatform
-      .getCaptureSurfaceSnapshot()
-      .then((nextSnapshot) => {
-        if (isCurrent) {
-          setSnapshot(nextSnapshot)
-        }
-      })
-      .catch(() => {
-        if (isCurrent) {
-          setLoadFailed(true)
-        }
-      })
+    const refreshSnapshot = (): void => {
+      void window.lumierePlatform
+        .getCaptureSurfaceSnapshot()
+        .then((nextSnapshot) => {
+          if (isCurrent) {
+            setSnapshot(nextSnapshot)
+          }
+        })
+        .catch(() => {
+          if (isCurrent) {
+            setLoadFailed(true)
+          }
+        })
+    }
+    refreshSnapshot()
+    const stopListening = window.lumierePlatform.onSettingsChanged(() => {
+      refreshSnapshot()
+    })
     return () => {
+      stopListening()
       isCurrent = false
     }
   }, [])
+
+  const openSettings = async (): Promise<void> => {
+    try {
+      await window.lumierePlatform.openSettings()
+    } catch {
+      setLoadFailed(true)
+    }
+  }
 
   const captureDisplay = async (): Promise<void> => {
     setIsCapturing(true)
@@ -118,7 +140,7 @@ export function App(): React.JSX.Element {
 
         <div className="output-summary" aria-label="Current output">
           <span className="output-label">Output</span>
-          <span className="output-value">{snapshot?.output.label ?? 'Folder'}</span>
+          <span className="output-value">{snapshot?.output.label ?? 'Clipboard and folder'}</span>
           <span className="output-location">
             {snapshot?.output.location ?? '~/Pictures/Lumiere'}
           </span>
@@ -137,11 +159,63 @@ export function App(): React.JSX.Element {
             snapshot,
           })}
         </span>
-        <span className="settings-placeholder" title="Settings will be added in a later slice">
+        <button className="settings-link" type="button" onClick={() => void openSettings()}>
           Settings
-        </span>
+        </button>
       </footer>
     </main>
+  )
+}
+
+function SettingsWindow(): React.JSX.Element {
+  const [snapshot, setSnapshot] = useState<SettingsSnapshot | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let isCurrent = true
+    void window.lumierePlatform
+      .getSettingsSnapshot()
+      .then((nextSnapshot) => {
+        if (isCurrent) {
+          setSnapshot(nextSnapshot)
+        }
+      })
+      .catch(() => {
+        if (isCurrent) {
+          setError('Settings could not be loaded. Restart Lumiere and try again.')
+        }
+      })
+    const stopListening = window.lumierePlatform.onSettingsChanged((nextSnapshot) => {
+      if (isCurrent) {
+        setSnapshot(nextSnapshot)
+      }
+    })
+    return () => {
+      stopListening()
+      isCurrent = false
+    }
+  }, [])
+
+  const setOutputDelivery = async (delivery: OutputDelivery): Promise<void> => {
+    setIsSaving(true)
+    setError(null)
+    try {
+      setSnapshot(await window.lumierePlatform.setOutputDelivery(delivery))
+    } catch {
+      setError('The output destination could not be saved. Try again.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return (
+    <SettingsView
+      snapshot={snapshot}
+      isSaving={isSaving}
+      error={error}
+      onOutputDeliveryChange={(delivery) => void setOutputDelivery(delivery)}
+    />
   )
 }
 

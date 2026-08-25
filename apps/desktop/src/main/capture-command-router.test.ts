@@ -127,7 +127,7 @@ describe('CaptureCommandRouter', () => {
     )
 
     await expect(
-      new CaptureCommandRouter('macos', host, { delivery: 'both' }).captureDisplay(),
+      new CaptureCommandRouter('macos', host, preferences('both')).captureDisplay(),
     ).resolves.toMatchObject({
       status: 'partial',
       feedback: 'Copied to clipboard, but couldn’t save the file',
@@ -155,6 +155,27 @@ describe('CaptureCommandRouter', () => {
       status: 'failed',
       feedback: 'Couldn’t deliver capture',
     })
+  })
+
+  it('reads the latest output preference for the next capture', async () => {
+    const host = new StubHost(availableCapabilities(), {
+      status: 'completed',
+      sourceDynamicRange: 'sdr',
+      outputProfile: 'srgb-visual-match',
+      deliveries: [{ target: 'clipboard', status: 'success' }],
+    })
+    let delivery: 'clipboard' | 'folder' | 'both' = 'both'
+    const router = new CaptureCommandRouter('macos', host, {
+      getCapturePreferences: () => ({ delivery }),
+    })
+
+    delivery = 'clipboard'
+    await expect(router.getSurfaceSnapshot()).resolves.toMatchObject({
+      output: { delivery: 'clipboard', label: 'Clipboard' },
+    })
+    await router.captureDisplay()
+
+    expect(host.requests).toEqual([{ mode: 'display', delivery: 'clipboard' }])
   })
 })
 
@@ -188,4 +209,8 @@ function availableCapabilities(): PlatformCapabilities {
     hdrCapture: 'supported',
     outputProfiles: ['srgb-visual-match'],
   }
+}
+
+function preferences(delivery: 'clipboard' | 'folder' | 'both') {
+  return { getCapturePreferences: () => ({ delivery }) }
 }

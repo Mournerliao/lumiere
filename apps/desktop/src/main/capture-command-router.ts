@@ -19,21 +19,26 @@ export interface CapturePreferences {
   delivery: OutputDelivery
 }
 
+export interface CapturePreferencesReader {
+  getCapturePreferences(): CapturePreferences
+}
+
+const defaultPreferences: CapturePreferencesReader = {
+  getCapturePreferences: () => ({ delivery: 'both' }),
+}
+
 export class CaptureCommandRouter {
   private captureInFlight = false
 
   public constructor(
     private readonly platform: LumierePlatform,
     private readonly host: PlatformHost,
-    private readonly preferences: CapturePreferences = { delivery: 'both' },
+    private readonly preferences: CapturePreferencesReader = defaultPreferences,
   ) {}
 
   public async getSurfaceSnapshot(): Promise<CaptureSurfaceSnapshot> {
-    return projectSurfaceSnapshot(
-      this.platform,
-      this.preferences.delivery,
-      await this.host.getCapabilities(),
-    )
+    const { delivery } = this.preferences.getCapturePreferences()
+    return projectSurfaceSnapshot(this.platform, delivery, await this.host.getCapabilities())
   }
 
   public async captureDisplay(): Promise<CaptureCommandResult> {
@@ -47,19 +52,16 @@ export class CaptureCommandRouter {
 
     this.captureInFlight = true
     try {
+      const { delivery } = this.preferences.getCapturePreferences()
       const capabilities = await this.host.getCapabilities()
-      const unavailable = captureUnavailableNotice(
-        capabilities,
-        'display',
-        this.preferences.delivery,
-      )
+      const unavailable = captureUnavailableNotice(capabilities, 'display', delivery)
       if (unavailable) {
         return failedResult(unavailable)
       }
 
       const result = await this.host.capture({
         mode: 'display',
-        delivery: this.preferences.delivery,
+        delivery,
       })
 
       if (result.status === 'cancelled') {
