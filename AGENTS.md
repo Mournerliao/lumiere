@@ -36,6 +36,7 @@ planner, evaluator, sub-agent, and Ralph mechanisms are conditional escalation t
 - Follow `knowledge/contracts/architecture.md` for platform and module ownership.
 - Follow `knowledge/contracts/claims.md` for output semantics and HDR language.
 - Follow `knowledge/contracts/ui.md` for shared desktop UI work.
+- Read `apps/desktop/DESIGN.md` before changing Electron renderer surfaces or reusable UI components.
 - Follow existing code patterns before introducing abstractions.
 - Use deterministic native-resource disposal and structured `ILogger` logging.
 - Keep artifact success, visual match, and HDR preservation separate.

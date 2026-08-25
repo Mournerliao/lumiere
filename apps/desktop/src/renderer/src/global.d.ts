@@ -1,4 +1,4 @@
-import type { LumiereRendererApi } from '../../shared/platform-contract'
+import type { LumiereRendererApi } from '../../shared/capture-command'
 
 declare global {
   interface Window {

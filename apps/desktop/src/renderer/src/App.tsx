@@ -1,102 +1,229 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/motion/button/base'
 import type {
-  CaptureMode,
-  CaptureResult,
-  PlatformCapabilities,
-} from '../../shared/platform-contract'
+  CaptureCommandResult,
+  CaptureNotice,
+  CaptureSurfaceSnapshot,
+} from '../../shared/capture-command'
+
+const CAPTURE_LOAD_FAILURE: CaptureNotice = {
+  tone: 'critical',
+  title: 'Capture controls are unavailable',
+  detail: 'Restart Lumiere and try again.',
+}
 
 export function App(): React.JSX.Element {
-  const [capabilities, setCapabilities] = useState<PlatformCapabilities | null>(null)
-  const [result, setResult] = useState<CaptureResult | null>(null)
+  const [snapshot, setSnapshot] = useState<CaptureSurfaceSnapshot | null>(null)
+  const [result, setResult] = useState<CaptureCommandResult | null>(null)
   const [isCapturing, setIsCapturing] = useState(false)
+  const [interactionHint, setInteractionHint] = useState<string | null>(null)
+  const [loadFailed, setLoadFailed] = useState(false)
 
   useEffect(() => {
     let isCurrent = true
-    void window.lumierePlatform.getCapabilities().then((nextCapabilities) => {
-      if (isCurrent) {
-        setCapabilities(nextCapabilities)
-      }
-    })
+    void window.lumierePlatform
+      .getCaptureSurfaceSnapshot()
+      .then((nextSnapshot) => {
+        if (isCurrent) {
+          setSnapshot(nextSnapshot)
+        }
+      })
+      .catch(() => {
+        if (isCurrent) {
+          setLoadFailed(true)
+        }
+      })
     return () => {
       isCurrent = false
     }
   }, [])
 
-  const capture = async (mode: CaptureMode): Promise<void> => {
+  const captureDisplay = async (): Promise<void> => {
     setIsCapturing(true)
     setResult(null)
+    setInteractionHint(null)
     try {
-      setResult(await window.lumierePlatform.capture({ mode, delivery: 'folder' }))
+      setResult(await window.lumierePlatform.captureDisplay())
+    } catch {
+      setResult({
+        status: 'failed',
+        feedback: CAPTURE_LOAD_FAILURE.title,
+        notice: CAPTURE_LOAD_FAILURE,
+      })
     } finally {
       setIsCapturing(false)
     }
   }
 
-  const hostAvailable = capabilities?.hostStatus === 'available'
-  const supportsRegionCapture = hostAvailable && capabilities.captureModes.includes('region')
-  const supportsDisplayCapture = hostAvailable && capabilities.captureModes.includes('display')
+  const supportsDisplayCapture =
+    snapshot?.hostAvailable === true && snapshot.captureModes.includes('display')
+  const activeNotice =
+    result?.status === 'failed'
+      ? result.notice
+      : loadFailed
+        ? CAPTURE_LOAD_FAILURE
+        : snapshot?.blockingNotice
 
   return (
     <main className="app-shell">
-      <div
-        className={`window-drag-region window-drag-region--${window.lumierePlatform.platform}`}
-        aria-hidden="true"
-      />
+      <header
+        className={`title-bar title-bar--${window.lumierePlatform.platform}`}
+        aria-label="Lumiere window"
+      >
+        <span className="window-title">Lumiere</span>
+      </header>
 
-      <section className="capture-surface" aria-labelledby="capture-title">
-        <div className="capture-copy">
-          <p className="eyebrow">Capture</p>
-          <h2 id="capture-title">A faithful screen, ready to share.</h2>
-          <p>
-            Lumiere captures HDR-aware source pixels with a native platform host and produces one
-            dependable sRGB Visual Match for everyday apps.
-          </p>
-        </div>
+      <section className="capture-panel" aria-label="Capture controls">
+        {activeNotice ? <Notice notice={activeNotice} /> : null}
 
         <div className="capture-actions">
           <Button
             variant="secondary"
             size="lg"
-            pressScale={0.98}
-            disabled={!supportsRegionCapture || isCapturing}
-            onClick={() => void capture('region')}
+            pressScale={0.99}
+            hoverScale={1}
+            className="capture-action capture-action--region"
+            disabled
           >
-            Capture region
-            <span>Drag to select</span>
+            <RegionIcon />
+            <span>Capture region</span>
           </Button>
+
           <Button
             variant="secondary"
             size="lg"
-            pressScale={0.98}
+            pressScale={0.99}
+            hoverScale={1}
+            className="capture-action"
             disabled={!supportsDisplayCapture || isCapturing}
-            onClick={() => void capture('display')}
+            onClick={() => void captureDisplay()}
+            onFocus={() => {
+              setInteractionHint('Capture the display under the pointer')
+            }}
+            onBlur={() => {
+              setInteractionHint(null)
+            }}
+            onPointerEnter={() => {
+              setInteractionHint('Capture the display under the pointer')
+            }}
+            onPointerLeave={() => {
+              setInteractionHint(null)
+            }}
           >
-            Capture display
-            <span>Use the screen under the pointer</span>
+            <DisplayIcon />
+            <span>{isCapturing ? 'Capturing display' : 'Capture display'}</span>
+            {isCapturing ? <span className="capture-pulse" aria-hidden="true" /> : null}
           </Button>
+        </div>
+
+        <div className="output-summary" aria-label="Current output">
+          <span className="output-label">Output</span>
+          <span className="output-value">{snapshot?.output.label ?? 'Folder'}</span>
+          <span className="output-location">
+            {snapshot?.output.location ?? '~/Pictures/Lumiere'}
+          </span>
         </div>
       </section>
 
-      <footer className="status-line" aria-live="polite">
-        <span className="status-dot" />
-        {statusMessage(result, capabilities)}
+      <footer className="status-bar" aria-live="polite">
+        <span className={`status-dot status-dot--${statusTone(snapshot, activeNotice)}`} />
+        <span className="status-message">
+          {statusMessage({
+            activeNotice,
+            interactionHint,
+            isCapturing,
+            loadFailed,
+            result,
+            snapshot,
+          })}
+        </span>
+        <span className="settings-placeholder" title="Settings will be added in a later slice">
+          Settings
+        </span>
       </footer>
     </main>
   )
 }
 
-function statusMessage(
-  result: CaptureResult | null,
-  capabilities: PlatformCapabilities | null,
-): string {
-  if (result?.status === 'failed') {
-    return result.failure.message
+function Notice({ notice }: { notice: CaptureNotice }): React.JSX.Element {
+  return (
+    <div className={`notice notice--${notice.tone}`} role="status">
+      <div className="notice-title">
+        <span className="notice-dot" aria-hidden="true" />
+        {notice.title}
+      </div>
+      <p>{notice.detail}</p>
+    </div>
+  )
+}
+
+interface StatusMessageInput {
+  snapshot: CaptureSurfaceSnapshot | null
+  result: CaptureCommandResult | null
+  activeNotice: CaptureNotice | undefined
+  interactionHint: string | null
+  isCapturing: boolean
+  loadFailed: boolean
+}
+
+function statusMessage({
+  activeNotice,
+  interactionHint,
+  isCapturing,
+  loadFailed,
+  result,
+  snapshot,
+}: StatusMessageInput): string {
+  if (isCapturing) {
+    return 'Capturing display'
   }
-  if (result?.status === 'success') {
-    return result.artifact.filePath
-      ? `Saved sRGB Visual Match to ${result.artifact.filePath}`
-      : 'sRGB Visual Match capture completed.'
+  if (result) {
+    return result.feedback
   }
-  return capabilities?.unavailableReason?.message ?? 'Native capture host ready.'
+  if (activeNotice || loadFailed) {
+    return 'Capture disabled'
+  }
+  if (interactionHint) {
+    return interactionHint
+  }
+  if (!snapshot) {
+    return 'Checking…'
+  }
+  if (snapshot.hdrStatus === 'ready') {
+    return 'HDR-aware capture ready'
+  }
+  if (snapshot.hdrStatus === 'unvalidated') {
+    return 'Display environment not verified'
+  }
+  return 'Display capture ready'
+}
+
+function statusTone(
+  snapshot: CaptureSurfaceSnapshot | null,
+  activeNotice: CaptureNotice | undefined,
+): 'ready' | 'caution' | 'critical' {
+  if (activeNotice?.tone === 'critical') {
+    return 'critical'
+  }
+  if (!snapshot || activeNotice || snapshot.hdrStatus === 'unvalidated') {
+    return 'caution'
+  }
+  return 'ready'
+}
+
+function RegionIcon(): React.JSX.Element {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16">
+      <path d="M2.5 6V3.5a1 1 0 0 1 1-1H6M10 2.5h2.5a1 1 0 0 1 1 1V6M13.5 10v2.5a1 1 0 0 1-1 1H10M6 13.5H3.5a1 1 0 0 1-1-1V10" />
+    </svg>
+  )
+}
+
+function DisplayIcon(): React.JSX.Element {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16">
+      <rect x="2.25" y="2.75" width="11.5" height="8.25" rx="1.25" />
+      <path d="M6 13.25h4M8 11v2.25" />
+    </svg>
+  )
 }

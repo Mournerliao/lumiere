@@ -1,25 +1,27 @@
 import { app, BrowserWindow, ipcMain, type Tray } from 'electron'
 import { join } from 'node:path'
 import { applyMacDockIcon, createApplicationTray, desktopIconPaths } from './app-icons'
+import { CaptureCommandRouter } from './capture-command-router'
 import { MacOSPlatformHost } from './macos-platform-host'
 import { macOSHostCandidates } from './native-host-paths'
-import { createPlatformHandlers } from './platform-handlers'
 import { currentLumierePlatform, UnavailablePlatformHost } from './platform-host'
-import { platformChannels, type PlatformHost } from '../shared/platform-contract'
+import { captureCommandChannels } from '../shared/capture-command'
+import type { PlatformHost } from '../shared/platform-contract'
 
 let mainWindow: BrowserWindow | null = null
 let applicationTray: Tray | null = null
 let platformHost: PlatformHost | null = null
+let captureRouter: CaptureCommandRouter | null = null
 
 function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
-    width: 960,
-    height: 680,
-    minWidth: 760,
-    minHeight: 560,
+    width: 480,
+    height: 370,
+    minWidth: 440,
+    minHeight: 340,
     show: false,
     title: 'Lumiere',
-    backgroundColor: '#1b1a18',
+    backgroundColor: '#1f1d1b',
     ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset' as const } : {}),
     ...(process.platform === 'win32'
       ? {
@@ -27,8 +29,8 @@ function createMainWindow(): BrowserWindow {
           icon: desktopIconPaths().appIcon,
           titleBarStyle: 'hidden' as const,
           titleBarOverlay: {
-            color: '#1b1a18',
-            symbolColor: '#ece9e2',
+            color: '#1f1d1b',
+            symbolColor: '#f0ede6',
             height: 46,
           },
         }
@@ -71,10 +73,13 @@ function showMainWindow(): BrowserWindow {
 
 function registerPlatformIpc(window: BrowserWindow): void {
   platformHost ??= createPlatformHost()
-  const handlers = createPlatformHandlers(platformHost)
+  const router = (captureRouter ??= new CaptureCommandRouter(
+    currentLumierePlatform(),
+    platformHost,
+  ))
 
-  ipcMain.removeHandler(platformChannels.getCapabilities)
-  ipcMain.removeHandler(platformChannels.capture)
+  ipcMain.removeHandler(captureCommandChannels.getSurfaceSnapshot)
+  ipcMain.removeHandler(captureCommandChannels.captureDisplay)
 
   const assertTrustedSender = (event: Electron.IpcMainInvokeEvent): void => {
     if (event.sender.id !== window.webContents.id || event.senderFrame !== event.sender.mainFrame) {
@@ -82,14 +87,14 @@ function registerPlatformIpc(window: BrowserWindow): void {
     }
   }
 
-  ipcMain.handle(platformChannels.getCapabilities, (event) => {
+  ipcMain.handle(captureCommandChannels.getSurfaceSnapshot, (event) => {
     assertTrustedSender(event)
-    return handlers.getCapabilities()
+    return router.getSurfaceSnapshot()
   })
 
-  ipcMain.handle(platformChannels.capture, (event, request: unknown) => {
+  ipcMain.handle(captureCommandChannels.captureDisplay, (event) => {
     assertTrustedSender(event)
-    return handlers.capture(request)
+    return router.capture('display')
   })
 }
 

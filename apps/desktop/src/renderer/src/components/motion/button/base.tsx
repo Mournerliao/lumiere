@@ -14,6 +14,7 @@ export interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'>
   variant?: ButtonVariant
   size?: ButtonSize
   pressScale?: number
+  hoverScale?: number
   /** Spawn a Material-style ripple from the press point. Off by default. */
   ripple?: boolean
   children?: ReactNode
@@ -52,6 +53,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     variant = 'primary',
     size = 'md',
     pressScale = 0.93,
+    hoverScale = 1.02,
     ripple = false,
     className,
     children,
@@ -91,7 +93,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       type="button"
       whileTap={reduce ? undefined : { scale: pressScale }}
-      whileHover={reduce || !canHover ? undefined : { scale: 1.02 }}
+      whileHover={reduce || !canHover || hoverScale === 1 ? undefined : { scale: hoverScale }}
       transition={SPRING_PRESS}
       onPointerDown={handlePointerDown}
       className={cn(
