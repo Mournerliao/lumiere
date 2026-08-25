@@ -25,10 +25,10 @@ let settingsStore: SettingsStore | null = null
 function createRendererWindow(kind: 'main' | 'settings'): BrowserWindow {
   const isSettings = kind === 'settings'
   const window = new BrowserWindow({
-    width: isSettings ? 640 : 480,
-    height: isSettings ? 340 : 370,
+    width: isSettings ? 600 : 480,
+    height: isSettings ? 279 : 370,
     minWidth: isSettings ? 600 : 440,
-    minHeight: isSettings ? 300 : 340,
+    minHeight: isSettings ? 279 : 340,
     show: false,
     title: isSettings ? 'Lumiere Settings' : 'Lumiere',
     backgroundColor: '#1f1d1b',

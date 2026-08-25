@@ -1,5 +1,16 @@
 import type { OutputDelivery } from '../../shared/platform-contract'
-import { outputDeliveryOptions, type SettingsSnapshot } from '../../shared/settings-command'
+import {
+  outputDeliveryOptions,
+  parseOutputDelivery,
+  type SettingsSnapshot,
+} from '../../shared/settings-command'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/motion/select'
 
 const outputDeliveryLabels: Record<OutputDelivery, string> = {
   clipboard: 'Clipboard',
@@ -21,6 +32,7 @@ export function SettingsView({
   onOutputDeliveryChange,
 }: SettingsViewProps): React.JSX.Element {
   const available = snapshot?.availableOutputDeliveries ?? []
+  const selectedDelivery = snapshot?.outputDelivery ?? 'both'
 
   return (
     <main className="settings-shell">
@@ -48,23 +60,38 @@ export function SettingsView({
         </header>
 
         <div className="settings-list">
-          <label className="settings-row" htmlFor="default-destination">
-            <span className="settings-row-label">Default destination</span>
-            <select
-              id="default-destination"
-              value={snapshot?.outputDelivery ?? 'both'}
+          <div className="settings-row">
+            <span className="settings-row-label" id="default-destination-label">
+              Default destination
+            </span>
+            <Select
+              value={selectedDelivery}
               disabled={!snapshot || isSaving || available.length === 0}
-              onChange={(event) => {
-                onOutputDeliveryChange(event.currentTarget.value as OutputDelivery)
+              onValueChange={(value) => {
+                onOutputDeliveryChange(parseOutputDelivery(value))
               }}
+              className="settings-select"
             >
-              {outputDeliveryOptions.map((delivery) => (
-                <option key={delivery} value={delivery} disabled={!available.includes(delivery)}>
-                  {outputDeliveryLabels[delivery]}
-                </option>
-              ))}
-            </select>
-          </label>
+              <SelectTrigger
+                aria-labelledby="default-destination-label"
+                className="settings-select-trigger"
+              >
+                <SelectValue placeholder={outputDeliveryLabels[selectedDelivery]} />
+              </SelectTrigger>
+              <SelectContent className="settings-select-content">
+                {outputDeliveryOptions.map((delivery) => (
+                  <SelectItem
+                    key={delivery}
+                    value={delivery}
+                    disabled={!available.includes(delivery)}
+                    className="settings-select-item"
+                  >
+                    {outputDeliveryLabels[delivery]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {error ? (

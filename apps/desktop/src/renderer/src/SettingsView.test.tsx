@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { SettingsView } from './SettingsView'
 
 describe('SettingsView', () => {
-  it('renders all three output choices and disables unsupported combinations', () => {
+  it('renders the beUI select with all choices and disables unsupported combinations', () => {
     const markup = renderToStaticMarkup(
       <SettingsView
         snapshot={{
@@ -17,9 +17,10 @@ describe('SettingsView', () => {
     )
 
     expect(markup).toContain('Default destination')
+    expect(markup).toContain('aria-haspopup="listbox"')
     expect(markup).toContain('Clipboard and folder')
-    expect(markup).toContain('<option value="folder" disabled="">Folder</option>')
-    expect(markup).toContain('<option value="both" disabled="">Clipboard and folder</option>')
-    expect(markup).toContain('<option value="clipboard" selected="">Clipboard</option>')
+    expect(markup).toContain('role="option" aria-selected="false" disabled=""')
+    expect(markup).toContain('role="option" aria-selected="true" tabindex="-1"')
+    expect(markup).not.toContain('<select')
   })
 })
