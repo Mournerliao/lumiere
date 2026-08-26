@@ -242,8 +242,8 @@ Windows 使用系统托盘语义，macOS 使用菜单栏语义；文案、间距
 `titleBarStyle: 'hiddenInset'`，Windows 继续使用 `titleBarStyle: 'hidden'` 配 `titleBarOverlay`，窗口拖拽区和
 原生窗口控件行为保持平台一致。
 
-设置分类使用居中的 beUI Dock：Output、Capture、System & About 分别使用输出、取景框和齿轮图标，活动项以
-滑动圆角块表示。标题栏与 Dock 之间保持清楚的区域间距，Dock 与首个设置项保持更紧密的内容间距。设置项通过
+设置分类使用与内容列等宽的 beUI Dock：Output、Capture、System & About 分别使用图像结果、取景框和信息图标，
+三个入口等分可用宽度，活动项以滑动圆角块表示。标题栏与 Dock 之间保持清楚的区域间距，Dock 与首个设置项保持更紧密的内容间距。设置项通过
 留白分组，不使用逐行分割线；未实现或不可用的设置必须显示真实状态，不得伪装成可操作控件。
 
 不使用 macOS vibrancy 材质。截图工具的窗口经常出现在用户正在捕获的画面里，半透明会把背后内容带进

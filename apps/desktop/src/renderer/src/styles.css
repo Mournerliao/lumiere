@@ -333,17 +333,18 @@ button {
 
 .settings-done {
   position: absolute;
-  top: 8px;
-  right: 18px;
-  height: 28px;
-  padding: 0 4px;
+  top: 9px;
+  right: 14px;
+  height: 26px;
+  padding: 0 8px;
   border: 0;
   border-radius: var(--Lumiere-Dark-radiusChip);
-  color: var(--accent-base);
+  color: var(--text-secondary);
   background: transparent;
-  font-size: var(--Lumiere-Dark-fontSizeBody);
-  font-weight: 520;
+  font-size: var(--Lumiere-Dark-fontSizeMeta);
+  font-weight: 580;
   cursor: pointer;
+  transition: color 120ms ease;
   -webkit-app-region: no-drag;
 }
 
@@ -352,7 +353,7 @@ button {
 }
 
 .settings-done:hover {
-  color: var(--accent-hover);
+  color: var(--text-primary);
 }
 
 .settings-done:focus-visible {
@@ -364,10 +365,11 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px 0 8px;
+  padding: 16px 14px 8px;
 }
 
 .settings-dock {
+  width: 100%;
   gap: 4px;
   padding: 6px;
   border-color: var(--border-subtle);

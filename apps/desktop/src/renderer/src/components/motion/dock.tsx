@@ -7,6 +7,7 @@ import { SPRING_LAYOUT } from '@/lib/ease'
 import { cn } from '@/lib/utils'
 
 interface DockContextValue {
+  fill: boolean
   itemHeight: number
   itemWidth: number
   pillLayoutId: string
@@ -17,6 +18,8 @@ const DockContext = createContext<DockContextValue | null>(null)
 export interface DockProps {
   children: ReactNode
   className?: string
+  /** Evenly distribute items across the available dock width. */
+  fill?: boolean
   /** Size of each item in px. */
   size?: number
   /** Optional rectangular item width for compact navigation docks. */
@@ -27,6 +30,7 @@ export interface DockProps {
 
 export function Dock({
   children,
+  fill = false,
   size = 44,
   itemWidth = size,
   itemHeight = size,
@@ -34,8 +38,8 @@ export function Dock({
 }: DockProps) {
   const pillLayoutId = useId()
   const ctx = useMemo<DockContextValue>(
-    () => ({ itemHeight, itemWidth, pillLayoutId }),
-    [itemHeight, itemWidth, pillLayoutId],
+    () => ({ fill, itemHeight, itemWidth, pillLayoutId }),
+    [fill, itemHeight, itemWidth, pillLayoutId],
   )
 
   return (
@@ -75,7 +79,9 @@ export function DockItem({ children, className, onClick, active, ...rest }: Dock
       className="dock-active-pill absolute inset-0.5 -z-10 rounded-xl bg-primary/5"
     />
   ) : null
-  const sharedStyle = { width: itemWidth, height: itemHeight }
+  const sharedStyle = dock?.fill
+    ? { flex: '1 1 0%', minWidth: 0, height: itemHeight }
+    : { width: itemWidth, height: itemHeight }
   const sharedClass = cn(
     'relative flex shrink-0 items-center justify-center rounded-full text-foreground',
     className,

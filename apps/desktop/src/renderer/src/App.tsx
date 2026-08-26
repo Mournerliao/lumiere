@@ -165,9 +165,16 @@ function MainWindow({ onOpenSettings }: { onOpenSettings: () => void }): React.J
             snapshot,
           })}
         </span>
-        <button className="settings-link" type="button" onClick={onOpenSettings}>
+        <Button
+          variant="ghost"
+          size="sm"
+          hoverScale={1}
+          pressScale={0.98}
+          className="settings-link"
+          onClick={onOpenSettings}
+        >
           Settings
-        </button>
+        </Button>
       </footer>
     </main>
   )

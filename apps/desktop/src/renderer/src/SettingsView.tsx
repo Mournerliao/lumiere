@@ -6,6 +6,7 @@ import {
   parseOutputDelivery,
   type SettingsSnapshot,
 } from '../../shared/settings-command'
+import { Button } from '@/components/motion/button/base'
 import { Dock, DockItem } from '@/components/motion/dock'
 import {
   Select,
@@ -53,13 +54,20 @@ export function SettingsView({
         aria-label="Lumiere settings window"
       >
         <h1>Settings</h1>
-        <button className="settings-done" type="button" onClick={onDone}>
+        <Button
+          variant="ghost"
+          size="sm"
+          hoverScale={1}
+          pressScale={0.98}
+          className="settings-done"
+          onClick={onDone}
+        >
           Done
-        </button>
+        </Button>
       </header>
 
       <nav className="settings-dock-slot" aria-label="Settings sections">
-        <Dock itemWidth={92} itemHeight={36} className="settings-dock">
+        <Dock fill itemHeight={36} className="settings-dock">
           <DockItem
             className="settings-dock-item"
             active={section === 'output'}
@@ -88,7 +96,7 @@ export function SettingsView({
               setSection('system')
             }}
           >
-            <SystemIcon />
+            <AboutIcon />
           </DockItem>
         </Dock>
       </nav>
@@ -289,7 +297,9 @@ function hdrStatusLabel(snapshot: CaptureSurfaceSnapshot | null): string {
 function OutputIcon(): React.JSX.Element {
   return (
     <svg viewBox="0 0 18 18" aria-hidden="true">
-      <path d="M3 10.5v3.75a.75.75 0 0 0 .75.75h10.5a.75.75 0 0 0 .75-.75V10.5M9 2.25v9m0 0L5.75 8M9 11.25 12.25 8" />
+      <rect x="2.5" y="3" width="13" height="12" rx="2" />
+      <circle cx="6.25" cy="7" r="1.15" />
+      <path d="m4.25 12 3-3 2.25 2.25 1.5-1.5 2.75 2.75" />
     </svg>
   )
 }
@@ -302,11 +312,11 @@ function CaptureIcon(): React.JSX.Element {
   )
 }
 
-function SystemIcon(): React.JSX.Element {
+function AboutIcon(): React.JSX.Element {
   return (
     <svg viewBox="0 0 18 18" aria-hidden="true">
-      <circle cx="9" cy="9" r="2.5" />
-      <path d="m14.2 10.1 1 .75-1.5 2.6-1.15-.5a7 7 0 0 1-1.5.85L10.9 15h-3l-.15-1.2a7 7 0 0 1-1.53-.87l-1.17.52-1.5-2.6 1.03-.77A6 6 0 0 1 4.53 9a6 6 0 0 1 .06-1.08l-1.04-.77 1.5-2.6 1.17.52a7 7 0 0 1 1.53-.87L7.9 3h3l.15 1.2a7 7 0 0 1 1.53.87l1.17-.52 1.5 2.6-1.04.77A6 6 0 0 1 14.27 9a6 6 0 0 1-.07 1.1Z" />
+      <circle cx="9" cy="9" r="6.25" />
+      <path d="M9 8.25v4M9 5.5h.01" />
     </svg>
   )
 }
