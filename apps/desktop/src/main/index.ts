@@ -30,7 +30,12 @@ function createRendererWindow(): BrowserWindow {
     show: false,
     title: 'Lumiere',
     backgroundColor: '#1f1d1b',
-    ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset' as const } : {}),
+    ...(process.platform === 'darwin'
+      ? {
+          titleBarStyle: 'hiddenInset' as const,
+          trafficLightPosition: { x: 12, y: 15 },
+        }
+      : {}),
     ...(process.platform === 'win32'
       ? {
           autoHideMenuBar: true,
