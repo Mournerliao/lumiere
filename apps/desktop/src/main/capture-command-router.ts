@@ -9,6 +9,8 @@ import type {
   LumierePlatform,
   OutputDelivery,
   DeliveryResult,
+  CaptureGeometry,
+  CaptureTarget,
   PlatformCapabilities,
   PlatformFailure,
   PlatformHost,
@@ -22,6 +24,9 @@ export interface CapturePreferences {
 export interface CapturePreferencesReader {
   getCapturePreferences(): CapturePreferences
 }
+
+export type RegionCapturePreparation =
+  { status: 'ready'; target: CaptureTarget } | { status: 'failed'; result: CaptureCommandResult }
 
 const defaultPreferences: CapturePreferencesReader = {
   getCapturePreferences: () => ({ delivery: 'both' }),
@@ -82,6 +87,94 @@ export class CaptureCommandRouter {
       this.captureInFlight = false
     }
   }
+
+  public async beginRegionCapture(): Promise<RegionCapturePreparation> {
+    if (this.captureInFlight) {
+      return { status: 'failed', result: captureAlreadyInProgress() }
+    }
+
+    this.captureInFlight = true
+    try {
+      const { delivery } = this.preferences.getCapturePreferences()
+      const capabilities = await this.host.getCapabilities()
+      const unavailable = captureUnavailableNotice(capabilities, 'region', delivery)
+      if (unavailable) {
+        this.captureInFlight = false
+        return { status: 'failed', result: failedResult(unavailable) }
+      }
+      if (!capabilities.activeTarget) {
+        this.captureInFlight = false
+        return {
+          status: 'failed',
+          result: failedResult({
+            tone: 'caution',
+            title: 'Region capture unavailable',
+            detail: 'Move the pointer to a display and try again.',
+          }),
+        }
+      }
+      return { status: 'ready', target: capabilities.activeTarget }
+    } catch {
+      this.captureInFlight = false
+      return { status: 'failed', result: captureFailed() }
+    }
+  }
+
+  public async completeRegionCapture(
+    target: CaptureTarget,
+    geometry: CaptureGeometry,
+  ): Promise<CaptureCommandResult> {
+    if (!this.captureInFlight) {
+      return captureFailed()
+    }
+
+    try {
+      const { delivery } = this.preferences.getCapturePreferences()
+      const result = await this.host.capture({
+        mode: 'region',
+        delivery,
+        targetId: target.id,
+        geometry,
+      })
+      return projectCaptureResult(result)
+    } catch {
+      return captureFailed()
+    } finally {
+      this.captureInFlight = false
+    }
+  }
+
+  public cancelRegionCapture(): void {
+    this.captureInFlight = false
+  }
+}
+
+function projectCaptureResult(
+  result: Awaited<ReturnType<PlatformHost['capture']>>,
+): CaptureCommandResult {
+  if (result.status === 'cancelled') {
+    return { status: 'cancelled', feedback: 'Capture cancelled' }
+  }
+  if (result.status === 'failed') {
+    return failedResult(noticeForFailure(result.failure))
+  }
+  return projectDeliveryResult(result.deliveries)
+}
+
+function captureAlreadyInProgress(): CaptureCommandResult {
+  return failedResult({
+    tone: 'caution',
+    title: 'A capture is already in progress',
+    detail: 'Wait for it to finish, then try again.',
+  })
+}
+
+function captureFailed(): CaptureCommandResult {
+  return failedResult({
+    tone: 'critical',
+    title: 'Capture failed',
+    detail: 'Try again. Restart Lumiere if the issue continues.',
+  })
 }
 
 function projectSurfaceSnapshot(

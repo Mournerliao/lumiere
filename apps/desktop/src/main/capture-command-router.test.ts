@@ -52,6 +52,84 @@ describe('CaptureCommandRouter', () => {
     expect(host.requests).toEqual([{ mode: 'display', delivery: 'both' }])
   })
 
+  it('prepares and completes a target-local region capture', async () => {
+    const target = { id: 'target-token-17', logicalSize: { width: 1512, height: 982 } }
+    const host = new StubHost(
+      {
+        ...availableCapabilities(),
+        captureModes: ['region', 'display'],
+        activeTarget: target,
+      },
+      {
+        status: 'completed',
+        sourceDynamicRange: 'hdr',
+        outputProfile: 'srgb-visual-match',
+        deliveries: [
+          { target: 'clipboard', status: 'success' },
+          { target: 'folder', status: 'success', filePath: '/tmp/region.png' },
+        ],
+      },
+    )
+    const router = new CaptureCommandRouter('macos', host)
+
+    await expect(router.beginRegionCapture()).resolves.toEqual({ status: 'ready', target })
+    await expect(
+      router.completeRegionCapture(target, {
+        coordinateSpace: 'target-logical',
+        x: 12.5,
+        y: 20,
+        width: 640,
+        height: 360,
+      }),
+    ).resolves.toEqual({
+      status: 'success',
+      feedback: 'Copied and saved to “Lumiere”',
+      filePath: '/tmp/region.png',
+    })
+    expect(host.requests).toEqual([
+      {
+        mode: 'region',
+        delivery: 'both',
+        targetId: 'target-token-17',
+        geometry: {
+          coordinateSpace: 'target-logical',
+          x: 12.5,
+          y: 20,
+          width: 640,
+          height: 360,
+        },
+      },
+    ])
+  })
+
+  it('cancels a region before dispatch without calling the native host', async () => {
+    const host = new StubHost({
+      ...availableCapabilities(),
+      captureModes: ['region', 'display'],
+      activeTarget: { id: 'target-token-17', logicalSize: { width: 1512, height: 982 } },
+    })
+    const router = new CaptureCommandRouter('macos', host)
+
+    await expect(router.beginRegionCapture()).resolves.toMatchObject({ status: 'ready' })
+    router.cancelRegionCapture()
+    await expect(router.captureDisplay()).resolves.toMatchObject({ status: 'cancelled' })
+    expect(host.requests).toEqual([{ mode: 'display', delivery: 'both' }])
+  })
+
+  it('does not open a region overlay without an active target', async () => {
+    const host = new StubHost({
+      ...availableCapabilities(),
+      captureModes: ['region', 'display'],
+    })
+
+    await expect(
+      new CaptureCommandRouter('macos', host).beginRegionCapture(),
+    ).resolves.toMatchObject({
+      status: 'failed',
+      result: { status: 'failed', feedback: 'Region capture unavailable' },
+    })
+  })
+
   it('maps native failures to product copy instead of exposing host diagnostics', async () => {
     const host = new StubHost(availableCapabilities(), {
       status: 'failed',

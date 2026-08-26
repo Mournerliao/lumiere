@@ -7,6 +7,8 @@ import ImageIO
 import ScreenCaptureKit
 
 public actor MacCaptureService {
+  private var issuedRegionTarget: IssuedRegionTarget?
+
   public init() {}
 
   public func response(for request: PlatformRequest) async -> PlatformResponse {
@@ -33,6 +35,7 @@ public actor MacCaptureService {
 
   private func capabilities() async -> PlatformCapabilities {
     guard let target = await ActiveDisplayTargetResolver.resolve() else {
+      issuedRegionTarget = nil
       return PlatformCapabilities(
         contractVersion: platformContractVersion,
         platform: "macos",
@@ -43,28 +46,30 @@ public actor MacCaptureService {
         outputProfiles: ["srgb-visual-match"]
       )
     }
+    let regionTarget = IssuedRegionTarget(id: UUID().uuidString, target: target)
+    issuedRegionTarget = regionTarget
     return PlatformCapabilities(
       contractVersion: platformContractVersion,
       platform: "macos",
       hostStatus: "available",
-      captureModes: [.display],
+      captureModes: [.region, .display],
       deliveryTargets: [.clipboard, .folder],
       hdrCapture: target.supportsHDR ? "supported" : "unavailable",
       outputProfiles: ["srgb-visual-match"],
       activeTarget: CaptureTarget(
-        id: target.id,
+        id: regionTarget.id,
         logicalSize: LogicalSize(width: target.logicalWidth, height: target.logicalHeight)
       )
     )
   }
 
   private func capture(parameters: CaptureParameters) async -> CaptureResult {
-    guard parameters.mode == .display else {
+    guard let captureTarget = await resolveCaptureTarget(for: parameters) else {
       return .failed(
         HostFailure(
           code: .captureUnavailable,
-          message: "The first macOS native slice supports display capture only.",
-          retryable: false
+          message: "The capture target changed or is no longer available.",
+          retryable: true
         )
       )
     }
@@ -77,27 +82,22 @@ public actor MacCaptureService {
       return .failed(
         HostFailure(
           code: .permissionDenied,
-          message: "Screen Recording permission is required for display capture.",
+          message: "Screen Recording permission is required for capture.",
           retryable: false
         )
       )
     }
 
     do {
-      guard let target = await ActiveDisplayTargetResolver.resolve() else {
-        return .failed(
-          HostFailure(
-            code: .captureUnavailable,
-            message: "No active display is available for capture.",
-            retryable: true
-          )
-        )
-      }
       let content = try await SCShareableContent.excludingDesktopWindows(
         false,
         onScreenWindowsOnly: true
       )
-      guard let display = content.displays.first(where: { $0.displayID == target.displayID }) else {
+      guard
+        let display = content.displays.first(where: {
+          $0.displayID == captureTarget.target.displayID
+        })
+      else {
         return .failed(
           HostFailure(
             code: .captureUnavailable,
@@ -107,13 +107,19 @@ public actor MacCaptureService {
         )
       }
 
-      let capturesHDR = target.supportsHDR
+      let capturesHDR = captureTarget.target.supportsHDR
       let configuration =
         capturesHDR
         ? SCStreamConfiguration(preset: .captureHDRScreenshotLocalDisplay)
         : SCStreamConfiguration()
-      configuration.width = display.width
-      configuration.height = display.height
+      if let region = captureTarget.region {
+        configuration.sourceRect = region.sourceRect
+        configuration.width = region.pixelWidth
+        configuration.height = region.pixelHeight
+      } else {
+        configuration.width = display.width
+        configuration.height = display.height
+      }
       configuration.showsCursor = true
 
       let filter = SCContentFilter(display: display, excludingWindows: [])
@@ -136,6 +142,46 @@ public actor MacCaptureService {
     } catch {
       return .failed(mapCaptureError(error))
     }
+  }
+
+  private func resolveCaptureTarget(
+    for parameters: CaptureParameters
+  ) async -> ResolvedCaptureTarget? {
+    if parameters.mode == .display {
+      guard let target = await ActiveDisplayTargetResolver.resolve() else {
+        return nil
+      }
+      return ResolvedCaptureTarget(target: target, region: nil)
+    }
+
+    guard let targetId = parameters.targetId,
+      let geometry = parameters.geometry,
+      let issued = issuedRegionTarget,
+      issued.id == targetId
+    else {
+      return nil
+    }
+    issuedRegionTarget = nil
+
+    guard
+      let current = await ActiveDisplayTargetResolver.resolve(displayID: issued.target.displayID),
+      current.hasSameTopology(as: issued.target),
+      let region = RegionCaptureGeometry.resolve(
+        geometry: geometry,
+        targetLogicalSize: LogicalSize(
+          width: issued.target.logicalWidth,
+          height: issued.target.logicalHeight
+        ),
+        displayPixelSize: LogicalSize(
+          width: Double(CGDisplayPixelsWide(issued.target.displayID)),
+          height: Double(CGDisplayPixelsHigh(issued.target.displayID))
+        )
+      )
+    else {
+      return nil
+    }
+
+    return ResolvedCaptureTarget(target: current, region: region)
   }
 
   private func makeVisualMatchPNG(
@@ -224,10 +270,6 @@ private struct ActiveDisplayTarget: Sendable {
   let logicalWidth: Double
   let logicalHeight: Double
 
-  var id: String {
-    "display-\(displayID)"
-  }
-
   var supportsHDR: Bool {
     #if arch(arm64)
       return DisplayDynamicRange.supportsHDR(
@@ -237,6 +279,60 @@ private struct ActiveDisplayTarget: Sendable {
     #else
       return false
     #endif
+  }
+
+  func hasSameTopology(as other: ActiveDisplayTarget) -> Bool {
+    displayID == other.displayID
+      && abs(logicalWidth - other.logicalWidth) < 0.001
+      && abs(logicalHeight - other.logicalHeight) < 0.001
+  }
+}
+
+private struct IssuedRegionTarget: Sendable {
+  let id: String
+  let target: ActiveDisplayTarget
+}
+
+private struct ResolvedCaptureTarget: Sendable {
+  let target: ActiveDisplayTarget
+  let region: RegionCaptureGeometry?
+}
+
+struct RegionCaptureGeometry: Equatable, Sendable {
+  let sourceRect: CGRect
+  let pixelWidth: Int
+  let pixelHeight: Int
+
+  static func resolve(
+    geometry: CaptureGeometry,
+    targetLogicalSize: LogicalSize,
+    displayPixelSize: LogicalSize
+  ) -> RegionCaptureGeometry? {
+    guard targetLogicalSize.width > 0, targetLogicalSize.height > 0,
+      displayPixelSize.width > 0, displayPixelSize.height > 0,
+      geometry.x >= 0, geometry.y >= 0,
+      geometry.width > 0, geometry.height > 0,
+      geometry.x + geometry.width <= targetLogicalSize.width,
+      geometry.y + geometry.height <= targetLogicalSize.height
+    else {
+      return nil
+    }
+
+    let scaleX = displayPixelSize.width / targetLogicalSize.width
+    let scaleY = displayPixelSize.height / targetLogicalSize.height
+    return RegionCaptureGeometry(
+      sourceRect: CGRect(
+        x: geometry.x,
+        y: geometry.y,
+        width: geometry.width,
+        height: geometry.height
+      ),
+      pixelWidth: max(1, min(Int(displayPixelSize.width), Int(ceil(geometry.width * scaleX)))),
+      pixelHeight: max(
+        1,
+        min(Int(displayPixelSize.height), Int(ceil(geometry.height * scaleY)))
+      )
+    )
   }
 }
 
@@ -256,14 +352,29 @@ private enum ActiveDisplayTargetResolver {
       mainScreenDisplayID: mainScreenDisplayID,
       fallbackDisplayID: fallbackDisplayID
     )
-    let resolvedScreen = screens.first(where: { displayID(for: $0) == selectedDisplayID })
+    return makeTarget(displayID: selectedDisplayID, screens: screens, allowNativeFallback: true)
+  }
+
+  static func resolve(displayID: CGDirectDisplayID) -> ActiveDisplayTarget? {
+    makeTarget(displayID: displayID, screens: NSScreen.screens, allowNativeFallback: false)
+  }
+
+  private static func makeTarget(
+    displayID: CGDirectDisplayID,
+    screens: [NSScreen],
+    allowNativeFallback: Bool
+  ) -> ActiveDisplayTarget? {
+    let resolvedScreen = screens.first(where: { self.displayID(for: $0) == displayID })
+    guard allowNativeFallback || resolvedScreen != nil else {
+      return nil
+    }
     let headroom = resolvedScreen?.maximumPotentialExtendedDynamicRangeColorComponentValue
-    let logicalSize = resolvedScreen?.frame.size ?? CGDisplayBounds(selectedDisplayID).size
-    guard selectedDisplayID != 0, logicalSize.width > 0, logicalSize.height > 0 else {
+    let logicalSize = resolvedScreen?.frame.size ?? CGDisplayBounds(displayID).size
+    guard displayID != 0, logicalSize.width > 0, logicalSize.height > 0 else {
       return nil
     }
     return ActiveDisplayTarget(
-      displayID: selectedDisplayID,
+      displayID: displayID,
       maximumPotentialHeadroom: headroom,
       logicalWidth: Double(logicalSize.width),
       logicalHeight: Double(logicalSize.height)

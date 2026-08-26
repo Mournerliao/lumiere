@@ -58,12 +58,15 @@ During development, point Electron at the explicit Swift build:
 LUMIERE_MAC_HOST_PATH="$PWD/hosts/macos/.build/debug/LumiereMacHost" pnpm start
 ```
 
-The display action should become available while the unsupported region action remains
-disabled. The active target is the display under the pointer when the request reaches
-the native host, with the current main screen and then the system primary display used
-only as recovery fallbacks. A successful capture writes an RGBA8/sRGB PNG under
-`~/Pictures/Lumiere` using the `Lumiere-yyyy-MM-dd-HHmmss.png` rule and returns the
-exact path through the platform-host interface.
+The region and display actions should become available. The active target is the display
+under the pointer when the capability or display-capture request reaches the native
+host, with the current main screen and then the system primary display used only as
+recovery fallbacks. Region selection uses the short-lived target token and target-local
+logical geometry returned through platform-host v2; the Host rejects stale targets,
+topology changes, and out-of-bounds rectangles. A successful capture writes an
+RGBA8/sRGB PNG under `~/Pictures/Lumiere` using the
+`Lumiere-yyyy-MM-dd-HHmmss.png` rule and returns the exact path through the
+platform-host interface.
 
 ## Screen Recording Permission
 

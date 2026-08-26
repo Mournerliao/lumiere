@@ -1,10 +1,24 @@
-import type { CaptureMode, LumierePlatform, OutputDelivery } from './platform-contract'
+import type {
+  CaptureGeometry,
+  CaptureMode,
+  CaptureTarget,
+  LumierePlatform,
+  OutputDelivery,
+} from './platform-contract'
 import type { LumiereSettingsApi } from './settings-command'
 
 export const captureCommandChannels = {
   captureDisplay: 'capture:display',
+  captureRegion: 'capture:region',
   getSurfaceSnapshot: 'capture:get-surface-snapshot',
+  getRegionOverlaySnapshot: 'region-overlay:get-snapshot',
+  cancelRegionOverlay: 'region-overlay:cancel',
+  submitRegionSelection: 'region-overlay:submit-selection',
 } as const
+
+export interface RegionOverlaySnapshot {
+  targetSize: CaptureTarget['logicalSize']
+}
 
 export type ProductHdrStatus = 'ready' | 'unavailable' | 'unvalidated'
 
@@ -55,4 +69,8 @@ export interface LumiereRendererApi extends LumiereSettingsApi {
   readonly platform: LumierePlatform
   getCaptureSurfaceSnapshot(): Promise<CaptureSurfaceSnapshot>
   captureDisplay(): Promise<CaptureCommandResult>
+  captureRegion(): Promise<CaptureCommandResult>
+  getRegionOverlaySnapshot(): Promise<RegionOverlaySnapshot>
+  cancelRegionOverlay(): void
+  submitRegionSelection(geometry: CaptureGeometry): void
 }

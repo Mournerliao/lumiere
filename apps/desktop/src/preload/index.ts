@@ -9,6 +9,15 @@ const platformApi: LumiereRendererApi = {
   platform,
   getCaptureSurfaceSnapshot: () => ipcRenderer.invoke(captureCommandChannels.getSurfaceSnapshot),
   captureDisplay: () => ipcRenderer.invoke(captureCommandChannels.captureDisplay),
+  captureRegion: () => ipcRenderer.invoke(captureCommandChannels.captureRegion),
+  getRegionOverlaySnapshot: () =>
+    ipcRenderer.invoke(captureCommandChannels.getRegionOverlaySnapshot),
+  cancelRegionOverlay: () => {
+    ipcRenderer.send(captureCommandChannels.cancelRegionOverlay)
+  },
+  submitRegionSelection: (geometry) => {
+    ipcRenderer.send(captureCommandChannels.submitRegionSelection, geometry)
+  },
   getSettingsSnapshot: () => ipcRenderer.invoke(settingsCommandChannels.getSnapshot),
   setOutputDelivery: (delivery) =>
     ipcRenderer.invoke(settingsCommandChannels.setOutputDelivery, delivery),

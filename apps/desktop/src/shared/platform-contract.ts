@@ -178,7 +178,7 @@ export class PlatformContractError extends Error {
   }
 }
 
-function parseCaptureGeometry(value: unknown): CaptureGeometry {
+export function parseCaptureGeometry(value: unknown): CaptureGeometry {
   if (!isRecord(value)) {
     throw new PlatformContractError('Region geometry must be an object.')
   }

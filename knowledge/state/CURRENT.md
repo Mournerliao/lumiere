@@ -1,6 +1,6 @@
 # Current Project State
 
-- Updated: 2026-08-25
+- Updated: 2026-08-26
 - Current milestone: 1 — Cross-platform HDR-aware MVP
 - Release target: Windows + macOS HDR-aware MVP with sRGB Visual Match
 - Completed foundation record: [GitHub Issue #1](https://github.com/Mournerliao/lumiere/issues/1)
@@ -22,9 +22,11 @@ delivery gating, persisted clipboard/folder/both preferences with a clipboard-an
 default, in-flight state, per-target result projection, and product failure mapping. The
 approved Settings output surface now reads and writes that main-owned preference through
 validated task-shaped preload/IPC, updates the main-window summary and next capture
-immediately, and restores the value after restart. macOS display capture converts once to a
-timestamped RGBA8/sRGB PNG representation and delivers those same bytes through native
-clipboard and folder adapters; region capture remains honestly disabled. The Windows
+immediately, and restores the value after restart. The shared Region Overlay now owns
+target-local selection geometry and pre-dispatch cancellation while main retains the
+short-lived target token. macOS display and region capture convert once to a timestamped
+RGBA8/sRGB PNG representation and deliver those same bytes through native clipboard and
+folder adapters. The Windows
 engine now exposes one deep display-capture operation that owns target resolution,
 target-aware HDR probing, first-frame acquisition, one sRGB Visual Match conversion,
 delivery, cancellation, and teardown. Milestone 1 now
@@ -39,7 +41,7 @@ WinUI and the old validation/HDR10-JXR paths remain removed.
 | 0. Foundation | Complete | Final layout, secure shell, language-neutral protocol, paused Windows engine; macOS and Windows CI pass | None |
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
 | 1B. Windows host adapter | In progress ([#7](https://github.com/Mournerliao/lumiere/issues/7)) | The engine has one narrow capture interface, single-conversion delivery, target-aware multi-adapter HDR probing, and deterministic operation teardown | Implement the JSON Lines Host executable, Electron integration, and Windows runtime verification |
-| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output surface, generated tokens, persisted capability-gated clipboard/folder/both preference, one main-process capture router, v2 target/delivery contract, honest capability state, and verified macOS display-to-clipboard/folder/both journeys | Add the remaining independent settings slices, overlay, tray/menu bar, shortcut, macOS region, and independent Windows journeys after #7 |
+| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output surface, generated tokens, persisted capability-gated clipboard/folder/both preference, one main-process capture router, v2 target/delivery contract, shared Region Overlay, and verified macOS display/region delivery journeys | Add the remaining independent settings slices, tray/menu bar, shortcut, and independent Windows journeys after #7 |
 | 1D. Distribution and release | Not started | Windows installer direction remains recorded | Windows installer, signed/notarized macOS artifact, clean-machine and hardware verification |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
 | 3. Cross-platform HDR fidelity | Planned; not started | Fidelity is separated from artifact success and HDR preservation | Define support matrix/tolerances and run fixed-scene verification |
@@ -49,9 +51,9 @@ acceptance criteria and implementation status for each vertical slice.
 
 ## Verification Truth
 
-- **Repository:** frozen install, layout and TypeScript checks, thirty-three cross-platform
-  shell/protocol/process/settings/UI tests, three macOS path tests, eleven Swift
-  protocol/capability/permission/diagnostic tests plus two native-delivery tests, and the
+- **Repository:** frozen install, layout and TypeScript checks, forty cross-platform
+  shell/protocol/process/settings/UI tests, three macOS path tests, thirteen Swift
+  protocol/capability/permission/diagnostic/region tests plus two native-delivery tests, and the
   production build pass locally on macOS. Shared, macOS, and Windows test gates are
   explicit and platform-scoped.
 - **macOS development runtime:** the Electron display action drove ScreenCaptureKit to
@@ -78,7 +80,10 @@ acceptance criteria and implementation status for each vertical slice.
   after a full development-app restart; the final development preference was restored to
   Clipboard and folder. The first both-target attempt in this observation exposed the
   typed Host-unavailable recovery state; the immediate retry restarted the Host and
-  completed both deliveries.
+  completed both deliveries. Region capture then passed clipboard-only, folder-only,
+  both-target, repeat, Esc cancel, invalid-click cancel, and clean-exit journeys. A repeated
+  region result was 863×694 with alpha and an embedded sRGB IEC61966-2.1 profile; the
+  Overlay was absent from the artifact. The final output preference was restored to both.
 - **GitHub CI:** macOS shell and Windows engine workflows pass on current `main` at
   `fccf812`; this establishes their configured repository gates, not Windows Host
   runtime or hardware behavior.
@@ -102,10 +107,10 @@ may expose one frontier per environment-eligible lane while each writer or workt
 advances only one current working Issue at a time.
 
 - **Shared/macOS lane — [Issue #9](https://github.com/Mournerliao/lumiere/issues/9):**
-  implement the shared Region Overlay and macOS region-capture journey on the existing
-  platform-host v2 target-local geometry contract. Keep custom save-directory behavior
-  in a later independent Settings slice because it is not part of the completed output-
-  target preference and may require a separately reviewed protocol change.
+  resolve the global-shortcut product model, then implement the tray/menu-bar and
+  configured shortcut entry points through the existing command router. Keep custom
+  save-directory behavior in a later independent Settings slice because it may require
+  a separately reviewed protocol change.
 - **Windows lane — [Issue #7](https://github.com/Mournerliao/lumiere/issues/7):** add
   the .NET platform-host executable around the retained engine using the current v2
   contract, integrate it with Electron, and verify repeat, cancellation, clean exit,

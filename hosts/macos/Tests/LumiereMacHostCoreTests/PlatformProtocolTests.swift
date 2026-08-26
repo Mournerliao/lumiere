@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import ScreenCaptureKit
 import Testing
@@ -101,6 +102,44 @@ func detectsHDRFromTargetDisplayHeadroom(
       architectureSupportsHDR: architectureSupportsHDR,
       maximumPotentialHeadroom: maximumPotentialHeadroom
     ) == expected
+  )
+}
+
+@Test
+func convertsTargetLogicalRegionToDisplayPixels() throws {
+  let region = try #require(
+    RegionCaptureGeometry.resolve(
+      geometry: CaptureGeometry(
+        coordinateSpace: "target-logical",
+        x: 100,
+        y: 50,
+        width: 640,
+        height: 360
+      ),
+      targetLogicalSize: LogicalSize(width: 1512, height: 982),
+      displayPixelSize: LogicalSize(width: 3024, height: 1964)
+    )
+  )
+
+  #expect(region.sourceRect == CGRect(x: 100, y: 50, width: 640, height: 360))
+  #expect(region.pixelWidth == 1280)
+  #expect(region.pixelHeight == 720)
+}
+
+@Test
+func rejectsRegionOutsideIssuedTargetBounds() {
+  #expect(
+    RegionCaptureGeometry.resolve(
+      geometry: CaptureGeometry(
+        coordinateSpace: "target-logical",
+        x: 1400,
+        y: 900,
+        width: 200,
+        height: 100
+      ),
+      targetLogicalSize: LogicalSize(width: 1512, height: 982),
+      displayPixelSize: LogicalSize(width: 3024, height: 1964)
+    ) == nil
   )
 }
 

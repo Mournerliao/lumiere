@@ -8,6 +8,7 @@ import type {
 import type { OutputDelivery } from '../../shared/platform-contract'
 import type { SettingsSnapshot } from '../../shared/settings-command'
 import { SettingsView } from './SettingsView'
+import { RegionOverlay } from './RegionOverlay'
 
 const CAPTURE_LOAD_FAILURE: CaptureNotice = {
   tone: 'critical',
@@ -16,6 +17,14 @@ const CAPTURE_LOAD_FAILURE: CaptureNotice = {
 }
 
 export function App(): React.JSX.Element {
+  if (new URLSearchParams(window.location.search).get('surface') === 'region-overlay') {
+    return <RegionOverlay />
+  }
+
+  return <ApplicationSurface />
+}
+
+function ApplicationSurface(): React.JSX.Element {
   const [view, setView] = useState<'capture' | 'settings'>('capture')
 
   return view === 'settings' ? (
@@ -36,7 +45,7 @@ export function App(): React.JSX.Element {
 function MainWindow({ onOpenSettings }: { onOpenSettings: () => void }): React.JSX.Element {
   const [snapshot, setSnapshot] = useState<CaptureSurfaceSnapshot | null>(null)
   const [result, setResult] = useState<CaptureCommandResult | null>(null)
-  const [isCapturing, setIsCapturing] = useState(false)
+  const [capturingMode, setCapturingMode] = useState<'region' | 'display' | null>(null)
   const [interactionHint, setInteractionHint] = useState<string | null>(null)
   const [loadFailed, setLoadFailed] = useState(false)
 
@@ -67,7 +76,7 @@ function MainWindow({ onOpenSettings }: { onOpenSettings: () => void }): React.J
   }, [])
 
   const captureDisplay = async (): Promise<void> => {
-    setIsCapturing(true)
+    setCapturingMode('display')
     setResult(null)
     setInteractionHint(null)
     try {
@@ -79,10 +88,29 @@ function MainWindow({ onOpenSettings }: { onOpenSettings: () => void }): React.J
         notice: CAPTURE_LOAD_FAILURE,
       })
     } finally {
-      setIsCapturing(false)
+      setCapturingMode(null)
     }
   }
 
+  const captureRegion = async (): Promise<void> => {
+    setCapturingMode('region')
+    setResult(null)
+    setInteractionHint(null)
+    try {
+      setResult(await window.lumierePlatform.captureRegion())
+    } catch {
+      setResult({
+        status: 'failed',
+        feedback: CAPTURE_LOAD_FAILURE.title,
+        notice: CAPTURE_LOAD_FAILURE,
+      })
+    } finally {
+      setCapturingMode(null)
+    }
+  }
+
+  const supportsRegionCapture =
+    snapshot?.hostAvailable === true && snapshot.captureModes.includes('region')
   const supportsDisplayCapture =
     snapshot?.hostAvailable === true && snapshot.captureModes.includes('display')
   const activeNotice =
@@ -111,10 +139,26 @@ function MainWindow({ onOpenSettings }: { onOpenSettings: () => void }): React.J
             pressScale={0.99}
             hoverScale={1}
             className="capture-action capture-action--region"
-            disabled
+            disabled={!supportsRegionCapture || capturingMode !== null}
+            onClick={() => void captureRegion()}
+            onFocus={() => {
+              setInteractionHint('Drag to select an area')
+            }}
+            onBlur={() => {
+              setInteractionHint(null)
+            }}
+            onPointerEnter={() => {
+              setInteractionHint('Drag to select an area')
+            }}
+            onPointerLeave={() => {
+              setInteractionHint(null)
+            }}
           >
             <RegionIcon />
-            <span>Capture region</span>
+            <span>{capturingMode === 'region' ? 'Capturing region' : 'Capture region'}</span>
+            {capturingMode === 'region' ? (
+              <span className="capture-pulse" aria-hidden="true" />
+            ) : null}
           </Button>
 
           <Button
@@ -123,7 +167,7 @@ function MainWindow({ onOpenSettings }: { onOpenSettings: () => void }): React.J
             pressScale={0.99}
             hoverScale={1}
             className="capture-action"
-            disabled={!supportsDisplayCapture || isCapturing}
+            disabled={!supportsDisplayCapture || capturingMode !== null}
             onClick={() => void captureDisplay()}
             onFocus={() => {
               setInteractionHint('Capture the display under the pointer')
@@ -139,8 +183,10 @@ function MainWindow({ onOpenSettings }: { onOpenSettings: () => void }): React.J
             }}
           >
             <DisplayIcon />
-            <span>{isCapturing ? 'Capturing display' : 'Capture display'}</span>
-            {isCapturing ? <span className="capture-pulse" aria-hidden="true" /> : null}
+            <span>{capturingMode === 'display' ? 'Capturing display' : 'Capture display'}</span>
+            {capturingMode === 'display' ? (
+              <span className="capture-pulse" aria-hidden="true" />
+            ) : null}
           </Button>
         </div>
 
@@ -159,7 +205,7 @@ function MainWindow({ onOpenSettings }: { onOpenSettings: () => void }): React.J
           {statusMessage({
             activeNotice,
             interactionHint,
-            isCapturing,
+            capturingMode,
             loadFailed,
             result,
             snapshot,
@@ -256,20 +302,20 @@ interface StatusMessageInput {
   result: CaptureCommandResult | null
   activeNotice: CaptureNotice | undefined
   interactionHint: string | null
-  isCapturing: boolean
+  capturingMode: 'region' | 'display' | null
   loadFailed: boolean
 }
 
 function statusMessage({
   activeNotice,
   interactionHint,
-  isCapturing,
+  capturingMode,
   loadFailed,
   result,
   snapshot,
 }: StatusMessageInput): string {
-  if (isCapturing) {
-    return 'Capturing display'
+  if (capturingMode) {
+    return capturingMode === 'region' ? 'Capturing region' : 'Capturing display'
   }
   if (result) {
     return result.feedback

@@ -21,7 +21,9 @@ swift test --package-path hosts/macos
 
 The executable reads platform-host v2 JSON Lines requests from standard input, writes
 protocol responses to standard output, and reserves standard error for structured
-diagnostics correlated by request ID. The current slice supports display capture with
-clipboard, folder, or both-target delivery from one converted PNG, reports the active
-target snapshot and delivery availability, and returns one result per requested
-delivery target. Region selection remains later product-surface work.
+diagnostics correlated by request ID. The current implementation supports display and
+target-local region capture with clipboard, folder, or both-target delivery from one
+converted PNG. Capabilities issue an opaque, short-lived region target token; the Host
+rejects stale tokens, changed display topology, and out-of-bounds geometry before using
+ScreenCaptureKit to convert target-logical points into the owning display's pixel output.
+Every capture returns one result per requested delivery target.
