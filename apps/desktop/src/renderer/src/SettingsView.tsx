@@ -2,6 +2,13 @@ import { useState } from 'react'
 import type { CaptureSurfaceSnapshot } from '../../shared/capture-command'
 import type { LumierePlatform, OutputDelivery } from '../../shared/platform-contract'
 import {
+  formatShortcutAccelerator,
+  shortcutFromKeyInput,
+  type CaptureMode,
+  type ShortcutSnapshot,
+  type ShortcutUpdate,
+} from '../../shared/shortcut-command'
+import {
   outputDeliveryOptions,
   parseOutputDelivery,
   type SettingsSnapshot,
@@ -29,9 +36,12 @@ interface SettingsViewProps {
   surfaceSnapshot: CaptureSurfaceSnapshot | null
   platform: LumierePlatform
   isSaving: boolean
+  savingShortcut: CaptureMode | null
   error: string | null
   onDone: () => void
   onOutputDeliveryChange: (delivery: OutputDelivery) => void
+  onShortcutChange: (update: ShortcutUpdate) => Promise<void>
+  onShortcutRecordingChange: (recording: boolean) => Promise<void>
 }
 
 export function SettingsView({
@@ -39,9 +49,12 @@ export function SettingsView({
   surfaceSnapshot,
   platform,
   isSaving,
+  savingShortcut,
   error,
   onDone,
   onOutputDeliveryChange,
+  onShortcutChange,
+  onShortcutRecordingChange,
 }: SettingsViewProps): React.JSX.Element {
   const [section, setSection] = useState<SettingsSection>('output')
   const available = snapshot?.availableOutputDeliveries ?? []
@@ -112,7 +125,16 @@ export function SettingsView({
             onOutputDeliveryChange={onOutputDeliveryChange}
           />
         ) : null}
-        {section === 'capture' ? <CaptureSettings snapshot={surfaceSnapshot} /> : null}
+        {section === 'capture' ? (
+          <CaptureSettings
+            snapshot={surfaceSnapshot}
+            shortcuts={snapshot?.captureShortcuts ?? null}
+            platform={platform}
+            savingShortcut={savingShortcut}
+            onShortcutChange={onShortcutChange}
+            onShortcutRecordingChange={onShortcutRecordingChange}
+          />
+        ) : null}
         {section === 'system' ? <SystemSettings snapshot={surfaceSnapshot} /> : null}
         {error ? (
           <p className="settings-error" role="alert">
@@ -196,21 +218,43 @@ function OutputSettings({
 
 function CaptureSettings({
   snapshot,
+  shortcuts,
+  platform,
+  savingShortcut,
+  onShortcutChange,
+  onShortcutRecordingChange,
 }: {
   snapshot: CaptureSurfaceSnapshot | null
+  shortcuts: SettingsSnapshot['captureShortcuts'] | null
+  platform: LumierePlatform
+  savingShortcut: CaptureMode | null
+  onShortcutChange: (update: ShortcutUpdate) => Promise<void>
+  onShortcutRecordingChange: (recording: boolean) => Promise<void>
 }): React.JSX.Element {
   const regionAvailable = snapshot?.captureModes.includes('region') === true
   const displayAvailable = snapshot?.captureModes.includes('display') === true
 
   return (
     <div className="settings-list">
-      <SettingsRow
+      <ShortcutRecorder
+        mode="region"
         label="Region shortcut"
-        value={regionAvailable ? 'Not configured' : 'Unavailable'}
+        shortcut={shortcuts?.region ?? { accelerator: null, status: 'unconfigured' }}
+        platform={platform}
+        disabled={!regionAvailable || savingShortcut !== null}
+        saving={savingShortcut === 'region'}
+        onChange={onShortcutChange}
+        onRecordingChange={onShortcutRecordingChange}
       />
-      <SettingsRow
+      <ShortcutRecorder
+        mode="display"
         label="Display shortcut"
-        value={displayAvailable ? 'Not configured' : 'Unavailable'}
+        shortcut={shortcuts?.display ?? { accelerator: null, status: 'unconfigured' }}
+        platform={platform}
+        disabled={!displayAvailable || savingShortcut !== null}
+        saving={savingShortcut === 'display'}
+        onChange={onShortcutChange}
+        onRecordingChange={onShortcutRecordingChange}
       />
       <SettingsRow label="After capture" value="Do nothing" control />
       <SettingsRow
@@ -219,6 +263,121 @@ function CaptureSettings({
         value={hdrStatusLabel(snapshot)}
         tone={snapshot?.hdrStatus === 'ready' ? 'ready' : 'muted'}
       />
+    </div>
+  )
+}
+
+interface ShortcutRecorderProps {
+  mode: CaptureMode
+  label: string
+  shortcut: ShortcutSnapshot
+  platform: LumierePlatform
+  disabled: boolean
+  saving: boolean
+  onChange: (update: ShortcutUpdate) => Promise<void>
+  onRecordingChange: (recording: boolean) => Promise<void>
+}
+
+function ShortcutRecorder({
+  mode,
+  label,
+  shortcut,
+  platform,
+  disabled,
+  saving,
+  onChange,
+  onRecordingChange,
+}: ShortcutRecorderProps): React.JSX.Element {
+  const [recording, setRecording] = useState(false)
+  const [inputError, setInputError] = useState<string | null>(null)
+
+  const stopRecording = (): void => {
+    if (!recording) return
+    setRecording(false)
+    void onRecordingChange(false).catch(() => {
+      setInputError('Global shortcuts could not be resumed. Restart Lumiere.')
+    })
+  }
+
+  const commitShortcut = async (update: ShortcutUpdate): Promise<void> => {
+    setRecording(false)
+    try {
+      await onRecordingChange(false)
+      await onChange(update)
+    } catch {
+      setInputError('The shortcut could not be saved. Try again.')
+    }
+  }
+
+  const startRecording = async (): Promise<void> => {
+    if (disabled || recording) return
+    setInputError(null)
+    try {
+      await onRecordingChange(true)
+      setRecording(true)
+    } catch {
+      setInputError('Shortcut recording could not start. Try again.')
+    }
+  }
+
+  return (
+    <div className="shortcut-setting">
+      <div className="settings-row">
+        <span className="settings-row-copy">
+          <span className="settings-row-label">{label}</span>
+          {recording ? (
+            <span className="settings-row-hint">Press a shortcut · Backspace to clear</span>
+          ) : shortcut.status === 'unavailable' ? (
+            <span className="settings-row-hint">Could not register this shortcut</span>
+          ) : null}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          hoverScale={1}
+          pressScale={0.98}
+          className={`shortcut-recorder${recording ? ' shortcut-recorder--recording' : ''}`}
+          disabled={disabled}
+          aria-label={`Configure ${label.toLowerCase()}`}
+          aria-pressed={recording}
+          aria-invalid={shortcut.status === 'unavailable'}
+          onClick={() => void startRecording()}
+          onBlur={stopRecording}
+          onKeyDown={(event) => {
+            if (!recording) return
+            event.preventDefault()
+            event.stopPropagation()
+            if (event.key === 'Escape') {
+              setInputError(null)
+              stopRecording()
+              return
+            }
+            if (event.key === 'Backspace' || event.key === 'Delete') {
+              setInputError(null)
+              void commitShortcut({ mode, accelerator: null })
+              return
+            }
+            try {
+              const accelerator = shortcutFromKeyInput(event, platform)
+              setInputError(null)
+              void commitShortcut({ mode, accelerator })
+            } catch (error) {
+              setInputError(error instanceof Error ? error.message : 'Use another shortcut.')
+            }
+          }}
+        >
+          {saving
+            ? 'Saving…'
+            : recording
+              ? 'Press keys'
+              : formatShortcutAccelerator(shortcut.accelerator, platform)}
+        </Button>
+      </div>
+      {inputError ? (
+        <p className="shortcut-setting-error" role="alert">
+          {inputError}
+        </p>
+      ) : null}
     </div>
   )
 }

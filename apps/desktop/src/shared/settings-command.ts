@@ -1,9 +1,13 @@
 import { deliveryTargetsFor, type DeliveryTarget, type OutputDelivery } from './platform-contract'
+import type { CaptureShortcutSnapshot, ShortcutUpdate } from './shortcut-command'
 
 export const settingsCommandChannels = {
   changed: 'settings:changed',
   getSnapshot: 'settings:get-snapshot',
+  setCaptureShortcut: 'settings:set-capture-shortcut',
   setOutputDelivery: 'settings:set-output-delivery',
+  setShortcutRecording: 'settings:set-shortcut-recording',
+  showRequested: 'settings:show-requested',
 } as const
 
 export const outputDeliveryOptions: readonly OutputDelivery[] = ['clipboard', 'folder', 'both']
@@ -11,12 +15,19 @@ export const outputDeliveryOptions: readonly OutputDelivery[] = ['clipboard', 'f
 export interface SettingsSnapshot {
   outputDelivery: OutputDelivery
   availableOutputDeliveries: readonly OutputDelivery[]
+  captureShortcuts: CaptureShortcutSnapshot
 }
+
+export type ShortcutUpdateResult =
+  { status: 'success'; snapshot: SettingsSnapshot } | { status: 'failed'; message: string }
 
 export interface LumiereSettingsApi {
   getSettingsSnapshot(): Promise<SettingsSnapshot>
   setOutputDelivery(delivery: OutputDelivery): Promise<SettingsSnapshot>
+  setCaptureShortcut(update: ShortcutUpdate): Promise<ShortcutUpdateResult>
+  setShortcutRecording(recording: boolean): Promise<void>
   onSettingsChanged(listener: (snapshot: SettingsSnapshot) => void): () => void
+  onShowSettingsRequested(listener: () => void): () => void
 }
 
 export function parseOutputDelivery(value: unknown): OutputDelivery {

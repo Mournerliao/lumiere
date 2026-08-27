@@ -9,6 +9,10 @@ describe('SettingsView', () => {
         snapshot={{
           outputDelivery: 'clipboard',
           availableOutputDeliveries: ['clipboard'],
+          captureShortcuts: {
+            region: { accelerator: null, status: 'unconfigured' },
+            display: { accelerator: null, status: 'unconfigured' },
+          },
         }}
         surfaceSnapshot={{
           platform: 'macos',
@@ -23,9 +27,12 @@ describe('SettingsView', () => {
         }}
         platform="macos"
         isSaving={false}
+        savingShortcut={null}
         error={null}
         onDone={() => undefined}
         onOutputDeliveryChange={() => undefined}
+        onShortcutChange={() => Promise.resolve()}
+        onShortcutRecordingChange={() => Promise.resolve()}
       />,
     )
 

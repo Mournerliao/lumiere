@@ -588,6 +588,44 @@ button {
   line-height: 1;
 }
 
+.shortcut-setting {
+  display: grid;
+}
+
+.shortcut-recorder {
+  min-width: 104px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--Lumiere-Dark-radiusChip);
+  color: var(--text-primary);
+  background: var(--surface-raised);
+  font-size: var(--Lumiere-Dark-fontSizeMeta);
+  line-height: 1;
+  -webkit-app-region: no-drag;
+}
+
+.shortcut-recorder:hover:not(:disabled),
+.shortcut-recorder--recording {
+  border-color: var(--accent-border);
+  background: var(--surface-hover);
+}
+
+.shortcut-recorder:focus-visible {
+  outline: 2px solid var(--accent-base);
+  outline-offset: 2px;
+}
+
+.shortcut-recorder[aria-invalid='true'] {
+  border-color: var(--status-caution);
+}
+
+.shortcut-setting-error {
+  margin: -3px 0 3px;
+  color: var(--status-caution);
+  font-size: var(--Lumiere-Dark-fontSizeCaption);
+}
+
 .settings-select {
   z-index: 1;
   min-width: 160px;

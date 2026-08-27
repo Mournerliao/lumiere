@@ -17,6 +17,7 @@ describe('SettingsStore', () => {
     await store.load()
 
     expect(store.getCapturePreferences()).toEqual({ delivery: 'both' })
+    expect(store.getCaptureShortcuts()).toEqual({ region: null, display: null })
   })
 
   it('persists an output delivery and restores it in a new store', async () => {
@@ -40,6 +41,22 @@ describe('SettingsStore', () => {
     await store.load()
 
     expect(store.getOutputDelivery()).toBe('both')
+  })
+
+  it('migrates v1 output settings when a shortcut is first saved', async () => {
+    const filePath = await settingsPath()
+    await writeFile(filePath, '{"version":1,"outputDelivery":"folder"}', 'utf8')
+    const store = new SettingsStore(filePath)
+    await store.load()
+
+    await store.setCaptureShortcut('region', 'Command+Shift+L')
+
+    expect(store.getOutputDelivery()).toBe('folder')
+    expect(store.getCaptureShortcuts()).toEqual({
+      region: 'Command+Shift+L',
+      display: null,
+    })
+    await expect(readFile(filePath, 'utf8')).resolves.toContain('"version": 2')
   })
 })
 

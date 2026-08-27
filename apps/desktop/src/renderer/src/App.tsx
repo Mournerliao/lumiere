@@ -6,6 +6,7 @@ import type {
   CaptureSurfaceSnapshot,
 } from '../../shared/capture-command'
 import type { OutputDelivery } from '../../shared/platform-contract'
+import type { CaptureMode, ShortcutUpdate } from '../../shared/shortcut-command'
 import type { SettingsSnapshot } from '../../shared/settings-command'
 import { SettingsView } from './SettingsView'
 import { RegionOverlay } from './RegionOverlay'
@@ -26,6 +27,20 @@ export function App(): React.JSX.Element {
 
 function ApplicationSurface(): React.JSX.Element {
   const [view, setView] = useState<'capture' | 'settings'>('capture')
+  const [captureResult, setCaptureResult] = useState<CaptureCommandResult | null>(null)
+
+  useEffect(() => {
+    const stopSettingsListening = window.lumierePlatform.onShowSettingsRequested(() => {
+      setView('settings')
+    })
+    const stopCaptureListening = window.lumierePlatform.onCaptureCompleted((result) => {
+      setCaptureResult(result)
+    })
+    return () => {
+      stopSettingsListening()
+      stopCaptureListening()
+    }
+  }, [])
 
   return view === 'settings' ? (
     <SettingsWindow
@@ -35,6 +50,8 @@ function ApplicationSurface(): React.JSX.Element {
     />
   ) : (
     <MainWindow
+      result={captureResult}
+      onResultChange={setCaptureResult}
       onOpenSettings={() => {
         setView('settings')
       }}
@@ -42,9 +59,16 @@ function ApplicationSurface(): React.JSX.Element {
   )
 }
 
-function MainWindow({ onOpenSettings }: { onOpenSettings: () => void }): React.JSX.Element {
+function MainWindow({
+  result,
+  onResultChange,
+  onOpenSettings,
+}: {
+  result: CaptureCommandResult | null
+  onResultChange: (result: CaptureCommandResult | null) => void
+  onOpenSettings: () => void
+}): React.JSX.Element {
   const [snapshot, setSnapshot] = useState<CaptureSurfaceSnapshot | null>(null)
-  const [result, setResult] = useState<CaptureCommandResult | null>(null)
   const [capturingMode, setCapturingMode] = useState<'region' | 'display' | null>(null)
   const [interactionHint, setInteractionHint] = useState<string | null>(null)
   const [loadFailed, setLoadFailed] = useState(false)
@@ -77,12 +101,12 @@ function MainWindow({ onOpenSettings }: { onOpenSettings: () => void }): React.J
 
   const captureDisplay = async (): Promise<void> => {
     setCapturingMode('display')
-    setResult(null)
+    onResultChange(null)
     setInteractionHint(null)
     try {
-      setResult(await window.lumierePlatform.captureDisplay())
+      onResultChange(await window.lumierePlatform.captureDisplay())
     } catch {
-      setResult({
+      onResultChange({
         status: 'failed',
         feedback: CAPTURE_LOAD_FAILURE.title,
         notice: CAPTURE_LOAD_FAILURE,
@@ -94,12 +118,12 @@ function MainWindow({ onOpenSettings }: { onOpenSettings: () => void }): React.J
 
   const captureRegion = async (): Promise<void> => {
     setCapturingMode('region')
-    setResult(null)
+    onResultChange(null)
     setInteractionHint(null)
     try {
-      setResult(await window.lumierePlatform.captureRegion())
+      onResultChange(await window.lumierePlatform.captureRegion())
     } catch {
-      setResult({
+      onResultChange({
         status: 'failed',
         feedback: CAPTURE_LOAD_FAILURE.title,
         notice: CAPTURE_LOAD_FAILURE,
@@ -230,6 +254,7 @@ function SettingsWindow({ onDone }: { onDone: () => void }): React.JSX.Element {
   const [snapshot, setSnapshot] = useState<SettingsSnapshot | null>(null)
   const [surfaceSnapshot, setSurfaceSnapshot] = useState<CaptureSurfaceSnapshot | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [savingShortcut, setSavingShortcut] = useState<CaptureMode | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -272,15 +297,38 @@ function SettingsWindow({ onDone }: { onDone: () => void }): React.JSX.Element {
     }
   }
 
+  const setCaptureShortcut = async (update: ShortcutUpdate): Promise<void> => {
+    setSavingShortcut(update.mode)
+    setError(null)
+    try {
+      const result = await window.lumierePlatform.setCaptureShortcut(update)
+      if (result.status === 'failed') {
+        setError(result.message)
+      } else {
+        setSnapshot(result.snapshot)
+      }
+    } catch {
+      setError('The shortcut could not be saved. Try again.')
+    } finally {
+      setSavingShortcut(null)
+    }
+  }
+
   return (
     <SettingsView
       snapshot={snapshot}
       surfaceSnapshot={surfaceSnapshot}
       platform={window.lumierePlatform.platform}
       isSaving={isSaving}
+      savingShortcut={savingShortcut}
       error={error}
       onDone={onDone}
       onOutputDeliveryChange={(delivery) => void setOutputDelivery(delivery)}
+      onShortcutChange={setCaptureShortcut}
+      onShortcutRecordingChange={(recording) => {
+        if (recording) setError(null)
+        return window.lumierePlatform.setShortcutRecording(recording)
+      }}
     />
   )
 }

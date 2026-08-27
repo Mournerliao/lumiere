@@ -1,11 +1,17 @@
-import { app, BrowserWindow, ipcMain, screen, type Tray } from 'electron'
+import { app, BrowserWindow, globalShortcut, ipcMain, screen } from 'electron'
 import { join } from 'node:path'
-import { applyMacDockIcon, createApplicationTray, desktopIconPaths } from './app-icons'
+import {
+  applyMacDockIcon,
+  createApplicationTray,
+  desktopIconPaths,
+  type ApplicationTray,
+} from './app-icons'
 import { CaptureCommandRouter } from './capture-command-router'
 import { MacOSPlatformHost } from './macos-platform-host'
 import { macOSHostCandidates } from './native-host-paths'
 import { currentLumierePlatform, UnavailablePlatformHost } from './platform-host'
 import { SettingsStore } from './settings-store'
+import { ShortcutRegistrationError, ShortcutService } from './shortcut-service'
 import {
   captureCommandChannels,
   type CaptureCommandResult,
@@ -17,6 +23,7 @@ import {
   settingsCommandChannels,
   type SettingsSnapshot,
 } from '../shared/settings-command'
+import { parseShortcutUpdate } from '../shared/shortcut-command'
 import {
   parseCaptureGeometry,
   type CaptureGeometry,
@@ -25,10 +32,11 @@ import {
 } from '../shared/platform-contract'
 
 let mainWindow: BrowserWindow | null = null
-let applicationTray: Tray | null = null
+let applicationTray: ApplicationTray | null = null
 let platformHost: PlatformHost | null = null
 let captureRouter: CaptureCommandRouter | null = null
 let settingsStore: SettingsStore | null = null
+let shortcutService: ShortcutService | null = null
 let regionOverlaySession: RegionOverlaySession | null = null
 
 interface RegionOverlaySession {
@@ -37,6 +45,7 @@ interface RegionOverlaySession {
   submitted: boolean
   resolve(result: CaptureCommandResult): void
   stopWatchingDisplays(): void
+  restoreMainWindow: boolean
 }
 
 function createRendererWindow(): BrowserWindow {
@@ -80,6 +89,10 @@ function createRendererWindow(): BrowserWindow {
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   window.webContents.on('will-navigate', (event) => {
     event.preventDefault()
+  })
+  window.once('closed', () => {
+    shortcutService?.setRecording(false)
+    if (mainWindow === window) mainWindow = null
   })
 
   if (!app.isPackaged && process.env.ELECTRON_RENDERER_URL) {
@@ -164,7 +177,9 @@ function registerIpc(): void {
   ipcMain.removeAllListeners(captureCommandChannels.cancelRegionOverlay)
   ipcMain.removeAllListeners(captureCommandChannels.submitRegionSelection)
   ipcMain.removeHandler(settingsCommandChannels.getSnapshot)
+  ipcMain.removeHandler(settingsCommandChannels.setCaptureShortcut)
   ipcMain.removeHandler(settingsCommandChannels.setOutputDelivery)
+  ipcMain.removeHandler(settingsCommandChannels.setShortcutRecording)
 
   const assertTrustedWindow = (
     event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent,
@@ -192,16 +207,20 @@ function registerIpc(): void {
     return router.getSurfaceSnapshot()
   })
 
-  ipcMain.handle(captureCommandChannels.captureDisplay, (event, ...args) => {
+  ipcMain.handle(captureCommandChannels.captureDisplay, async (event, ...args) => {
     assertTrustedWindow(event, mainWindow)
     assertNoArguments(args)
-    return router.captureDisplay()
+    const result = await router.captureDisplay()
+    await refreshApplicationTray()
+    return result
   })
 
-  ipcMain.handle(captureCommandChannels.captureRegion, (event, ...args) => {
+  ipcMain.handle(captureCommandChannels.captureRegion, async (event, ...args) => {
     assertTrustedWindow(event, mainWindow)
     assertNoArguments(args)
-    return captureRegion(router)
+    const result = await captureRegion(router)
+    await refreshApplicationTray()
+    return result
   })
 
   ipcMain.handle(captureCommandChannels.getRegionOverlaySnapshot, (event, ...args) => {
@@ -262,9 +281,44 @@ function registerIpc(): void {
     broadcastSettingsChanged(nextSnapshot)
     return nextSnapshot
   })
+
+  ipcMain.handle(settingsCommandChannels.setCaptureShortcut, async (event, ...args) => {
+    assertTrustedWindow(event, mainWindow)
+    if (args.length !== 1) {
+      throw new Error('Expected one shortcut update.')
+    }
+    const update = parseShortcutUpdate(args[0])
+    if (!shortcutService) {
+      throw new Error('Shortcut settings are not ready.')
+    }
+    try {
+      await shortcutService.setShortcut(update.mode, update.accelerator)
+    } catch (error) {
+      return {
+        status: 'failed' as const,
+        message:
+          error instanceof ShortcutRegistrationError
+            ? error.message
+            : 'The shortcut could not be saved. Try again.',
+      }
+    }
+    const nextSnapshot = await getSettingsSnapshot()
+    broadcastSettingsChanged(nextSnapshot)
+    await refreshApplicationTray()
+    return { status: 'success' as const, snapshot: nextSnapshot }
+  })
+
+  ipcMain.handle(settingsCommandChannels.setShortcutRecording, (event, ...args) => {
+    assertTrustedWindow(event, mainWindow)
+    if (args.length !== 1 || typeof args[0] !== 'boolean') {
+      throw new Error('Expected one shortcut-recording state.')
+    }
+    shortcutService?.setRecording(args[0])
+  })
 }
 
 async function captureRegion(router: CaptureCommandRouter): Promise<CaptureCommandResult> {
+  const restoreMainWindow = mainWindow?.isVisible() === true
   const initialDisplay = screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
   const preparation = await router.beginRegionCapture()
   if (preparation.status === 'failed') {
@@ -315,6 +369,7 @@ async function captureRegion(router: CaptureCommandRouter): Promise<CaptureComma
       submitted: false,
       resolve,
       stopWatchingDisplays,
+      restoreMainWindow,
     }
     overlay.once('ready-to-show', () => {
       overlay.show()
@@ -386,7 +441,7 @@ function finishRegionOverlay(session: RegionOverlaySession, result: CaptureComma
   if (!session.window.isDestroyed()) {
     session.window.destroy()
   }
-  showMainWindow()
+  if (session.restoreMainWindow) showMainWindow()
   session.resolve(result)
 }
 
@@ -437,6 +492,10 @@ async function getSettingsSnapshot(): Promise<SettingsSnapshot> {
   return {
     outputDelivery: settingsStore.getOutputDelivery(),
     availableOutputDeliveries: availableOutputDeliveries(capabilities.deliveryTargets),
+    captureShortcuts: shortcutService?.getSnapshot() ?? {
+      region: { accelerator: null, status: 'unconfigured' },
+      display: { accelerator: null, status: 'unconfigured' },
+    },
   }
 }
 
@@ -446,6 +505,56 @@ function broadcastSettingsChanged(snapshot: SettingsSnapshot): void {
       window.webContents.send(settingsCommandChannels.changed, snapshot)
     }
   }
+}
+
+function broadcastCaptureCompleted(result: CaptureCommandResult): void {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send(captureCommandChannels.completed, result)
+  }
+}
+
+async function runExternalCapture(mode: 'region' | 'display'): Promise<void> {
+  const router = captureRouter
+  if (!router) return
+  const result = mode === 'region' ? await captureRegion(router) : await router.captureDisplay()
+  broadcastCaptureCompleted(result)
+  await refreshApplicationTray()
+}
+
+function showSettingsWindow(): void {
+  const window = showMainWindow()
+  const send = (): void => {
+    if (!window.isDestroyed()) {
+      window.webContents.send(settingsCommandChannels.showRequested)
+    }
+  }
+  if (window.webContents.isLoadingMainFrame()) {
+    window.webContents.once('did-finish-load', send)
+  } else {
+    send()
+  }
+}
+
+async function getApplicationTrayState() {
+  const shortcuts = shortcutService?.getSnapshot() ?? {
+    region: { accelerator: null, status: 'unconfigured' as const },
+    display: { accelerator: null, status: 'unconfigured' as const },
+  }
+  try {
+    const snapshot = await captureRouter?.getSurfaceSnapshot()
+    return {
+      regionAvailable: snapshot?.hostAvailable === true && snapshot.captureModes.includes('region'),
+      displayAvailable:
+        snapshot?.hostAvailable === true && snapshot.captureModes.includes('display'),
+      shortcuts,
+    }
+  } catch {
+    return { regionAvailable: false, displayAvailable: false, shortcuts }
+  }
+}
+
+async function refreshApplicationTray(): Promise<void> {
+  applicationTray?.update(await getApplicationTrayState())
 }
 
 function createPlatformHost(): PlatformHost {
@@ -470,8 +579,28 @@ void app.whenReady().then(async () => {
   await settingsStore.load()
   mainWindow = createRendererWindow()
   registerIpc()
+  if (!captureRouter) {
+    throw new Error('Capture commands are not ready.')
+  }
+  shortcutService = new ShortcutService(settingsStore, globalShortcut, {
+    region: () => runExternalCapture('region'),
+    display: () => runExternalCapture('display'),
+  })
+  shortcutService.initialize()
   applyMacDockIcon()
-  applicationTray = createApplicationTray(showMainWindow)
+  applicationTray = createApplicationTray(await getApplicationTrayState(), {
+    captureRegion: () => {
+      void runExternalCapture('region')
+    },
+    captureDisplay: () => {
+      void runExternalCapture('display')
+    },
+    showWindow: showMainWindow,
+    showSettings: showSettingsWindow,
+    quit: () => {
+      app.quit()
+    },
+  })
 
   app.on('activate', () => {
     showMainWindow()
@@ -486,6 +615,7 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  shortcutService?.dispose()
   if (captureRouter) {
     disposeRegionOverlay(captureRouter)
   }

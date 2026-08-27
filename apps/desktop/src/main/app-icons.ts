@@ -1,6 +1,10 @@
 import { app, Menu, nativeImage, Tray } from 'electron'
-import type { BrowserWindow } from 'electron'
 import { resolveDesktopIconPaths, type DesktopIconPlatform } from './icon-paths'
+import {
+  applicationTrayMenuTemplate,
+  type ApplicationTrayCommands,
+  type ApplicationTrayState,
+} from './tray-menu'
 
 function currentIconPlatform(): DesktopIconPlatform {
   if (process.platform === 'darwin' || process.platform === 'win32') {
@@ -31,7 +35,15 @@ export function applyMacDockIcon(): void {
   app.dock?.setIcon(icon)
 }
 
-export function createApplicationTray(showWindow: () => BrowserWindow): Tray {
+export interface ApplicationTray {
+  update(state: ApplicationTrayState): void
+  destroy(): void
+}
+
+export function createApplicationTray(
+  state: ApplicationTrayState,
+  commands: ApplicationTrayCommands,
+): ApplicationTray {
   const icon = nativeImage.createFromPath(desktopIconPaths().trayIcon)
   if (icon.isEmpty()) {
     throw new Error('The application tray icon could not be loaded.')
@@ -41,25 +53,18 @@ export function createApplicationTray(showWindow: () => BrowserWindow): Tray {
   }
 
   const tray = new Tray(icon)
-  const show = (): void => {
-    const window = showWindow()
-    window.show()
-    window.focus()
-  }
-
   tray.setToolTip('Lumiere')
-  tray.setContextMenu(
-    Menu.buildFromTemplate([
-      { label: 'Show Lumiere', click: show },
-      { type: 'separator' },
-      {
-        label: 'Quit Lumiere',
-        click: () => {
-          app.quit()
-        },
-      },
-    ]),
-  )
-  tray.on('click', show)
-  return tray
+  const update = (nextState: ApplicationTrayState): void => {
+    tray.setContextMenu(Menu.buildFromTemplate(applicationTrayMenuTemplate(nextState, commands)))
+  }
+  update(state)
+  tray.on('click', () => {
+    commands.showWindow()
+  })
+  return {
+    update,
+    destroy: () => {
+      tray.destroy()
+    },
+  }
 }
