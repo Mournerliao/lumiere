@@ -13,6 +13,7 @@ describe('SettingsView', () => {
             region: { accelerator: null, status: 'unconfigured' },
             display: { accelerator: null, status: 'unconfigured' },
           },
+          afterCaptureBehavior: 'do-nothing',
         }}
         surfaceSnapshot={{
           platform: 'macos',
@@ -31,6 +32,7 @@ describe('SettingsView', () => {
         error={null}
         onDone={() => undefined}
         onOutputDeliveryChange={() => undefined}
+        onAfterCaptureBehaviorChange={() => undefined}
         onShortcutChange={() => Promise.resolve()}
         onShortcutRecordingChange={() => Promise.resolve()}
       />,

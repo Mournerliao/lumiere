@@ -31,6 +31,8 @@ const platformApi: LumiereRendererApi = {
     ipcRenderer.send(captureCommandChannels.submitRegionSelection, geometry)
   },
   getSettingsSnapshot: () => ipcRenderer.invoke(settingsCommandChannels.getSnapshot),
+  setAfterCaptureBehavior: (behavior) =>
+    ipcRenderer.invoke(settingsCommandChannels.setAfterCaptureBehavior, behavior),
   setOutputDelivery: (delivery) =>
     ipcRenderer.invoke(settingsCommandChannels.setOutputDelivery, delivery),
   setCaptureShortcut: (update) =>

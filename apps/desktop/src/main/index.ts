@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut, ipcMain, screen } from 'electron'
+import { app, BrowserWindow, globalShortcut, ipcMain, screen, shell } from 'electron'
 import { join } from 'node:path'
 import {
   applyMacDockIcon,
@@ -12,6 +12,7 @@ import { macOSHostCandidates } from './native-host-paths'
 import { currentLumierePlatform, UnavailablePlatformHost } from './platform-host'
 import { SettingsStore } from './settings-store'
 import { ShortcutRegistrationError, ShortcutService } from './shortcut-service'
+import { applyAfterCaptureBehavior } from './after-capture'
 import {
   captureCommandChannels,
   type CaptureCommandResult,
@@ -19,6 +20,7 @@ import {
 } from '../shared/capture-command'
 import {
   availableOutputDeliveries,
+  parseAfterCaptureBehavior,
   parseOutputDelivery,
   settingsCommandChannels,
   type SettingsSnapshot,
@@ -177,6 +179,7 @@ function registerIpc(): void {
   ipcMain.removeAllListeners(captureCommandChannels.cancelRegionOverlay)
   ipcMain.removeAllListeners(captureCommandChannels.submitRegionSelection)
   ipcMain.removeHandler(settingsCommandChannels.getSnapshot)
+  ipcMain.removeHandler(settingsCommandChannels.setAfterCaptureBehavior)
   ipcMain.removeHandler(settingsCommandChannels.setCaptureShortcut)
   ipcMain.removeHandler(settingsCommandChannels.setOutputDelivery)
   ipcMain.removeHandler(settingsCommandChannels.setShortcutRecording)
@@ -210,7 +213,7 @@ function registerIpc(): void {
   ipcMain.handle(captureCommandChannels.captureDisplay, async (event, ...args) => {
     assertTrustedWindow(event, mainWindow)
     assertNoArguments(args)
-    const result = await router.captureDisplay()
+    const result = completeCapture(await router.captureDisplay())
     await refreshApplicationTray()
     return result
   })
@@ -218,7 +221,7 @@ function registerIpc(): void {
   ipcMain.handle(captureCommandChannels.captureRegion, async (event, ...args) => {
     assertTrustedWindow(event, mainWindow)
     assertNoArguments(args)
-    const result = await captureRegion(router)
+    const result = completeCapture(await captureRegion(router))
     await refreshApplicationTray()
     return result
   })
@@ -277,6 +280,21 @@ function registerIpc(): void {
       throw new Error('Settings are not ready.')
     }
     await settingsStore.setOutputDelivery(delivery)
+    const nextSnapshot = await getSettingsSnapshot()
+    broadcastSettingsChanged(nextSnapshot)
+    return nextSnapshot
+  })
+
+  ipcMain.handle(settingsCommandChannels.setAfterCaptureBehavior, async (event, ...args) => {
+    assertTrustedWindow(event, mainWindow)
+    if (args.length !== 1) {
+      throw new Error('Expected one after-capture behavior argument.')
+    }
+    const behavior = parseAfterCaptureBehavior(args[0])
+    if (!settingsStore) {
+      throw new Error('Settings are not ready.')
+    }
+    await settingsStore.setAfterCaptureBehavior(behavior)
     const nextSnapshot = await getSettingsSnapshot()
     broadcastSettingsChanged(nextSnapshot)
     return nextSnapshot
@@ -492,6 +510,7 @@ async function getSettingsSnapshot(): Promise<SettingsSnapshot> {
   return {
     outputDelivery: settingsStore.getOutputDelivery(),
     availableOutputDeliveries: availableOutputDeliveries(capabilities.deliveryTargets),
+    afterCaptureBehavior: settingsStore.getAfterCaptureBehavior(),
     captureShortcuts: shortcutService?.getSnapshot() ?? {
       region: { accelerator: null, status: 'unconfigured' },
       display: { accelerator: null, status: 'unconfigured' },
@@ -516,9 +535,19 @@ function broadcastCaptureCompleted(result: CaptureCommandResult): void {
 async function runExternalCapture(mode: 'region' | 'display'): Promise<void> {
   const router = captureRouter
   if (!router) return
-  const result = mode === 'region' ? await captureRegion(router) : await router.captureDisplay()
+  const result = completeCapture(
+    mode === 'region' ? await captureRegion(router) : await router.captureDisplay(),
+  )
   broadcastCaptureCompleted(result)
   await refreshApplicationTray()
+}
+
+function completeCapture(result: CaptureCommandResult): CaptureCommandResult {
+  return settingsStore
+    ? applyAfterCaptureBehavior(result, settingsStore, (filePath) => {
+        shell.showItemInFolder(filePath)
+      })
+    : result
 }
 
 function showSettingsWindow(): void {

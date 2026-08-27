@@ -27,12 +27,16 @@ target-local selection geometry and pre-dispatch cancellation while main retains
 short-lived target token. macOS display and region capture convert once to a timestamped
 RGBA8/sRGB PNG representation and deliver those same bytes through native clipboard and
 folder adapters. Region and Display now have independent opt-in global shortcut settings;
-main owns atomic registration, conflict handling, v1-to-v2 settings migration, and recording
+main owns atomic registration, conflict handling, v1/v2-to-v3 settings migration, and recording
 suspension, while the tray/menu-bar projects capability-gated Region/Display commands,
 registered accelerators, Open, Settings, and Quit through the same capture router. The macOS
 development launch now incrementally builds the current Swift Debug Host and resolves it
-ahead of any stale Release artifact; explicit Host overrides remain authoritative. The Windows
-engine now exposes one deep display-capture operation that owns target resolution,
+ahead of any stale Release artifact; explicit Host overrides remain authoritative. The shared
+Settings surface now also persists `Do nothing` or `Show in folder` after-capture behavior
+through validated main-owned IPC. One main-process completion path applies that preference
+to main-window, shortcut, and tray/menu-bar captures without changing artifact success when
+Finder or Explorer cannot reveal an already-saved file. The Windows engine now exposes one
+deep display-capture operation that owns target resolution,
 target-aware HDR probing, first-frame acquisition, one sRGB Visual Match conversion,
 delivery, cancellation, and teardown. Milestone 1 now
 advances through environment-aware execution lanes: Issue #7 owns the Windows Host
@@ -46,7 +50,7 @@ WinUI and the old validation/HDR10-JXR paths remain removed.
 | 0. Foundation | Complete | Final layout, secure shell, language-neutral protocol, paused Windows engine; macOS and Windows CI pass | None |
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
 | 1B. Windows host adapter | In progress ([#7](https://github.com/Mournerliao/lumiere/issues/7)) | The engine has one narrow capture interface, single-conversion delivery, target-aware multi-adapter HDR probing, and deterministic operation teardown | Implement the JSON Lines Host executable, Electron integration, and Windows runtime verification |
-| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut surfaces, generated tokens, persisted capability-gated output and shortcut preferences, one main-process capture router, capability-gated tray/menu-bar, v2 target/delivery contract, shared Region Overlay, and verified macOS display/region delivery journeys | Resolve and add the remaining independent settings slices, then verify the independent Windows journeys after #7 |
+| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture surfaces, generated tokens, persisted capability-gated output, shortcut, and after-capture preferences, one main-process capture router, capability-gated tray/menu-bar, v2 target/delivery contract, shared Region Overlay, and verified macOS display/region/after-capture journeys | Resolve and add the remaining independent settings slices, then verify the independent Windows journeys after #7 |
 | 1D. Distribution and release | Not started | Windows installer direction remains recorded | Windows installer, signed/notarized macOS artifact, clean-machine and hardware verification |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
 | 3. Cross-platform HDR fidelity | Planned; not started | Fidelity is separated from artifact success and HDR preservation | Define support matrix/tolerances and run fixed-scene verification |
@@ -56,7 +60,7 @@ acceptance criteria and implementation status for each vertical slice.
 
 ## Verification Truth
 
-- **Repository:** frozen install, layout and TypeScript checks, fifty-four cross-platform
+- **Repository:** frozen install, layout and TypeScript checks, sixty-eight cross-platform
   shell/protocol/process/settings/UI tests, three macOS path tests, thirteen Swift
   protocol/capability/permission/diagnostic/region tests plus two native-delivery tests, and the
   production build pass locally on macOS. Shared, macOS, and Windows test gates are
@@ -96,7 +100,14 @@ acceptance criteria and implementation status for each vertical slice.
   behavior or an additional capture/HDR claim. A root-level `pnpm dev` launch then rebuilt the
   current Debug Host with the installed Xcode toolchain and exposed both Region and Display;
   this closes the stale-Release development-selection failure without changing packaged Host
-  discovery.
+  discovery. The after-capture slice then selected Folder plus `Show in folder`; display capture
+  saved `Lumiere-2026-08-27-164643.png`, reported `Saved to “Lumiere”`, and opened Finder with
+  that file selected. With Clipboard plus the same after-capture preference, display capture
+  reported `Copied to clipboard` and left Finder on the prior saved file. A full development-app
+  restart restored both the Clipboard output and `Show in folder` preferences. The final
+  development settings were restored to Clipboard and folder plus `Do nothing`. These
+  observations establish after-capture routing and persistence on macOS only; they add no
+  Visual Match, HDR-preservation, or Windows claim.
 - **GitHub CI:** the last recorded macOS shell and Windows engine workflow observation passed at
   `fccf812`; this establishes those configured repository gates at that commit, not current-HEAD CI, Windows Host
   runtime or hardware behavior.
@@ -120,9 +131,9 @@ may expose one frontier per environment-eligible lane while each writer or workt
 advances only one current working Issue at a time.
 
 - **Shared/macOS lane — [Issue #9](https://github.com/Mournerliao/lumiere/issues/9):**
-  resolve the after-capture behavior and HDR-alert product models, then implement the next
-  independent Settings slice through validated main-owned IPC. Keep custom save-directory
-  behavior separate because it may require a separately reviewed protocol change.
+  resolve the HDR-alert product model and implement that independent Settings slice through
+  validated main-owned IPC. Keep custom save-directory behavior separate because it may require
+  a separately reviewed protocol change.
 - **Windows lane — [Issue #7](https://github.com/Mournerliao/lumiere/issues/7):** add
   the .NET platform-host executable around the retained engine using the current v2
   contract, extend the platform-neutral `predev` entry point to build and select its current

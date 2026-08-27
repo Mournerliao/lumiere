@@ -18,6 +18,7 @@ describe('SettingsStore', () => {
 
     expect(store.getCapturePreferences()).toEqual({ delivery: 'both' })
     expect(store.getCaptureShortcuts()).toEqual({ region: null, display: null })
+    expect(store.getAfterCaptureBehavior()).toBe('do-nothing')
   })
 
   it('persists an output delivery and restores it in a new store', async () => {
@@ -35,7 +36,7 @@ describe('SettingsStore', () => {
 
   it('falls back to the default for an invalid or unsupported settings file', async () => {
     const filePath = await settingsPath()
-    await writeFile(filePath, '{"version":2,"outputDelivery":"clipboard"}', 'utf8')
+    await writeFile(filePath, '{"version":3,"outputDelivery":"clipboard"}', 'utf8')
     const store = new SettingsStore(filePath)
 
     await store.load()
@@ -56,7 +57,35 @@ describe('SettingsStore', () => {
       region: 'Command+Shift+L',
       display: null,
     })
-    await expect(readFile(filePath, 'utf8')).resolves.toContain('"version": 2')
+    await expect(readFile(filePath, 'utf8')).resolves.toContain('"version": 3')
+  })
+
+  it('migrates v2 settings and persists an after-capture behavior', async () => {
+    const filePath = await settingsPath()
+    await writeFile(
+      filePath,
+      JSON.stringify({
+        version: 2,
+        outputDelivery: 'folder',
+        captureShortcuts: { region: 'Command+Shift+L', display: null },
+      }),
+      'utf8',
+    )
+    const store = new SettingsStore(filePath)
+    await store.load()
+
+    expect(store.getAfterCaptureBehavior()).toBe('do-nothing')
+    await store.setAfterCaptureBehavior('show-in-folder')
+
+    const restartedStore = new SettingsStore(filePath)
+    await restartedStore.load()
+    expect(restartedStore.getOutputDelivery()).toBe('folder')
+    expect(restartedStore.getCaptureShortcuts()).toEqual({
+      region: 'Command+Shift+L',
+      display: null,
+    })
+    expect(restartedStore.getAfterCaptureBehavior()).toBe('show-in-folder')
+    await expect(readFile(filePath, 'utf8')).resolves.toContain('"version": 3')
   })
 })
 

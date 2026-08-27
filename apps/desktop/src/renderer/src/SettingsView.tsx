@@ -9,8 +9,11 @@ import {
   type ShortcutUpdate,
 } from '../../shared/shortcut-command'
 import {
+  afterCaptureBehaviorOptions,
   outputDeliveryOptions,
+  parseAfterCaptureBehavior,
   parseOutputDelivery,
+  type AfterCaptureBehavior,
   type SettingsSnapshot,
 } from '../../shared/settings-command'
 import { Button } from '@/components/motion/button/base'
@@ -29,6 +32,11 @@ const outputDeliveryLabels: Record<OutputDelivery, string> = {
   both: 'Clipboard and folder',
 }
 
+const afterCaptureBehaviorLabels: Record<AfterCaptureBehavior, string> = {
+  'do-nothing': 'Do nothing',
+  'show-in-folder': 'Show in folder',
+}
+
 type SettingsSection = 'output' | 'capture' | 'system'
 
 interface SettingsViewProps {
@@ -40,6 +48,7 @@ interface SettingsViewProps {
   error: string | null
   onDone: () => void
   onOutputDeliveryChange: (delivery: OutputDelivery) => void
+  onAfterCaptureBehaviorChange: (behavior: AfterCaptureBehavior) => void
   onShortcutChange: (update: ShortcutUpdate) => Promise<void>
   onShortcutRecordingChange: (recording: boolean) => Promise<void>
 }
@@ -53,6 +62,7 @@ export function SettingsView({
   error,
   onDone,
   onOutputDeliveryChange,
+  onAfterCaptureBehaviorChange,
   onShortcutChange,
   onShortcutRecordingChange,
 }: SettingsViewProps): React.JSX.Element {
@@ -127,12 +137,15 @@ export function SettingsView({
         ) : null}
         {section === 'capture' ? (
           <CaptureSettings
-            snapshot={surfaceSnapshot}
+            surfaceSnapshot={surfaceSnapshot}
+            afterCaptureBehavior={snapshot?.afterCaptureBehavior ?? 'do-nothing'}
+            isSaving={isSaving}
             shortcuts={snapshot?.captureShortcuts ?? null}
             platform={platform}
             savingShortcut={savingShortcut}
             onShortcutChange={onShortcutChange}
             onShortcutRecordingChange={onShortcutRecordingChange}
+            onAfterCaptureBehaviorChange={onAfterCaptureBehaviorChange}
           />
         ) : null}
         {section === 'system' ? <SystemSettings snapshot={surfaceSnapshot} /> : null}
@@ -217,22 +230,28 @@ function OutputSettings({
 }
 
 function CaptureSettings({
-  snapshot,
+  surfaceSnapshot,
+  afterCaptureBehavior,
+  isSaving,
   shortcuts,
   platform,
   savingShortcut,
   onShortcutChange,
   onShortcutRecordingChange,
+  onAfterCaptureBehaviorChange,
 }: {
-  snapshot: CaptureSurfaceSnapshot | null
+  surfaceSnapshot: CaptureSurfaceSnapshot | null
+  afterCaptureBehavior: AfterCaptureBehavior
+  isSaving: boolean
   shortcuts: SettingsSnapshot['captureShortcuts'] | null
   platform: LumierePlatform
   savingShortcut: CaptureMode | null
   onShortcutChange: (update: ShortcutUpdate) => Promise<void>
   onShortcutRecordingChange: (recording: boolean) => Promise<void>
+  onAfterCaptureBehaviorChange: (behavior: AfterCaptureBehavior) => void
 }): React.JSX.Element {
-  const regionAvailable = snapshot?.captureModes.includes('region') === true
-  const displayAvailable = snapshot?.captureModes.includes('display') === true
+  const regionAvailable = surfaceSnapshot?.captureModes.includes('region') === true
+  const displayAvailable = surfaceSnapshot?.captureModes.includes('display') === true
 
   return (
     <div className="settings-list">
@@ -256,12 +275,35 @@ function CaptureSettings({
         onChange={onShortcutChange}
         onRecordingChange={onShortcutRecordingChange}
       />
-      <SettingsRow label="After capture" value="Do nothing" control />
+      <div className="settings-row">
+        <span className="settings-row-label" id="after-capture-label">
+          After capture
+        </span>
+        <Select
+          value={afterCaptureBehavior}
+          disabled={isSaving}
+          onValueChange={(value) => {
+            onAfterCaptureBehaviorChange(parseAfterCaptureBehavior(value))
+          }}
+          className="settings-select"
+        >
+          <SelectTrigger aria-labelledby="after-capture-label" className="settings-select-trigger">
+            <SelectValue placeholder={afterCaptureBehaviorLabels[afterCaptureBehavior]} />
+          </SelectTrigger>
+          <SelectContent className="settings-select-content">
+            {afterCaptureBehaviorOptions.map((behavior) => (
+              <SelectItem key={behavior} value={behavior} className="settings-select-item">
+                {afterCaptureBehaviorLabels[behavior]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <SettingsRow
         label="HDR status"
         hint="Never blocks capture"
-        value={hdrStatusLabel(snapshot)}
-        tone={snapshot?.hdrStatus === 'ready' ? 'ready' : 'muted'}
+        value={hdrStatusLabel(surfaceSnapshot)}
+        tone={surfaceSnapshot?.hdrStatus === 'ready' ? 'ready' : 'muted'}
       />
     </div>
   )

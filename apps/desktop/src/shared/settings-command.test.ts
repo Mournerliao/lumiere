@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   availableOutputDeliveries,
+  parseAfterCaptureBehavior,
   parseOutputDelivery,
   SettingsContractError,
 } from './settings-command'
@@ -26,4 +27,18 @@ describe('settings command contract', () => {
       'both',
     ])
   })
+
+  it.each(['do-nothing', 'show-in-folder'] as const)(
+    'accepts %s as an after-capture behavior',
+    (value) => {
+      expect(parseAfterCaptureBehavior(value)).toBe(value)
+    },
+  )
+
+  it.each([undefined, null, 'open-preview', { behavior: 'do-nothing' }])(
+    'rejects an invalid after-capture behavior',
+    (value) => {
+      expect(() => parseAfterCaptureBehavior(value)).toThrow(SettingsContractError)
+    },
+  )
 })

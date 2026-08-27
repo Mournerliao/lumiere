@@ -8,6 +8,7 @@ import type {
 import type { OutputDelivery } from '../../shared/platform-contract'
 import type { CaptureMode, ShortcutUpdate } from '../../shared/shortcut-command'
 import type { SettingsSnapshot } from '../../shared/settings-command'
+import type { AfterCaptureBehavior } from '../../shared/settings-command'
 import { SettingsView } from './SettingsView'
 import { RegionOverlay } from './RegionOverlay'
 
@@ -297,6 +298,18 @@ function SettingsWindow({ onDone }: { onDone: () => void }): React.JSX.Element {
     }
   }
 
+  const setAfterCaptureBehavior = async (behavior: AfterCaptureBehavior): Promise<void> => {
+    setIsSaving(true)
+    setError(null)
+    try {
+      setSnapshot(await window.lumierePlatform.setAfterCaptureBehavior(behavior))
+    } catch {
+      setError('The after-capture behavior could not be saved. Try again.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const setCaptureShortcut = async (update: ShortcutUpdate): Promise<void> => {
     setSavingShortcut(update.mode)
     setError(null)
@@ -324,6 +337,7 @@ function SettingsWindow({ onDone }: { onDone: () => void }): React.JSX.Element {
       error={error}
       onDone={onDone}
       onOutputDeliveryChange={(delivery) => void setOutputDelivery(delivery)}
+      onAfterCaptureBehaviorChange={(behavior) => void setAfterCaptureBehavior(behavior)}
       onShortcutChange={setCaptureShortcut}
       onShortcutRecordingChange={(recording) => {
         if (recording) setError(null)
