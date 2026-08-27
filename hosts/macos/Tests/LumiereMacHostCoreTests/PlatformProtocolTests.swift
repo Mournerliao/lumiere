@@ -106,41 +106,196 @@ func detectsHDRFromTargetDisplayHeadroom(
 }
 
 @Test
-func convertsTargetLogicalRegionToDisplayPixels() throws {
-  let region = try #require(
-    RegionCaptureGeometry.resolve(
-      geometry: CaptureGeometry(
-        coordinateSpace: "target-logical",
-        x: 100,
-        y: 50,
-        width: 640,
-        height: 360
-      ),
-      targetLogicalSize: LogicalSize(width: 1512, height: 982),
-      displayPixelSize: LogicalSize(width: 3024, height: 1964)
+func resolvesHiDPIDisplayPixelsFromFilterScale() throws {
+  let output = try #require(
+    CaptureOutputGeometry.resolve(
+      targetLogicalSize: LogicalSize(width: 2560, height: 1440),
+      filterLogicalSize: LogicalSize(width: 2560, height: 1440),
+      pointPixelScale: 2,
+      region: nil
     )
   )
 
-  #expect(region.sourceRect == CGRect(x: 100, y: 50, width: 640, height: 360))
-  #expect(region.pixelWidth == 1280)
-  #expect(region.pixelHeight == 720)
+  #expect(output.sourceRect == nil)
+  #expect(output.pixelWidth == 5120)
+  #expect(output.pixelHeight == 2880)
+}
+
+@Test
+func resolvesReportedBlurryRegionAtHiDPIScale() throws {
+  let output = try #require(
+    CaptureOutputGeometry.resolve(
+      targetLogicalSize: LogicalSize(width: 2560, height: 1440),
+      filterLogicalSize: LogicalSize(width: 2560, height: 1440),
+      pointPixelScale: 2,
+      region: CaptureGeometry(
+        coordinateSpace: "target-logical",
+        x: 100,
+        y: 50,
+        width: 1408,
+        height: 821
+      )
+    )
+  )
+
+  #expect(output.sourceRect == CGRect(x: 100, y: 50, width: 1408, height: 821))
+  #expect(output.pixelWidth == 2816)
+  #expect(output.pixelHeight == 1642)
+}
+
+@Test
+func keepsOneToOneDisplaysAtLogicalSize() throws {
+  let output = try #require(
+    CaptureOutputGeometry.resolve(
+      targetLogicalSize: LogicalSize(width: 1920, height: 1080),
+      filterLogicalSize: LogicalSize(width: 1920, height: 1080),
+      pointPixelScale: 1,
+      region: nil
+    )
+  )
+
+  #expect(output.pixelWidth == 1920)
+  #expect(output.pixelHeight == 1080)
+}
+
+@Test
+func roundsFractionalRegionPixelsUp() throws {
+  let output = try #require(
+    CaptureOutputGeometry.resolve(
+      targetLogicalSize: LogicalSize(width: 2560, height: 1440),
+      filterLogicalSize: LogicalSize(width: 2560, height: 1440),
+      pointPixelScale: 1.5,
+      region: CaptureGeometry(
+        coordinateSpace: "target-logical",
+        x: 10.25,
+        y: 20.5,
+        width: 100.25,
+        height: 50.25
+      )
+    )
+  )
+
+  #expect(output.pixelWidth == 151)
+  #expect(output.pixelHeight == 76)
+}
+
+@Test
+func preservesRotatedDisplayAxes() throws {
+  let output = try #require(
+    CaptureOutputGeometry.resolve(
+      targetLogicalSize: LogicalSize(width: 1080, height: 1920),
+      filterLogicalSize: LogicalSize(width: 1080, height: 1920),
+      pointPixelScale: 2,
+      region: nil
+    )
+  )
+
+  #expect(output.pixelWidth == 2160)
+  #expect(output.pixelHeight == 3840)
+}
+
+@Test(arguments: [0.0, -1.0, Double.nan, Double.infinity])
+func rejectsInvalidPointPixelScale(pointPixelScale: Double) {
+  #expect(
+    CaptureOutputGeometry.resolve(
+      targetLogicalSize: LogicalSize(width: 2560, height: 1440),
+      filterLogicalSize: LogicalSize(width: 2560, height: 1440),
+      pointPixelScale: pointPixelScale,
+      region: nil
+    ) == nil
+  )
+}
+
+@Test
+func rejectsFilterTopologyMismatch() {
+  #expect(
+    CaptureOutputGeometry.resolve(
+      targetLogicalSize: LogicalSize(width: 2560, height: 1440),
+      filterLogicalSize: LogicalSize(width: 1920, height: 1080),
+      pointPixelScale: 2,
+      region: nil
+    ) == nil
+  )
 }
 
 @Test
 func rejectsRegionOutsideIssuedTargetBounds() {
   #expect(
-    RegionCaptureGeometry.resolve(
-      geometry: CaptureGeometry(
+    CaptureOutputGeometry.resolve(
+      targetLogicalSize: LogicalSize(width: 1512, height: 982),
+      filterLogicalSize: LogicalSize(width: 1512, height: 982),
+      pointPixelScale: 2,
+      region: CaptureGeometry(
         coordinateSpace: "target-logical",
         x: 1400,
         y: 900,
         width: 200,
         height: 100
-      ),
-      targetLogicalSize: LogicalSize(width: 1512, height: 982),
-      displayPixelSize: LogicalSize(width: 3024, height: 1964)
+      )
     ) == nil
   )
+}
+
+@Test
+func appliesPixelGeometryWithoutChangingHDRPreset() throws {
+  let output = try #require(
+    CaptureOutputGeometry.resolve(
+      targetLogicalSize: LogicalSize(width: 1728, height: 1117),
+      filterLogicalSize: LogicalSize(width: 1728, height: 1117),
+      pointPixelScale: 2,
+      region: nil
+    )
+  )
+  let configuration = SCStreamConfiguration(preset: .captureHDRScreenshotLocalDisplay)
+  let dynamicRange = configuration.captureDynamicRange
+
+  output.apply(to: configuration)
+
+  #expect(configuration.width == 3456)
+  #expect(configuration.height == 2234)
+  #expect(configuration.captureDynamicRange == dynamicRange)
+}
+
+@Test
+func appliesRegionGeometryToSDRConfiguration() throws {
+  let output = try #require(
+    CaptureOutputGeometry.resolve(
+      targetLogicalSize: LogicalSize(width: 2560, height: 1440),
+      filterLogicalSize: LogicalSize(width: 2560, height: 1440),
+      pointPixelScale: 2,
+      region: CaptureGeometry(
+        coordinateSpace: "target-logical",
+        x: 20,
+        y: 30,
+        width: 640,
+        height: 360
+      )
+    )
+  )
+  let configuration = SCStreamConfiguration()
+  let dynamicRange = configuration.captureDynamicRange
+
+  output.apply(to: configuration)
+
+  #expect(configuration.sourceRect == CGRect(x: 20, y: 30, width: 640, height: 360))
+  #expect(configuration.width == 1280)
+  #expect(configuration.height == 720)
+  #expect(configuration.captureDynamicRange == dynamicRange)
+}
+
+@Test
+func rejectsUnexpectedCapturedImageDimensions() throws {
+  let output = try #require(
+    CaptureOutputGeometry.resolve(
+      targetLogicalSize: LogicalSize(width: 1408, height: 821),
+      filterLogicalSize: LogicalSize(width: 1408, height: 821),
+      pointPixelScale: 2,
+      region: nil
+    )
+  )
+
+  #expect(output.matches(imageWidth: 2816, imageHeight: 1642))
+  #expect(!output.matches(imageWidth: 1408, imageHeight: 821))
 }
 
 @Test

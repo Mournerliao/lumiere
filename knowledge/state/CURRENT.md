@@ -26,7 +26,10 @@ immediately, and restores the value after restart. The shared Region Overlay now
 target-local selection geometry and pre-dispatch cancellation while main retains the
 short-lived target token. macOS display and region capture convert once to a timestamped
 RGBA8/sRGB PNG representation and deliver those same bytes through native clipboard and
-folder adapters. Region and Display now have independent opt-in global shortcut settings;
+folder adapters. The macOS Host now derives Display and Region output dimensions from the
+selected ScreenCaptureKit filter's point-to-pixel scale, so scaled 4K and Retina targets
+produce backing-pixel-density artifacts instead of one pixel per logical point. Region and
+Display now have independent opt-in global shortcut settings;
 main owns atomic registration, conflict handling, v1/v2-to-v3 settings migration, and recording
 suspension, while the tray/menu-bar projects capability-gated Region/Display commands,
 registered accelerators, Open, Settings, and Quit through the same capture router. The macOS
@@ -50,7 +53,7 @@ WinUI and the old validation/HDR10-JXR paths remain removed.
 | 0. Foundation | Complete | Final layout, secure shell, language-neutral protocol, paused Windows engine; macOS and Windows CI pass | None |
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
 | 1B. Windows host adapter | In progress ([#7](https://github.com/Mournerliao/lumiere/issues/7)) | The engine has one narrow capture interface, single-conversion delivery, target-aware multi-adapter HDR probing, and deterministic operation teardown | Implement the JSON Lines Host executable, Electron integration, and Windows runtime verification |
-| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture surfaces, generated tokens, persisted capability-gated output, shortcut, and after-capture preferences, one main-process capture router, capability-gated tray/menu-bar, v2 target/delivery contract, shared Region Overlay, and verified macOS display/region/after-capture journeys | Resolve and add the remaining independent settings slices, then verify the independent Windows journeys after #7 |
+| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture surfaces, generated tokens, persisted capability-gated output, shortcut, and after-capture preferences, one main-process capture router, capability-gated tray/menu-bar, v2 target/delivery contract, shared Region Overlay, HiDPI-aware macOS geometry, and verified macOS display/region/after-capture journeys | Resolve and add the remaining independent settings slices, then verify the independent Windows journeys after #7 |
 | 1D. Distribution and release | Not started | Windows installer direction remains recorded | Windows installer, signed/notarized macOS artifact, clean-machine and hardware verification |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
 | 3. Cross-platform HDR fidelity | Planned; not started | Fidelity is separated from artifact success and HDR preservation | Define support matrix/tolerances and run fixed-scene verification |
@@ -61,8 +64,8 @@ acceptance criteria and implementation status for each vertical slice.
 ## Verification Truth
 
 - **Repository:** frozen install, layout and TypeScript checks, sixty-eight cross-platform
-  shell/protocol/process/settings/UI tests, three macOS path tests, thirteen Swift
-  protocol/capability/permission/diagnostic/region tests plus two native-delivery tests, and the
+  shell/protocol/process/settings/UI tests, three macOS path tests, twenty-two Swift
+  protocol/capability/permission/diagnostic/geometry tests plus two native-delivery tests, and the
   production build pass locally on macOS. Shared, macOS, and Windows test gates are
   explicit and platform-scoped.
 - **macOS development runtime:** the Electron display action drove ScreenCaptureKit to
@@ -107,7 +110,15 @@ acceptance criteria and implementation status for each vertical slice.
   restart restored both the Clipboard output and `Show in folder` preferences. The final
   development settings were restored to Clipboard and folder plus `Do nothing`. These
   observations establish after-capture routing and persistence on macOS only; they add no
-  Visual Match, HDR-preservation, or Windows claim.
+  Visual Match, HDR-preservation, or Windows claim. A later external-4K clarity report exposed
+  that the Host had configured ScreenCaptureKit's pixel output with logical point dimensions:
+  a near-full region was only 1408×821 and visibly soft. The rebuilt Host then used the selected
+  filter's 2× pixel scale and produced a 5120×2880 Display artifact where the previous result was
+  2560×1440. A 1320×769 logical Region produced 2640×1538 pixels. Both retained RGBA, alpha, and
+  the embedded sRGB IEC61966-2.1 profile. A ten-capture 4K repeat loop produced 5120×2880 each
+  time without Host restart or retained-memory growth. These observations establish corrected
+  backing-pixel geometry on the named scaled external display; the built-in Retina XDR path was
+  not re-observed after this geometry correction.
 - **GitHub CI:** the last recorded macOS shell and Windows engine workflow observation passed at
   `fccf812`; this establishes those configured repository gates at that commit, not current-HEAD CI, Windows Host
   runtime or hardware behavior.
@@ -118,7 +129,10 @@ acceptance criteria and implementation status for each vertical slice.
 - **Hardware verified:** the macOS Retina XDR path passed fixed bright and dark scene
   observations. The bright ramp preserved ten distinct grayscale steps from 25 through
   255; the dark ramp preserved ten distinct steps from 0 through 32 and alternating
-  19/7 fine detail. No equivalent Windows observation exists.
+  19/7 fine detail. The named scaled external 4K display passed Display and Region
+  backing-pixel-dimension observations plus a ten-capture repeat loop after the HiDPI fix.
+  No equivalent Windows observation exists, and the Retina XDR geometry correction remains
+  independently unobserved on hardware.
 
 Do not describe the foundation as working capture, or the cross-platform MVP as
 release-ready until both owning platforms are explicitly verified.

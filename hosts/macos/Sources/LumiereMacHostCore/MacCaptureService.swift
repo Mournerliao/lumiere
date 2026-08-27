@@ -107,26 +107,55 @@ public actor MacCaptureService {
         )
       }
 
+      let filter = SCContentFilter(display: display, excludingWindows: [])
+      guard
+        let outputGeometry = CaptureOutputGeometry.resolve(
+          targetLogicalSize: LogicalSize(
+            width: captureTarget.target.logicalWidth,
+            height: captureTarget.target.logicalHeight
+          ),
+          filterLogicalSize: LogicalSize(
+            width: Double(filter.contentRect.width),
+            height: Double(filter.contentRect.height)
+          ),
+          pointPixelScale: Double(filter.pointPixelScale),
+          region: captureTarget.region
+        )
+      else {
+        return .failed(
+          HostFailure(
+            code: .captureUnavailable,
+            message: "The capture target changed or is no longer available.",
+            retryable: true
+          )
+        )
+      }
+
       let capturesHDR = captureTarget.target.supportsHDR
       let configuration =
         capturesHDR
         ? SCStreamConfiguration(preset: .captureHDRScreenshotLocalDisplay)
         : SCStreamConfiguration()
-      if let region = captureTarget.region {
-        configuration.sourceRect = region.sourceRect
-        configuration.width = region.pixelWidth
-        configuration.height = region.pixelHeight
-      } else {
-        configuration.width = display.width
-        configuration.height = display.height
-      }
+      outputGeometry.apply(to: configuration)
       configuration.showsCursor = true
 
-      let filter = SCContentFilter(display: display, excludingWindows: [])
       let image = try await SCScreenshotManager.captureImage(
         contentFilter: filter,
         configuration: configuration
       )
+      guard
+        outputGeometry.matches(
+          imageWidth: image.width,
+          imageHeight: image.height
+        )
+      else {
+        throw CapturePipelineError.unexpectedImageDimensions(
+          expectedWidth: outputGeometry.pixelWidth,
+          expectedHeight: outputGeometry.pixelHeight,
+          actualWidth: image.width,
+          actualHeight: image.height
+        )
+      }
       let visualMatchPNG = try makeVisualMatchPNG(image, sourceIsHDR: capturesHDR)
       let deliveries = await MacCaptureDelivery.deliver(
         visualMatchPNG,
@@ -165,23 +194,12 @@ public actor MacCaptureService {
 
     guard
       let current = await ActiveDisplayTargetResolver.resolve(displayID: issued.target.displayID),
-      current.hasSameTopology(as: issued.target),
-      let region = RegionCaptureGeometry.resolve(
-        geometry: geometry,
-        targetLogicalSize: LogicalSize(
-          width: issued.target.logicalWidth,
-          height: issued.target.logicalHeight
-        ),
-        displayPixelSize: LogicalSize(
-          width: Double(CGDisplayPixelsWide(issued.target.displayID)),
-          height: Double(CGDisplayPixelsHigh(issued.target.displayID))
-        )
-      )
+      current.hasSameTopology(as: issued.target)
     else {
       return nil
     }
 
-    return ResolvedCaptureTarget(target: current, region: region)
+    return ResolvedCaptureTarget(target: current, region: geometry)
   }
 
   private func makeVisualMatchPNG(
@@ -245,6 +263,22 @@ public actor MacCaptureService {
   }
 
   private func mapCaptureError(_ error: Error) -> HostFailure {
+    if let pipelineError = error as? CapturePipelineError,
+      case .unexpectedImageDimensions(
+        let expectedWidth,
+        let expectedHeight,
+        let actualWidth,
+        let actualHeight
+      ) = pipelineError
+    {
+      return HostFailure(
+        code: .unexpectedFailure,
+        message:
+          "The macOS capture pipeline returned \(actualWidth)x\(actualHeight) pixels for a requested \(expectedWidth)x\(expectedHeight) capture.",
+        retryable: true
+      )
+    }
+
     let nsError = error as NSError
     if nsError.domain == SCStreamErrorDomain,
       nsError.code == SCStreamError.Code.userDeclined.rawValue
@@ -295,44 +329,95 @@ private struct IssuedRegionTarget: Sendable {
 
 private struct ResolvedCaptureTarget: Sendable {
   let target: ActiveDisplayTarget
-  let region: RegionCaptureGeometry?
+  let region: CaptureGeometry?
 }
 
-struct RegionCaptureGeometry: Equatable, Sendable {
-  let sourceRect: CGRect
+struct CaptureOutputGeometry: Equatable, Sendable {
+  let sourceRect: CGRect?
   let pixelWidth: Int
   let pixelHeight: Int
 
   static func resolve(
-    geometry: CaptureGeometry,
     targetLogicalSize: LogicalSize,
-    displayPixelSize: LogicalSize
-  ) -> RegionCaptureGeometry? {
-    guard targetLogicalSize.width > 0, targetLogicalSize.height > 0,
-      displayPixelSize.width > 0, displayPixelSize.height > 0,
-      geometry.x >= 0, geometry.y >= 0,
-      geometry.width > 0, geometry.height > 0,
-      geometry.x + geometry.width <= targetLogicalSize.width,
-      geometry.y + geometry.height <= targetLogicalSize.height
+    filterLogicalSize: LogicalSize,
+    pointPixelScale: Double,
+    region: CaptureGeometry?
+  ) -> CaptureOutputGeometry? {
+    guard isValid(size: targetLogicalSize), isValid(size: filterLogicalSize),
+      pointPixelScale.isFinite, pointPixelScale > 0,
+      matchesTopology(targetLogicalSize, filterLogicalSize)
     else {
       return nil
     }
 
-    let scaleX = displayPixelSize.width / targetLogicalSize.width
-    let scaleY = displayPixelSize.height / targetLogicalSize.height
-    return RegionCaptureGeometry(
-      sourceRect: CGRect(
-        x: geometry.x,
-        y: geometry.y,
-        width: geometry.width,
-        height: geometry.height
-      ),
-      pixelWidth: max(1, min(Int(displayPixelSize.width), Int(ceil(geometry.width * scaleX)))),
-      pixelHeight: max(
-        1,
-        min(Int(displayPixelSize.height), Int(ceil(geometry.height * scaleY)))
+    let sourceRect: CGRect?
+    let sourceWidth: Double
+    let sourceHeight: Double
+    if let region {
+      guard region.coordinateSpace == "target-logical",
+        region.x.isFinite, region.y.isFinite,
+        region.width.isFinite, region.height.isFinite,
+        region.x >= 0, region.y >= 0,
+        region.width > 0, region.height > 0,
+        region.x + region.width <= targetLogicalSize.width,
+        region.y + region.height <= targetLogicalSize.height
+      else {
+        return nil
+      }
+      sourceRect = CGRect(
+        x: region.x,
+        y: region.y,
+        width: region.width,
+        height: region.height
       )
+      sourceWidth = region.width
+      sourceHeight = region.height
+    } else {
+      sourceRect = nil
+      sourceWidth = filterLogicalSize.width
+      sourceHeight = filterLogicalSize.height
+    }
+
+    guard let pixelWidth = pixelDimension(sourceWidth, scale: pointPixelScale),
+      let pixelHeight = pixelDimension(sourceHeight, scale: pointPixelScale)
+    else {
+      return nil
+    }
+
+    return CaptureOutputGeometry(
+      sourceRect: sourceRect,
+      pixelWidth: pixelWidth,
+      pixelHeight: pixelHeight
     )
+  }
+
+  func apply(to configuration: SCStreamConfiguration) {
+    if let sourceRect {
+      configuration.sourceRect = sourceRect
+    }
+    configuration.width = pixelWidth
+    configuration.height = pixelHeight
+  }
+
+  func matches(imageWidth: Int, imageHeight: Int) -> Bool {
+    imageWidth == pixelWidth && imageHeight == pixelHeight
+  }
+
+  private static func isValid(size: LogicalSize) -> Bool {
+    size.width.isFinite && size.height.isFinite && size.width > 0 && size.height > 0
+  }
+
+  private static func matchesTopology(_ first: LogicalSize, _ second: LogicalSize) -> Bool {
+    abs(first.width - second.width) < 0.001
+      && abs(first.height - second.height) < 0.001
+  }
+
+  private static func pixelDimension(_ points: Double, scale: Double) -> Int? {
+    let pixels = ceil(points * scale)
+    guard pixels.isFinite, pixels >= 1, pixels <= Double(Int.max) else {
+      return nil
+    }
+    return Int(pixels)
   }
 }
 
@@ -433,6 +518,12 @@ enum CaptureErrorClassification {
 }
 
 private enum CapturePipelineError: Error {
+  case unexpectedImageDimensions(
+    expectedWidth: Int,
+    expectedHeight: Int,
+    actualWidth: Int,
+    actualHeight: Int
+  )
   case srgbColorSpaceUnavailable
   case toneMapFailed
   case renderFailed
