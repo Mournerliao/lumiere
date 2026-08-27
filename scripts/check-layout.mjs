@@ -5,13 +5,16 @@ const requiredPaths = [
   'apps/desktop',
   'hosts/macos/README.md',
   'hosts/windows/Lumiere.Windows.sln',
+  'hosts/windows/src/Lumiere.Windows.Host',
   'hosts/windows/src/Lumiere.Windows.Capture',
   'hosts/windows/src/Lumiere.Windows.Graphics',
   'hosts/windows/src/Lumiere.Windows.Interop',
   'hosts/windows/tests/Lumiere.Windows.Capture.Tests',
   'hosts/windows/tests/Lumiere.Windows.Graphics.Tests',
   'hosts/windows/tests/Lumiere.Windows.Interop.Tests',
+  'hosts/windows/tests/Lumiere.Windows.Host.Tests',
   'protocol/platform-host/v1.schema.json',
+  'protocol/platform-host/v2.schema.json',
 ]
 
 const forbiddenPaths = [

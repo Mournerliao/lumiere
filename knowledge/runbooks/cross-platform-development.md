@@ -48,10 +48,11 @@ incrementally builds the current Swift Debug Host before Electron starts, and de
 Host discovery prefers that artifact over any existing Release build. An explicit
 `LUMIERE_MAC_HOST_PATH` remains authoritative and skips the automatic build.
 
-Windows currently has no Host executable; until Issue #7 supplies it, `predev` reports
-that boundary and starts the shared shell with explicit unavailable behavior. Issue #7
-must extend this same entry point to build and select the current Windows development Host;
-building the existing libraries alone must not be presented as a runnable integration.
+On Windows, `predev` incrementally builds the current .NET Debug Host unless
+`LUMIERE_WINDOWS_HOST_PATH` is set, and development discovery prefers that artifact over
+an existing Release build. The capability-only Host advertises no capture modes until the
+retained engine is connected, so a successful handshake must not be presented as working
+Windows capture.
 
 ## Renderer Components
 

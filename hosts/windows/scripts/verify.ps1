@@ -24,6 +24,7 @@ Invoke-DotNet -TaskArguments @(
 )
 
 foreach ($Project in @(
+    "Lumiere.Windows.Host.Tests",
     "Lumiere.Windows.Capture.Tests",
     "Lumiere.Windows.Graphics.Tests",
     "Lumiere.Windows.Interop.Tests"

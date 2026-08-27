@@ -1,7 +1,7 @@
 import { NativeProcessPlatformHost, type SpawnHost } from './native-process-platform-host'
 
-export class MacOSPlatformHost extends NativeProcessPlatformHost {
+export class WindowsPlatformHost extends NativeProcessPlatformHost {
   public constructor(executableCandidates: readonly string[], spawnHost?: SpawnHost) {
-    super('macos', executableCandidates, spawnHost)
+    super('windows', executableCandidates, spawnHost)
   }
 }

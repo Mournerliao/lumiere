@@ -8,8 +8,10 @@ import {
 } from './app-icons'
 import { CaptureCommandRouter } from './capture-command-router'
 import { MacOSPlatformHost } from './macos-platform-host'
-import { macOSHostCandidates } from './native-host-paths'
-import { currentLumierePlatform, UnavailablePlatformHost } from './platform-host'
+import { macOSHostCandidates, windowsHostCandidates } from './native-host-paths'
+import { NativeProcessPlatformHost } from './native-process-platform-host'
+import { currentLumierePlatform } from './platform-host'
+import { WindowsPlatformHost } from './windows-platform-host'
 import { SettingsStore } from './settings-store'
 import { ShortcutRegistrationError, ShortcutService } from './shortcut-service'
 import { applyAfterCaptureBehavior } from './after-capture'
@@ -588,16 +590,23 @@ async function refreshApplicationTray(): Promise<void> {
 
 function createPlatformHost(): PlatformHost {
   const platform = currentLumierePlatform()
-  if (platform !== 'macos') {
-    return new UnavailablePlatformHost(platform)
+  if (platform === 'macos') {
+    return new MacOSPlatformHost(
+      macOSHostCandidates({
+        appPath: app.getAppPath(),
+        isPackaged: app.isPackaged,
+        resourcesPath: process.resourcesPath,
+        overridePath: process.env.LUMIERE_MAC_HOST_PATH,
+      }),
+    )
   }
 
-  return new MacOSPlatformHost(
-    macOSHostCandidates({
+  return new WindowsPlatformHost(
+    windowsHostCandidates({
       appPath: app.getAppPath(),
       isPackaged: app.isPackaged,
       resourcesPath: process.resourcesPath,
-      overridePath: process.env.LUMIERE_MAC_HOST_PATH,
+      overridePath: process.env.LUMIERE_WINDOWS_HOST_PATH,
     }),
   )
 }
@@ -648,7 +657,7 @@ app.on('before-quit', () => {
   if (captureRouter) {
     disposeRegionOverlay(captureRouter)
   }
-  if (platformHost instanceof MacOSPlatformHost) {
+  if (platformHost instanceof NativeProcessPlatformHost) {
     platformHost.dispose()
   }
 })

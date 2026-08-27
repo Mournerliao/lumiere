@@ -22,3 +22,20 @@ export function macOSHostCandidates(options: NativeHostPathOptions): readonly st
     path.join(hostRoot, 'release', 'LumiereMacHost'),
   ]
 }
+
+export function windowsHostCandidates(options: NativeHostPathOptions): readonly string[] {
+  if (options.overridePath) {
+    return [path.win32.resolve(options.overridePath)]
+  }
+
+  if (options.isPackaged) {
+    return [path.win32.join(options.resourcesPath, 'windows-host', 'Lumiere.Windows.Host.exe')]
+  }
+
+  const hostRoot = path.win32.resolve(
+    options.appPath,
+    '../../hosts/windows/src/Lumiere.Windows.Host/bin/x64',
+  )
+  const target = 'net10.0-windows10.0.19041.0/win-x64/Lumiere.Windows.Host.exe'
+  return [path.win32.join(hostRoot, 'Debug', target), path.win32.join(hostRoot, 'Release', target)]
+}

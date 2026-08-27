@@ -4,17 +4,30 @@ import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
+const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+
 if (process.platform === 'darwin' && !process.env.LUMIERE_MAC_HOST_PATH) {
-  const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
   const developerDirectory = process.env.DEVELOPER_DIR || (await discoverXcodeDeveloperDirectory())
   console.log('Preparing current macOS development Host...')
   await run('/usr/bin/xcrun', ['swift', 'build', '--package-path', 'hosts/macos'], {
     cwd: repositoryRoot,
     env: developerDirectory ? { ...process.env, DEVELOPER_DIR: developerDirectory } : process.env,
   })
-} else if (process.platform === 'win32') {
-  console.warn(
-    'Windows development Host preparation is pending Issue #7; starting the shared shell with explicit unavailable behavior.',
+} else if (process.platform === 'win32' && !process.env.LUMIERE_WINDOWS_HOST_PATH) {
+  console.log('Preparing current Windows development Host...')
+  await run(
+    'dotnet',
+    [
+      'build',
+      'hosts/windows/src/Lumiere.Windows.Host/Lumiere.Windows.Host.csproj',
+      '--configuration',
+      'Debug',
+      '-p:Platform=x64',
+      '--verbosity',
+      'minimal',
+      '/nr:false',
+    ],
+    { cwd: repositoryRoot, env: process.env },
   )
 }
 
