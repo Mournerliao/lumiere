@@ -1,6 +1,6 @@
 # Current Project State
 
-- Updated: 2026-08-26
+- Updated: 2026-08-27
 - Current milestone: 1 — Cross-platform HDR-aware MVP
 - Release target: Windows + macOS HDR-aware MVP with sRGB Visual Match
 - Completed foundation record: [GitHub Issue #1](https://github.com/Mournerliao/lumiere/issues/1)
@@ -26,7 +26,12 @@ immediately, and restores the value after restart. The shared Region Overlay now
 target-local selection geometry and pre-dispatch cancellation while main retains the
 short-lived target token. macOS display and region capture convert once to a timestamped
 RGBA8/sRGB PNG representation and deliver those same bytes through native clipboard and
-folder adapters. The Windows
+folder adapters. Region and Display now have independent opt-in global shortcut settings;
+main owns atomic registration, conflict handling, v1-to-v2 settings migration, and recording
+suspension, while the tray/menu-bar projects capability-gated Region/Display commands,
+registered accelerators, Open, Settings, and Quit through the same capture router. The macOS
+development launch now incrementally builds the current Swift Debug Host and resolves it
+ahead of any stale Release artifact; explicit Host overrides remain authoritative. The Windows
 engine now exposes one deep display-capture operation that owns target resolution,
 target-aware HDR probing, first-frame acquisition, one sRGB Visual Match conversion,
 delivery, cancellation, and teardown. Milestone 1 now
@@ -41,7 +46,7 @@ WinUI and the old validation/HDR10-JXR paths remain removed.
 | 0. Foundation | Complete | Final layout, secure shell, language-neutral protocol, paused Windows engine; macOS and Windows CI pass | None |
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
 | 1B. Windows host adapter | In progress ([#7](https://github.com/Mournerliao/lumiere/issues/7)) | The engine has one narrow capture interface, single-conversion delivery, target-aware multi-adapter HDR probing, and deterministic operation teardown | Implement the JSON Lines Host executable, Electron integration, and Windows runtime verification |
-| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output surface, generated tokens, persisted capability-gated clipboard/folder/both preference, one main-process capture router, v2 target/delivery contract, shared Region Overlay, and verified macOS display/region delivery journeys | Add the remaining independent settings slices, tray/menu bar, shortcut, and independent Windows journeys after #7 |
+| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut surfaces, generated tokens, persisted capability-gated output and shortcut preferences, one main-process capture router, capability-gated tray/menu-bar, v2 target/delivery contract, shared Region Overlay, and verified macOS display/region delivery journeys | Resolve and add the remaining independent settings slices, then verify the independent Windows journeys after #7 |
 | 1D. Distribution and release | Not started | Windows installer direction remains recorded | Windows installer, signed/notarized macOS artifact, clean-machine and hardware verification |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
 | 3. Cross-platform HDR fidelity | Planned; not started | Fidelity is separated from artifact success and HDR preservation | Define support matrix/tolerances and run fixed-scene verification |
@@ -51,7 +56,7 @@ acceptance criteria and implementation status for each vertical slice.
 
 ## Verification Truth
 
-- **Repository:** frozen install, layout and TypeScript checks, forty cross-platform
+- **Repository:** frozen install, layout and TypeScript checks, fifty-four cross-platform
   shell/protocol/process/settings/UI tests, three macOS path tests, thirteen Swift
   protocol/capability/permission/diagnostic/region tests plus two native-delivery tests, and the
   production build pass locally on macOS. Shared, macOS, and Windows test gates are
@@ -84,8 +89,16 @@ acceptance criteria and implementation status for each vertical slice.
   both-target, repeat, Esc cancel, invalid-click cancel, and clean-exit journeys. A repeated
   region result was 863×694 with alpha and an embedded sRGB IEC61966-2.1 profile; the
   Overlay was absent from the artifact. The final output preference was restored to both.
-- **GitHub CI:** macOS shell and Windows engine workflows pass on current `main` at
-  `fccf812`; this establishes their configured repository gates, not Windows Host
+  The shortcut slice then displayed the capability-gated Capture settings and full
+  Region/Display/Open/Settings/Quit menu-bar structure, rejected a conflicting accelerator,
+  registered and persisted `Control+Alt+F12`, and cleared it back to the unconfigured default.
+  This establishes the macOS development shortcut lifecycle and menu structure, not Windows
+  behavior or an additional capture/HDR claim. A root-level `pnpm dev` launch then rebuilt the
+  current Debug Host with the installed Xcode toolchain and exposed both Region and Display;
+  this closes the stale-Release development-selection failure without changing packaged Host
+  discovery.
+- **GitHub CI:** the last recorded macOS shell and Windows engine workflow observation passed at
+  `fccf812`; this establishes those configured repository gates at that commit, not current-HEAD CI, Windows Host
   runtime or hardware behavior.
 - **Windows engine:** restore and Release build pass with warnings treated as errors;
   Capture 69, Graphics 42, and Interop 31 tests pass; `dotnet format --verify-no-changes`
@@ -107,13 +120,13 @@ may expose one frontier per environment-eligible lane while each writer or workt
 advances only one current working Issue at a time.
 
 - **Shared/macOS lane — [Issue #9](https://github.com/Mournerliao/lumiere/issues/9):**
-  resolve the global-shortcut product model, then implement the tray/menu-bar and
-  configured shortcut entry points through the existing command router. Keep custom
-  save-directory behavior in a later independent Settings slice because it may require
-  a separately reviewed protocol change.
+  resolve the after-capture behavior and HDR-alert product models, then implement the next
+  independent Settings slice through validated main-owned IPC. Keep custom save-directory
+  behavior separate because it may require a separately reviewed protocol change.
 - **Windows lane — [Issue #7](https://github.com/Mournerliao/lumiere/issues/7):** add
   the .NET platform-host executable around the retained engine using the current v2
-  contract, integrate it with Electron, and verify repeat, cancellation, clean exit,
+  contract, extend the platform-neutral `predev` entry point to build and select its current
+  Debug executable, integrate it with Electron, and verify repeat, cancellation, clean exit,
   and SDR/HDR-state behavior on the named Windows machine.
 - **Milestone gate:** 1D distribution and release work remains blocked until both
   native lanes and the shared cross-platform journeys pass their independent criteria.

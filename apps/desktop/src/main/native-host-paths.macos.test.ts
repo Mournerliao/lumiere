@@ -12,7 +12,7 @@ describe('macOS native host paths', () => {
     ).toEqual(['/Applications/Lumiere.app/Contents/Resources/macos-host/LumiereMacHost'])
   })
 
-  it('prefers a release Swift build and falls back to debug during development', () => {
+  it('prefers the current debug Swift build and falls back to release during development', () => {
     expect(
       macOSHostCandidates({
         appPath: '/workspace/lumiere/apps/desktop',
@@ -20,8 +20,8 @@ describe('macOS native host paths', () => {
         resourcesPath: '/unused',
       }),
     ).toEqual([
-      '/workspace/lumiere/hosts/macos/.build/release/LumiereMacHost',
       '/workspace/lumiere/hosts/macos/.build/debug/LumiereMacHost',
+      '/workspace/lumiere/hosts/macos/.build/release/LumiereMacHost',
     ])
   })
 

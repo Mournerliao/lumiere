@@ -30,6 +30,12 @@ the Capture, Graphics, and Interop test projects, and verifies formatting. This
 Windows-owned suite runs only in Windows CI; it is not part of the shared `pnpm test`
 alias and does not execute macOS tests.
 
+The repository-root `pnpm dev` command currently reports that Windows Host preparation is
+pending and launches the shared shell with explicit unavailable behavior. Issue #7 must
+extend the existing platform-neutral `predev` entry point to build the current Windows Host
+executable and make Electron select that Debug artifact before the Windows integration can
+be described as runnable.
+
 ## Truth Boundary
 
 A passing library build does not prove a runnable Windows host, native capture, HDR

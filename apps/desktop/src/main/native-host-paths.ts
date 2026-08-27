@@ -18,7 +18,7 @@ export function macOSHostCandidates(options: NativeHostPathOptions): readonly st
 
   const hostRoot = path.resolve(options.appPath, '../../hosts/macos/.build')
   return [
-    path.join(hostRoot, 'release', 'LumiereMacHost'),
     path.join(hostRoot, 'debug', 'LumiereMacHost'),
+    path.join(hostRoot, 'release', 'LumiereMacHost'),
   ]
 }

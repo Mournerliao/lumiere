@@ -43,6 +43,16 @@ Run the shell during development:
 pnpm dev
 ```
 
+The desktop package owns one platform-neutral `predev` entry point. On macOS it
+incrementally builds the current Swift Debug Host before Electron starts, and development
+Host discovery prefers that artifact over any existing Release build. An explicit
+`LUMIERE_MAC_HOST_PATH` remains authoritative and skips the automatic build.
+
+Windows currently has no Host executable; until Issue #7 supplies it, `predev` reports
+that boundary and starts the shared shell with explicit unavailable behavior. Issue #7
+must extend this same entry point to build and select the current Windows development Host;
+building the existing libraries alone must not be presented as a runnable integration.
+
 ## Renderer Components
 
 The renderer uses Tailwind CSS 4 and copies beUI source through the configured

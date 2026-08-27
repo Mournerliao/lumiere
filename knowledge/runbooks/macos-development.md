@@ -52,11 +52,20 @@ diagnostics belong on standard error.
 
 ## Electron Runtime
 
-During development, point Electron at the explicit Swift build:
+The normal repository-root development command incrementally builds the current Debug
+Host before Electron starts and selects that artifact ahead of any older Release build:
 
 ```sh
-LUMIERE_MAC_HOST_PATH="$PWD/hosts/macos/.build/debug/LumiereMacHost" pnpm start
+pnpm dev
 ```
+
+The preparation step respects an explicit `DEVELOPER_DIR`. Otherwise it uses an installed
+Xcode application for the child build without changing the global `xcode-select` setting;
+this avoids mixing a Command Line Tools compiler with a newer Xcode SDK.
+
+Use `LUMIERE_MAC_HOST_PATH` only to exercise a specific custom or prebuilt Host. An
+explicit override skips the automatic Debug build and remains the only discovery
+candidate for that launch.
 
 The region and display actions should become available. The active target is the display
 under the pointer when the capability or display-capture request reaches the native
