@@ -139,22 +139,25 @@ public actor MacCaptureService {
       outputGeometry.apply(to: configuration)
       configuration.showsCursor = true
 
-      let image = try await SCScreenshotManager.captureImage(
+      let capturedImage = try await SCScreenshotManager.captureImage(
         contentFilter: filter,
         configuration: configuration
       )
       guard
-        outputGeometry.matches(
-          imageWidth: image.width,
-          imageHeight: image.height
+        outputGeometry.matchesCapture(
+          imageWidth: capturedImage.width,
+          imageHeight: capturedImage.height
         )
       else {
         throw CapturePipelineError.unexpectedImageDimensions(
-          expectedWidth: outputGeometry.pixelWidth,
-          expectedHeight: outputGeometry.pixelHeight,
-          actualWidth: image.width,
-          actualHeight: image.height
+          expectedWidth: outputGeometry.capturePixelWidth,
+          expectedHeight: outputGeometry.capturePixelHeight,
+          actualWidth: capturedImage.width,
+          actualHeight: capturedImage.height
         )
+      }
+      guard let image = outputGeometry.makeOutputImage(from: capturedImage) else {
+        throw CapturePipelineError.cropFailed
       }
       let visualMatchPNG = try makeVisualMatchPNG(image, sourceIsHDR: capturesHDR)
       let deliveries = await MacCaptureDelivery.deliver(
@@ -333,7 +336,9 @@ private struct ResolvedCaptureTarget: Sendable {
 }
 
 struct CaptureOutputGeometry: Equatable, Sendable {
-  let sourceRect: CGRect?
+  let capturePixelWidth: Int
+  let capturePixelHeight: Int
+  let cropRect: CGRect?
   let pixelWidth: Int
   let pixelHeight: Int
 
@@ -350,9 +355,22 @@ struct CaptureOutputGeometry: Equatable, Sendable {
       return nil
     }
 
-    let sourceRect: CGRect?
-    let sourceWidth: Double
-    let sourceHeight: Double
+    guard
+      let capturePixelWidth = pixelDimension(
+        filterLogicalSize.width,
+        scale: pointPixelScale
+      ),
+      let capturePixelHeight = pixelDimension(
+        filterLogicalSize.height,
+        scale: pointPixelScale
+      )
+    else {
+      return nil
+    }
+
+    let cropRect: CGRect?
+    let outputPixelWidth: Int
+    let outputPixelHeight: Int
     if let region {
       guard region.coordinateSpace == "target-logical",
         region.x.isFinite, region.y.isFinite,
@@ -364,43 +382,79 @@ struct CaptureOutputGeometry: Equatable, Sendable {
       else {
         return nil
       }
-      sourceRect = CGRect(
-        x: region.x,
-        y: region.y,
-        width: region.width,
-        height: region.height
-      )
-      sourceWidth = region.width
-      sourceHeight = region.height
-    } else {
-      sourceRect = nil
-      sourceWidth = filterLogicalSize.width
-      sourceHeight = filterLogicalSize.height
-    }
 
-    guard let pixelWidth = pixelDimension(sourceWidth, scale: pointPixelScale),
-      let pixelHeight = pixelDimension(sourceHeight, scale: pointPixelScale)
-    else {
-      return nil
+      guard
+        let pixelMinX = pixelEdge(region.x, scale: pointPixelScale, rounding: .down),
+        let pixelMinY = pixelEdge(region.y, scale: pointPixelScale, rounding: .down),
+        let pixelMaxX = pixelEdge(
+          region.x + region.width,
+          scale: pointPixelScale,
+          rounding: .up
+        ),
+        let pixelMaxY = pixelEdge(
+          region.y + region.height,
+          scale: pointPixelScale,
+          rounding: .up
+        ),
+        pixelMaxX > pixelMinX,
+        pixelMaxY > pixelMinY,
+        pixelMaxX <= capturePixelWidth,
+        pixelMaxY <= capturePixelHeight
+      else {
+        return nil
+      }
+
+      outputPixelWidth = pixelMaxX - pixelMinX
+      outputPixelHeight = pixelMaxY - pixelMinY
+      cropRect = CGRect(
+        x: pixelMinX,
+        y: pixelMinY,
+        width: outputPixelWidth,
+        height: outputPixelHeight
+      )
+    } else {
+      cropRect = nil
+      outputPixelWidth = capturePixelWidth
+      outputPixelHeight = capturePixelHeight
     }
 
     return CaptureOutputGeometry(
-      sourceRect: sourceRect,
-      pixelWidth: pixelWidth,
-      pixelHeight: pixelHeight
+      capturePixelWidth: capturePixelWidth,
+      capturePixelHeight: capturePixelHeight,
+      cropRect: cropRect,
+      pixelWidth: outputPixelWidth,
+      pixelHeight: outputPixelHeight
     )
   }
 
   func apply(to configuration: SCStreamConfiguration) {
-    if let sourceRect {
-      configuration.sourceRect = sourceRect
-    }
-    configuration.width = pixelWidth
-    configuration.height = pixelHeight
+    configuration.width = capturePixelWidth
+    configuration.height = capturePixelHeight
   }
 
-  func matches(imageWidth: Int, imageHeight: Int) -> Bool {
-    imageWidth == pixelWidth && imageHeight == pixelHeight
+  func matchesCapture(imageWidth: Int, imageHeight: Int) -> Bool {
+    imageWidth == capturePixelWidth && imageHeight == capturePixelHeight
+  }
+
+  func makeOutputImage(from capturedImage: CGImage) -> CGImage? {
+    guard
+      matchesCapture(
+        imageWidth: capturedImage.width,
+        imageHeight: capturedImage.height
+      )
+    else {
+      return nil
+    }
+    guard let cropRect else {
+      return capturedImage
+    }
+    guard let croppedImage = capturedImage.cropping(to: cropRect),
+      croppedImage.width == pixelWidth,
+      croppedImage.height == pixelHeight
+    else {
+      return nil
+    }
+    return croppedImage
   }
 
   private static func isValid(size: LogicalSize) -> Bool {
@@ -415,6 +469,18 @@ struct CaptureOutputGeometry: Equatable, Sendable {
   private static func pixelDimension(_ points: Double, scale: Double) -> Int? {
     let pixels = ceil(points * scale)
     guard pixels.isFinite, pixels >= 1, pixels <= Double(Int.max) else {
+      return nil
+    }
+    return Int(pixels)
+  }
+
+  private static func pixelEdge(
+    _ points: Double,
+    scale: Double,
+    rounding: FloatingPointRoundingRule
+  ) -> Int? {
+    let pixels = (points * scale).rounded(rounding)
+    guard pixels.isFinite, pixels >= 0, pixels <= Double(Int.max) else {
       return nil
     }
     return Int(pixels)
@@ -525,6 +591,7 @@ private enum CapturePipelineError: Error {
     actualHeight: Int
   )
   case srgbColorSpaceUnavailable
+  case cropFailed
   case toneMapFailed
   case renderFailed
   case imageDestinationUnavailable
