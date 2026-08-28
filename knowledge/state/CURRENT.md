@@ -1,6 +1,6 @@
 # Current Project State
 
-- Updated: 2026-08-28
+- Updated: 2026-08-29
 - Current milestone: 1 — Cross-platform HDR-aware MVP
 - Release target: Windows + macOS HDR-aware MVP with sRGB Visual Match
 - Completed foundation record: [GitHub Issue #1](https://github.com/Mournerliao/lumiere/issues/1)
@@ -62,7 +62,7 @@ WinUI and the old validation/HDR10-JXR paths remain removed.
 |---|---|---|---|
 | 0. Foundation | Complete | Final layout, secure shell, language-neutral protocol, paused Windows engine; macOS and Windows CI pass | None |
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
-| 1B. Windows host adapter | In progress ([#7](https://github.com/Mournerliao/lumiere/issues/7)) | The v2 Host now has strict JSON Lines handling, structured diagnostics, Electron supervision, target-aware HDR/logical-geometry capabilities, and a process-owned engine bridge for real Display-to-Folder capture | Complete Electron-boundary repeat, cancellation, clean-exit, delivery, and SDR/HDR-state verification |
+| 1B. Windows host adapter | In progress ([#7](https://github.com/Mournerliao/lumiere/issues/7)) | The v2 Host now has strict JSON Lines handling, structured diagnostics, Electron supervision, target-aware HDR/logical-geometry capabilities, a process-owned engine bridge for real Display-to-Folder capture, and verified repeated Electron-boundary delivery plus clean exit | Verify in-flight shutdown/cancellation and an independent SDR-state journey |
 | 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture surfaces, generated tokens, persisted capability-gated output, shortcut, and after-capture preferences, one main-process capture router, capability-gated tray/menu-bar, v2 target/delivery contract, shared Region Overlay, HiDPI-aware macOS geometry, and verified macOS display/region/after-capture journeys | Resolve and add the remaining independent settings slices, then verify the independent Windows journeys after #7 |
 | 1D. Distribution and release | Not started | Windows installer direction remains recorded | Windows installer, signed/notarized macOS artifact, clean-machine and hardware verification |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
@@ -73,7 +73,7 @@ acceptance criteria and implementation status for each vertical slice.
 
 ## Verification Truth
 
-- **Repository:** frozen install, layout and TypeScript checks, seventy-two cross-platform
+- **Repository:** frozen install, layout and TypeScript checks, seventy-three cross-platform
   shell/protocol/process/settings/UI tests, three macOS path tests, twenty-five Swift
   protocol/capability/permission/diagnostic/geometry tests plus two native-delivery tests, nineteen
   Windows Host protocol/lifecycle tests, and production builds pass locally on the named Windows
@@ -153,9 +153,14 @@ acceptance criteria and implementation status for each vertical slice.
   support, and returned an opaque target token with a 2560×1440 logical target size. A subsequent
   Display-to-Folder regression smoke under the new per-monitor-v2 DPI context acquired the same
   display at 3840×2160, wrote an 11,421,216-byte PNG, completed all four teardown stages, and exited
-  cleanly on stdin EOF. This establishes capability projection, native acquisition, and artifact delivery, not
-  Visual Match certification or HDR preservation; no passing Electron-to-WGC capture or
-  release-candidate record exists.
+  cleanly on stdin EOF. A root-level `pnpm dev` journey then rebuilt and selected the current Debug
+  Host, exposed Display plus Folder in the shared UI, and completed two consecutive Electron-to-WGC
+  captures on the same 3840×2160 HDR-active display. The requests wrote distinct 6,615,871-byte and
+  6,803,406-byte PNG files with HDR source state and sRGB Visual Match output profile; each completed
+  all four teardown stages. Closing the Electron window exited the development process with code 0
+  and left no Windows Host process. This establishes capability projection, native acquisition,
+  repeated Electron-boundary artifact delivery, and clean exit, not Visual Match certification or HDR
+  preservation; no release-candidate record exists.
 - **Hardware verified:** the macOS Retina XDR path passed fixed bright and dark scene
   observations. The bright ramp preserved ten distinct grayscale steps from 25 through
   255; the dark ramp preserved ten distinct steps from 0 through 32 and alternating
@@ -179,8 +184,8 @@ advances only one current working Issue at a time.
   validated main-owned IPC. Keep custom save-directory behavior separate because it may require
   a separately reviewed protocol change.
 - **Windows lane — [Issue #7](https://github.com/Mournerliao/lumiere/issues/7):** verify
-  Electron-boundary repeat, cancellation, clean exit, delivery outcomes, and SDR/HDR-state
-  behavior on the named Windows machine.
+  shutdown during an in-flight request and independently exercise the SDR capability/capture
+  state on the named Windows machine.
 - **Milestone gate:** 1D distribution and release work remains blocked until both
   native lanes and the shared cross-platform journeys pass their independent criteria.
 
