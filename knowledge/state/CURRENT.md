@@ -43,9 +43,12 @@ deep display-capture operation that owns target resolution,
 target-aware HDR probing, first-frame acquisition, one sRGB Visual Match conversion,
 delivery, cancellation, and teardown. A .NET platform-host v2 executable now owns the
 Windows JSON Lines process boundary, strict request validation, correlated structured
-diagnostics, and typed capture-unavailable behavior while the engine bridge remains
-disconnected. The development entry point builds its current Debug artifact, and Electron
-selects and supervises it through the shared native-process transport. Milestone 1 now
+diagnostics, and typed unavailable behavior. The Host connects that engine for
+Display-to-Folder capture, owns its process-scoped lifetime, creates the default
+Pictures/Lumiere destination, and maps native capture, cancellation, and delivery outcomes
+into protocol v2 without claiming Region or Clipboard/Both support. The development entry
+point builds its current Debug artifact, and Electron selects and supervises it through the
+shared native-process transport. Milestone 1 now
 advances through environment-aware execution lanes: Issue #7 owns the Windows Host
 adapter, while Issue #9 owns the shared product surface and macOS product journeys.
 WinUI and the old validation/HDR10-JXR paths remain removed.
@@ -56,7 +59,7 @@ WinUI and the old validation/HDR10-JXR paths remain removed.
 |---|---|---|---|
 | 0. Foundation | Complete | Final layout, secure shell, language-neutral protocol, paused Windows engine; macOS and Windows CI pass | None |
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
-| 1B. Windows host adapter | In progress ([#7](https://github.com/Mournerliao/lumiere/issues/7)) | The engine has one narrow capture interface; a capability-only v2 Host now has strict JSON Lines handling, structured diagnostics, development build/discovery, and Electron supervision | Connect the retained engine, expose target-aware capabilities and capture, then complete Windows runtime verification |
+| 1B. Windows host adapter | In progress ([#7](https://github.com/Mournerliao/lumiere/issues/7)) | The v2 Host now has strict JSON Lines handling, structured diagnostics, Electron supervision, and a process-owned engine bridge for real Display-to-Folder capture | Expose target-aware capabilities, then complete Electron-boundary repeat, cancellation, clean-exit, delivery, and SDR/HDR-state verification |
 | 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture surfaces, generated tokens, persisted capability-gated output, shortcut, and after-capture preferences, one main-process capture router, capability-gated tray/menu-bar, v2 target/delivery contract, shared Region Overlay, HiDPI-aware macOS geometry, and verified macOS display/region/after-capture journeys | Resolve and add the remaining independent settings slices, then verify the independent Windows journeys after #7 |
 | 1D. Distribution and release | Not started | Windows installer direction remains recorded | Windows installer, signed/notarized macOS artifact, clean-machine and hardware verification |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
@@ -69,9 +72,9 @@ acceptance criteria and implementation status for each vertical slice.
 
 - **Repository:** frozen install, layout and TypeScript checks, seventy-two cross-platform
   shell/protocol/process/settings/UI tests, three macOS path tests, twenty-two Swift
-  protocol/capability/permission/diagnostic/geometry tests plus two native-delivery tests, seven
-  Windows Host protocol tests, and the
-  production build pass locally on macOS. Shared, macOS, and Windows test gates are
+  protocol/capability/permission/diagnostic/geometry tests plus two native-delivery tests, fourteen
+  Windows Host protocol/lifecycle tests, and the production build pass locally on the named
+  Windows machine. Shared, macOS, and Windows test gates are
   explicit and platform-scoped.
 - **macOS development runtime:** the Electron display action drove ScreenCaptureKit to
   RGBA8 PNG files with alpha and an embedded sRGB IEC61966-2.1 profile on an Apple
@@ -128,20 +131,24 @@ acceptance criteria and implementation status for each vertical slice.
   `fccf812`; this establishes those configured repository gates at that commit, not current-HEAD CI, Windows Host
   runtime or hardware behavior.
 - **Windows engine:** restore and Release build pass with warnings treated as errors;
-  Capture 69, Graphics 42, and Interop 31 tests pass; `dotnet format --verify-no-changes`
-  passes.
+  Host 14, Capture 69, Graphics 42, and Interop 31 tests pass;
+  `dotnet format --verify-no-changes` passes.
 - **Windows integration:** the named Windows development machine built the Debug Host through the
-  platform-neutral preparation entry point, completed capability and typed capture-unavailable
-  JSON Lines smoke requests, emitted correlated structured stderr diagnostics, and exited cleanly
-  on stdin EOF. Electron transport/path tests passed against the Windows contract. No passing
-  Electron-to-WGC capture or release-candidate record exists.
+  platform-neutral preparation entry point. The Release Host then completed a real JSON Lines
+  Display-to-Folder request through WGC on a 3840×2160 HDR-active display, emitted structured
+  capture and four-stage teardown diagnostics, returned a correlated `completed` result with
+  HDR source state and sRGB Visual Match output profile, wrote an 8,428,590-byte PNG under
+  `Pictures/Lumiere`, and exited cleanly on stdin EOF. Electron transport/path tests passed
+  against the Windows contract. This establishes native acquisition and artifact delivery, not
+  Visual Match certification or HDR preservation; no passing Electron-to-WGC capture or
+  release-candidate record exists.
 - **Hardware verified:** the macOS Retina XDR path passed fixed bright and dark scene
   observations. The bright ramp preserved ten distinct grayscale steps from 25 through
   255; the dark ramp preserved ten distinct steps from 0 through 32 and alternating
   19/7 fine detail. The named scaled external 4K display passed Display and Region
   backing-pixel-dimension observations plus a ten-capture repeat loop after the HiDPI fix.
-  No equivalent Windows observation exists, and the Retina XDR geometry correction remains
-  independently unobserved on hardware.
+  No equivalent Windows fixed-scene fidelity observation exists, and the Retina XDR geometry
+  correction remains independently unobserved on hardware.
 
 Do not describe the foundation as working capture, or the cross-platform MVP as
 release-ready until both owning platforms are explicitly verified.
@@ -158,10 +165,9 @@ advances only one current working Issue at a time.
   validated main-owned IPC. Keep custom save-directory behavior separate because it may require
   a separately reviewed protocol change.
 - **Windows lane — [Issue #7](https://github.com/Mournerliao/lumiere/issues/7):** add
-  a target capability provider and capture adapter that connect the retained engine to the
-  current v2 Host without moving native resources across the process boundary. Then verify repeat,
-  cancellation, clean exit, delivery outcomes, and SDR/HDR-state behavior on the named Windows
-  machine.
+  the target capability provider to the process-owned Display-to-Folder adapter, then verify
+  Electron-boundary repeat, cancellation, clean exit, delivery outcomes, and SDR/HDR-state
+  behavior on the named Windows machine.
 - **Milestone gate:** 1D distribution and release work remains blocked until both
   native lanes and the shared cross-platform journeys pass their independent criteria.
 

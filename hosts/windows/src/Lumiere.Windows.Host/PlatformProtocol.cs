@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Lumiere.Windows.Host;
 
@@ -13,6 +14,40 @@ public sealed record ProtocolLineResult(
     string ResponseLine,
     HostDiagnostic? Diagnostic = null);
 
+public sealed record HostCaptureRequest(string Mode, string Delivery);
+
+public sealed record HostCapabilities(
+    int ContractVersion,
+    string Platform,
+    string HostStatus,
+    IReadOnlyList<string> CaptureModes,
+    IReadOnlyList<string> DeliveryTargets,
+    string HdrCapture,
+    IReadOnlyList<string> OutputProfiles);
+
+public sealed record HostDeliveryResult(
+    string Target,
+    string Status,
+    string? FilePath = null,
+    PlatformFailure? Failure = null);
+
+public sealed record HostCaptureResult(
+    string Status,
+    string? SourceDynamicRange = null,
+    string? OutputProfile = null,
+    IReadOnlyList<HostDeliveryResult>? Deliveries = null,
+    PlatformFailure? Failure = null);
+
+public interface IWindowsHostOperations : IAsyncDisposable
+{
+    HostCapabilities GetCapabilities();
+
+    Task<HostCaptureResult> CaptureAsync(
+        string requestId,
+        HostCaptureRequest request,
+        CancellationToken cancellationToken = default);
+}
+
 public static class PlatformProtocol
 {
     public const int ContractVersion = 2;
@@ -20,11 +55,16 @@ public static class PlatformProtocol
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
-    public static ProtocolLineResult ProcessLine(string line)
+    public static async Task<ProtocolLineResult> ProcessLineAsync(
+        string line,
+        IWindowsHostOperations operations,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(line);
+        ArgumentNullException.ThrowIfNull(operations);
 
         var requestId = "invalid-request";
         try
@@ -47,8 +87,12 @@ public static class PlatformProtocol
 
             return method switch
             {
-                "getCapabilities" => ProcessGetCapabilities(requestId, parameters),
-                "capture" => ProcessCapture(requestId, parameters),
+                "getCapabilities" => ProcessGetCapabilities(requestId, parameters, operations),
+                "capture" => await ProcessCaptureAsync(
+                    requestId,
+                    parameters,
+                    operations,
+                    cancellationToken),
                 _ => throw new PlatformProtocolException("Unknown platform-host method."),
             };
         }
@@ -72,42 +116,31 @@ public static class PlatformProtocol
 
     private static ProtocolLineResult ProcessGetCapabilities(
         string requestId,
-        JsonElement parameters)
+        JsonElement parameters,
+        IWindowsHostOperations operations)
     {
         RequireExactProperties(parameters);
-        var capabilities = new
-        {
-            contractVersion = ContractVersion,
-            platform = "windows",
-            hostStatus = "available",
-            captureModes = Array.Empty<string>(),
-            deliveryTargets = Array.Empty<string>(),
-            hdrCapture = "unavailable",
-            outputProfiles = new[] { "srgb-visual-match" },
-        };
-        return Success(requestId, capabilities);
+        return Success(requestId, operations.GetCapabilities());
     }
 
-    private static ProtocolLineResult ProcessCapture(
+    private static async Task<ProtocolLineResult> ProcessCaptureAsync(
         string requestId,
-        JsonElement parameters)
+        JsonElement parameters,
+        IWindowsHostOperations operations,
+        CancellationToken cancellationToken)
     {
-        ValidateCaptureParameters(parameters);
-        var failure = new PlatformFailure(
-            "capture-unavailable",
-            "Windows capture is not connected to the platform Host yet.",
-            Retryable: false);
-        var result = new
-        {
-            status = "failed",
-            failure,
-        };
+        var request = ValidateCaptureParameters(parameters);
+        var result = await operations.CaptureAsync(requestId, request, cancellationToken);
+        var failure = result.Failure
+            ?? result.Deliveries?.FirstOrDefault(delivery => delivery.Failure is not null)?.Failure;
         return new ProtocolLineResult(
             Serialize(new { version = ContractVersion, id = requestId, result }),
-            new HostDiagnostic("capture-unavailable", requestId, failure));
+            failure is null
+                ? null
+                : new HostDiagnostic(failure.Code, requestId, failure));
     }
 
-    private static void ValidateCaptureParameters(JsonElement parameters)
+    private static HostCaptureRequest ValidateCaptureParameters(JsonElement parameters)
     {
         var mode = RequireNonEmptyString(parameters, "mode", "Capture mode");
         var delivery = RequireNonEmptyString(parameters, "delivery", "Capture delivery");
@@ -120,7 +153,7 @@ public static class PlatformProtocol
         if (mode == "display")
         {
             RequireExactProperties(parameters, "mode", "delivery");
-            return;
+            return new HostCaptureRequest(mode, delivery);
         }
 
         if (mode != "region")
@@ -143,6 +176,7 @@ public static class PlatformProtocol
         RequireFiniteNumber(geometry, "y", positive: false);
         RequireFiniteNumber(geometry, "width", positive: true);
         RequireFiniteNumber(geometry, "height", positive: true);
+        return new HostCaptureRequest(mode, delivery);
     }
 
     private static ProtocolLineResult Success(string requestId, object result) =>

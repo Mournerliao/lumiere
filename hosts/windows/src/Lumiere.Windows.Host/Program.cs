@@ -1,4 +1,5 @@
 using System.Text;
+using Lumiere.Windows.Capture;
 using Microsoft.Extensions.Logging;
 
 namespace Lumiere.Windows.Host;
@@ -9,11 +10,14 @@ internal static class Program
     {
         Console.InputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         Console.OutputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-        ILogger logger = new StructuredStderrLogger(Console.Error);
+        using var loggerFactory = new StructuredStderrLoggerFactory(Console.Error);
+        WindowsDisplayCaptureEngine.ConfigureLogging(loggerFactory);
+        ILogger logger = loggerFactory.CreateLogger("Lumiere.Windows.Host.Protocol");
+        await using var operations = WindowsHostOperations.CreateDefault();
 
         while (await Console.In.ReadLineAsync() is { } line)
         {
-            var result = PlatformProtocol.ProcessLine(line);
+            var result = await PlatformProtocol.ProcessLineAsync(line, operations);
             await Console.Out.WriteLineAsync(result.ResponseLine);
             await Console.Out.FlushAsync();
 

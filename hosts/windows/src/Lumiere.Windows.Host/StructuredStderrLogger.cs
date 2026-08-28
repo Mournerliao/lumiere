@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Lumiere.Windows.Host;
 
-internal sealed class StructuredStderrLogger(TextWriter writer) : ILogger
+internal sealed class StructuredStderrLogger(TextWriter writer, string category) : ILogger
 {
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -34,6 +34,7 @@ internal sealed class StructuredStderrLogger(TextWriter writer) : ILogger
                 {
                     level = logLevel.ToString().ToLowerInvariant(),
                     @event = diagnostic.Event,
+                    category,
                     requestID = diagnostic.RequestId,
                     code = diagnostic.Failure.Code,
                     message = diagnostic.Failure.Message,
@@ -49,9 +50,23 @@ internal sealed class StructuredStderrLogger(TextWriter writer) : ILogger
             {
                 level = logLevel.ToString().ToLowerInvariant(),
                 @event = eventId.Name ?? "host-log",
+                category,
                 message = formatter(state, exception),
             },
             SerializerOptions));
         writer.Flush();
+    }
+}
+
+internal sealed class StructuredStderrLoggerFactory(TextWriter writer) : ILoggerFactory
+{
+    public void AddProvider(ILoggerProvider provider) =>
+        throw new NotSupportedException("The platform Host logger factory has a fixed provider.");
+
+    public ILogger CreateLogger(string categoryName) =>
+        new StructuredStderrLogger(writer, categoryName);
+
+    public void Dispose()
+    {
     }
 }

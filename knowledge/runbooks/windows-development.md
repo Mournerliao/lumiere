@@ -27,19 +27,20 @@ pwsh ./hosts/windows/scripts/verify.ps1
 ```
 
 The PowerShell script restores and Release-builds `hosts/windows/Lumiere.Windows.sln`, runs
-the Capture, Graphics, and Interop test projects, and verifies formatting. This
+the Host, Capture, Graphics, and Interop test projects, and verifies formatting. This
 Windows-owned suite runs only in Windows CI; it is not part of the shared `pnpm test`
 alias and does not execute macOS tests.
 
 The repository-root `pnpm dev` command builds the current Windows Debug Host unless
 `LUMIERE_WINDOWS_HOST_PATH` is set, then Electron selects that artifact ahead of a Release
-fallback. The current Host reports itself available but advertises no capture modes until
-the retained engine is connected; capture actions therefore remain honestly disabled.
+fallback. The current Host advertises and executes Display capture with Folder delivery;
+Region and Clipboard/Both remain unavailable and are rejected with typed failures.
 
 ## Truth Boundary
 
 A passing Host handshake does not prove native capture, HDR Visual Match, or hardware
-support. Those checks resume after the Host connects the retained engine.
+support. Record runtime capture, artifact delivery, source HDR state, and visual-match
+observations separately.
 
 If restore reports a partial NuGet cache, rerun restore with `--force` against the
 Windows solution before changing source.

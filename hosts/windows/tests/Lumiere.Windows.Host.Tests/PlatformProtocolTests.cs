@@ -7,10 +7,12 @@ namespace Lumiere.Windows.Host.Tests;
 public sealed class PlatformProtocolTests
 {
     [Fact]
-    public void GetCapabilities_ReportsAvailableHostWithoutUnimplementedCaptureClaims()
+    public async Task GetCapabilities_ReportsImplementedWindowsSlice()
     {
-        var response = PlatformProtocol.ProcessLine(
-            """{"version":2,"id":"capabilities-1","method":"getCapabilities","params":{}}""");
+        await using var operations = CreateOperations();
+        var response = await PlatformProtocol.ProcessLineAsync(
+            """{"version":2,"id":"capabilities-1","method":"getCapabilities","params":{}}""",
+            operations);
 
         using var document = JsonDocument.Parse(response.ResponseLine);
         var root = document.RootElement;
@@ -19,33 +21,44 @@ public sealed class PlatformProtocolTests
         Assert.Equal("capabilities-1", root.GetProperty("id").GetString());
         Assert.Equal("windows", result.GetProperty("platform").GetString());
         Assert.Equal("available", result.GetProperty("hostStatus").GetString());
-        Assert.Empty(result.GetProperty("captureModes").EnumerateArray());
-        Assert.Empty(result.GetProperty("deliveryTargets").EnumerateArray());
-        Assert.Equal("unavailable", result.GetProperty("hdrCapture").GetString());
+        Assert.Equal("display", result.GetProperty("captureModes")[0].GetString());
+        Assert.Equal("folder", result.GetProperty("deliveryTargets")[0].GetString());
+        Assert.Equal("unvalidated", result.GetProperty("hdrCapture").GetString());
         Assert.Equal("srgb-visual-match", result.GetProperty("outputProfiles")[0].GetString());
         Assert.Null(response.Diagnostic);
     }
 
     [Fact]
-    public void Capture_ReturnsTypedUnavailableResultUntilEngineIsConnected()
+    public async Task Capture_SerializesCompletedFolderDelivery()
     {
-        var response = PlatformProtocol.ProcessLine(
-            """{"version":2,"id":"capture-1","method":"capture","params":{"mode":"display","delivery":"folder"}}""");
+        var engine = new StubCaptureEngine
+        {
+            Result = TestCaptureResults.FolderSuccess("C:\\Pictures\\Lumiere\\capture.png"),
+        };
+        await using var operations = CreateOperations(engine);
+        var response = await PlatformProtocol.ProcessLineAsync(
+            """{"version":2,"id":"capture-1","method":"capture","params":{"mode":"display","delivery":"folder"}}""",
+            operations);
 
         using var document = JsonDocument.Parse(response.ResponseLine);
         var result = document.RootElement.GetProperty("result");
-        Assert.Equal("failed", result.GetProperty("status").GetString());
+        Assert.Equal("completed", result.GetProperty("status").GetString());
+        Assert.Equal("sdr", result.GetProperty("sourceDynamicRange").GetString());
+        Assert.Equal("srgb-visual-match", result.GetProperty("outputProfile").GetString());
+        Assert.Equal("folder", result.GetProperty("deliveries")[0].GetProperty("target").GetString());
         Assert.Equal(
-            "capture-unavailable",
-            result.GetProperty("failure").GetProperty("code").GetString());
-        Assert.Equal("capture-1", response.Diagnostic?.RequestId);
+            "C:\\Pictures\\Lumiere\\capture.png",
+            result.GetProperty("deliveries")[0].GetProperty("filePath").GetString());
+        Assert.Null(response.Diagnostic);
     }
 
     [Fact]
-    public void InvalidRequest_PreservesValidRequestIdForCorrelation()
+    public async Task InvalidRequest_PreservesValidRequestIdForCorrelation()
     {
-        var response = PlatformProtocol.ProcessLine(
-            """{"version":2,"id":"bad-1","method":"getCapabilities","params":{},"extra":true}""");
+        await using var operations = CreateOperations();
+        var response = await PlatformProtocol.ProcessLineAsync(
+            """{"version":2,"id":"bad-1","method":"getCapabilities","params":{},"extra":true}""",
+            operations);
 
         using var document = JsonDocument.Parse(response.ResponseLine);
         var root = document.RootElement;
@@ -59,9 +72,10 @@ public sealed class PlatformProtocolTests
     [InlineData("{\"version\":1,\"id\":\"bad-2\",\"method\":\"getCapabilities\",\"params\":{}}")]
     [InlineData("{\"version\":2,\"id\":\"bad-3\",\"method\":\"unknown\",\"params\":{}}")]
     [InlineData("{\"version\":2,\"id\":\"bad-4\",\"method\":\"capture\",\"params\":{\"mode\":\"region\",\"delivery\":\"both\"}}")]
-    public void InvalidRequests_ReturnProtocolErrors(string line)
+    public async Task InvalidRequests_ReturnProtocolErrors(string line)
     {
-        var response = PlatformProtocol.ProcessLine(line);
+        await using var operations = CreateOperations();
+        var response = await PlatformProtocol.ProcessLineAsync(line, operations);
 
         using var document = JsonDocument.Parse(response.ResponseLine);
         Assert.Equal(
@@ -70,4 +84,10 @@ public sealed class PlatformProtocolTests
         Assert.False(document.RootElement.GetProperty("error").GetProperty("retryable").GetBoolean());
         Assert.NotNull(response.Diagnostic);
     }
+
+    private static WindowsHostOperations CreateOperations(StubCaptureEngine? engine = null) =>
+        new(
+            () => engine ?? new StubCaptureEngine(),
+            () => "C:\\Pictures\\Lumiere",
+            _ => { });
 }
