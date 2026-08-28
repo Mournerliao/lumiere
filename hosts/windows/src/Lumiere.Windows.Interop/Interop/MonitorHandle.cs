@@ -6,7 +6,9 @@ internal sealed record MonitorHandle(
     int? Left = null,
     int? Top = null,
     int? Width = null,
-    int? Height = null)
+    int? Height = null,
+    uint? EffectiveDpiX = null,
+    uint? EffectiveDpiY = null)
 {
     public bool IsInvalid => RawHandle == IntPtr.Zero;
 }

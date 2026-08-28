@@ -4,7 +4,9 @@ namespace Lumiere.Windows.Interop;
 
 internal static class MonitorSelectionInterop
 {
+    private const string ShcoreLibrary = "shcore.dll";
     private const string User32Library = "user32.dll";
+    private const uint DefaultDpi = 96;
 
     public static MonitorHandle GetCurrentMonitorFromCursor()
     {
@@ -40,13 +42,28 @@ internal static class MonitorSelectionInterop
             return new MonitorHandle(monitorHandle, "Display");
         }
 
+        var dpi = GetEffectiveDpi(monitorHandle);
         return new MonitorHandle(
             monitorHandle,
             monitorInfo.DeviceName,
             monitorInfo.Monitor.Left,
             monitorInfo.Monitor.Top,
             monitorInfo.Monitor.Right - monitorInfo.Monitor.Left,
-            monitorInfo.Monitor.Bottom - monitorInfo.Monitor.Top);
+            monitorInfo.Monitor.Bottom - monitorInfo.Monitor.Top,
+            dpi?.X,
+            dpi?.Y);
+    }
+
+    private static MonitorDpi? GetEffectiveDpi(IntPtr monitorHandle)
+    {
+        var result = GetDpiForMonitor(
+            monitorHandle,
+            MonitorDpiType.Effective,
+            out var dpiX,
+            out var dpiY);
+        return result >= 0 && dpiX >= DefaultDpi && dpiY >= DefaultDpi
+            ? new MonitorDpi(dpiX, dpiY)
+            : null;
     }
 
     private static NativeInteropException MonitorSelectionFailure(
@@ -78,6 +95,13 @@ internal static class MonitorSelectionInterop
         IntPtr monitor,
         ref MonitorInfoEx monitorInfo);
 
+    [DllImport(ShcoreLibrary)]
+    private static extern int GetDpiForMonitor(
+        IntPtr monitor,
+        MonitorDpiType dpiType,
+        out uint dpiX,
+        out uint dpiY);
+
     [StructLayout(LayoutKind.Sequential)]
     private struct PointInt32
     {
@@ -103,6 +127,13 @@ internal static class MonitorSelectionInterop
         public int Top;
         public int Right;
         public int Bottom;
+    }
+
+    private readonly record struct MonitorDpi(uint X, uint Y);
+
+    private enum MonitorDpiType
+    {
+        Effective = 0,
     }
 
     [Flags]

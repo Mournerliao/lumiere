@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>Lumiere.Windows.Host</RootNamespace>
     <AssemblyName>Lumiere.Windows.Host</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
     <SelfContained>false</SelfContained>
   </PropertyGroup>
 

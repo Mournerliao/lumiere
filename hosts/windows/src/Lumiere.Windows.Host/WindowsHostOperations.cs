@@ -14,6 +14,8 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
 {
     private readonly object sync = new();
     private readonly Func<IWindowsDisplayCaptureEngine> engineFactory;
+    private readonly Func<WindowsTargetCapability?> getTargetCapability;
+    private readonly Func<string> targetTokenFactory;
     private readonly Func<string> outputDirectory;
     private readonly Action<string> createDirectory;
     private IWindowsDisplayCaptureEngine? engine;
@@ -21,30 +23,45 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
 
     public WindowsHostOperations(
         Func<IWindowsDisplayCaptureEngine> engineFactory,
+        Func<WindowsTargetCapability?> getTargetCapability,
+        Func<string> targetTokenFactory,
         Func<string> outputDirectory,
         Action<string> createDirectory)
     {
         this.engineFactory = engineFactory ?? throw new ArgumentNullException(nameof(engineFactory));
+        this.getTargetCapability = getTargetCapability
+            ?? throw new ArgumentNullException(nameof(getTargetCapability));
+        this.targetTokenFactory = targetTokenFactory
+            ?? throw new ArgumentNullException(nameof(targetTokenFactory));
         this.outputDirectory = outputDirectory ?? throw new ArgumentNullException(nameof(outputDirectory));
         this.createDirectory = createDirectory ?? throw new ArgumentNullException(nameof(createDirectory));
     }
 
-    public static WindowsHostOperations CreateDefault() =>
-        new(
+    public static WindowsHostOperations CreateDefault()
+    {
+        var capabilityProvider = new WindowsTargetCapabilityProvider();
+        return new WindowsHostOperations(
             static () => new WindowsDisplayCaptureEngineAdapter(
                 WindowsDisplayCaptureEngine.CreateDefault()),
+            capabilityProvider.GetCurrent,
+            static () => Guid.NewGuid().ToString("N"),
             WindowsCaptureFolder.GetDefaultPath,
             static path => _ = Directory.CreateDirectory(path));
+    }
 
-    public HostCapabilities GetCapabilities() =>
-        new(
+    public HostCapabilities GetCapabilities()
+    {
+        var target = getTargetCapability();
+        return new HostCapabilities(
             PlatformProtocol.ContractVersion,
             "windows",
             "available",
             ["display"],
             ["folder"],
-            "unvalidated",
-            ["srgb-visual-match"]);
+            MapHdrCapture(target?.HdrState),
+            ["srgb-visual-match"],
+            CreateActiveTarget(target));
+    }
 
     public async Task<HostCaptureResult> CaptureAsync(
         string requestId,
@@ -106,6 +123,29 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
             return engine ??= engineFactory();
         }
     }
+
+    private HostCaptureTarget? CreateActiveTarget(WindowsTargetCapability? target)
+    {
+        if (target?.LogicalSize is not { } logicalSize)
+        {
+            return null;
+        }
+
+        var token = targetTokenFactory();
+        return string.IsNullOrWhiteSpace(token)
+            ? null
+            : new HostCaptureTarget(
+                token,
+                new HostLogicalSize(logicalSize.Width, logicalSize.Height));
+    }
+
+    private static string MapHdrCapture(WindowsTargetHdrState? state) =>
+        state switch
+        {
+            WindowsTargetHdrState.Active => "supported",
+            WindowsTargetHdrState.Inactive => "unavailable",
+            _ => "unvalidated",
+        };
 
     private static HostCaptureResult MapCaptureResult(WindowsCaptureResult result)
     {

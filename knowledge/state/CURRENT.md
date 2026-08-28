@@ -46,7 +46,10 @@ Windows JSON Lines process boundary, strict request validation, correlated struc
 diagnostics, and typed unavailable behavior. The Host connects that engine for
 Display-to-Folder capture, owns its process-scoped lifetime, creates the default
 Pictures/Lumiere destination, and maps native capture, cancellation, and delivery outcomes
-into protocol v2 without claiming Region or Clipboard/Both support. The development entry
+into protocol v2 without claiming Region or Clipboard/Both support. Its capability provider
+now resolves the display under the pointer independently of capture, probes that target's HDR
+state, converts physical pixels through effective monitor DPI, and returns an opaque target
+token plus target-local logical size when the snapshot is available. The development entry
 point builds its current Debug artifact, and Electron selects and supervises it through the
 shared native-process transport. Milestone 1 now
 advances through environment-aware execution lanes: Issue #7 owns the Windows Host
@@ -59,7 +62,7 @@ WinUI and the old validation/HDR10-JXR paths remain removed.
 |---|---|---|---|
 | 0. Foundation | Complete | Final layout, secure shell, language-neutral protocol, paused Windows engine; macOS and Windows CI pass | None |
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
-| 1B. Windows host adapter | In progress ([#7](https://github.com/Mournerliao/lumiere/issues/7)) | The v2 Host now has strict JSON Lines handling, structured diagnostics, Electron supervision, and a process-owned engine bridge for real Display-to-Folder capture | Expose target-aware capabilities, then complete Electron-boundary repeat, cancellation, clean-exit, delivery, and SDR/HDR-state verification |
+| 1B. Windows host adapter | In progress ([#7](https://github.com/Mournerliao/lumiere/issues/7)) | The v2 Host now has strict JSON Lines handling, structured diagnostics, Electron supervision, target-aware HDR/logical-geometry capabilities, and a process-owned engine bridge for real Display-to-Folder capture | Complete Electron-boundary repeat, cancellation, clean-exit, delivery, and SDR/HDR-state verification |
 | 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture surfaces, generated tokens, persisted capability-gated output, shortcut, and after-capture preferences, one main-process capture router, capability-gated tray/menu-bar, v2 target/delivery contract, shared Region Overlay, HiDPI-aware macOS geometry, and verified macOS display/region/after-capture journeys | Resolve and add the remaining independent settings slices, then verify the independent Windows journeys after #7 |
 | 1D. Distribution and release | Not started | Windows installer direction remains recorded | Windows installer, signed/notarized macOS artifact, clean-machine and hardware verification |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
@@ -72,7 +75,7 @@ acceptance criteria and implementation status for each vertical slice.
 
 - **Repository:** frozen install, layout and TypeScript checks, seventy-two cross-platform
   shell/protocol/process/settings/UI tests, three macOS path tests, twenty-five Swift
-  protocol/capability/permission/diagnostic/geometry tests plus two native-delivery tests, fourteen
+  protocol/capability/permission/diagnostic/geometry tests plus two native-delivery tests, nineteen
   Windows Host protocol/lifecycle tests, and production builds pass locally on the named Windows
   machine and macOS. Shared, macOS, and Windows test gates are
   explicit and platform-scoped.
@@ -137,7 +140,7 @@ acceptance criteria and implementation status for each vertical slice.
   `fccf812`; this establishes those configured repository gates at that commit, not current-HEAD CI, Windows Host
   runtime or hardware behavior.
 - **Windows engine:** restore and Release build pass with warnings treated as errors;
-  Host 14, Capture 69, Graphics 42, and Interop 31 tests pass;
+  Host 19, Capture 75, Graphics 42, and Interop 31 tests pass;
   `dotnet format --verify-no-changes` passes.
 - **Windows integration:** the named Windows development machine built the Debug Host through the
   platform-neutral preparation entry point. The Release Host then completed a real JSON Lines
@@ -145,7 +148,12 @@ acceptance criteria and implementation status for each vertical slice.
   capture and four-stage teardown diagnostics, returned a correlated `completed` result with
   HDR source state and sRGB Visual Match output profile, wrote an 8,428,590-byte PNG under
   `Pictures/Lumiere`, and exited cleanly on stdin EOF. Electron transport/path tests passed
-  against the Windows contract. This establishes native acquisition and artifact delivery, not
+  against the Windows contract. The rebuilt Release Host then completed a standalone
+  `getCapabilities` request on the named scaled HDR-active display, reported target-aware HDR
+  support, and returned an opaque target token with a 2560×1440 logical target size. A subsequent
+  Display-to-Folder regression smoke under the new per-monitor-v2 DPI context acquired the same
+  display at 3840×2160, wrote an 11,421,216-byte PNG, completed all four teardown stages, and exited
+  cleanly on stdin EOF. This establishes capability projection, native acquisition, and artifact delivery, not
   Visual Match certification or HDR preservation; no passing Electron-to-WGC capture or
   release-candidate record exists.
 - **Hardware verified:** the macOS Retina XDR path passed fixed bright and dark scene
@@ -170,8 +178,7 @@ advances only one current working Issue at a time.
   resolve the HDR-alert product model and implement that independent Settings slice through
   validated main-owned IPC. Keep custom save-directory behavior separate because it may require
   a separately reviewed protocol change.
-- **Windows lane — [Issue #7](https://github.com/Mournerliao/lumiere/issues/7):** add
-  the target capability provider to the process-owned Display-to-Folder adapter, then verify
+- **Windows lane — [Issue #7](https://github.com/Mournerliao/lumiere/issues/7):** verify
   Electron-boundary repeat, cancellation, clean exit, delivery outcomes, and SDR/HDR-state
   behavior on the named Windows machine.
 - **Milestone gate:** 1D distribution and release work remains blocked until both

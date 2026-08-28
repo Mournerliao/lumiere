@@ -17,6 +17,8 @@ public sealed class WindowsHostOperationsTests
         string? createdDirectory = null;
         await using var operations = new WindowsHostOperations(
             () => engine,
+            NoTargetCapability,
+            static () => "target-token",
             () => "C:\\Pictures\\Lumiere",
             path => createdDirectory = path);
 
@@ -67,6 +69,8 @@ public sealed class WindowsHostOperationsTests
                 factoryCalls++;
                 return new StubCaptureEngine();
             },
+            NoTargetCapability,
+            static () => "target-token",
             () => "C:\\Pictures\\Lumiere",
             _ => { });
 
@@ -120,6 +124,8 @@ public sealed class WindowsHostOperationsTests
                 factoryCalls++;
                 return engine;
             },
+            NoTargetCapability,
+            static () => "target-token",
             () => "C:\\Pictures\\Lumiere",
             _ => { });
 
@@ -137,11 +143,53 @@ public sealed class WindowsHostOperationsTests
         Assert.Equal(1, engine.DisposeCalls);
     }
 
+    [Theory]
+    [InlineData(WindowsTargetHdrState.Active, "supported")]
+    [InlineData(WindowsTargetHdrState.Inactive, "unavailable")]
+    [InlineData(WindowsTargetHdrState.Unknown, "unvalidated")]
+    public async Task GetCapabilities_ProjectsCurrentTarget(
+        WindowsTargetHdrState hdrState,
+        string expectedHdrCapture)
+    {
+        await using var operations = new WindowsHostOperations(
+            () => new StubCaptureEngine(),
+            () => new WindowsTargetCapability(
+                hdrState,
+                new WindowsTargetLogicalSize(2560, 1440)),
+            static () => "target-token-17",
+            () => "C:\\Pictures\\Lumiere",
+            _ => { });
+
+        var capabilities = operations.GetCapabilities();
+
+        Assert.Equal(expectedHdrCapture, capabilities.HdrCapture);
+        Assert.Equal("target-token-17", capabilities.ActiveTarget?.Id);
+        Assert.Equal(2560, capabilities.ActiveTarget?.LogicalSize.Width);
+        Assert.Equal(1440, capabilities.ActiveTarget?.LogicalSize.Height);
+        Assert.Equal(["display"], capabilities.CaptureModes);
+        Assert.Equal(["folder"], capabilities.DeliveryTargets);
+    }
+
+    [Fact]
+    public async Task GetCapabilities_OmitsTargetWhenResolutionIsUnavailable()
+    {
+        await using var operations = CreateOperations(new StubCaptureEngine());
+
+        var capabilities = operations.GetCapabilities();
+
+        Assert.Equal("unvalidated", capabilities.HdrCapture);
+        Assert.Null(capabilities.ActiveTarget);
+    }
+
     private static WindowsHostOperations CreateOperations(StubCaptureEngine engine) =>
         new(
             () => engine,
+            NoTargetCapability,
+            static () => "target-token",
             () => "C:\\Pictures\\Lumiere",
             _ => { });
+
+    private static WindowsTargetCapability? NoTargetCapability() => null;
 }
 
 internal sealed class StubCaptureEngine : IWindowsDisplayCaptureEngine

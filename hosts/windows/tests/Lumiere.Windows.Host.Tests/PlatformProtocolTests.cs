@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Lumiere.Windows.Capture;
 using Lumiere.Windows.Host;
 using Xunit;
 
@@ -53,6 +54,26 @@ public sealed class PlatformProtocolTests
     }
 
     [Fact]
+    public async Task GetCapabilities_SerializesTargetAwareSnapshot()
+    {
+        await using var operations = CreateOperations(
+            targetCapability: new WindowsTargetCapability(
+                WindowsTargetHdrState.Active,
+                new WindowsTargetLogicalSize(2560, 1440)));
+        var response = await PlatformProtocol.ProcessLineAsync(
+            """{"version":2,"id":"capabilities-2","method":"getCapabilities","params":{}}""",
+            operations);
+
+        using var document = JsonDocument.Parse(response.ResponseLine);
+        var result = document.RootElement.GetProperty("result");
+        var target = result.GetProperty("activeTarget");
+        Assert.Equal("supported", result.GetProperty("hdrCapture").GetString());
+        Assert.Equal("target-token-17", target.GetProperty("id").GetString());
+        Assert.Equal(2560, target.GetProperty("logicalSize").GetProperty("width").GetDouble());
+        Assert.Equal(1440, target.GetProperty("logicalSize").GetProperty("height").GetDouble());
+    }
+
+    [Fact]
     public async Task InvalidRequest_PreservesValidRequestIdForCorrelation()
     {
         await using var operations = CreateOperations();
@@ -85,9 +106,13 @@ public sealed class PlatformProtocolTests
         Assert.NotNull(response.Diagnostic);
     }
 
-    private static WindowsHostOperations CreateOperations(StubCaptureEngine? engine = null) =>
+    private static WindowsHostOperations CreateOperations(
+        StubCaptureEngine? engine = null,
+        WindowsTargetCapability? targetCapability = null) =>
         new(
             () => engine ?? new StubCaptureEngine(),
+            () => targetCapability,
+            static () => "target-token-17",
             () => "C:\\Pictures\\Lumiere",
             _ => { });
 }

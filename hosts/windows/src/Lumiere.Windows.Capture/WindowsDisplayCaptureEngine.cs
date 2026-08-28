@@ -5,7 +5,6 @@ using Lumiere.Windows.Graphics.Presentation;
 using Lumiere.Windows.Interop;
 using Lumiere.Windows.Interop.Diagnostics;
 using Microsoft.Extensions.Logging;
-using Vortice.DXGI;
 
 namespace Lumiere.Windows.Capture;
 
@@ -67,14 +66,14 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
             var captureService = new CaptureService(deviceResources);
             var targetSelection = new DirectMonitorCaptureTargetSelectionService(
                 MonitorSelectionInterop.GetCurrentMonitorFromCursor,
-                CreateMonitorTarget);
+                WindowsDisplayTargetFactory.Create);
             var output = ConfiguredOutputService.CreateDefault(deviceResources);
 
             return new WindowsDisplayCaptureEngine(
                 captureService.TryReserveCommand,
                 captureService.UpdateSessionState,
                 targetSelection.SelectTargetAsync,
-                ProbeHdrCapability,
+                WindowsDisplayTargetFactory.ProbeHdrCapability,
                 captureService.StartCapture,
                 output,
                 deviceResources);
@@ -281,38 +280,6 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
             outputResult.TechnicalDetail,
             hdrCapability,
             outputResult);
-    }
-
-    private static CaptureTarget CreateMonitorTarget(MonitorHandle monitor)
-    {
-        var item = GraphicsCaptureMonitorInterop.CreateForMonitor(monitor);
-        var identity = monitor.Left is { } left
-            && monitor.Top is { } top
-            && monitor.Width is > 0
-            && monitor.Height is > 0
-                ? new DisplayOutputIdentity(
-                    monitor.DisplayName,
-                    left,
-                    top,
-                    monitor.Width.Value,
-                    monitor.Height.Value)
-                : null;
-        return CaptureTarget.FromDisplayItem(item, monitor.DisplayName, identity);
-    }
-
-    private static HdrDisplayCapability ProbeHdrCapability(CaptureTarget target)
-    {
-        using var factory = DXGI.CreateDXGIFactory2<IDXGIFactory2>(debug: false);
-        var identity = target.DisplayIdentity;
-        return identity is null
-            ? HdrDisplayCapability.Probe(factory, target.DisplayName, target.Size.Width, target.Size.Height)
-            : HdrDisplayCapability.Probe(
-                factory,
-                identity.DeviceName,
-                identity.Left,
-                identity.Top,
-                identity.Width,
-                identity.Height);
     }
 
     private static WindowsCaptureResult Cancelled(string detail) =>

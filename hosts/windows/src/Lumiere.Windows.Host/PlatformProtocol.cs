@@ -16,6 +16,10 @@ public sealed record ProtocolLineResult(
 
 public sealed record HostCaptureRequest(string Mode, string Delivery);
 
+public sealed record HostLogicalSize(double Width, double Height);
+
+public sealed record HostCaptureTarget(string Id, HostLogicalSize LogicalSize);
+
 public sealed record HostCapabilities(
     int ContractVersion,
     string Platform,
@@ -23,7 +27,8 @@ public sealed record HostCapabilities(
     IReadOnlyList<string> CaptureModes,
     IReadOnlyList<string> DeliveryTargets,
     string HdrCapture,
-    IReadOnlyList<string> OutputProfiles);
+    IReadOnlyList<string> OutputProfiles,
+    HostCaptureTarget? ActiveTarget = null);
 
 public sealed record HostDeliveryResult(
     string Target,
