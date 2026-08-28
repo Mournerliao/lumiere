@@ -54,9 +54,8 @@ only with a reconstructable native target snapshot; the token is consumed once a
 logical geometry becomes an outward-aligned native pixel crop without exposing a monitor handle.
 The development entry
 point builds its current Debug artifact, and Electron selects and supervises it through the
-shared native-process transport. Milestone 1 now
-advances through environment-aware execution lanes: Issue #7 owns the Windows Host
-adapter, while Issue #9 owns the shared product surface and macOS product journeys.
+shared native-process transport. The Windows Host adapter is complete through Issue #7;
+Issue #9 owns the remaining shared product surface and cross-platform product journeys.
 WinUI and the old validation/HDR10-JXR paths remain removed.
 
 ## Progress At A Glance
@@ -65,8 +64,8 @@ WinUI and the old validation/HDR10-JXR paths remain removed.
 |---|---|---|---|
 | 0. Foundation | Complete | Final layout, secure shell, language-neutral protocol, paused Windows engine; macOS and Windows CI pass | None |
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
-| 1B. Windows host adapter | In progress ([#7](https://github.com/Mournerliao/lumiere/issues/7)) | The v2 Host now has strict JSON Lines handling, structured diagnostics, Electron supervision, target-aware HDR/logical-geometry capabilities, Display plus target-bound Region routing, Clipboard/Folder/Both delivery, sanitized protocol failures, and verified repeated Electron-boundary Display-to-Folder delivery plus clean exit | Verify Region and Clipboard/Both through the interactive Electron runtime, in-flight shutdown, and an independent SDR-state journey |
-| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture surfaces, generated tokens, persisted capability-gated output, shortcut, and after-capture preferences, one main-process capture router, capability-gated tray/menu-bar, v2 target/delivery contract, shared Region Overlay, HiDPI-aware macOS geometry, and verified macOS display/region/after-capture journeys | Resolve and add the remaining independent settings slices, then verify the independent Windows journeys after #7 |
+| 1B. Windows host adapter | Complete ([#7](https://github.com/Mournerliao/lumiere/issues/7)) | The v2 Host has strict JSON Lines handling, structured diagnostics, Electron supervision, target-aware HDR/logical-geometry capabilities, Display plus target-bound Region routing, Clipboard/Folder/Both delivery, sanitized protocol failures, deterministic teardown, and verified interactive HDR/SDR runtime journeys | None |
+| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture surfaces, generated tokens, persisted capability-gated output, shortcut, and after-capture preferences, one main-process capture router, capability-gated tray/menu-bar, v2 target/delivery contract, shared Region Overlay, HiDPI-aware macOS geometry, and verified macOS display/region/after-capture journeys | Resolve and add the remaining independent settings slices, then complete the cross-platform product verification |
 | 1D. Distribution and release | Not started | Windows installer direction remains recorded | Windows installer, signed/notarized macOS artifact, clean-machine and hardware verification |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
 | 3. Cross-platform HDR fidelity | Planned; not started | Fidelity is separated from artifact success and HDR preservation | Define support matrix/tolerances and run fixed-scene verification |
@@ -168,8 +167,19 @@ acceptance criteria and implementation status for each vertical slice.
   not access cursor or WGC services (`GetCursorPos` access denied and
   `GraphicsCaptureSession.IsSupported` returned `0x80070424`), so it produced no new artifact evidence.
   The Host kept the technical exception in structured stderr and returned only the typed, sanitized
-  `capture-unavailable` / `The capture target is unavailable. Try again.` protocol result. Interactive Electron verification remains
-  required for the new journeys.
+  `capture-unavailable` / `The capture target is unavailable. Try again.` protocol result. The
+  interactive Electron runtime then completed Region-to-Folder and Region-to-Both on the named
+  3840×2160 HDR-active display. The Both journey copied the result and wrote a 1200×932 RGBA PNG;
+  Paint consumed the Display clipboard result. A clipboard apartment failure found during that
+  journey was corrected by performing the WinRT clipboard publication on an STA thread, after
+  which structured diagnostics reported `ClipboardOutput` complete. Closing Electron immediately
+  after issuing a native Display request exited with code 0 after the request and all four teardown
+  stages completed, with no remaining Lumiere window or Host process. Windows HDR was then disabled
+  independently: capability polling observed `RgbFullG22NoneP709` with `isHdrActive=False`, and an
+  Electron Display-to-Both request copied the artifact, wrote a 3840×2160 RGBA PNG, and completed all
+  four teardown stages. HDR was restored to its original enabled state after the observation. These
+  observations establish Windows artifact delivery and lifecycle behavior on the named machine, not
+  Visual Match certification, HDR preservation, or release readiness.
 - **Hardware verified:** the macOS Retina XDR path passed fixed bright and dark scene
   observations. The bright ramp preserved ten distinct grayscale steps from 25 through
   255; the dark ramp preserved ten distinct steps from 0 through 32 and alternating
@@ -192,10 +202,10 @@ advances only one current working Issue at a time.
   resolve the HDR-alert product model and implement that independent Settings slice through
   validated main-owned IPC. Keep custom save-directory behavior separate because it may require
   a separately reviewed protocol change.
-- **Windows lane — [Issue #7](https://github.com/Mournerliao/lumiere/issues/7):** verify
-  shutdown during an in-flight request and independently exercise the SDR capability/capture
-  state on the named Windows machine.
-- **Milestone gate:** 1D distribution and release work remains blocked until both
-  native lanes and the shared cross-platform journeys pass their independent criteria.
+- **Windows lane — [Issue #7](https://github.com/Mournerliao/lumiere/issues/7):** complete;
+  the named Windows machine passed the required Display/Region, Clipboard/Folder/Both,
+  HDR/SDR-state, repeated capture, cancellation, teardown, and clean-exit criteria.
+- **Milestone gate:** 1D distribution and release work remains blocked until the remaining
+  shared cross-platform journeys in Issue #9 pass their independent criteria.
 
 Neither lane projects repository, runtime, hardware, or completion truth to the other.

@@ -76,9 +76,38 @@ internal sealed class ClipboardOutputService : IOutputTargetAdapter
         stream.Seek(0);
 
         var reference = RandomAccessStreamReference.CreateFromStream(stream);
-        var dataPackage = new DataPackage();
-        dataPackage.SetBitmap(reference);
-        global::Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dataPackage);
-        global::Windows.ApplicationModel.DataTransfer.Clipboard.Flush();
+        await WriteDataPackageOnStaThreadAsync(reference, cancellationToken);
+    }
+
+    private static Task WriteDataPackageOnStaThreadAsync(
+        RandomAccessStreamReference reference,
+        CancellationToken cancellationToken)
+    {
+        var completion = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var dataPackage = new DataPackage();
+                dataPackage.SetBitmap(reference);
+                global::Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dataPackage);
+                global::Windows.ApplicationModel.DataTransfer.Clipboard.Flush();
+                completion.SetResult();
+            }
+            catch (Exception exception)
+            {
+                completion.SetException(exception);
+            }
+        })
+        {
+            IsBackground = true,
+            Name = "Lumiere clipboard output",
+        };
+
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        return completion.Task;
     }
 }
