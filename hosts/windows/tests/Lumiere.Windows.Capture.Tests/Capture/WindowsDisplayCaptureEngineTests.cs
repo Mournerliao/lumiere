@@ -111,6 +111,29 @@ public sealed class WindowsDisplayCaptureEngineTests
         Assert.Equal(WindowsCaptureOutcome.Unavailable, result.Outcome);
     }
 
+    [Fact]
+    public async Task CaptureDisplayAsync_MapsOutputExceptionToCaptureFailure()
+    {
+        var target = CreateTarget();
+        await using var engine = CreateEngine(
+            target,
+            (onFrame, _) =>
+            {
+                onFrame(new CapturedFrameTexture(null, 2, 2, "test frame"));
+                return CaptureStartResult.StartSucceeded(
+                    new CaptureSessionResources(() => { }),
+                    EngineReadinessStatus.Initializing("Capture started"));
+            },
+            new ThrowingOutput());
+
+        var result = await engine.CaptureDisplayAsync(
+            new WindowsCaptureRequest("request-output-failure", OutputTarget.Folder, "C:\\captures"));
+
+        Assert.Equal(WindowsCaptureOutcome.Failed, result.Outcome);
+        Assert.Null(result.Output);
+        Assert.False(result.HasDeliveredArtifact);
+    }
+
     private static WindowsDisplayCaptureEngine CreateEngine(
         CaptureTarget target,
         Func<Action<CapturedFrameTexture>, Action<EngineReadinessStatus>, CaptureStartResult> startCapture,
@@ -162,5 +185,13 @@ public sealed class WindowsDisplayCaptureEngineTests
                     "Saved to folder",
                     artifactPath: "C:\\captures\\test.png")));
         }
+    }
+
+    private sealed class ThrowingOutput : IOutputService
+    {
+        public Task<OutputResult> ExecuteOutputAsync(
+            OutputRequest request,
+            CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("encoding failed");
     }
 }

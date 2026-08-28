@@ -27,6 +27,26 @@ public sealed class ConfiguredOutputServiceTests
         Assert.Same(clipboard.Artifact, folder.Artifact);
     }
 
+    [Fact]
+    public async Task EncodingFailurePropagatesBeforeDelivery()
+    {
+        var clipboard = new RecordingOutputTarget(OutputTarget.Clipboard);
+        var folder = new RecordingOutputTarget(OutputTarget.Folder);
+        var service = new ConfiguredOutputService(new ThrowingEncoder(), clipboard, folder);
+        using var texture = new CapturedFrameTexture(null, 10, 10, "test");
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.ExecuteOutputAsync(
+            new OutputRequest
+            {
+                Texture = texture,
+                Delivery = OutputTarget.Both,
+                SaveDirectory = "C:\\captures",
+            }));
+
+        Assert.Null(clipboard.Artifact);
+        Assert.Null(folder.Artifact);
+    }
+
     private sealed class RecordingEncoder : IOutputPngEncoder
     {
         public int EncodeCount { get; private set; }
@@ -39,6 +59,15 @@ public sealed class ConfiguredOutputServiceTests
             EncodeCount++;
             return Task.FromResult(new OutputEncodedArtifact([1, 2, 3], "png"));
         }
+    }
+
+    private sealed class ThrowingEncoder : IOutputPngEncoder
+    {
+        public Task<OutputEncodedArtifact> EncodeArtifactAsync(
+            CapturedFrameTexture texture,
+            CropPixelRect? cropRegion,
+            CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("encoding failed");
     }
 
     private sealed class RecordingOutputTarget(OutputTarget target) : IOutputTargetAdapter

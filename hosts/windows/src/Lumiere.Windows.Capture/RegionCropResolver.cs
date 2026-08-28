@@ -24,7 +24,9 @@ internal static class RegionCropResolver
         }
 
         const double tolerance = 0.000001;
-        if (geometry.X + geometry.Width > logicalSize.Width + tolerance
+        if (geometry.X >= logicalSize.Width
+            || geometry.Y >= logicalSize.Height
+            || geometry.X + geometry.Width > logicalSize.Width + tolerance
             || geometry.Y + geometry.Height > logicalSize.Height + tolerance)
         {
             throw new ArgumentOutOfRangeException(nameof(geometry), "Region geometry exceeds the issued target.");

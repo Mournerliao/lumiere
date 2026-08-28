@@ -46,4 +46,28 @@ public sealed class RegionCropResolverTests
             target,
             captureTarget));
     }
+
+    [Theory]
+    [InlineData(1920, 0, 0.0000001, 10)]
+    [InlineData(0, 1080, 10, 0.0000001)]
+    public void RejectsDegenerateGeometryStartingAtTargetBoundary(
+        double x,
+        double y,
+        double width,
+        double height)
+    {
+        var captureTarget = CaptureTarget.CreateForTest(
+            new SizeInt32 { Width = 1920, Height = 1080 },
+            "display",
+            CaptureTargetKind.Display);
+        var target = WindowsTargetCapability.CreateForTest(
+            WindowsTargetHdrState.Inactive,
+            new WindowsTargetLogicalSize(1920, 1080),
+            captureTarget);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => RegionCropResolver.Resolve(
+            new WindowsRegionGeometry(x, y, width, height),
+            target,
+            captureTarget));
+    }
 }

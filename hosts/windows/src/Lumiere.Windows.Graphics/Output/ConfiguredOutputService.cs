@@ -55,26 +55,10 @@ internal sealed class ConfiguredOutputService : IOutputService
                 "No output target was requested"));
         }
 
-        OutputEncodedArtifact artifact;
-        try
-        {
-            artifact = await encoder.EncodeArtifactAsync(
-                request.Texture,
-                request.CropRegion,
-                cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception exception)
-        {
-            return OutputResult.FromTargets(outputs.Select(output =>
-                OutputTargetResult.Failed(
-                    output.Target,
-                    $"{output.Target} output failed",
-                    exception.Message)));
-        }
+        var artifact = await encoder.EncodeArtifactAsync(
+            request.Texture,
+            request.CropRegion,
+            cancellationToken);
 
         var results = new List<OutputTargetResult>(outputs.Length);
         foreach (var output in outputs)

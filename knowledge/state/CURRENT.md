@@ -142,7 +142,7 @@ acceptance criteria and implementation status for each vertical slice.
   `fccf812`; this establishes those configured repository gates at that commit, not current-HEAD CI, Windows Host
   runtime or hardware behavior.
 - **Windows engine:** restore and Release build pass with warnings treated as errors;
-  Host 28, Capture 79, Graphics 42, and Interop 31 tests pass;
+  Host 28, Capture 82, Graphics 43, and Interop 31 tests pass;
   `dotnet format --verify-no-changes` passes.
 - **Windows integration:** the named Windows development machine built the Debug Host through the
   platform-neutral preparation entry point. The Release Host then completed a real JSON Lines
@@ -174,12 +174,15 @@ acceptance criteria and implementation status for each vertical slice.
   journey was corrected by performing the WinRT clipboard publication on an STA thread, after
   which structured diagnostics reported `ClipboardOutput` complete. Closing Electron immediately
   after issuing a native Display request exited with code 0 after the request and all four teardown
-  stages completed, with no remaining Lumiere window or Host process. Windows HDR was then disabled
-  independently: capability polling observed `RgbFullG22NoneP709` with `isHdrActive=False`, and an
-  Electron Display-to-Both request copied the artifact, wrote a 3840×2160 RGBA PNG, and completed all
-  four teardown stages. HDR was restored to its original enabled state after the observation. These
-  observations establish Windows artifact delivery and lifecycle behavior on the named machine, not
-  Visual Match certification, HDR preservation, or release readiness.
+  stages completed, with no remaining Lumiere window or Host process. A separate Region Overlay
+  journey accepted Esc, returned the main window to `Capture cancelled`, produced no artifact, and
+  emitted no native Region reservation or capture request, confirming Shell-owned pre-dispatch
+  cancellation. Windows HDR was then disabled independently: capability polling observed
+  `RgbFullG22NoneP709` with `isHdrActive=False`, and an Electron Display-to-Both request copied the
+  artifact, wrote a 3840×2160 RGBA PNG, and completed all four teardown stages. HDR was restored to
+  its original enabled state after the observation. These observations establish Windows artifact
+  delivery and lifecycle behavior on the named machine, not Visual Match certification, HDR
+  preservation, or release readiness.
 - **Hardware verified:** the macOS Retina XDR path passed fixed bright and dark scene
   observations. The bright ramp preserved ten distinct grayscale steps from 25 through
   255; the dark ramp preserved ten distinct steps from 0 through 32 and alternating
