@@ -71,10 +71,10 @@ acceptance criteria and implementation status for each vertical slice.
 ## Verification Truth
 
 - **Repository:** frozen install, layout and TypeScript checks, seventy-two cross-platform
-  shell/protocol/process/settings/UI tests, three macOS path tests, twenty-two Swift
+  shell/protocol/process/settings/UI tests, three macOS path tests, twenty-five Swift
   protocol/capability/permission/diagnostic/geometry tests plus two native-delivery tests, fourteen
-  Windows Host protocol/lifecycle tests, and the production build pass locally on the named
-  Windows machine. Shared, macOS, and Windows test gates are
+  Windows Host protocol/lifecycle tests, and production builds pass locally on the named Windows
+  machine and macOS. Shared, macOS, and Windows test gates are
   explicit and platform-scoped.
 - **macOS development runtime:** the Electron display action drove ScreenCaptureKit to
   RGBA8 PNG files with alpha and an embedded sRGB IEC61966-2.1 profile on an Apple
@@ -124,9 +124,15 @@ acceptance criteria and implementation status for each vertical slice.
   filter's 2× pixel scale and produced a 5120×2880 Display artifact where the previous result was
   2560×1440. A 1320×769 logical Region produced 2640×1538 pixels. Both retained RGBA, alpha, and
   the embedded sRGB IEC61966-2.1 profile. A ten-capture 4K repeat loop produced 5120×2880 each
-  time without Host restart or retained-memory growth. These observations establish corrected
-  backing-pixel geometry on the named scaled external display; the built-in Retina XDR path was
-  not re-observed after this geometry correction.
+  time without Host restart or retained-memory growth. A later same-display A/B isolated a
+  remaining Region-only softness: the 5120×2880 full ScreenCaptureKit frame matched the macOS
+  system screenshot's edge distribution, while a pixel-aligned `sourceRect` Region remained
+  visibly softer. Region now captures the complete backing frame and applies an integer
+  `CGImage` crop in the Host. A 3005×1691 hardware result restored sharp text at 100% inspection,
+  retained the embedded sRGB profile, and completed clipboard-plus-folder delivery. These
+  observations establish corrected backing-pixel geometry and Region sharpness on the named
+  scaled external display; the built-in Retina XDR path was not re-observed after this geometry
+  correction.
 - **GitHub CI:** the last recorded macOS shell and Windows engine workflow observation passed at
   `fccf812`; this establishes those configured repository gates at that commit, not current-HEAD CI, Windows Host
   runtime or hardware behavior.

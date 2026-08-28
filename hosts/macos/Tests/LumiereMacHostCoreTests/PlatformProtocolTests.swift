@@ -116,7 +116,9 @@ func resolvesHiDPIDisplayPixelsFromFilterScale() throws {
     )
   )
 
-  #expect(output.sourceRect == nil)
+  #expect(output.cropRect == nil)
+  #expect(output.capturePixelWidth == 5120)
+  #expect(output.capturePixelHeight == 2880)
   #expect(output.pixelWidth == 5120)
   #expect(output.pixelHeight == 2880)
 }
@@ -138,7 +140,9 @@ func resolvesReportedBlurryRegionAtHiDPIScale() throws {
     )
   )
 
-  #expect(output.sourceRect == CGRect(x: 100, y: 50, width: 1408, height: 821))
+  #expect(output.capturePixelWidth == 5120)
+  #expect(output.capturePixelHeight == 2880)
+  #expect(output.cropRect == CGRect(x: 200, y: 100, width: 2816, height: 1642))
   #expect(output.pixelWidth == 2816)
   #expect(output.pixelHeight == 1642)
 }
@@ -159,7 +163,7 @@ func keepsOneToOneDisplaysAtLogicalSize() throws {
 }
 
 @Test
-func roundsFractionalRegionPixelsUp() throws {
+func alignsFractionalRegionEdgesToBackingPixels() throws {
   let output = try #require(
     CaptureOutputGeometry.resolve(
       targetLogicalSize: LogicalSize(width: 2560, height: 1440),
@@ -175,8 +179,53 @@ func roundsFractionalRegionPixelsUp() throws {
     )
   )
 
+  #expect(output.cropRect == CGRect(x: 15, y: 30, width: 151, height: 77))
   #expect(output.pixelWidth == 151)
-  #expect(output.pixelHeight == 76)
+  #expect(output.pixelHeight == 77)
+}
+
+@Test
+func alignsFractionalRegionAtTargetEdgeWithoutPadding() throws {
+  let output = try #require(
+    CaptureOutputGeometry.resolve(
+      targetLogicalSize: LogicalSize(width: 2560, height: 1440),
+      filterLogicalSize: LogicalSize(width: 2560, height: 1440),
+      pointPixelScale: 2,
+      region: CaptureGeometry(
+        coordinateSpace: "target-logical",
+        x: 2500.25,
+        y: 1400.25,
+        width: 59.75,
+        height: 39.75
+      )
+    )
+  )
+
+  #expect(output.cropRect == CGRect(x: 5000, y: 2800, width: 120, height: 80))
+  #expect(output.pixelWidth == 120)
+  #expect(output.pixelHeight == 80)
+}
+
+@Test
+func alignsFractionalRegionEdgesAtOneToOneScale() throws {
+  let output = try #require(
+    CaptureOutputGeometry.resolve(
+      targetLogicalSize: LogicalSize(width: 1920, height: 1080),
+      filterLogicalSize: LogicalSize(width: 1920, height: 1080),
+      pointPixelScale: 1,
+      region: CaptureGeometry(
+        coordinateSpace: "target-logical",
+        x: 10.25,
+        y: 20.75,
+        width: 100.5,
+        height: 50.5
+      )
+    )
+  )
+
+  #expect(output.cropRect == CGRect(x: 10, y: 20, width: 101, height: 52))
+  #expect(output.pixelWidth == 101)
+  #expect(output.pixelHeight == 52)
 }
 
 @Test
@@ -257,7 +306,7 @@ func appliesPixelGeometryWithoutChangingHDRPreset() throws {
 }
 
 @Test
-func appliesRegionGeometryToSDRConfiguration() throws {
+func capturesFullBackingFrameBeforeCroppingRegion() throws {
   let output = try #require(
     CaptureOutputGeometry.resolve(
       targetLogicalSize: LogicalSize(width: 2560, height: 1440),
@@ -277,14 +326,50 @@ func appliesRegionGeometryToSDRConfiguration() throws {
 
   output.apply(to: configuration)
 
-  #expect(configuration.sourceRect == CGRect(x: 20, y: 30, width: 640, height: 360))
-  #expect(configuration.width == 1280)
-  #expect(configuration.height == 720)
+  #expect(configuration.sourceRect == .zero)
+  #expect(configuration.width == 5120)
+  #expect(configuration.height == 2880)
+  #expect(output.cropRect == CGRect(x: 40, y: 60, width: 1280, height: 720))
   #expect(configuration.captureDynamicRange == dynamicRange)
 }
 
 @Test
-func rejectsUnexpectedCapturedImageDimensions() throws {
+func cropsRegionFromFullBackingFrameWithoutResizing() throws {
+  let output = try #require(
+    CaptureOutputGeometry.resolve(
+      targetLogicalSize: LogicalSize(width: 4, height: 3),
+      filterLogicalSize: LogicalSize(width: 4, height: 3),
+      pointPixelScale: 2,
+      region: CaptureGeometry(
+        coordinateSpace: "target-logical",
+        x: 0.5,
+        y: 1,
+        width: 2,
+        height: 1.5
+      )
+    )
+  )
+  let context = try #require(
+    CGContext(
+      data: nil,
+      width: 8,
+      height: 6,
+      bitsPerComponent: 8,
+      bytesPerRow: 32,
+      space: CGColorSpaceCreateDeviceRGB(),
+      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+    )
+  )
+  let fullFrame = try #require(context.makeImage())
+  let cropped = try #require(output.makeOutputImage(from: fullFrame))
+
+  #expect(output.cropRect == CGRect(x: 1, y: 2, width: 4, height: 3))
+  #expect(cropped.width == 4)
+  #expect(cropped.height == 3)
+}
+
+@Test
+func rejectsUnexpectedFullFrameDimensions() throws {
   let output = try #require(
     CaptureOutputGeometry.resolve(
       targetLogicalSize: LogicalSize(width: 1408, height: 821),
@@ -294,8 +379,8 @@ func rejectsUnexpectedCapturedImageDimensions() throws {
     )
   )
 
-  #expect(output.matches(imageWidth: 2816, imageHeight: 1642))
-  #expect(!output.matches(imageWidth: 1408, imageHeight: 821))
+  #expect(output.matchesCapture(imageWidth: 2816, imageHeight: 1642))
+  #expect(!output.matchesCapture(imageWidth: 1408, imageHeight: 821))
 }
 
 @Test
