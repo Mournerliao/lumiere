@@ -14,9 +14,60 @@ public enum WindowsTargetHdrState
 
 public sealed record WindowsTargetLogicalSize(double Width, double Height);
 
-public sealed record WindowsTargetCapability(
-    WindowsTargetHdrState HdrState,
-    WindowsTargetLogicalSize? LogicalSize);
+public sealed class WindowsTargetCapability
+{
+    private readonly Func<CaptureTarget>? captureTargetFactory;
+
+    public WindowsTargetCapability(
+        WindowsTargetHdrState hdrState,
+        WindowsTargetLogicalSize? logicalSize)
+        : this(hdrState, logicalSize, pixelWidth: null, pixelHeight: null, captureTargetFactory: null)
+    {
+    }
+
+    internal WindowsTargetCapability(
+        WindowsTargetHdrState hdrState,
+        WindowsTargetLogicalSize? logicalSize,
+        int? pixelWidth,
+        int? pixelHeight,
+        Func<CaptureTarget>? captureTargetFactory)
+    {
+        HdrState = hdrState;
+        LogicalSize = logicalSize;
+        PixelWidth = pixelWidth;
+        PixelHeight = pixelHeight;
+        this.captureTargetFactory = captureTargetFactory;
+    }
+
+    public WindowsTargetHdrState HdrState { get; }
+
+    public WindowsTargetLogicalSize? LogicalSize { get; }
+
+    public bool SupportsRegionCapture =>
+        LogicalSize is not null
+        && PixelWidth is > 0
+        && PixelHeight is > 0
+        && captureTargetFactory is not null;
+
+    internal int? PixelWidth { get; }
+
+    internal int? PixelHeight { get; }
+
+    internal CaptureTarget CreateCaptureTarget() =>
+        captureTargetFactory?.Invoke()
+        ?? throw new InvalidOperationException("The target snapshot cannot resolve a capture target.");
+
+    internal static WindowsTargetCapability CreateForTest(
+        WindowsTargetHdrState hdrState,
+        WindowsTargetLogicalSize logicalSize,
+        CaptureTarget target) =>
+        new(
+            hdrState,
+            logicalSize,
+            target.Size.Width,
+            target.Size.Height,
+            () => target);
+}
 
 public sealed class WindowsTargetCapabilityProvider
 {
@@ -55,7 +106,10 @@ public sealed class WindowsTargetCapabilityProvider
                 MapHdrState(hdrCapability.State),
                 logicalSize is { } size
                     ? new WindowsTargetLogicalSize(size.Width, size.Height)
-                    : null);
+                    : null,
+                monitor.Width,
+                monitor.Height,
+                () => WindowsDisplayTargetFactory.Create(monitor));
         }
         catch (Exception exception)
         {

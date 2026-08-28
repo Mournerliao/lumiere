@@ -53,10 +53,75 @@ public sealed class WindowsHostOperationsTests
         Assert.Equal("success", Assert.Single(result.Deliveries!).Status);
     }
 
+    [Fact]
+    public async Task CaptureAsync_ForwardsClipboardWithoutCreatingFolder()
+    {
+        var engine = new StubCaptureEngine
+        {
+            Result = TestCaptureResults.ClipboardSuccess(),
+        };
+        var directoryCalls = 0;
+        var createDirectoryCalls = 0;
+        await using var operations = new WindowsHostOperations(
+            () => engine,
+            NoTargetCapability,
+            static () => "target-token",
+            () =>
+            {
+                directoryCalls++;
+                return "C:\\Pictures\\Lumiere";
+            },
+            _ => createDirectoryCalls++);
+
+        var result = await operations.CaptureAsync(
+            "capture-clipboard",
+            new HostCaptureRequest("display", "clipboard"));
+
+        Assert.Equal("completed", result.Status);
+        Assert.Equal(OutputTarget.Clipboard, engine.Request?.Delivery);
+        Assert.Null(engine.Request?.SaveDirectory);
+        Assert.Equal(0, directoryCalls);
+        Assert.Equal(0, createDirectoryCalls);
+        var delivery = Assert.Single(result.Deliveries!);
+        Assert.Equal("clipboard", delivery.Target);
+        Assert.Equal("success", delivery.Status);
+        Assert.Null(delivery.FilePath);
+    }
+
+    [Fact]
+    public async Task CaptureAsync_MapsBothDeliveryOutcomesIndependently()
+    {
+        var engine = new StubCaptureEngine
+        {
+            Result = TestCaptureResults.BothPartialSuccess("C:\\Pictures\\Lumiere\\capture.png"),
+        };
+        await using var operations = CreateOperations(engine);
+
+        var result = await operations.CaptureAsync(
+            "capture-both",
+            new HostCaptureRequest("display", "both"));
+
+        Assert.Equal("completed", result.Status);
+        Assert.Equal(OutputTarget.Both, engine.Request?.Delivery);
+        Assert.Collection(
+            result.Deliveries!,
+            clipboard =>
+            {
+                Assert.Equal("clipboard", clipboard.Target);
+                Assert.Equal("failed", clipboard.Status);
+                Assert.Equal("delivery-failed", clipboard.Failure?.Code);
+            },
+            folder =>
+            {
+                Assert.Equal("folder", folder.Target);
+                Assert.Equal("success", folder.Status);
+                Assert.Equal("C:\\Pictures\\Lumiere\\capture.png", folder.FilePath);
+            });
+    }
+
     [Theory]
     [InlineData("region", "folder", "capture-unavailable")]
-    [InlineData("display", "clipboard", "delivery-unavailable")]
-    [InlineData("display", "both", "delivery-unavailable")]
+    [InlineData("display", "other", "delivery-unavailable")]
     public async Task CaptureAsync_RejectsUnimplementedSliceWithoutCreatingEngine(
         string mode,
         string delivery,
@@ -108,6 +173,37 @@ public sealed class WindowsHostOperationsTests
         var delivery = Assert.Single(result.Deliveries!);
         Assert.Equal("failed", delivery.Status);
         Assert.Equal("delivery-failed", delivery.Failure?.Code);
+        Assert.Equal("Could not save the screenshot.", delivery.Failure?.Message);
+        Assert.DoesNotContain("read-only", delivery.Failure?.Message);
+    }
+
+    [Theory]
+    [InlineData(WindowsCaptureOutcome.TimedOut, "capture-unavailable", "Windows capture timed out. Try again.")]
+    [InlineData(WindowsCaptureOutcome.Unavailable, "capture-unavailable", "The capture target is unavailable. Try again.")]
+    [InlineData(WindowsCaptureOutcome.Unsupported, "capture-unavailable", "Screen capture is unavailable on this Windows system.")]
+    [InlineData(WindowsCaptureOutcome.Failed, "unexpected-failure", "Windows capture failed. Try again.")]
+    public async Task CaptureAsync_DoesNotExposeNativeFailureDetails(
+        WindowsCaptureOutcome outcome,
+        string expectedCode,
+        string expectedMessage)
+    {
+        var engine = new StubCaptureEngine
+        {
+            Result = new WindowsCaptureResult(
+                outcome,
+                "Capture failed",
+                "COMException at C:\\private\\source.cs:42"),
+        };
+        await using var operations = CreateOperations(engine);
+
+        var result = await operations.CaptureAsync(
+            "capture-failure",
+            new HostCaptureRequest("display", "folder"));
+
+        Assert.Equal("failed", result.Status);
+        Assert.Equal(expectedCode, result.Failure?.Code);
+        Assert.Equal(expectedMessage, result.Failure?.Message);
+        Assert.DoesNotContain("COMException", result.Failure?.Message);
     }
 
     [Fact]
@@ -143,6 +239,28 @@ public sealed class WindowsHostOperationsTests
         Assert.Equal(1, engine.DisposeCalls);
     }
 
+    [Fact]
+    public async Task DisposeAsync_DelegatesInFlightCancellationToOwnedEngine()
+    {
+        var engine = new BlockingCaptureEngine();
+        var operations = new WindowsHostOperations(
+            () => engine,
+            NoTargetCapability,
+            static () => "target-token",
+            () => "C:\\Pictures\\Lumiere",
+            _ => { });
+
+        var capture = operations.CaptureAsync(
+            "capture-in-flight",
+            new HostCaptureRequest("display", "folder"));
+        await engine.CaptureStarted;
+        await operations.DisposeAsync();
+        var result = await capture;
+
+        Assert.Equal("cancelled", result.Status);
+        Assert.Equal(1, engine.DisposeCalls);
+    }
+
     [Theory]
     [InlineData(WindowsTargetHdrState.Active, "supported")]
     [InlineData(WindowsTargetHdrState.Inactive, "unavailable")]
@@ -167,7 +285,7 @@ public sealed class WindowsHostOperationsTests
         Assert.Equal(2560, capabilities.ActiveTarget?.LogicalSize.Width);
         Assert.Equal(1440, capabilities.ActiveTarget?.LogicalSize.Height);
         Assert.Equal(["display"], capabilities.CaptureModes);
-        Assert.Equal(["folder"], capabilities.DeliveryTargets);
+        Assert.Equal(["clipboard", "folder"], capabilities.DeliveryTargets);
     }
 
     [Fact]
@@ -181,6 +299,45 @@ public sealed class WindowsHostOperationsTests
         Assert.Null(capabilities.ActiveTarget);
     }
 
+    [Fact]
+    public async Task RegionCapture_ConsumesIssuedTargetAndForwardsLogicalGeometry()
+    {
+        var engine = new StubCaptureEngine
+        {
+            Result = TestCaptureResults.ClipboardSuccess(),
+        };
+        var target = CreateRegionCapability();
+        await using var operations = new WindowsHostOperations(
+            () => engine,
+            () => target,
+            static () => "region-target-17",
+            () => "C:\\Pictures\\Lumiere",
+            _ => { });
+        var capabilities = operations.GetCapabilities();
+
+        var result = await operations.CaptureAsync(
+            "capture-region",
+            new HostCaptureRequest(
+                "region",
+                "clipboard",
+                capabilities.ActiveTarget!.Id,
+                new HostCaptureGeometry(12.5, 20, 300, 200)));
+        var repeated = await operations.CaptureAsync(
+            "capture-region-repeat",
+            new HostCaptureRequest(
+                "region",
+                "clipboard",
+                capabilities.ActiveTarget.Id,
+                new HostCaptureGeometry(12.5, 20, 300, 200)));
+
+        Assert.Equal(["region", "display"], capabilities.CaptureModes);
+        Assert.Equal("completed", result.Status);
+        Assert.Same(target, engine.RegionTarget);
+        Assert.Equal(new WindowsRegionGeometry(12.5, 20, 300, 200), engine.RegionGeometry);
+        Assert.Equal("failed", repeated.Status);
+        Assert.Equal("capture-unavailable", repeated.Failure?.Code);
+    }
+
     private static WindowsHostOperations CreateOperations(StubCaptureEngine engine) =>
         new(
             () => engine,
@@ -190,14 +347,30 @@ public sealed class WindowsHostOperationsTests
             _ => { });
 
     private static WindowsTargetCapability? NoTargetCapability() => null;
+
+    internal static WindowsTargetCapability CreateRegionCapability()
+    {
+        var captureTarget = CaptureTarget.CreateForTest(
+            new global::Windows.Graphics.SizeInt32 { Width = 3840, Height = 2160 },
+            "test display",
+            CaptureTargetKind.Display);
+        return WindowsTargetCapability.CreateForTest(
+            WindowsTargetHdrState.Active,
+            new WindowsTargetLogicalSize(2560, 1440),
+            captureTarget);
+    }
 }
 
-internal sealed class StubCaptureEngine : IWindowsDisplayCaptureEngine
+internal sealed class StubCaptureEngine : IWindowsCaptureEngine
 {
     public WindowsCaptureResult Result { get; set; } =
         new(WindowsCaptureOutcome.Failed, "Capture failed", "No result configured.");
 
     public WindowsCaptureRequest? Request { get; private set; }
+
+    public WindowsTargetCapability? RegionTarget { get; private set; }
+
+    public WindowsRegionGeometry? RegionGeometry { get; private set; }
 
     public int CaptureCalls { get; private set; }
 
@@ -212,6 +385,19 @@ internal sealed class StubCaptureEngine : IWindowsDisplayCaptureEngine
         return Task.FromResult(Result);
     }
 
+    public Task<WindowsCaptureResult> CaptureRegionAsync(
+        WindowsCaptureRequest request,
+        WindowsTargetCapability target,
+        WindowsRegionGeometry geometry,
+        CancellationToken cancellationToken = default)
+    {
+        Request = request;
+        RegionTarget = target;
+        RegionGeometry = geometry;
+        CaptureCalls++;
+        return Task.FromResult(Result);
+    }
+
     public ValueTask DisposeAsync()
     {
         DisposeCalls++;
@@ -221,6 +407,17 @@ internal sealed class StubCaptureEngine : IWindowsDisplayCaptureEngine
 
 internal static class TestCaptureResults
 {
+    public static WindowsCaptureResult ClipboardSuccess() =>
+        new(
+            WindowsCaptureOutcome.Delivered,
+            "Copied",
+            "Copied capture.",
+            Output: OutputResult.FromTargets(
+                OutputTargetResult.Success(
+                    OutputTarget.Clipboard,
+                    "Copied",
+                    bytesWritten: 42)));
+
     public static WindowsCaptureResult FolderSuccess(
         string path,
         HdrDisplayCapability? hdrCapability = null) =>
@@ -234,4 +431,56 @@ internal static class TestCaptureResults
                     OutputTarget.Folder,
                     "Saved",
                     artifactPath: path)));
+
+    public static WindowsCaptureResult BothPartialSuccess(string path) =>
+        new(
+            WindowsCaptureOutcome.Delivered,
+            "Output partially complete",
+            "Clipboard failed; folder succeeded.",
+            Output: OutputResult.FromTargets(
+                OutputTargetResult.Failed(
+                    OutputTarget.Clipboard,
+                    "Failed to copy",
+                    "The clipboard is busy."),
+                OutputTargetResult.Success(
+                    OutputTarget.Folder,
+                    "Saved",
+                    artifactPath: path)));
+}
+
+internal sealed class BlockingCaptureEngine : IWindowsCaptureEngine
+{
+    private readonly TaskCompletionSource captureStarted = new(
+        TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<WindowsCaptureResult> captureCompletion = new(
+        TaskCreationOptions.RunContinuationsAsynchronously);
+
+    public Task CaptureStarted => captureStarted.Task;
+
+    public int DisposeCalls { get; private set; }
+
+    public Task<WindowsCaptureResult> CaptureDisplayAsync(
+        WindowsCaptureRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        captureStarted.SetResult();
+        return captureCompletion.Task;
+    }
+
+    public Task<WindowsCaptureResult> CaptureRegionAsync(
+        WindowsCaptureRequest request,
+        WindowsTargetCapability target,
+        WindowsRegionGeometry geometry,
+        CancellationToken cancellationToken = default) =>
+        CaptureDisplayAsync(request, cancellationToken);
+
+    public ValueTask DisposeAsync()
+    {
+        DisposeCalls++;
+        captureCompletion.TrySetResult(new WindowsCaptureResult(
+            WindowsCaptureOutcome.Cancelled,
+            "Capture cancelled",
+            "Engine lifetime ended."));
+        return ValueTask.CompletedTask;
+    }
 }

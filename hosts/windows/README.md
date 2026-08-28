@@ -2,9 +2,10 @@
 
 Windows host adaptation is the active Milestone 1B frontier. The
 `Lumiere.Windows.Host` executable owns the platform-host v2 JSON Lines process boundary;
-it currently provides the capability handshake and typed capture-unavailable behavior
-while the retained engine is connected in the next vertical slice. It does not restore a
-WinUI product shell or claim working Windows capture.
+it connects the retained engine for Display and target-token-bound Region capture, one
+sRGB Visual Match conversion, and Clipboard, Folder, or Both delivery. Region is advertised
+only when the current target supplies a reconstructable native snapshot plus target-local
+logical geometry. It does not restore a WinUI product shell.
 
 The retained modules are:
 
@@ -16,10 +17,12 @@ The retained modules are:
 - `Lumiere.Windows.Host` for stdin/stdout protocol handling and structured stderr
   diagnostics.
 
-The capture interface owns target resolution, target-aware HDR probing, first-frame
-acquisition, one sRGB Visual Match conversion, requested delivery, cancellation, and
-native teardown. A caller supplies a correlation ID but never owns a raw frame,
-texture, capture session, or output cache. Call
+The capture interface owns target resolution, target-aware HDR probing, target-local
+logical-to-pixel Region conversion, first-frame acquisition, one sRGB Visual Match
+conversion, requested delivery, cancellation, and native teardown. Issued Region tokens
+are short-lived and bind to an opaque Capture-owned target snapshot. A caller supplies a
+correlation ID but never owns a raw frame, monitor handle, texture, capture session, or
+output cache. Call
 `WindowsDisplayCaptureEngine.ConfigureLogging` before creating the engine when the
 process needs a structured stderr logger.
 

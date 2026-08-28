@@ -50,9 +50,10 @@ Host discovery prefers that artifact over any existing Release build. An explici
 
 On Windows, `predev` incrementally builds the current .NET Debug Host unless
 `LUMIERE_WINDOWS_HOST_PATH` is set, and development discovery prefers that artifact over
-an existing Release build. The current Host advertises target-aware Display capture with
-Folder delivery, reports the target under the pointer with effective-DPI logical geometry
-when available, and keeps Region plus Clipboard/Both unavailable.
+an existing Release build. The current Host supports Clipboard, Folder, and Both delivery,
+always advertises Display, and advertises Region when it can issue a short-lived target token
+with effective-DPI logical geometry and an opaque native target snapshot. Region capture
+consumes that token and keeps logical-to-pixel conversion inside the Windows Host.
 
 ## Renderer Components
 

@@ -23,7 +23,8 @@ public sealed class PlatformProtocolTests
         Assert.Equal("windows", result.GetProperty("platform").GetString());
         Assert.Equal("available", result.GetProperty("hostStatus").GetString());
         Assert.Equal("display", result.GetProperty("captureModes")[0].GetString());
-        Assert.Equal("folder", result.GetProperty("deliveryTargets")[0].GetString());
+        Assert.Equal("clipboard", result.GetProperty("deliveryTargets")[0].GetString());
+        Assert.Equal("folder", result.GetProperty("deliveryTargets")[1].GetString());
         Assert.Equal("unvalidated", result.GetProperty("hdrCapture").GetString());
         Assert.Equal("srgb-visual-match", result.GetProperty("outputProfiles")[0].GetString());
         Assert.Null(response.Diagnostic);
@@ -54,6 +55,34 @@ public sealed class PlatformProtocolTests
     }
 
     [Fact]
+    public async Task Capture_SerializesBothDeliveryOutcomes()
+    {
+        var engine = new StubCaptureEngine
+        {
+            Result = TestCaptureResults.BothPartialSuccess(
+                "C:\\Pictures\\Lumiere\\capture.png"),
+        };
+        await using var operations = CreateOperations(engine);
+        var response = await PlatformProtocol.ProcessLineAsync(
+            """{"version":2,"id":"capture-both","method":"capture","params":{"mode":"display","delivery":"both"}}""",
+            operations);
+
+        using var document = JsonDocument.Parse(response.ResponseLine);
+        var deliveries = document.RootElement.GetProperty("result").GetProperty("deliveries");
+        Assert.Equal("clipboard", deliveries[0].GetProperty("target").GetString());
+        Assert.Equal("failed", deliveries[0].GetProperty("status").GetString());
+        Assert.Equal(
+            "delivery-failed",
+            deliveries[0].GetProperty("failure").GetProperty("code").GetString());
+        Assert.Equal("folder", deliveries[1].GetProperty("target").GetString());
+        Assert.Equal("success", deliveries[1].GetProperty("status").GetString());
+        Assert.Equal(
+            "C:\\Pictures\\Lumiere\\capture.png",
+            deliveries[1].GetProperty("filePath").GetString());
+        Assert.Equal("delivery-failed", response.Diagnostic?.Failure.Code);
+    }
+
+    [Fact]
     public async Task GetCapabilities_SerializesTargetAwareSnapshot()
     {
         await using var operations = CreateOperations(
@@ -71,6 +100,29 @@ public sealed class PlatformProtocolTests
         Assert.Equal("target-token-17", target.GetProperty("id").GetString());
         Assert.Equal(2560, target.GetProperty("logicalSize").GetProperty("width").GetDouble());
         Assert.Equal(1440, target.GetProperty("logicalSize").GetProperty("height").GetDouble());
+    }
+
+    [Fact]
+    public async Task RegionCapture_PreservesTargetTokenAndLogicalGeometry()
+    {
+        var engine = new StubCaptureEngine
+        {
+            Result = TestCaptureResults.ClipboardSuccess(),
+        };
+        await using var operations = CreateOperations(
+            engine,
+            WindowsHostOperationsTests.CreateRegionCapability());
+        _ = await PlatformProtocol.ProcessLineAsync(
+            """{"version":2,"id":"capabilities-region","method":"getCapabilities","params":{}}""",
+            operations);
+
+        var response = await PlatformProtocol.ProcessLineAsync(
+            """{"version":2,"id":"capture-region","method":"capture","params":{"mode":"region","delivery":"clipboard","targetId":"target-token-17","geometry":{"coordinateSpace":"target-logical","x":12.5,"y":20,"width":300,"height":200}}}""",
+            operations);
+
+        using var document = JsonDocument.Parse(response.ResponseLine);
+        Assert.Equal("completed", document.RootElement.GetProperty("result").GetProperty("status").GetString());
+        Assert.Equal(new WindowsRegionGeometry(12.5, 20, 300, 200), engine.RegionGeometry);
     }
 
     [Fact]

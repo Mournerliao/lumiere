@@ -39,17 +39,20 @@ Settings surface now also persists `Do nothing` or `Show in folder` after-captur
 through validated main-owned IPC. One main-process completion path applies that preference
 to main-window, shortcut, and tray/menu-bar captures without changing artifact success when
 Finder or Explorer cannot reveal an already-saved file. The Windows engine now exposes one
-deep display-capture operation that owns target resolution,
+deep capture operation that owns target resolution and target-bound Region cropping,
 target-aware HDR probing, first-frame acquisition, one sRGB Visual Match conversion,
 delivery, cancellation, and teardown. A .NET platform-host v2 executable now owns the
 Windows JSON Lines process boundary, strict request validation, correlated structured
-diagnostics, and typed unavailable behavior. The Host connects that engine for
-Display-to-Folder capture, owns its process-scoped lifetime, creates the default
-Pictures/Lumiere destination, and maps native capture, cancellation, and delivery outcomes
-into protocol v2 without claiming Region or Clipboard/Both support. Its capability provider
+diagnostics, and typed unavailable behavior. The Host connects that engine for Display and
+target-token-bound Region capture, owns its process-scoped lifetime, creates the default
+Pictures/Lumiere destination when needed, and maps Clipboard, Folder, and Both outcomes
+independently from one encoded artifact into protocol v2. Its capability provider
 now resolves the display under the pointer independently of capture, probes that target's HDR
 state, converts physical pixels through effective monitor DPI, and returns an opaque target
-token plus target-local logical size when the snapshot is available. The development entry
+token plus target-local logical size when the snapshot is available. Region is advertised
+only with a reconstructable native target snapshot; the token is consumed once and target-local
+logical geometry becomes an outward-aligned native pixel crop without exposing a monitor handle.
+The development entry
 point builds its current Debug artifact, and Electron selects and supervises it through the
 shared native-process transport. Milestone 1 now
 advances through environment-aware execution lanes: Issue #7 owns the Windows Host
@@ -62,7 +65,7 @@ WinUI and the old validation/HDR10-JXR paths remain removed.
 |---|---|---|---|
 | 0. Foundation | Complete | Final layout, secure shell, language-neutral protocol, paused Windows engine; macOS and Windows CI pass | None |
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
-| 1B. Windows host adapter | In progress ([#7](https://github.com/Mournerliao/lumiere/issues/7)) | The v2 Host now has strict JSON Lines handling, structured diagnostics, Electron supervision, target-aware HDR/logical-geometry capabilities, a process-owned engine bridge for real Display-to-Folder capture, and verified repeated Electron-boundary delivery plus clean exit | Verify in-flight shutdown/cancellation and an independent SDR-state journey |
+| 1B. Windows host adapter | In progress ([#7](https://github.com/Mournerliao/lumiere/issues/7)) | The v2 Host now has strict JSON Lines handling, structured diagnostics, Electron supervision, target-aware HDR/logical-geometry capabilities, Display plus target-bound Region routing, Clipboard/Folder/Both delivery, sanitized protocol failures, and verified repeated Electron-boundary Display-to-Folder delivery plus clean exit | Verify Region and Clipboard/Both through the interactive Electron runtime, in-flight shutdown, and an independent SDR-state journey |
 | 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture surfaces, generated tokens, persisted capability-gated output, shortcut, and after-capture preferences, one main-process capture router, capability-gated tray/menu-bar, v2 target/delivery contract, shared Region Overlay, HiDPI-aware macOS geometry, and verified macOS display/region/after-capture journeys | Resolve and add the remaining independent settings slices, then verify the independent Windows journeys after #7 |
 | 1D. Distribution and release | Not started | Windows installer direction remains recorded | Windows installer, signed/notarized macOS artifact, clean-machine and hardware verification |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
@@ -75,7 +78,7 @@ acceptance criteria and implementation status for each vertical slice.
 
 - **Repository:** frozen install, layout and TypeScript checks, seventy-three cross-platform
   shell/protocol/process/settings/UI tests, three macOS path tests, twenty-five Swift
-  protocol/capability/permission/diagnostic/geometry tests plus two native-delivery tests, nineteen
+  protocol/capability/permission/diagnostic/geometry tests plus two native-delivery tests, twenty-eight
   Windows Host protocol/lifecycle tests, and production builds pass locally on the named Windows
   machine and macOS. Shared, macOS, and Windows test gates are
   explicit and platform-scoped.
@@ -140,7 +143,7 @@ acceptance criteria and implementation status for each vertical slice.
   `fccf812`; this establishes those configured repository gates at that commit, not current-HEAD CI, Windows Host
   runtime or hardware behavior.
 - **Windows engine:** restore and Release build pass with warnings treated as errors;
-  Host 19, Capture 75, Graphics 42, and Interop 31 tests pass;
+  Host 28, Capture 79, Graphics 42, and Interop 31 tests pass;
   `dotnet format --verify-no-changes` passes.
 - **Windows integration:** the named Windows development machine built the Debug Host through the
   platform-neutral preparation entry point. The Release Host then completed a real JSON Lines
@@ -160,7 +163,13 @@ acceptance criteria and implementation status for each vertical slice.
   all four teardown stages. Closing the Electron window exited the development process with code 0
   and left no Windows Host process. This establishes capability projection, native acquisition,
   repeated Electron-boundary artifact delivery, and clean exit, not Visual Match certification or HDR
-  preservation; no release-candidate record exists.
+  preservation; no release-candidate record exists. The current Release Host was also exercised from
+  the non-interactive command session after Region and Clipboard/Both routing landed. That session could
+  not access cursor or WGC services (`GetCursorPos` access denied and
+  `GraphicsCaptureSession.IsSupported` returned `0x80070424`), so it produced no new artifact evidence.
+  The Host kept the technical exception in structured stderr and returned only the typed, sanitized
+  `capture-unavailable` / `The capture target is unavailable. Try again.` protocol result. Interactive Electron verification remains
+  required for the new journeys.
 - **Hardware verified:** the macOS Retina XDR path passed fixed bright and dark scene
   observations. The bright ramp preserved ten distinct grayscale steps from 25 through
   255; the dark ramp preserved ten distinct steps from 0 through 32 and alternating

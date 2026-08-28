@@ -19,6 +19,7 @@ public enum WindowsCaptureOutcome
     DeliveryFailed,
     Cancelled,
     TimedOut,
+    Unavailable,
     Unsupported,
     Failed,
 }

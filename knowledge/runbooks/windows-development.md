@@ -33,8 +33,12 @@ alias and does not execute macOS tests.
 
 The repository-root `pnpm dev` command builds the current Windows Debug Host unless
 `LUMIERE_WINDOWS_HOST_PATH` is set, then Electron selects that artifact ahead of a Release
-fallback. The current Host advertises and executes Display capture with Folder delivery;
-Region and Clipboard/Both remain unavailable and are rejected with typed failures.
+fallback. The current Host executes Display capture with Clipboard, Folder, or Both
+delivery from the same encoded sRGB Visual Match artifact. Region is
+advertised when the target under the pointer has effective-DPI logical geometry and a
+reconstructable native target snapshot; the Host consumes the issued short-lived token and
+converts target-local logical geometry to an outward-aligned pixel crop inside the native
+boundary.
 
 ## Truth Boundary
 

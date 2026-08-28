@@ -14,7 +14,13 @@ public sealed record ProtocolLineResult(
     string ResponseLine,
     HostDiagnostic? Diagnostic = null);
 
-public sealed record HostCaptureRequest(string Mode, string Delivery);
+public sealed record HostCaptureGeometry(double X, double Y, double Width, double Height);
+
+public sealed record HostCaptureRequest(
+    string Mode,
+    string Delivery,
+    string? TargetId = null,
+    HostCaptureGeometry? Geometry = null);
 
 public sealed record HostLogicalSize(double Width, double Height);
 
@@ -167,7 +173,7 @@ public static class PlatformProtocol
         }
 
         RequireExactProperties(parameters, "mode", "delivery", "targetId", "geometry");
-        _ = RequireNonEmptyString(parameters, "targetId", "Region target id");
+        var targetId = RequireNonEmptyString(parameters, "targetId", "Region target id");
         var geometry = RequireObject(parameters, "geometry", "Region geometry");
         RequireExactProperties(geometry, "coordinateSpace", "x", "y", "width", "height");
         if (RequireNonEmptyString(geometry, "coordinateSpace", "Region coordinate space")
@@ -177,11 +183,15 @@ public static class PlatformProtocol
                 "Region geometry must use target-logical coordinates.");
         }
 
-        RequireFiniteNumber(geometry, "x", positive: false);
-        RequireFiniteNumber(geometry, "y", positive: false);
-        RequireFiniteNumber(geometry, "width", positive: true);
-        RequireFiniteNumber(geometry, "height", positive: true);
-        return new HostCaptureRequest(mode, delivery);
+        var x = RequireFiniteNumber(geometry, "x", positive: false);
+        var y = RequireFiniteNumber(geometry, "y", positive: false);
+        var width = RequireFiniteNumber(geometry, "width", positive: true);
+        var height = RequireFiniteNumber(geometry, "height", positive: true);
+        return new HostCaptureRequest(
+            mode,
+            delivery,
+            targetId,
+            new HostCaptureGeometry(x, y, width, height));
     }
 
     private static ProtocolLineResult Success(string requestId, object result) =>
@@ -242,7 +252,7 @@ public static class PlatformProtocol
         return property.GetString()!;
     }
 
-    private static void RequireFiniteNumber(
+    private static double RequireFiniteNumber(
         JsonElement value,
         string propertyName,
         bool positive)
@@ -257,6 +267,8 @@ public static class PlatformProtocol
             throw new PlatformProtocolException(
                 $"Region {propertyName} must be {requirement}.");
         }
+
+        return number;
     }
 
     private static void RequireExactProperties(

@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace Lumiere.Windows.Capture;
 
 /// <summary>
-/// Owns one complete display-capture operation, from target resolution through delivery and teardown.
+/// Owns one complete capture operation, from target resolution through delivery and teardown.
 /// The platform Host maps protocol requests to this interface and never owns native frame resources.
 /// </summary>
 public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
@@ -91,6 +91,24 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
     public async Task<WindowsCaptureResult> CaptureDisplayAsync(
         WindowsCaptureRequest request,
         CancellationToken cancellationToken = default)
+        => await CaptureAsync(request, target: null, geometry: null, cancellationToken);
+
+    public async Task<WindowsCaptureResult> CaptureRegionAsync(
+        WindowsCaptureRequest request,
+        WindowsTargetCapability target,
+        WindowsRegionGeometry geometry,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentNullException.ThrowIfNull(geometry);
+        return await CaptureAsync(request, target, geometry, cancellationToken);
+    }
+
+    private async Task<WindowsCaptureResult> CaptureAsync(
+        WindowsCaptureRequest request,
+        WindowsTargetCapability? target,
+        WindowsRegionGeometry? geometry,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         ThrowIfDisposed();
@@ -116,7 +134,9 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
                 LoggerHolder.Value,
                 correlationId: request.CorrelationId);
 
-            var command = CaptureCommand.Fullscreen();
+            var command = target is null
+                ? CaptureCommand.Fullscreen()
+                : CaptureCommand.Region();
             var reservation = reserveCommand(command);
             if (!reservation.IsAccepted)
             {
@@ -126,7 +146,9 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
                     reservation.Readiness?.TechnicalDetail ?? "The Windows capture engine rejected the request.");
             }
 
-            return await CaptureReservedDisplayAsync(request, token);
+            return target is null
+                ? await CaptureReservedDisplayAsync(request, token)
+                : await CaptureReservedRegionAsync(request, target, geometry!, token);
         }
         catch (OperationCanceledException)
         {
@@ -135,7 +157,7 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
         catch (Exception exception)
         {
             DiagnosticContext.CaptureFailure(
-                stage: "DisplayCapture",
+                stage: target is null ? "DisplayCapture" : "RegionCapture",
                 userFacingState: "Capture failed",
                 technicalDetail: exception.Message,
                 correlationId: request.CorrelationId,
@@ -164,14 +186,66 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
                 ? WindowsCaptureOutcome.Unsupported
                 : selection.IsCanceled
                     ? WindowsCaptureOutcome.Cancelled
-                    : WindowsCaptureOutcome.Failed;
+                    : WindowsCaptureOutcome.Unavailable;
             return new WindowsCaptureResult(
                 outcome,
                 selection.Readiness.UserMessage,
                 selection.Readiness.TechnicalDetail ?? selection.Readiness.UserMessage);
         }
 
-        var target = selection.Target;
+        return await CaptureSelectedTargetAsync(
+            request,
+            selection.Target,
+            cropRegion: null,
+            cancellationToken);
+    }
+
+    private async Task<WindowsCaptureResult> CaptureReservedRegionAsync(
+        WindowsCaptureRequest request,
+        WindowsTargetCapability targetSnapshot,
+        WindowsRegionGeometry geometry,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var target = targetSnapshot.CreateCaptureTarget();
+            var cropRegion = RegionCropResolver.Resolve(geometry, targetSnapshot, target);
+            updateSessionState(CaptureSessionState.FromSelectionResult(
+                CaptureTargetSelectionResult.Selected(
+                    target,
+                    EngineReadinessStatus.Initializing(
+                        EngineReadinessStage.Capture,
+                        "Region target selected.",
+                        $"Resolved issued target {target.DisplayName}."))));
+            return await CaptureSelectedTargetAsync(
+                request,
+                target,
+                cropRegion,
+                cancellationToken);
+        }
+        catch (ArgumentOutOfRangeException exception)
+        {
+            return new WindowsCaptureResult(
+                WindowsCaptureOutcome.Unavailable,
+                "Region capture is unavailable",
+                exception.Message);
+        }
+        catch (InvalidOperationException exception)
+        {
+            return new WindowsCaptureResult(
+                WindowsCaptureOutcome.Unavailable,
+                "Region capture is unavailable",
+                exception.Message);
+        }
+    }
+
+    private async Task<WindowsCaptureResult> CaptureSelectedTargetAsync(
+        WindowsCaptureRequest request,
+        CaptureTarget target,
+        CropPixelRect? cropRegion,
+        CancellationToken cancellationToken)
+    {
         var hdrCapability = probeHdrCapability(target);
         var frameCompletion = new TaskCompletionSource<FrameCaptureResult>(
             TaskCreationOptions.RunContinuationsAsynchronously);
@@ -266,6 +340,7 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
             new OutputRequest
             {
                 Texture = texture,
+                CropRegion = cropRegion,
                 Delivery = request.Delivery,
                 SaveDirectory = request.SaveDirectory,
                 TimestampNaming = request.TimestampNaming,

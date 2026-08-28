@@ -13,7 +13,8 @@ internal static class Program
         using var loggerFactory = new StructuredStderrLoggerFactory(Console.Error);
         WindowsDisplayCaptureEngine.ConfigureLogging(loggerFactory);
         ILogger logger = loggerFactory.CreateLogger("Lumiere.Windows.Host.Protocol");
-        await using var operations = WindowsHostOperations.CreateDefault();
+        await using var operations = WindowsHostOperations.CreateDefault(
+            loggerFactory.CreateLogger("Lumiere.Windows.Host.Operations"));
 
         while (await Console.In.ReadLineAsync() is { } line)
         {
