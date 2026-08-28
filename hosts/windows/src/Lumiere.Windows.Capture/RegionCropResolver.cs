@@ -36,6 +36,11 @@ internal static class RegionCropResolver
         var scaleY = pixelHeight / logicalSize.Height;
         var left = Math.Clamp((int)Math.Floor(geometry.X * scaleX), 0, pixelWidth);
         var top = Math.Clamp((int)Math.Floor(geometry.Y * scaleY), 0, pixelHeight);
+        if (left >= pixelWidth || top >= pixelHeight)
+        {
+            throw new ArgumentOutOfRangeException(nameof(geometry), "Region geometry has no pixels inside the issued target.");
+        }
+
         var right = Math.Clamp(
             (int)Math.Ceiling((geometry.X + geometry.Width) * scaleX),
             left + 1,

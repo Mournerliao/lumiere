@@ -142,7 +142,7 @@ acceptance criteria and implementation status for each vertical slice.
   `fccf812`; this establishes those configured repository gates at that commit, not current-HEAD CI, Windows Host
   runtime or hardware behavior.
 - **Windows engine:** restore and Release build pass with warnings treated as errors;
-  Host 28, Capture 82, Graphics 43, and Interop 31 tests pass;
+  Host 28, Capture 83, Graphics 43, and Interop 31 tests pass;
   `dotnet format --verify-no-changes` passes.
 - **Windows integration:** the named Windows development machine built the Debug Host through the
   platform-neutral preparation entry point. The Release Host then completed a real JSON Lines

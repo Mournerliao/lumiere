@@ -70,4 +70,23 @@ public sealed class RegionCropResolverTests
             target,
             captureTarget));
     }
+
+    [Fact]
+    public void RejectsGeometryThatRoundsToPixelBoundary()
+    {
+        const double logicalWidth = 1706.6666666666667;
+        var captureTarget = CaptureTarget.CreateForTest(
+            new SizeInt32 { Width = 2560, Height = 1440 },
+            "scaled display",
+            CaptureTargetKind.Display);
+        var target = WindowsTargetCapability.CreateForTest(
+            WindowsTargetHdrState.Active,
+            new WindowsTargetLogicalSize(logicalWidth, 960),
+            captureTarget);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => RegionCropResolver.Resolve(
+            new WindowsRegionGeometry(Math.BitDecrement(logicalWidth), 10, double.Epsilon, 10),
+            target,
+            captureTarget));
+    }
 }
