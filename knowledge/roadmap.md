@@ -81,6 +81,10 @@ copy remains inside the approved HDR-aware/sRGB Visual Match claim boundary.
 
 Deliver a traditional Windows setup executable and a signed/notarized macOS artifact.
 Validate install, launch, upgrade, uninstall, and reinstall on non-development machines.
+The Windows setup must register a signed external-location sparse package for package
+identity, declare and request borderless Graphics Capture consent, suppress the WGC system
+border when allowed, and preserve bordered capture as the denied, unavailable, or
+unsupported fallback. Upgrade must retain a stable identity and uninstall must remove it.
 
 Release only after independent Windows and macOS repository, runtime, fixed-scene
 Visual Match, receiving-app, repeat-loop, and clean-exit verification passes. One platform's

@@ -57,7 +57,11 @@ only with a reconstructable native target snapshot; the token is consumed once a
 logical geometry becomes an outward-aligned native pixel crop without exposing a monitor handle.
 The development entry
 point builds its current Debug artifact, and Electron selects and supervises it through the
-shared native-process transport. The Windows Host adapter is complete through Issue #7;
+shared native-process transport. Unpackaged Windows development builds intentionally retain
+the WGC system capture border. Borderless capture is deferred to Milestone 1D, where the
+traditional installer will register a signed external-location sparse package, request
+`graphicsCaptureWithoutBorder` consent, and preserve the system border as the denied or
+unsupported fallback. The Windows Host adapter is complete through Issue #7;
 Issue #9 owns the remaining shared product surface and cross-platform product journeys.
 WinUI and the old validation/HDR10-JXR paths remain removed.
 
@@ -69,7 +73,7 @@ WinUI and the old validation/HDR10-JXR paths remain removed.
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
 | 1B. Windows host adapter | Complete ([#7](https://github.com/Mournerliao/lumiere/issues/7), [#10](https://github.com/Mournerliao/lumiere/issues/10)) | The v2 Host has strict JSON Lines handling, structured diagnostics, Electron supervision, target-aware HDR/logical-geometry capabilities, SDR-white-aware HDR Visual Match conversion, Display plus target-bound Region routing, Clipboard/Folder/Both delivery, sanitized protocol failures, deterministic teardown, and verified interactive HDR/SDR runtime journeys | None |
 | 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture surfaces, generated tokens, persisted capability-gated output, shortcut, and after-capture preferences, one main-process capture router, capability-gated tray/menu-bar, v2 target/delivery contract, shared Region Overlay, HiDPI-aware macOS geometry, and verified macOS display/region/after-capture journeys | Resolve and add the remaining independent settings slices, then complete the cross-platform product verification |
-| 1D. Distribution and release | Not started | Windows installer direction remains recorded | Windows installer, signed/notarized macOS artifact, clean-machine and hardware verification |
+| 1D. Distribution and release | Not started | The traditional Windows installer remains the primary path; borderless WGC requires a signed external-location sparse identity package and user consent | Implement identity-package registration/upgrade/removal and bordered fallback, produce the signed/notarized macOS artifact, then complete clean-machine and hardware verification |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
 | 3. Cross-platform HDR fidelity | Planned; not started | Fidelity is separated from artifact success and HDR preservation | Define support matrix/tolerances and run fixed-scene verification |
 
