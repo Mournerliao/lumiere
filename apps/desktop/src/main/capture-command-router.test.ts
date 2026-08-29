@@ -25,12 +25,47 @@ describe('CaptureCommandRouter', () => {
       hostAvailable: true,
       captureModes: ['display'],
       hdrStatus: 'unavailable',
+      advisoryNotice: {
+        tone: 'caution',
+        title: 'HDR-aware capture is unavailable for this display',
+        detail: 'Capture is still available with sRGB Visual Match.',
+      },
       output: {
         delivery: 'both',
         label: 'Clipboard and folder',
         location: '~/Pictures/Lumiere',
       },
     })
+  })
+
+  it('suppresses optional HDR status reminders without hiding the target status', async () => {
+    const host = new StubHost({
+      ...availableCapabilities(),
+      hdrCapture: 'unvalidated',
+    })
+
+    const snapshot = await new CaptureCommandRouter(
+      'macos',
+      host,
+      preferences('both', false),
+    ).getSurfaceSnapshot()
+
+    expect(snapshot).toMatchObject({
+      hdrStatus: 'unvalidated',
+    })
+    expect(snapshot).not.toHaveProperty('advisoryNotice')
+  })
+
+  it('does not project an HDR advisory when the Host exposes no capture mode', async () => {
+    const host = new StubHost({
+      ...availableCapabilities(),
+      captureModes: [],
+      hdrCapture: 'unavailable',
+    })
+
+    const snapshot = await new CaptureCommandRouter('macos', host).getSurfaceSnapshot()
+
+    expect(snapshot).not.toHaveProperty('advisoryNotice')
   })
 
   it('routes display capture to the clipboard-and-folder default', async () => {
@@ -244,7 +279,7 @@ describe('CaptureCommandRouter', () => {
     })
     let delivery: 'clipboard' | 'folder' | 'both' = 'both'
     const router = new CaptureCommandRouter('macos', host, {
-      getCapturePreferences: () => ({ delivery }),
+      getCapturePreferences: () => ({ delivery, hdrStatusReminders: true }),
     })
 
     delivery = 'clipboard'
@@ -289,6 +324,6 @@ function availableCapabilities(): PlatformCapabilities {
   }
 }
 
-function preferences(delivery: 'clipboard' | 'folder' | 'both') {
-  return { getCapturePreferences: () => ({ delivery }) }
+function preferences(delivery: 'clipboard' | 'folder' | 'both', hdrStatusReminders = true) {
+  return { getCapturePreferences: () => ({ delivery, hdrStatusReminders }) }
 }

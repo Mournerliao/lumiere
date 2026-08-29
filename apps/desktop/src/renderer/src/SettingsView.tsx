@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/motion/select'
+import { Switch } from '@/components/motion/switch'
 
 const outputDeliveryLabels: Record<OutputDelivery, string> = {
   clipboard: 'Clipboard',
@@ -49,6 +50,7 @@ interface SettingsViewProps {
   onDone: () => void
   onOutputDeliveryChange: (delivery: OutputDelivery) => void
   onAfterCaptureBehaviorChange: (behavior: AfterCaptureBehavior) => void
+  onHdrStatusRemindersChange: (enabled: boolean) => void
   onShortcutChange: (update: ShortcutUpdate) => Promise<void>
   onShortcutRecordingChange: (recording: boolean) => Promise<void>
 }
@@ -63,6 +65,7 @@ export function SettingsView({
   onDone,
   onOutputDeliveryChange,
   onAfterCaptureBehaviorChange,
+  onHdrStatusRemindersChange,
   onShortcutChange,
   onShortcutRecordingChange,
 }: SettingsViewProps): React.JSX.Element {
@@ -139,6 +142,7 @@ export function SettingsView({
           <CaptureSettings
             surfaceSnapshot={surfaceSnapshot}
             afterCaptureBehavior={snapshot?.afterCaptureBehavior ?? 'do-nothing'}
+            hdrStatusReminders={snapshot?.hdrStatusReminders ?? true}
             isSaving={isSaving}
             shortcuts={snapshot?.captureShortcuts ?? null}
             platform={platform}
@@ -146,6 +150,7 @@ export function SettingsView({
             onShortcutChange={onShortcutChange}
             onShortcutRecordingChange={onShortcutRecordingChange}
             onAfterCaptureBehaviorChange={onAfterCaptureBehaviorChange}
+            onHdrStatusRemindersChange={onHdrStatusRemindersChange}
           />
         ) : null}
         {section === 'system' ? <SystemSettings snapshot={surfaceSnapshot} /> : null}
@@ -232,6 +237,7 @@ function OutputSettings({
 function CaptureSettings({
   surfaceSnapshot,
   afterCaptureBehavior,
+  hdrStatusReminders,
   isSaving,
   shortcuts,
   platform,
@@ -239,9 +245,11 @@ function CaptureSettings({
   onShortcutChange,
   onShortcutRecordingChange,
   onAfterCaptureBehaviorChange,
+  onHdrStatusRemindersChange,
 }: {
   surfaceSnapshot: CaptureSurfaceSnapshot | null
   afterCaptureBehavior: AfterCaptureBehavior
+  hdrStatusReminders: boolean
   isSaving: boolean
   shortcuts: SettingsSnapshot['captureShortcuts'] | null
   platform: LumierePlatform
@@ -249,6 +257,7 @@ function CaptureSettings({
   onShortcutChange: (update: ShortcutUpdate) => Promise<void>
   onShortcutRecordingChange: (recording: boolean) => Promise<void>
   onAfterCaptureBehaviorChange: (behavior: AfterCaptureBehavior) => void
+  onHdrStatusRemindersChange: (enabled: boolean) => void
 }): React.JSX.Element {
   const regionAvailable = surfaceSnapshot?.captureModes.includes('region') === true
   const displayAvailable = surfaceSnapshot?.captureModes.includes('display') === true
@@ -299,12 +308,19 @@ function CaptureSettings({
           </SelectContent>
         </Select>
       </div>
-      <SettingsRow
-        label="HDR status"
-        hint="Never blocks capture"
-        value={hdrStatusLabel(surfaceSnapshot)}
-        tone={surfaceSnapshot?.hdrStatus === 'ready' ? 'ready' : 'muted'}
-      />
+      <div className="settings-row">
+        <span className="settings-row-copy">
+          <span className="settings-row-label">HDR status reminders</span>
+          <span className="settings-row-hint">Non-blocking display status alerts</span>
+        </span>
+        <Switch
+          checked={hdrStatusReminders}
+          disabled={isSaving}
+          ariaLabel="HDR status reminders"
+          className="settings-switch"
+          onCheckedChange={onHdrStatusRemindersChange}
+        />
+      </div>
     </div>
   )
 }
@@ -486,13 +502,6 @@ function SettingsRow({
       </span>
     </div>
   )
-}
-
-function hdrStatusLabel(snapshot: CaptureSurfaceSnapshot | null): string {
-  if (!snapshot) return 'Checking…'
-  if (snapshot.hdrStatus === 'ready') return 'Ready'
-  if (snapshot.hdrStatus === 'unvalidated') return 'Not verified'
-  return 'Unavailable'
 }
 
 function OutputIcon(): React.JSX.Element {

@@ -143,7 +143,8 @@ function MainWindow({
       ? result.notice
       : loadFailed
         ? CAPTURE_LOAD_FAILURE
-        : snapshot?.blockingNotice
+        : (snapshot?.blockingNotice ?? snapshot?.advisoryNotice)
+  const captureBlocked = loadFailed || snapshot?.blockingNotice !== undefined
 
   return (
     <main className="app-shell">
@@ -154,7 +155,10 @@ function MainWindow({
         <span className="window-title">Lumiere</span>
       </header>
 
-      <section className="capture-panel" aria-label="Capture controls">
+      <section
+        className={`capture-panel${activeNotice ? ' capture-panel--with-notice' : ''}`}
+        aria-label="Capture controls"
+      >
         {activeNotice ? <Notice notice={activeNotice} /> : null}
 
         <div className="capture-actions">
@@ -229,9 +233,9 @@ function MainWindow({
         <span className="status-message">
           {statusMessage({
             activeNotice,
+            captureBlocked,
             interactionHint,
             capturingMode,
-            loadFailed,
             result,
             snapshot,
           })}
@@ -310,6 +314,18 @@ function SettingsWindow({ onDone }: { onDone: () => void }): React.JSX.Element {
     }
   }
 
+  const setHdrStatusReminders = async (enabled: boolean): Promise<void> => {
+    setIsSaving(true)
+    setError(null)
+    try {
+      setSnapshot(await window.lumierePlatform.setHdrStatusReminders(enabled))
+    } catch {
+      setError('HDR status reminders could not be saved. Try again.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const setCaptureShortcut = async (update: ShortcutUpdate): Promise<void> => {
     setSavingShortcut(update.mode)
     setError(null)
@@ -338,6 +354,7 @@ function SettingsWindow({ onDone }: { onDone: () => void }): React.JSX.Element {
       onDone={onDone}
       onOutputDeliveryChange={(delivery) => void setOutputDelivery(delivery)}
       onAfterCaptureBehaviorChange={(behavior) => void setAfterCaptureBehavior(behavior)}
+      onHdrStatusRemindersChange={(enabled) => void setHdrStatusReminders(enabled)}
       onShortcutChange={setCaptureShortcut}
       onShortcutRecordingChange={(recording) => {
         if (recording) setError(null)
@@ -363,16 +380,16 @@ interface StatusMessageInput {
   snapshot: CaptureSurfaceSnapshot | null
   result: CaptureCommandResult | null
   activeNotice: CaptureNotice | undefined
+  captureBlocked: boolean
   interactionHint: string | null
   capturingMode: 'region' | 'display' | null
-  loadFailed: boolean
 }
 
 function statusMessage({
   activeNotice,
+  captureBlocked,
   interactionHint,
   capturingMode,
-  loadFailed,
   result,
   snapshot,
 }: StatusMessageInput): string {
@@ -382,8 +399,11 @@ function statusMessage({
   if (result) {
     return result.feedback
   }
-  if (activeNotice || loadFailed) {
+  if (captureBlocked) {
     return 'Capture disabled'
+  }
+  if (activeNotice) {
+    return 'Capture available'
   }
   if (interactionHint) {
     return interactionHint
@@ -393,9 +413,6 @@ function statusMessage({
   }
   if (snapshot.hdrStatus === 'ready') {
     return 'HDR-aware capture ready'
-  }
-  if (snapshot.hdrStatus === 'unvalidated') {
-    return 'Display environment not verified'
   }
   return 'Display capture ready'
 }
@@ -407,7 +424,7 @@ function statusTone(
   if (activeNotice?.tone === 'critical') {
     return 'critical'
   }
-  if (!snapshot || activeNotice || snapshot.hdrStatus === 'unvalidated') {
+  if (!snapshot || activeNotice) {
     return 'caution'
   }
   return 'ready'

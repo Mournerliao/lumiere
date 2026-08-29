@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   availableOutputDeliveries,
   parseAfterCaptureBehavior,
+  parseHdrStatusReminders,
   parseOutputDelivery,
   SettingsContractError,
 } from './settings-command'
@@ -39,6 +40,17 @@ describe('settings command contract', () => {
     'rejects an invalid after-capture behavior',
     (value) => {
       expect(() => parseAfterCaptureBehavior(value)).toThrow(SettingsContractError)
+    },
+  )
+
+  it.each([true, false])('accepts %s as an HDR status reminder preference', (value) => {
+    expect(parseHdrStatusReminders(value)).toBe(value)
+  })
+
+  it.each([undefined, null, 'enabled', 1])(
+    'rejects an invalid HDR status reminder preference',
+    (value) => {
+      expect(() => parseHdrStatusReminders(value)).toThrow(SettingsContractError)
     },
   )
 })

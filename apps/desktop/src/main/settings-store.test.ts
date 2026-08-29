@@ -16,9 +16,13 @@ describe('SettingsStore', () => {
 
     await store.load()
 
-    expect(store.getCapturePreferences()).toEqual({ delivery: 'both' })
+    expect(store.getCapturePreferences()).toEqual({
+      delivery: 'both',
+      hdrStatusReminders: true,
+    })
     expect(store.getCaptureShortcuts()).toEqual({ region: null, display: null })
     expect(store.getAfterCaptureBehavior()).toBe('do-nothing')
+    expect(store.getHdrStatusReminders()).toBe(true)
   })
 
   it('persists an output delivery and restores it in a new store', async () => {
@@ -57,7 +61,7 @@ describe('SettingsStore', () => {
       region: 'Command+Shift+L',
       display: null,
     })
-    await expect(readFile(filePath, 'utf8')).resolves.toContain('"version": 3')
+    await expect(readFile(filePath, 'utf8')).resolves.toContain('"version": 4')
   })
 
   it('migrates v2 settings and persists an after-capture behavior', async () => {
@@ -85,7 +89,32 @@ describe('SettingsStore', () => {
       display: null,
     })
     expect(restartedStore.getAfterCaptureBehavior()).toBe('show-in-folder')
-    await expect(readFile(filePath, 'utf8')).resolves.toContain('"version": 3')
+    await expect(readFile(filePath, 'utf8')).resolves.toContain('"version": 4')
+  })
+
+  it('migrates v3 settings and persists the HDR status reminder preference', async () => {
+    const filePath = await settingsPath()
+    await writeFile(
+      filePath,
+      JSON.stringify({
+        version: 3,
+        outputDelivery: 'both',
+        captureShortcuts: { region: null, display: null },
+        afterCaptureBehavior: 'show-in-folder',
+      }),
+      'utf8',
+    )
+    const store = new SettingsStore(filePath)
+    await store.load()
+
+    expect(store.getHdrStatusReminders()).toBe(true)
+    await store.setHdrStatusReminders(false)
+
+    const restartedStore = new SettingsStore(filePath)
+    await restartedStore.load()
+    expect(restartedStore.getAfterCaptureBehavior()).toBe('show-in-folder')
+    expect(restartedStore.getHdrStatusReminders()).toBe(false)
+    await expect(readFile(filePath, 'utf8')).resolves.toContain('"version": 4')
   })
 })
 

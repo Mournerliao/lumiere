@@ -30,7 +30,7 @@ folder adapters. The macOS Host now derives Display and Region output dimensions
 selected ScreenCaptureKit filter's point-to-pixel scale, so scaled 4K and Retina targets
 produce backing-pixel-density artifacts instead of one pixel per logical point. Region and
 Display now have independent opt-in global shortcut settings;
-main owns atomic registration, conflict handling, v1/v2-to-v3 settings migration, and recording
+main owns atomic registration, conflict handling, versioned settings migration, and recording
 suspension, while the tray/menu-bar projects capability-gated Region/Display commands,
 registered accelerators, Open, Settings, and Quit through the same capture router. The macOS
 development launch now incrementally builds the current Swift Debug Host and resolves it
@@ -38,7 +38,13 @@ ahead of any stale Release artifact; explicit Host overrides remain authoritativ
 Settings surface now also persists `Do nothing` or `Show in folder` after-capture behavior
 through validated main-owned IPC. One main-process completion path applies that preference
 to main-window, shortcut, and tray/menu-bar captures without changing artifact success when
-Finder or Explorer cannot reveal an already-saved file. The Windows engine now exposes one
+Finder or Explorer cannot reveal an already-saved file. The shared Settings surface now also
+persists whether non-blocking HDR status reminders are shown. The default remains on; validated
+main-owned IPC writes the setting, the capture router
+projects an advisory only when the Host still declares capture available, and disabling the
+preference hides neither the underlying target status nor any blocking Host, permission, or
+capture failure. Settings v4 migrates v1 through v3 values with the reminder default intact.
+The Windows engine now exposes one
 deep capture operation that owns target resolution and target-bound Region cropping,
 target-aware HDR probing, first-frame acquisition, one sRGB Visual Match conversion,
 delivery, cancellation, and teardown. On HDR-active targets, that conversion now resolves
@@ -72,7 +78,7 @@ WinUI and the old validation/HDR10-JXR paths remain removed.
 | 0. Foundation | Complete | Final layout, secure shell, language-neutral protocol, paused Windows engine; macOS and Windows CI pass | None |
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
 | 1B. Windows host adapter | Complete ([#7](https://github.com/Mournerliao/lumiere/issues/7), [#10](https://github.com/Mournerliao/lumiere/issues/10)) | The v2 Host has strict JSON Lines handling, structured diagnostics, Electron supervision, target-aware HDR/logical-geometry capabilities, SDR-white-aware HDR Visual Match conversion, Display plus target-bound Region routing, Clipboard/Folder/Both delivery, sanitized protocol failures, deterministic teardown, and verified interactive HDR/SDR runtime journeys | None |
-| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture surfaces, generated tokens, persisted capability-gated output, shortcut, and after-capture preferences, one main-process capture router, capability-gated tray/menu-bar, v2 target/delivery contract, shared Region Overlay, HiDPI-aware macOS geometry, and verified macOS display/region/after-capture journeys | Resolve and add the remaining independent settings slices, then complete the cross-platform product verification |
+| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture/HDR-reminder surfaces, generated tokens, persisted capability-gated output, shortcut, after-capture, and HDR-reminder preferences, one main-process capture router, capability-gated tray/menu-bar, v2 target/delivery contract, shared Region Overlay, HiDPI-aware macOS geometry, and verified macOS display/region/after-capture journeys | Resolve custom save-directory ownership separately, then complete the cross-platform product verification |
 | 1D. Distribution and release | Not started | The traditional Windows installer remains the primary path; borderless WGC requires a signed external-location sparse identity package and user consent | Implement identity-package registration/upgrade/removal and bordered fallback, produce the signed/notarized macOS artifact, then complete clean-machine and hardware verification |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
 | 3. Cross-platform HDR fidelity | Planned; not started | Fidelity is separated from artifact success and HDR preservation | Define support matrix/tolerances and run fixed-scene verification |
@@ -82,12 +88,17 @@ acceptance criteria and implementation status for each vertical slice.
 
 ## Verification Truth
 
-- **Repository:** frozen install, layout and TypeScript checks, seventy-three cross-platform
+- **Repository:** frozen install, layout and TypeScript checks, eighty-two cross-platform
   shell/protocol/process/settings/UI tests, three macOS path tests, twenty-five Swift
   protocol/capability/permission/diagnostic/geometry tests plus two native-delivery tests, twenty-eight
   Windows Host protocol/lifecycle tests, and production builds pass locally on the named Windows
   machine and macOS. Shared, macOS, and Windows test gates are
   explicit and platform-scoped.
+  The HDR-reminder slice passed all eighty-two shared tests, repository checks, and the production
+  Electron build on the named Windows machine. A 480×370 local renderer observation covered the
+  enabled advisory, Capture Settings switch, disabled reminder state, and stable no-scroll layout;
+  it used typed local preload-state fixtures and therefore establishes renderer behavior only, not
+  Windows or macOS runtime persistence.
 - **macOS development runtime:** the Electron display action drove ScreenCaptureKit to
   RGBA8 PNG files with alpha and an embedded sRGB IEC61966-2.1 profile on an Apple
   Silicon Mac. SDR capture was observed at 2560×1440 on an external display. Native
@@ -215,9 +226,10 @@ may expose one frontier per environment-eligible lane while each writer or workt
 advances only one current working Issue at a time.
 
 - **Shared/macOS lane — [Issue #9](https://github.com/Mournerliao/lumiere/issues/9):**
-  resolve the HDR-alert product model and implement that independent Settings slice through
-  validated main-owned IPC. Keep custom save-directory behavior separate because it may require
-  a separately reviewed protocol change.
+  resolve custom save-directory ownership and any required platform-host contract change before
+  implementing that independent Settings slice. The filename rule remains fixed and already has
+  an honest read-only Settings projection. Then complete the remaining cross-platform product
+  journeys required to close the Issue.
 - **Windows lane — [Issues #7](https://github.com/Mournerliao/lumiere/issues/7) and
   [#10](https://github.com/Mournerliao/lumiere/issues/10):** complete;
   the named Windows machine passed the required Display/Region, Clipboard/Folder/Both,

@@ -14,6 +14,7 @@ describe('SettingsView', () => {
             display: { accelerator: null, status: 'unconfigured' },
           },
           afterCaptureBehavior: 'do-nothing',
+          hdrStatusReminders: true,
         }}
         surfaceSnapshot={{
           platform: 'macos',
@@ -33,6 +34,7 @@ describe('SettingsView', () => {
         onDone={() => undefined}
         onOutputDeliveryChange={() => undefined}
         onAfterCaptureBehaviorChange={() => undefined}
+        onHdrStatusRemindersChange={() => undefined}
         onShortcutChange={() => Promise.resolve()}
         onShortcutRecordingChange={() => Promise.resolve()}
       />,

@@ -6,6 +6,7 @@ export const settingsCommandChannels = {
   getSnapshot: 'settings:get-snapshot',
   setAfterCaptureBehavior: 'settings:set-after-capture-behavior',
   setCaptureShortcut: 'settings:set-capture-shortcut',
+  setHdrStatusReminders: 'settings:set-hdr-status-reminders',
   setOutputDelivery: 'settings:set-output-delivery',
   setShortcutRecording: 'settings:set-shortcut-recording',
   showRequested: 'settings:show-requested',
@@ -20,6 +21,7 @@ export interface SettingsSnapshot {
   availableOutputDeliveries: readonly OutputDelivery[]
   captureShortcuts: CaptureShortcutSnapshot
   afterCaptureBehavior: AfterCaptureBehavior
+  hdrStatusReminders: boolean
 }
 
 export type ShortcutUpdateResult =
@@ -29,6 +31,7 @@ export interface LumiereSettingsApi {
   getSettingsSnapshot(): Promise<SettingsSnapshot>
   setOutputDelivery(delivery: OutputDelivery): Promise<SettingsSnapshot>
   setAfterCaptureBehavior(behavior: AfterCaptureBehavior): Promise<SettingsSnapshot>
+  setHdrStatusReminders(enabled: boolean): Promise<SettingsSnapshot>
   setCaptureShortcut(update: ShortcutUpdate): Promise<ShortcutUpdateResult>
   setShortcutRecording(recording: boolean): Promise<void>
   onSettingsChanged(listener: (snapshot: SettingsSnapshot) => void): () => void
@@ -47,6 +50,13 @@ export function parseAfterCaptureBehavior(value: unknown): AfterCaptureBehavior 
     throw new SettingsContractError('After-capture behavior must be do-nothing or show-in-folder.')
   }
   return value as AfterCaptureBehavior
+}
+
+export function parseHdrStatusReminders(value: unknown): boolean {
+  if (typeof value !== 'boolean') {
+    throw new SettingsContractError('HDR status reminders must be enabled or disabled.')
+  }
+  return value
 }
 
 export function availableOutputDeliveries(

@@ -212,6 +212,12 @@ button {
   padding: var(--Lumiere-Dark-space5);
 }
 
+.capture-panel--with-notice {
+  gap: var(--Lumiere-Dark-space3);
+  padding-top: var(--Lumiere-Dark-space4);
+  padding-bottom: var(--Lumiere-Dark-space4);
+}
+
 .notice {
   padding: 11px 12px;
   border: 1px solid;
@@ -588,6 +594,56 @@ button {
   line-height: 1;
 }
 
+.settings-switch {
+  display: inline-flex;
+  -webkit-app-region: no-drag;
+}
+
+.settings-switch > button {
+  width: 34px;
+  height: 20px;
+  padding: 3px;
+  border: 1px solid var(--border-default);
+  border-radius: 999px;
+  background: var(--surface-raised);
+  cursor: pointer;
+  box-shadow: none;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.settings-switch > button > div,
+.settings-switch > button > div > div {
+  width: 12px;
+  height: 12px;
+}
+
+.settings-switch > button > div {
+  background: var(--text-secondary);
+  box-shadow: none;
+}
+
+.settings-switch > button[data-state='checked'] {
+  border-color: var(--accent-border);
+  background: var(--accent-base);
+}
+
+.settings-switch > button[data-state='checked'] > div {
+  background: var(--text-on-accent);
+}
+
+.settings-switch > button:focus-visible {
+  outline: 2px solid var(--accent-base);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.settings-switch > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .shortcut-setting {
   display: grid;
 }
@@ -737,7 +793,8 @@ button {
   .settings-done,
   .settings-dock-item,
   .settings-select-trigger,
-  .settings-select-item {
+  .settings-select-item,
+  .settings-switch > button {
     transition: none;
   }
 

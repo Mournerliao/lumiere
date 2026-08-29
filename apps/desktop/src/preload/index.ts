@@ -33,6 +33,8 @@ const platformApi: LumiereRendererApi = {
   getSettingsSnapshot: () => ipcRenderer.invoke(settingsCommandChannels.getSnapshot),
   setAfterCaptureBehavior: (behavior) =>
     ipcRenderer.invoke(settingsCommandChannels.setAfterCaptureBehavior, behavior),
+  setHdrStatusReminders: (enabled) =>
+    ipcRenderer.invoke(settingsCommandChannels.setHdrStatusReminders, enabled),
   setOutputDelivery: (delivery) =>
     ipcRenderer.invoke(settingsCommandChannels.setOutputDelivery, delivery),
   setCaptureShortcut: (update) =>

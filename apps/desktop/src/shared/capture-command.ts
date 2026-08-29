@@ -42,6 +42,7 @@ export interface CaptureSurfaceSnapshot {
   hdrStatus: ProductHdrStatus
   output: CaptureOutputSummary
   blockingNotice?: CaptureNotice
+  advisoryNotice?: CaptureNotice
 }
 
 export type CaptureCommandResult =

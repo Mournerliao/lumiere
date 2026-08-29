@@ -19,6 +19,7 @@ import { deliveryTargetsFor } from '../shared/platform-contract'
 
 export interface CapturePreferences {
   delivery: OutputDelivery
+  hdrStatusReminders: boolean
 }
 
 export interface CapturePreferencesReader {
@@ -29,7 +30,7 @@ export type RegionCapturePreparation =
   { status: 'ready'; target: CaptureTarget } | { status: 'failed'; result: CaptureCommandResult }
 
 const defaultPreferences: CapturePreferencesReader = {
-  getCapturePreferences: () => ({ delivery: 'both' }),
+  getCapturePreferences: () => ({ delivery: 'both', hdrStatusReminders: true }),
 }
 
 export class CaptureCommandRouter {
@@ -42,8 +43,13 @@ export class CaptureCommandRouter {
   ) {}
 
   public async getSurfaceSnapshot(): Promise<CaptureSurfaceSnapshot> {
-    const { delivery } = this.preferences.getCapturePreferences()
-    return projectSurfaceSnapshot(this.platform, delivery, await this.host.getCapabilities())
+    const { delivery, hdrStatusReminders } = this.preferences.getCapturePreferences()
+    return projectSurfaceSnapshot(
+      this.platform,
+      delivery,
+      hdrStatusReminders,
+      await this.host.getCapabilities(),
+    )
   }
 
   public async captureDisplay(): Promise<CaptureCommandResult> {
@@ -180,14 +186,16 @@ function captureFailed(): CaptureCommandResult {
 function projectSurfaceSnapshot(
   platform: LumierePlatform,
   delivery: OutputDelivery,
+  hdrStatusReminders: boolean,
   capabilities: PlatformCapabilities,
 ): CaptureSurfaceSnapshot {
   const hostAvailable = capabilities.hostStatus === 'available'
+  const hdrStatus = projectHdrStatus(capabilities.hdrCapture)
   return {
     platform,
     hostAvailable,
     captureModes: capabilities.captureModes,
-    hdrStatus: projectHdrStatus(capabilities.hdrCapture),
+    hdrStatus,
     output: outputSummary(platform, delivery),
     ...(!hostAvailable
       ? {
@@ -198,7 +206,27 @@ function projectSurfaceSnapshot(
           },
         }
       : {}),
+    ...(hostAvailable &&
+    capabilities.captureModes.length > 0 &&
+    hdrStatusReminders &&
+    hdrStatus !== 'ready'
+      ? { advisoryNotice: hdrAdvisoryNotice(hdrStatus) }
+      : {}),
   }
+}
+
+function hdrAdvisoryNotice(status: Exclude<ProductHdrStatus, 'ready'>): CaptureNotice {
+  return status === 'unvalidated'
+    ? {
+        tone: 'caution',
+        title: 'This display has not been verified',
+        detail: 'Capture is still available with sRGB Visual Match.',
+      }
+    : {
+        tone: 'caution',
+        title: 'HDR-aware capture is unavailable for this display',
+        detail: 'Capture is still available with sRGB Visual Match.',
+      }
 }
 
 function projectHdrStatus(value: PlatformCapabilities['hdrCapture']): ProductHdrStatus {

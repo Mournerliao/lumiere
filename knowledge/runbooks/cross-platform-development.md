@@ -66,6 +66,7 @@ Installed beUI components:
 - `button-base`
 - `dock`
 - `select`
+- `switch`
 
 Preview and add a component from the live registry:
 

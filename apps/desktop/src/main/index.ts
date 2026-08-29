@@ -23,6 +23,7 @@ import {
 import {
   availableOutputDeliveries,
   parseAfterCaptureBehavior,
+  parseHdrStatusReminders,
   parseOutputDelivery,
   settingsCommandChannels,
   type SettingsSnapshot,
@@ -302,6 +303,21 @@ function registerIpc(): void {
     return nextSnapshot
   })
 
+  ipcMain.handle(settingsCommandChannels.setHdrStatusReminders, async (event, ...args) => {
+    assertTrustedWindow(event, mainWindow)
+    if (args.length !== 1) {
+      throw new Error('Expected one HDR status reminder argument.')
+    }
+    const enabled = parseHdrStatusReminders(args[0])
+    if (!settingsStore) {
+      throw new Error('Settings are not ready.')
+    }
+    await settingsStore.setHdrStatusReminders(enabled)
+    const nextSnapshot = await getSettingsSnapshot()
+    broadcastSettingsChanged(nextSnapshot)
+    return nextSnapshot
+  })
+
   ipcMain.handle(settingsCommandChannels.setCaptureShortcut, async (event, ...args) => {
     assertTrustedWindow(event, mainWindow)
     if (args.length !== 1) {
@@ -513,6 +529,7 @@ async function getSettingsSnapshot(): Promise<SettingsSnapshot> {
     outputDelivery: settingsStore.getOutputDelivery(),
     availableOutputDeliveries: availableOutputDeliveries(capabilities.deliveryTargets),
     afterCaptureBehavior: settingsStore.getAfterCaptureBehavior(),
+    hdrStatusReminders: settingsStore.getHdrStatusReminders(),
     captureShortcuts: shortcutService?.getSnapshot() ?? {
       region: { accelerator: null, status: 'unconfigured' },
       display: { accelerator: null, status: 'unconfigured' },
