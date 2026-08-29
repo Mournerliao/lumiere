@@ -11,6 +11,9 @@ internal sealed record OutputRequest
 
     public CropPixelRect? CropRegion { get; init; }
 
+    public SrgbVisualMatchConversionContext VisualMatchContext { get; init; } =
+        SrgbVisualMatchConversionContext.ForSdrDisplay();
+
     public OutputTarget Delivery { get; init; } = OutputTarget.Clipboard;
 
     public bool CopyAsImage { get; init; } = true;

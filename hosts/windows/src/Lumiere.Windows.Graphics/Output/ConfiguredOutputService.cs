@@ -58,6 +58,7 @@ internal sealed class ConfiguredOutputService : IOutputService
         var artifact = await encoder.EncodeArtifactAsync(
             request.Texture,
             request.CropRegion,
+            request.VisualMatchContext,
             cancellationToken);
 
         var results = new List<OutputTargetResult>(outputs.Length);

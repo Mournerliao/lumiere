@@ -86,6 +86,28 @@ public sealed class HdrDisplayCapabilityTests
     }
 
     [Fact]
+    public void SelectForTarget_PropagatesMatchedDisplaySdrWhiteLevel()
+    {
+        var capability = HdrDisplayCapability.SelectForTarget(
+            [
+                new HdrDisplayOutputSnapshot(
+                    DeviceName: "HDR Display",
+                    Left: 0,
+                    Top: 0,
+                    Width: 3840,
+                    Height: 2160,
+                    ColorSpace: ColorSpaceType.RgbFullG2084NoneP2020,
+                    SdrWhiteLevelInNits: 240f),
+            ],
+            targetDisplayName: "HDR Display",
+            targetWidth: 3840,
+            targetHeight: 2160);
+
+        Assert.True(capability.IsHdrActive);
+        Assert.Equal(240f, capability.SdrWhiteLevelInNits);
+    }
+
+    [Fact]
     public void SelectForTarget_UsesSizeWhenNameIsNotAvailable()
     {
         var capability = HdrDisplayCapability.SelectForTarget(

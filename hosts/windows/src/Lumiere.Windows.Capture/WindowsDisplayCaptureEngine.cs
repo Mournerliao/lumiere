@@ -341,6 +341,7 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
             {
                 Texture = texture,
                 CropRegion = cropRegion,
+                VisualMatchContext = ResolveVisualMatchContext(hdrCapability),
                 Delivery = request.Delivery,
                 SaveDirectory = request.SaveDirectory,
                 TimestampNaming = request.TimestampNaming,
@@ -355,6 +356,23 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
             outputResult.TechnicalDetail,
             hdrCapability,
             outputResult);
+    }
+
+    private static SrgbVisualMatchConversionContext ResolveVisualMatchContext(
+        HdrDisplayCapability hdrCapability)
+    {
+        if (!hdrCapability.IsHdrActive)
+        {
+            return SrgbVisualMatchConversionContext.ForSdrDisplay();
+        }
+
+        if (hdrCapability.SdrWhiteLevelInNits is not { } sdrWhiteLevelInNits)
+        {
+            throw new OutputArtifactEncodingException(
+                "The HDR target's SDR white level is unavailable; sRGB Visual Match conversion cannot be validated.");
+        }
+
+        return SrgbVisualMatchConversionContext.ForHdrDisplay(sdrWhiteLevelInNits);
     }
 
     private static WindowsCaptureResult Cancelled(string detail) =>

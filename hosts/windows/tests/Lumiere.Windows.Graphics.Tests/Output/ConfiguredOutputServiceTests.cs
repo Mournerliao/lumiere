@@ -54,6 +54,7 @@ public sealed class ConfiguredOutputServiceTests
         public Task<OutputEncodedArtifact> EncodeArtifactAsync(
             CapturedFrameTexture texture,
             CropPixelRect? cropRegion,
+            SrgbVisualMatchConversionContext context,
             CancellationToken cancellationToken = default)
         {
             EncodeCount++;
@@ -66,6 +67,7 @@ public sealed class ConfiguredOutputServiceTests
         public Task<OutputEncodedArtifact> EncodeArtifactAsync(
             CapturedFrameTexture texture,
             CropPixelRect? cropRegion,
+            SrgbVisualMatchConversionContext context,
             CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException("encoding failed");
     }

@@ -1,3 +1,4 @@
+using Lumiere.Windows.Interop;
 using Lumiere.Windows.Interop.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Vortice.DXGI;
@@ -25,7 +26,8 @@ public sealed record HdrDisplayCapability(
     HdrDisplayState State,
     ColorSpaceType? DisplayColorSpace,
     string? DeviceName,
-    HdrDisplayMatchKind MatchKind)
+    HdrDisplayMatchKind MatchKind,
+    float? SdrWhiteLevelInNits = null)
 {
     private static readonly ILogger Logger = LumiereLoggerFactory.CreateLogger(LogCategories.Graphics);
 
@@ -150,18 +152,35 @@ public sealed record HdrDisplayCapability(
                 var desc = output6.Description1;
                 var colorSpace = desc.ColorSpace;
                 var deviceName = desc.DeviceName;
+                float? sdrWhiteLevelInNits = null;
+                if (IsHdrColorSpace(colorSpace))
+                {
+                    try
+                    {
+                        sdrWhiteLevelInNits = SdrWhiteLevelInterop.GetForDisplayName(deviceName);
+                    }
+                    catch (Exception exception)
+                    {
+                        Logger.LogWarning(
+                            exception,
+                            "HDR display probe: SDR white-level query failed for deviceName={DeviceName}.",
+                            deviceName);
+                    }
+                }
+
                 var snapshot = new HdrDisplayOutputSnapshot(
                     deviceName,
                     desc.DesktopCoordinates.Left,
                     desc.DesktopCoordinates.Top,
                     desc.DesktopCoordinates.Right - desc.DesktopCoordinates.Left,
                     desc.DesktopCoordinates.Bottom - desc.DesktopCoordinates.Top,
-                    colorSpace);
+                    colorSpace,
+                    sdrWhiteLevelInNits);
                 var capability = FromOutputSnapshot(snapshot, HdrDisplayMatchKind.Unspecified);
 
                 Logger.LogDebug(
-                    "HDR display probe: outputIndex={OutputIndex}, deviceName={DeviceName}, colorSpace={ColorSpace}, isHdrActive={IsHdrActive}",
-                    outputIndex, deviceName, colorSpace, capability.IsHdrActive);
+                    "HDR display probe: outputIndex={OutputIndex}, deviceName={DeviceName}, colorSpace={ColorSpace}, isHdrActive={IsHdrActive}, sdrWhiteLevelInNits={SdrWhiteLevelInNits}",
+                    outputIndex, deviceName, colorSpace, capability.IsHdrActive, sdrWhiteLevelInNits);
 
                 outputs.Add(snapshot);
             }
@@ -279,7 +298,8 @@ public sealed record HdrDisplayCapability(
             isHdr ? HdrDisplayState.Active : HdrDisplayState.Inactive,
             output.ColorSpace,
             output.DeviceName,
-            matchKind);
+            matchKind,
+            output.SdrWhiteLevelInNits);
     }
 
     private static bool IsHdrColorSpace(ColorSpaceType colorSpace) =>
@@ -298,7 +318,8 @@ internal sealed record HdrDisplayOutputSnapshot(
     int Top,
     int Width,
     int Height,
-    ColorSpaceType ColorSpace);
+    ColorSpaceType ColorSpace,
+    float? SdrWhiteLevelInNits = null);
 
 internal sealed record HdrDisplayOutputMatch(
     HdrDisplayOutputSnapshot Output,

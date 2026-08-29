@@ -5,6 +5,11 @@ namespace Lumiere.Windows.Graphics.Output;
 internal static class SrgbVisualMatchPixelConverter
 {
     public static SrgbVisualMatchImage ConvertRgba16FloatToBgra8(CapturedFrameReadback readback)
+        => ConvertRgba16FloatToBgra8(readback, SrgbVisualMatchConversionContext.ForSdrDisplay());
+
+    public static SrgbVisualMatchImage ConvertRgba16FloatToBgra8(
+        CapturedFrameReadback readback,
+        SrgbVisualMatchConversionContext context)
     {
         ArgumentNullException.ThrowIfNull(readback);
 
@@ -16,9 +21,9 @@ internal static class SrgbVisualMatchPixelConverter
             var sourceOffset = pixelIndex * CapturedFrameReadback.BytesPerPixel;
             var destOffset = pixelIndex * SrgbVisualMatchImage.BytesPerPixel;
 
-            var r = LinearToSrgb(ToneMapForVisualMatch(ReadHalf(readback.PixelData, sourceOffset)));
-            var g = LinearToSrgb(ToneMapForVisualMatch(ReadHalf(readback.PixelData, sourceOffset + 2)));
-            var b = LinearToSrgb(ToneMapForVisualMatch(ReadHalf(readback.PixelData, sourceOffset + 4)));
+            var r = ConvertChannel(ReadHalf(readback.PixelData, sourceOffset), context);
+            var g = ConvertChannel(ReadHalf(readback.PixelData, sourceOffset + 2), context);
+            var b = ConvertChannel(ReadHalf(readback.PixelData, sourceOffset + 4), context);
             var a = ReadHalf(readback.PixelData, sourceOffset + 6);
 
             bgra8Data[destOffset] = ToByte(b);
@@ -29,6 +34,9 @@ internal static class SrgbVisualMatchPixelConverter
 
         return new SrgbVisualMatchImage(readback.Width, readback.Height, bgra8Data);
     }
+
+    private static Half ConvertChannel(Half capturedLinear, SrgbVisualMatchConversionContext context) =>
+        LinearToSrgb(ToneMapForVisualMatch((Half)((float)capturedLinear * context.InputLinearScale)));
 
     private static Half ToneMapForVisualMatch(Half linear)
     {

@@ -134,17 +134,75 @@ public sealed class WindowsDisplayCaptureEngineTests
         Assert.False(result.HasDeliveredArtifact);
     }
 
+    [Fact]
+    public async Task CaptureDisplayAsync_NormalizesUsingTheMatchedHdrTargetSdrWhiteLevel()
+    {
+        var target = CreateTarget();
+        var output = new RecordingOutput();
+        await using var engine = CreateEngine(
+            target,
+            (onFrame, _) =>
+            {
+                onFrame(new CapturedFrameTexture(null, 2, 2, "test frame"));
+                return CaptureStartResult.StartSucceeded(
+                    new CaptureSessionResources(() => { }),
+                    EngineReadinessStatus.Initializing("Capture started"));
+            },
+            output,
+            new HdrDisplayCapability(
+                HdrDisplayState.Active,
+                ColorSpaceType.RgbFullG2084NoneP2020,
+                "test display",
+                HdrDisplayMatchKind.DeviceName,
+                SdrWhiteLevelInNits: 240f));
+
+        var result = await engine.CaptureDisplayAsync(
+            new WindowsCaptureRequest("request-hdr", OutputTarget.Folder, "C:\\captures"));
+
+        Assert.Equal(WindowsCaptureOutcome.Delivered, result.Outcome);
+        Assert.Equal(80f / 240f, output.Request?.VisualMatchContext.InputLinearScale);
+    }
+
+    [Fact]
+    public async Task CaptureDisplayAsync_FailsInsteadOfClaimingVisualMatchWhenHdrWhiteLevelIsUnavailable()
+    {
+        var target = CreateTarget();
+        var output = new RecordingOutput();
+        await using var engine = CreateEngine(
+            target,
+            (onFrame, _) =>
+            {
+                onFrame(new CapturedFrameTexture(null, 2, 2, "test frame"));
+                return CaptureStartResult.StartSucceeded(
+                    new CaptureSessionResources(() => { }),
+                    EngineReadinessStatus.Initializing("Capture started"));
+            },
+            output,
+            new HdrDisplayCapability(
+                HdrDisplayState.Active,
+                ColorSpaceType.RgbFullG2084NoneP2020,
+                "test display"));
+
+        var result = await engine.CaptureDisplayAsync(
+            new WindowsCaptureRequest("request-hdr-unvalidated", OutputTarget.Folder, "C:\\captures"));
+
+        Assert.Equal(WindowsCaptureOutcome.Failed, result.Outcome);
+        Assert.Null(result.Output);
+        Assert.Null(output.Request);
+    }
+
     private static WindowsDisplayCaptureEngine CreateEngine(
         CaptureTarget target,
         Func<Action<CapturedFrameTexture>, Action<EngineReadinessStatus>, CaptureStartResult> startCapture,
-        IOutputService? output = null) =>
+        IOutputService? output = null,
+        HdrDisplayCapability? hdrCapability = null) =>
         new(
             command => CaptureCommandResult.Accepted(command),
             _ => { },
             _ => Task.FromResult(CaptureTargetSelectionResult.Selected(
                 target,
                 EngineReadinessStatus.Initializing("Target selected"))),
-            _ => new HdrDisplayCapability(
+            _ => hdrCapability ?? new HdrDisplayCapability(
                 HdrDisplayState.Inactive,
                 ColorSpaceType.RgbFullG22NoneP709,
                 "test display"),

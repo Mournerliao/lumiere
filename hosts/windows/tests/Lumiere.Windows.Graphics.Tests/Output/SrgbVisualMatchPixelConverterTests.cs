@@ -51,6 +51,26 @@ public sealed class SrgbVisualMatchPixelConverterTests
             image.Bgra8PixelData);
     }
 
+    [Theory]
+    [InlineData(80f, 1f)]
+    [InlineData(160f, 2f)]
+    [InlineData(240f, 3f)]
+    public void ConvertRgba16FloatToBgra8_NormalizesHdrDesktopSdrWhite(
+        float sdrWhiteLevelInNits,
+        float capturedWhiteMultiplier)
+    {
+        var readback = CreateReadback(
+            1,
+            1,
+            [(0.18f * capturedWhiteMultiplier, 0.5f * capturedWhiteMultiplier, 0.1f * capturedWhiteMultiplier, 1f)]);
+
+        var image = SrgbVisualMatchPixelConverter.ConvertRgba16FloatToBgra8(
+            readback,
+            SrgbVisualMatchConversionContext.ForHdrDisplay(sdrWhiteLevelInNits));
+
+        Assert.Equal([89, 187, 117, 255], image.Bgra8PixelData);
+    }
+
     [Fact]
     public void ConvertRgba16FloatToBgra8_CompressesHdrHighlightsWithoutHardClamp()
     {
@@ -118,7 +138,7 @@ public sealed class SrgbVisualMatchPixelConverterTests
         var converter = new SrgbVisualMatchConverter(readback);
         using var texture = new CapturedFrameTexture(null, 16, 12, "Test frame");
 
-        var image = converter.Convert(texture, crop);
+        var image = converter.Convert(texture, crop, SrgbVisualMatchConversionContext.ForSdrDisplay());
 
         Assert.Same(texture, readback.Texture);
         Assert.Equal(crop, readback.CropRegion);

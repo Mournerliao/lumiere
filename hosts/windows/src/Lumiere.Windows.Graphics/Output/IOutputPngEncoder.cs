@@ -7,6 +7,7 @@ internal interface IOutputPngEncoder
     Task<OutputEncodedArtifact> EncodeArtifactAsync(
         CapturedFrameTexture texture,
         CropPixelRect? cropRegion,
+        SrgbVisualMatchConversionContext context,
         CancellationToken cancellationToken = default);
 }
 

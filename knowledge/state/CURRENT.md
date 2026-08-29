@@ -1,6 +1,6 @@
 # Current Project State
 
-- Updated: 2026-08-29
+- Updated: 2026-08-30
 - Current milestone: 1 — Cross-platform HDR-aware MVP
 - Release target: Windows + macOS HDR-aware MVP with sRGB Visual Match
 - Completed foundation record: [GitHub Issue #1](https://github.com/Mournerliao/lumiere/issues/1)
@@ -41,7 +41,10 @@ to main-window, shortcut, and tray/menu-bar captures without changing artifact s
 Finder or Explorer cannot reveal an already-saved file. The Windows engine now exposes one
 deep capture operation that owns target resolution and target-bound Region cropping,
 target-aware HDR probing, first-frame acquisition, one sRGB Visual Match conversion,
-delivery, cancellation, and teardown. A .NET platform-host v2 executable now owns the
+delivery, cancellation, and teardown. On HDR-active targets, that conversion now resolves
+the target's Windows SDR white level and normalizes captured scRGB input before tone mapping;
+an unavailable white level fails capture rather than producing an unverified Visual Match
+artifact. A .NET platform-host v2 executable now owns the
 Windows JSON Lines process boundary, strict request validation, correlated structured
 diagnostics, and typed unavailable behavior. The Host connects that engine for Display and
 target-token-bound Region capture, owns its process-scoped lifetime, creates the default
@@ -64,7 +67,7 @@ WinUI and the old validation/HDR10-JXR paths remain removed.
 |---|---|---|---|
 | 0. Foundation | Complete | Final layout, secure shell, language-neutral protocol, paused Windows engine; macOS and Windows CI pass | None |
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
-| 1B. Windows host adapter | Complete ([#7](https://github.com/Mournerliao/lumiere/issues/7)) | The v2 Host has strict JSON Lines handling, structured diagnostics, Electron supervision, target-aware HDR/logical-geometry capabilities, Display plus target-bound Region routing, Clipboard/Folder/Both delivery, sanitized protocol failures, deterministic teardown, and verified interactive HDR/SDR runtime journeys | None |
+| 1B. Windows host adapter | Complete ([#7](https://github.com/Mournerliao/lumiere/issues/7), [#10](https://github.com/Mournerliao/lumiere/issues/10)) | The v2 Host has strict JSON Lines handling, structured diagnostics, Electron supervision, target-aware HDR/logical-geometry capabilities, SDR-white-aware HDR Visual Match conversion, Display plus target-bound Region routing, Clipboard/Folder/Both delivery, sanitized protocol failures, deterministic teardown, and verified interactive HDR/SDR runtime journeys | None |
 | 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture surfaces, generated tokens, persisted capability-gated output, shortcut, and after-capture preferences, one main-process capture router, capability-gated tray/menu-bar, v2 target/delivery contract, shared Region Overlay, HiDPI-aware macOS geometry, and verified macOS display/region/after-capture journeys | Resolve and add the remaining independent settings slices, then complete the cross-platform product verification |
 | 1D. Distribution and release | Not started | Windows installer direction remains recorded | Windows installer, signed/notarized macOS artifact, clean-machine and hardware verification |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
@@ -142,7 +145,7 @@ acceptance criteria and implementation status for each vertical slice.
   `fccf812`; this establishes those configured repository gates at that commit, not current-HEAD CI, Windows Host
   runtime or hardware behavior.
 - **Windows engine:** restore and Release build pass with warnings treated as errors;
-  Host 28, Capture 83, Graphics 43, and Interop 31 tests pass;
+  Host 28, Capture 85, Graphics 47, and Interop 35 tests pass;
   `dotnet format --verify-no-changes` passes.
 - **Windows integration:** the named Windows development machine built the Debug Host through the
   platform-neutral preparation entry point. The Release Host then completed a real JSON Lines
@@ -182,14 +185,20 @@ acceptance criteria and implementation status for each vertical slice.
   artifact, wrote a 3840×2160 RGBA PNG, and completed all four teardown stages. HDR was restored to
   its original enabled state after the observation. These observations establish Windows artifact
   delivery and lifecycle behavior on the named machine, not Visual Match certification, HDR
-  preservation, or release readiness.
+  preservation, or release readiness. A subsequent fixed-image HDR observation queried the active
+  3840×2160 target's SDR white as 240 nits, applied the corresponding 80/240 scRGB normalization,
+  and captured a 1401×987 sRGB reference shown at 100%. Alignment against the source measured mean
+  absolute RGB errors of 0.867/0.858/0.886 out of 255, a per-channel 95th-percentile error of 1,
+  and a median luminance ratio of 0.985. This verifies Windows sRGB Visual Match for that named
+  target, SDR-white setting, fixture, and viewer path; it does not establish HDR-preserved export.
 - **Hardware verified:** the macOS Retina XDR path passed fixed bright and dark scene
   observations. The bright ramp preserved ten distinct grayscale steps from 25 through
   255; the dark ramp preserved ten distinct steps from 0 through 32 and alternating
   19/7 fine detail. The named scaled external 4K display passed Display and Region
   backing-pixel-dimension observations plus a ten-capture repeat loop after the HiDPI fix.
-  No equivalent Windows fixed-scene fidelity observation exists, and the Retina XDR geometry
-  correction remains independently unobserved on hardware.
+  Windows has one fixed-image sRGB Visual Match observation on the named HDR-active 4K target;
+  broader cross-platform fidelity certification and the Retina XDR geometry correction remain
+  independently unobserved on hardware.
 
 Do not describe the foundation as working capture, or the cross-platform MVP as
 release-ready until both owning platforms are explicitly verified.
@@ -205,9 +214,11 @@ advances only one current working Issue at a time.
   resolve the HDR-alert product model and implement that independent Settings slice through
   validated main-owned IPC. Keep custom save-directory behavior separate because it may require
   a separately reviewed protocol change.
-- **Windows lane — [Issue #7](https://github.com/Mournerliao/lumiere/issues/7):** complete;
+- **Windows lane — [Issues #7](https://github.com/Mournerliao/lumiere/issues/7) and
+  [#10](https://github.com/Mournerliao/lumiere/issues/10):** complete;
   the named Windows machine passed the required Display/Region, Clipboard/Folder/Both,
-  HDR/SDR-state, repeated capture, cancellation, teardown, and clean-exit criteria.
+  HDR/SDR-state, SDR-white-aware Visual Match, repeated capture, cancellation, teardown,
+  and clean-exit criteria.
 - **Milestone gate:** 1D distribution and release work remains blocked until the remaining
   shared cross-platform journeys in Issue #9 pass their independent criteria.
 

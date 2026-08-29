@@ -6,7 +6,8 @@ internal interface ISrgbVisualMatchConverter
 {
     SrgbVisualMatchImage Convert(
         CapturedFrameTexture texture,
-        CropPixelRect? cropRegion);
+        CropPixelRect? cropRegion,
+        SrgbVisualMatchConversionContext context);
 }
 
 internal sealed class SrgbVisualMatchConverter : ISrgbVisualMatchConverter
@@ -20,9 +21,10 @@ internal sealed class SrgbVisualMatchConverter : ISrgbVisualMatchConverter
 
     public SrgbVisualMatchImage Convert(
         CapturedFrameTexture texture,
-        CropPixelRect? cropRegion)
+        CropPixelRect? cropRegion,
+        SrgbVisualMatchConversionContext context)
     {
         var frameReadback = readback.ReadRgba16Float(texture, cropRegion);
-        return SrgbVisualMatchPixelConverter.ConvertRgba16FloatToBgra8(frameReadback);
+        return SrgbVisualMatchPixelConverter.ConvertRgba16FloatToBgra8(frameReadback, context);
     }
 }

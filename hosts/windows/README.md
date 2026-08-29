@@ -19,7 +19,10 @@ The retained modules are:
 
 The capture interface owns target resolution, target-aware HDR probing, target-local
 logical-to-pixel Region conversion, first-frame acquisition, one sRGB Visual Match
-conversion, requested delivery, cancellation, and native teardown. Issued Region tokens
+conversion, requested delivery, cancellation, and native teardown. On an HDR-active target,
+the conversion normalizes captured scRGB input against that display's current Windows SDR
+white level before tone mapping; if that value cannot be resolved, capture fails instead of
+claiming an unverified Visual Match artifact. Issued Region tokens
 are short-lived and bind to an opaque Capture-owned target snapshot. A caller supplies a
 correlation ID but never owns a raw frame, monitor handle, texture, capture session, or
 output cache. Call

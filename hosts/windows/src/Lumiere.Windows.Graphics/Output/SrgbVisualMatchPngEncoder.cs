@@ -17,11 +17,12 @@ internal sealed class SrgbVisualMatchPngEncoder : IOutputPngEncoder
     public async Task<OutputEncodedArtifact> EncodeArtifactAsync(
         CapturedFrameTexture texture,
         CropPixelRect? cropRegion,
+        SrgbVisualMatchConversionContext context,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(texture);
         cancellationToken.ThrowIfCancellationRequested();
-        var image = converter.Convert(texture, cropRegion);
+        var image = converter.Convert(texture, cropRegion, context);
         cancellationToken.ThrowIfCancellationRequested();
         return new OutputEncodedArtifact(await EncodeAsPngAsync(image), "png");
     }
