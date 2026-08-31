@@ -1,6 +1,6 @@
 # Current Project State
 
-- Updated: 2026-08-31
+- Updated: 2026-09-01
 - Current milestone: 1 — Cross-platform HDR-aware MVP
 - Release target: Windows + macOS HDR-aware MVP with sRGB Visual Match
 - Completed foundation record: [GitHub Issue #1](https://github.com/Mournerliao/lumiere/issues/1)
@@ -85,7 +85,7 @@ WinUI and the old validation/HDR10-JXR paths remain removed.
 | 0. Foundation | Complete | Final layout, secure shell, language-neutral protocol, paused Windows engine; macOS and Windows CI pass | None |
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
 | 1B. Windows host adapter | Complete ([#7](https://github.com/Mournerliao/lumiere/issues/7), [#10](https://github.com/Mournerliao/lumiere/issues/10)) | The v2 Host has strict JSON Lines handling, structured diagnostics, Electron supervision, target-aware HDR/logical-geometry capabilities, SDR-white-aware HDR Visual Match conversion, Display plus target-bound Region routing, Clipboard/Folder/Both delivery, sanitized protocol failures, deterministic teardown, and verified interactive HDR/SDR runtime journeys | None |
-| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture/HDR-reminder/save-directory surfaces, generated tokens, persisted capability-gated preferences, one main-process capture router, capability-gated tray/menu-bar, v3 frozen-region/delivery/custom-directory contract, shared Region Overlay over a Host-frozen preview, HiDPI-aware macOS geometry, and verified macOS display/region/after-capture/custom-directory journeys before this freeze | Run the updated Windows repository/runtime gates and remaining frozen-region product verification |
+| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture/HDR-reminder/save-directory surfaces, generated tokens, persisted capability-gated preferences, one main-process capture router, capability-gated tray/menu-bar, v3 frozen-region/delivery/custom-directory contract, shared Region Overlay over a Host-frozen preview, HiDPI-aware macOS geometry, and verified macOS display/region/after-capture/custom-directory plus Windows frozen-region/custom-directory journeys | Verify the remaining macOS shortcut → freeze → select → commit journey |
 | 1D. Distribution and release | Not started | Windows retains its traditional signed installer path; macOS will publish a normal direct GitHub release as an ad-hoc-signed app in a disk image, with no App Store, Homebrew, Developer ID, or notarization requirement | Implement each platform-owned package, document the macOS Gatekeeper exception, then complete clean-machine and hardware verification independently |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
 | 3. Cross-platform HDR fidelity | Planned; not started | Fidelity is separated from artifact success and HDR preservation | Define support matrix/tolerances and run fixed-scene verification |
@@ -114,6 +114,9 @@ acceptance criteria and implementation status for each vertical slice.
   tests, three macOS path tests, thirty Swift tests, Swift formatting, and the production Electron
   build. Its updated Windows Host source and tests were not run on this Mac because `dotnet` is not
   installed; the prior Windows counts do not verify this slice.
+  On the named Windows machine, the current worktree passes `pnpm check`, all eighty-nine shared
+  tests, the production Electron build, the Windows Release build with zero warnings, Host 33,
+  Capture 85, Graphics 47, and Interop 35 tests, and `dotnet format --verify-no-changes`.
 - **macOS development runtime:** the Electron display action drove ScreenCaptureKit to
   RGBA8 PNG files with alpha and an embedded sRGB IEC61966-2.1 profile on an Apple
   Silicon Mac. SDR capture was observed at 2560×1440 on an external display. Native
@@ -230,6 +233,13 @@ acceptance criteria and implementation status for each vertical slice.
   absolute RGB errors of 0.867/0.858/0.886 out of 255, a per-channel 95th-percentile error of 1,
   and a median luminance ratio of 0.985. This verifies Windows sRGB Visual Match for that named
   target, SDR-white setting, fixture, and viewer path; it does not establish HDR-preserved export.
+  The current development runtime also verified custom-directory selection and restart persistence,
+  3840×2160 Folder/Both output, Explorer reveal, persisted `Ctrl+Alt+F12` Region activation, a
+  1052×621 commit cropped from the frozen preview, clean timeout recovery, and independent Both
+  delivery where clipboard success survived a folder-target failure. Final settings were restored
+  to Pictures/Lumiere, Clipboard and folder, unconfigured shortcuts, and `Do nothing`. These
+  observations establish Windows routing, persistence, artifact delivery, and lifecycle behavior;
+  they add no new Visual Match or HDR-preservation claim.
 - **Hardware verified:** the macOS Retina XDR path passed fixed bright and dark scene
   observations. The bright ramp preserved ten distinct grayscale steps from 25 through
   255; the dark ramp preserved ten distinct steps from 0 through 32 and alternating
@@ -254,10 +264,8 @@ advances only one current working Issue at a time.
   [ADR 0013](../decisions/0013-frozen-region-capture-session.md) and protocol v3:
   capture-before-overlay, Host-owned frozen frames, Electron-main preview capability,
   and commit-from-the-same-frame. macOS Host, shared shell, and protocol fixtures are
-  in this worktree. Windows Host/engine source matches the same contract but has not
-  been run here because `dotnet` is not installed. Next: verify the macOS shortcut →
-  freeze → select → commit journey on this Mac, then hand Windows Host tests/runtime
-  to the Windows lane.
+  in this worktree, and the Windows Host/engine plus interactive product journey have passed on
+  the named Windows machine. Next: verify the macOS shortcut → freeze → select → commit journey.
 - **macOS distribution lane — [Issue #11](https://github.com/Mournerliao/lumiere/issues/11):**
   the next slice is a reproducible packaged-app foundation under
   [ADR 0012](../decisions/0012-direct-ad-hoc-signed-macos-distribution.md).
@@ -269,11 +277,6 @@ advances only one current working Issue at a time.
   named Mac. A following slice owns the direct GitHub Release disk image, SHA-256 checksum,
   manual Gatekeeper instructions, replacement upgrade, and clean-machine verification. Developer
   ID signing, notarization, Mac App Store distribution, and Homebrew distribution are out of scope.
-- **Windows custom-directory and frozen-region verification lane — [Issue #9](https://github.com/Mournerliao/lumiere/issues/9):**
-  run the updated Host tests/build/format gates on Windows, then verify directory selection,
-  persistence, Folder/Both delivery, target-local folder failure, Show in folder, and the
-  frozen Region journey (shortcut freezes the frame; commit is that frame, not release time)
-  independently.
 - **Windows lane — [Issues #7](https://github.com/Mournerliao/lumiere/issues/7) and
   [#10](https://github.com/Mournerliao/lumiere/issues/10):** complete;
   the named Windows machine passed the required Display/Region, Clipboard/Folder/Both,
