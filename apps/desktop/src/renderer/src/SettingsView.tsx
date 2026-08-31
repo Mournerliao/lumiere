@@ -18,6 +18,7 @@ import {
 } from '../../shared/settings-command'
 import { Button } from '@/components/motion/button/base'
 import { Dock, DockItem } from '@/components/motion/dock'
+import { FolderPickerButton } from '@/components/motion/folder-picker-button'
 import {
   Select,
   SelectContent,
@@ -202,7 +203,7 @@ function OutputSettings({
         >
           <SelectTrigger
             aria-labelledby="default-destination-label"
-            className="settings-select-trigger"
+            className="settings-control-trigger"
           >
             <SelectValue placeholder={outputDeliveryLabels[selectedDelivery]} />
           </SelectTrigger>
@@ -223,24 +224,11 @@ function OutputSettings({
 
       <div className="settings-row">
         <span className="settings-row-label">Save folder</span>
-        <Button
-          variant="ghost"
-          size="sm"
-          hoverScale={1}
-          pressScale={0.98}
-          className="settings-folder-picker"
+        <FolderPickerButton
+          path={snapshot?.saveDirectory ?? surfaceSnapshot?.output.location ?? '~/Pictures/Lumiere'}
           disabled={!snapshot || isSaving}
-          aria-label="Choose save folder"
-          title={snapshot?.saveDirectory}
           onClick={onChooseSaveDirectory}
-        >
-          <span className="settings-folder-picker-path">
-            {snapshot?.saveDirectory ?? surfaceSnapshot?.output.location ?? '~/Pictures/Lumiere'}
-          </span>
-          <span className="settings-folder-picker-chevron" aria-hidden="true">
-            ›
-          </span>
-        </Button>
+        />
       </div>
 
       <div className="settings-row">
@@ -316,7 +304,7 @@ function CaptureSettings({
           }}
           className="settings-select"
         >
-          <SelectTrigger aria-labelledby="after-capture-label" className="settings-select-trigger">
+          <SelectTrigger aria-labelledby="after-capture-label" className="settings-control-trigger">
             <SelectValue placeholder={afterCaptureBehaviorLabels[afterCaptureBehavior]} />
           </SelectTrigger>
           <SelectContent className="settings-select-content">

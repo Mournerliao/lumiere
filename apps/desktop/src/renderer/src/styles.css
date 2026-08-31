@@ -594,44 +594,6 @@ button {
   line-height: 1;
 }
 
-.settings-folder-picker {
-  display: flex;
-  max-width: 210px;
-  min-height: 30px;
-  justify-content: flex-end;
-  gap: 6px;
-  padding: 6px 9px;
-  border: 1px solid var(--border-default);
-  border-radius: var(--Lumiere-Dark-radiusControl);
-  color: var(--text-secondary);
-  background: var(--surface-raised);
-  -webkit-app-region: no-drag;
-}
-
-.settings-folder-picker:hover:not(:disabled) {
-  border-color: var(--accent-border);
-  color: var(--text-primary);
-  background: var(--surface-hover);
-}
-
-.settings-folder-picker:focus-visible {
-  outline: 2px solid var(--accent-base);
-  outline-offset: 2px;
-}
-
-.settings-folder-picker-path {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.settings-folder-picker-chevron {
-  flex: 0 0 auto;
-  color: var(--text-tertiary);
-  font-size: 16px;
-  line-height: 1;
-}
-
 .settings-switch {
   display: inline-flex;
   -webkit-app-region: no-drag;
@@ -730,7 +692,7 @@ button {
   z-index: 2;
 }
 
-.settings-select-trigger {
+.settings-control-trigger {
   height: 30px;
   padding: 0 10px;
   border-color: var(--border-default);
@@ -743,29 +705,38 @@ button {
   box-shadow: none;
 }
 
-.settings-select-trigger:hover:not(:disabled) {
+.settings-control-trigger:hover:not(:disabled) {
   border-color: var(--accent-border);
   background: var(--surface-hover);
 }
 
-.settings-select-trigger:focus-visible {
+.settings-control-trigger:focus-visible {
   outline: 2px solid var(--accent-base);
   outline-offset: 2px;
   box-shadow: none;
 }
 
-.settings-select-trigger:disabled {
+.settings-control-trigger:disabled {
   color: var(--text-disabled);
   cursor: not-allowed;
   background: color-mix(in srgb, var(--surface-raised) 64%, var(--surface-window));
   opacity: 1;
 }
 
-.settings-select-trigger svg {
+.settings-control-trigger svg {
   width: 14px;
   height: 14px;
   color: var(--text-secondary);
   stroke-width: 1.6;
+}
+
+.settings-folder-picker-trigger {
+  width: 160px;
+  min-width: 0;
+  justify-content: space-between;
+  gap: 8px;
+  overflow: hidden;
+  -webkit-app-region: no-drag;
 }
 
 .settings-select-content {
@@ -830,7 +801,7 @@ button {
   .settings-link,
   .settings-done,
   .settings-dock-item,
-  .settings-select-trigger,
+  .settings-control-trigger,
   .settings-select-item,
   .settings-switch > button {
     transition: none;

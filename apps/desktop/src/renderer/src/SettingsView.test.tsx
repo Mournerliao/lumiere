@@ -51,8 +51,12 @@ describe('SettingsView', () => {
     expect(markup).toContain('aria-label="Output settings" aria-pressed="true"')
     expect(markup).toContain('aria-label="Capture settings" aria-pressed="false"')
     expect(markup).toContain('Save folder')
-    expect(markup).toContain('Choose save folder')
+    expect(markup).toContain(
+      'aria-label="Choose save folder. Current folder: /Users/example/Pictures/Screenshots"',
+    )
     expect(markup).toContain('/Users/example/Pictures/Screenshots')
+    expect(markup).toContain('…/Pictures/Screenshots')
+    expect(markup).toContain('m9 18 6-6-6-6')
     expect(markup).toContain('File naming')
   })
 })
