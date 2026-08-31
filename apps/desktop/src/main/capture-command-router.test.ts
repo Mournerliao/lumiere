@@ -87,6 +87,31 @@ describe('CaptureCommandRouter', () => {
     expect(host.requests).toEqual([{ mode: 'display', delivery: 'both' }])
   })
 
+  it('routes a custom save directory only to file-capable capture requests', async () => {
+    const host = new StubHost(availableCapabilities(), {
+      status: 'completed',
+      sourceDynamicRange: 'sdr',
+      outputProfile: 'srgb-visual-match',
+      deliveries: [{ target: 'folder', status: 'success', filePath: '/tmp/custom/lumiere.png' }],
+    })
+    const router = new CaptureCommandRouter('macos', host, {
+      getCapturePreferences: () => ({
+        delivery: 'folder',
+        saveDirectory: '/tmp/custom',
+        hdrStatusReminders: true,
+      }),
+    })
+
+    await router.captureDisplay()
+
+    expect(host.requests).toEqual([
+      { mode: 'display', delivery: 'folder', saveDirectory: '/tmp/custom' },
+    ])
+    await expect(router.getSurfaceSnapshot()).resolves.toMatchObject({
+      output: { location: '/tmp/custom' },
+    })
+  })
+
   it('prepares and completes a target-local region capture', async () => {
     const target = { id: 'target-token-17', logicalSize: { width: 1512, height: 982 } }
     const host = new StubHost(

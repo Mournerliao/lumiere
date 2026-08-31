@@ -4,6 +4,7 @@
   "method": "capture",
   "params": {
     "mode": "display",
-    "delivery": "folder"
+    "delivery": "folder",
+    "saveDirectory": "/Users/example/Pictures/Screenshots"
   }
 }

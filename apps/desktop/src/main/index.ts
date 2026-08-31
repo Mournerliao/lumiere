@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut, ipcMain, screen, shell } from 'electron'
+import { app, BrowserWindow, dialog, globalShortcut, ipcMain, screen, shell } from 'electron'
 import { join } from 'node:path'
 import {
   applyMacDockIcon,
@@ -182,8 +182,10 @@ function registerIpc(): void {
   ipcMain.removeAllListeners(captureCommandChannels.cancelRegionOverlay)
   ipcMain.removeAllListeners(captureCommandChannels.submitRegionSelection)
   ipcMain.removeHandler(settingsCommandChannels.getSnapshot)
+  ipcMain.removeHandler(settingsCommandChannels.chooseSaveDirectory)
   ipcMain.removeHandler(settingsCommandChannels.setAfterCaptureBehavior)
   ipcMain.removeHandler(settingsCommandChannels.setCaptureShortcut)
+  ipcMain.removeHandler(settingsCommandChannels.setHdrStatusReminders)
   ipcMain.removeHandler(settingsCommandChannels.setOutputDelivery)
   ipcMain.removeHandler(settingsCommandChannels.setShortcutRecording)
 
@@ -266,6 +268,27 @@ function registerIpc(): void {
     assertTrustedWindow(event, mainWindow)
     assertNoArguments(args)
     return getSettingsSnapshot()
+  })
+
+  ipcMain.handle(settingsCommandChannels.chooseSaveDirectory, async (event, ...args) => {
+    assertTrustedWindow(event, mainWindow)
+    assertNoArguments(args)
+    if (!settingsStore || !mainWindow) {
+      throw new Error('Settings are not ready.')
+    }
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Choose save folder',
+      defaultPath: settingsStore.getSaveDirectory() ?? defaultCaptureDirectory(),
+      buttonLabel: 'Choose',
+      properties: ['openDirectory', 'createDirectory'],
+    })
+    if (result.canceled || result.filePaths.length !== 1) {
+      return getSettingsSnapshot()
+    }
+    await settingsStore.setSaveDirectory(result.filePaths[0])
+    const nextSnapshot = await getSettingsSnapshot()
+    broadcastSettingsChanged(nextSnapshot)
+    return nextSnapshot
   })
 
   ipcMain.handle(settingsCommandChannels.setOutputDelivery, async (event, ...args) => {
@@ -528,6 +551,7 @@ async function getSettingsSnapshot(): Promise<SettingsSnapshot> {
   return {
     outputDelivery: settingsStore.getOutputDelivery(),
     availableOutputDeliveries: availableOutputDeliveries(capabilities.deliveryTargets),
+    saveDirectory: settingsStore.getSaveDirectory() ?? defaultCaptureDirectory(),
     afterCaptureBehavior: settingsStore.getAfterCaptureBehavior(),
     hdrStatusReminders: settingsStore.getHdrStatusReminders(),
     captureShortcuts: shortcutService?.getSnapshot() ?? {
@@ -535,6 +559,10 @@ async function getSettingsSnapshot(): Promise<SettingsSnapshot> {
       display: { accelerator: null, status: 'unconfigured' },
     },
   }
+}
+
+function defaultCaptureDirectory(): string {
+  return join(app.getPath('pictures'), 'Lumiere')
 }
 
 function broadcastSettingsChanged(snapshot: SettingsSnapshot): void {

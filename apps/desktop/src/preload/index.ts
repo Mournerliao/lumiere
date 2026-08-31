@@ -31,6 +31,7 @@ const platformApi: LumiereRendererApi = {
     ipcRenderer.send(captureCommandChannels.submitRegionSelection, geometry)
   },
   getSettingsSnapshot: () => ipcRenderer.invoke(settingsCommandChannels.getSnapshot),
+  chooseSaveDirectory: () => ipcRenderer.invoke(settingsCommandChannels.chooseSaveDirectory),
   setAfterCaptureBehavior: (behavior) =>
     ipcRenderer.invoke(settingsCommandChannels.setAfterCaptureBehavior, behavior),
   setHdrStatusReminders: (enabled) =>

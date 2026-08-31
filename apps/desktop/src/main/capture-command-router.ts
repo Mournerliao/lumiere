@@ -19,6 +19,7 @@ import { deliveryTargetsFor } from '../shared/platform-contract'
 
 export interface CapturePreferences {
   delivery: OutputDelivery
+  saveDirectory?: string
   hdrStatusReminders: boolean
 }
 
@@ -43,10 +44,11 @@ export class CaptureCommandRouter {
   ) {}
 
   public async getSurfaceSnapshot(): Promise<CaptureSurfaceSnapshot> {
-    const { delivery, hdrStatusReminders } = this.preferences.getCapturePreferences()
+    const { delivery, saveDirectory, hdrStatusReminders } = this.preferences.getCapturePreferences()
     return projectSurfaceSnapshot(
       this.platform,
       delivery,
+      saveDirectory,
       hdrStatusReminders,
       await this.host.getCapabilities(),
     )
@@ -63,7 +65,7 @@ export class CaptureCommandRouter {
 
     this.captureInFlight = true
     try {
-      const { delivery } = this.preferences.getCapturePreferences()
+      const { delivery, saveDirectory } = this.preferences.getCapturePreferences()
       const capabilities = await this.host.getCapabilities()
       const unavailable = captureUnavailableNotice(capabilities, 'display', delivery)
       if (unavailable) {
@@ -73,6 +75,7 @@ export class CaptureCommandRouter {
       const result = await this.host.capture({
         mode: 'display',
         delivery,
+        ...(delivery !== 'clipboard' && saveDirectory ? { saveDirectory } : {}),
       })
 
       if (result.status === 'cancelled') {
@@ -135,10 +138,11 @@ export class CaptureCommandRouter {
     }
 
     try {
-      const { delivery } = this.preferences.getCapturePreferences()
+      const { delivery, saveDirectory } = this.preferences.getCapturePreferences()
       const result = await this.host.capture({
         mode: 'region',
         delivery,
+        ...(delivery !== 'clipboard' && saveDirectory ? { saveDirectory } : {}),
         targetId: target.id,
         geometry,
       })
@@ -186,6 +190,7 @@ function captureFailed(): CaptureCommandResult {
 function projectSurfaceSnapshot(
   platform: LumierePlatform,
   delivery: OutputDelivery,
+  saveDirectory: string | undefined,
   hdrStatusReminders: boolean,
   capabilities: PlatformCapabilities,
 ): CaptureSurfaceSnapshot {
@@ -196,7 +201,7 @@ function projectSurfaceSnapshot(
     hostAvailable,
     captureModes: capabilities.captureModes,
     hdrStatus,
-    output: outputSummary(platform, delivery),
+    output: outputSummary(platform, delivery, saveDirectory),
     ...(!hostAvailable
       ? {
           blockingNotice: {
@@ -236,19 +241,21 @@ function projectHdrStatus(value: PlatformCapabilities['hdrCapture']): ProductHdr
 function outputSummary(
   platform: LumierePlatform,
   delivery: OutputDelivery,
+  saveDirectory?: string,
 ): CaptureSurfaceSnapshot['output'] {
   if (delivery !== 'folder') {
     return {
       delivery,
       label: delivery === 'clipboard' ? 'Clipboard' : 'Clipboard and folder',
-      location: delivery === 'clipboard' ? 'Ready for paste' : captureFolder(platform),
+      location:
+        delivery === 'clipboard' ? 'Ready for paste' : (saveDirectory ?? captureFolder(platform)),
     }
   }
 
   return {
     delivery,
     label: 'Folder',
-    location: captureFolder(platform),
+    location: saveDirectory ?? captureFolder(platform),
   }
 }
 

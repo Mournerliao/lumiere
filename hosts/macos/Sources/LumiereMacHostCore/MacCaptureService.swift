@@ -162,7 +162,8 @@ public actor MacCaptureService {
       let visualMatchPNG = try makeVisualMatchPNG(image, sourceIsHDR: capturesHDR)
       let deliveries = await MacCaptureDelivery.deliver(
         visualMatchPNG,
-        to: parameters.delivery
+        to: parameters.delivery,
+        saveDirectory: parameters.saveDirectory
       )
 
       return .completed(

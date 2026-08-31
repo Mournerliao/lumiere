@@ -49,6 +49,7 @@ interface SettingsViewProps {
   error: string | null
   onDone: () => void
   onOutputDeliveryChange: (delivery: OutputDelivery) => void
+  onChooseSaveDirectory: () => void
   onAfterCaptureBehaviorChange: (behavior: AfterCaptureBehavior) => void
   onHdrStatusRemindersChange: (enabled: boolean) => void
   onShortcutChange: (update: ShortcutUpdate) => Promise<void>
@@ -64,6 +65,7 @@ export function SettingsView({
   error,
   onDone,
   onOutputDeliveryChange,
+  onChooseSaveDirectory,
   onAfterCaptureBehaviorChange,
   onHdrStatusRemindersChange,
   onShortcutChange,
@@ -136,6 +138,7 @@ export function SettingsView({
             available={available}
             selectedDelivery={selectedDelivery}
             onOutputDeliveryChange={onOutputDeliveryChange}
+            onChooseSaveDirectory={onChooseSaveDirectory}
           />
         ) : null}
         {section === 'capture' ? (
@@ -171,6 +174,7 @@ interface OutputSettingsProps {
   available: readonly OutputDelivery[]
   selectedDelivery: OutputDelivery
   onOutputDeliveryChange: (delivery: OutputDelivery) => void
+  onChooseSaveDirectory: () => void
 }
 
 function OutputSettings({
@@ -180,6 +184,7 @@ function OutputSettings({
   available,
   selectedDelivery,
   onOutputDeliveryChange,
+  onChooseSaveDirectory,
 }: OutputSettingsProps): React.JSX.Element {
   return (
     <div className="settings-list">
@@ -218,9 +223,24 @@ function OutputSettings({
 
       <div className="settings-row">
         <span className="settings-row-label">Save folder</span>
-        <span className="settings-row-value settings-row-value--control">
-          {surfaceSnapshot?.output.location ?? '~/Pictures/Lumiere'}
-        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          hoverScale={1}
+          pressScale={0.98}
+          className="settings-folder-picker"
+          disabled={!snapshot || isSaving}
+          aria-label="Choose save folder"
+          title={snapshot?.saveDirectory}
+          onClick={onChooseSaveDirectory}
+        >
+          <span className="settings-folder-picker-path">
+            {snapshot?.saveDirectory ?? surfaceSnapshot?.output.location ?? '~/Pictures/Lumiere'}
+          </span>
+          <span className="settings-folder-picker-chevron" aria-hidden="true">
+            ›
+          </span>
+        </Button>
       </div>
 
       <div className="settings-row">

@@ -42,8 +42,10 @@
       "required": ["mode", "delivery"],
       "properties": {
         "mode": { "const": "display" },
-        "delivery": { "$ref": "#/$defs/outputDelivery" }
+        "delivery": { "$ref": "#/$defs/outputDelivery" },
+        "saveDirectory": { "type": "string", "minLength": 1 }
       },
+      "allOf": [{ "$ref": "#/$defs/saveDirectoryRule" }],
       "additionalProperties": false
     },
     "regionCaptureParams": {
@@ -52,13 +54,26 @@
       "properties": {
         "mode": { "const": "region" },
         "delivery": { "$ref": "#/$defs/outputDelivery" },
+        "saveDirectory": { "type": "string", "minLength": 1 },
         "targetId": { "type": "string", "minLength": 1 },
         "geometry": { "$ref": "#/$defs/captureGeometry" }
       },
+      "allOf": [{ "$ref": "#/$defs/saveDirectoryRule" }],
       "additionalProperties": false
     },
     "outputDelivery": {
       "enum": ["clipboard", "folder", "both"]
+    },
+    "saveDirectoryRule": {
+      "if": {
+        "type": "object",
+        "properties": { "delivery": { "const": "clipboard" } },
+        "required": ["delivery"]
+      },
+      "then": {
+        "type": "object",
+        "properties": { "saveDirectory": false }
+      }
     },
     "captureGeometry": {
       "type": "object",

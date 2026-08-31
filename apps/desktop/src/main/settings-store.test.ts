@@ -21,6 +21,7 @@ describe('SettingsStore', () => {
       hdrStatusReminders: true,
     })
     expect(store.getCaptureShortcuts()).toEqual({ region: null, display: null })
+    expect(store.getSaveDirectory()).toBeNull()
     expect(store.getAfterCaptureBehavior()).toBe('do-nothing')
     expect(store.getHdrStatusReminders()).toBe(true)
   })
@@ -61,7 +62,7 @@ describe('SettingsStore', () => {
       region: 'Command+Shift+L',
       display: null,
     })
-    await expect(readFile(filePath, 'utf8')).resolves.toContain('"version": 4')
+    await expect(readFile(filePath, 'utf8')).resolves.toContain('"version": 5')
   })
 
   it('migrates v2 settings and persists an after-capture behavior', async () => {
@@ -89,7 +90,7 @@ describe('SettingsStore', () => {
       display: null,
     })
     expect(restartedStore.getAfterCaptureBehavior()).toBe('show-in-folder')
-    await expect(readFile(filePath, 'utf8')).resolves.toContain('"version": 4')
+    await expect(readFile(filePath, 'utf8')).resolves.toContain('"version": 5')
   })
 
   it('migrates v3 settings and persists the HDR status reminder preference', async () => {
@@ -114,7 +115,36 @@ describe('SettingsStore', () => {
     await restartedStore.load()
     expect(restartedStore.getAfterCaptureBehavior()).toBe('show-in-folder')
     expect(restartedStore.getHdrStatusReminders()).toBe(false)
-    await expect(readFile(filePath, 'utf8')).resolves.toContain('"version": 4')
+    await expect(readFile(filePath, 'utf8')).resolves.toContain('"version": 5')
+  })
+
+  it('migrates v4 settings and persists a custom save directory', async () => {
+    const filePath = await settingsPath()
+    await writeFile(
+      filePath,
+      JSON.stringify({
+        version: 4,
+        outputDelivery: 'both',
+        captureShortcuts: { region: null, display: null },
+        afterCaptureBehavior: 'do-nothing',
+        hdrStatusReminders: true,
+      }),
+      'utf8',
+    )
+    const store = new SettingsStore(filePath)
+    await store.load()
+
+    expect(store.getSaveDirectory()).toBeNull()
+    await store.setSaveDirectory('/Users/example/Pictures/Screenshots')
+
+    const restartedStore = new SettingsStore(filePath)
+    await restartedStore.load()
+    expect(restartedStore.getSaveDirectory()).toBe('/Users/example/Pictures/Screenshots')
+    expect(restartedStore.getCapturePreferences()).toMatchObject({
+      delivery: 'both',
+      saveDirectory: '/Users/example/Pictures/Screenshots',
+    })
+    await expect(readFile(filePath, 'utf8')).resolves.toContain('"version": 5')
   })
 })
 

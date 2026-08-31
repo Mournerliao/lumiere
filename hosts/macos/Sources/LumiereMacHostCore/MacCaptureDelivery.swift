@@ -3,7 +3,7 @@ import Foundation
 
 struct MacCaptureDeliveryAdapters: Sendable {
   let writeClipboard: @Sendable (Data) async throws -> Void
-  let writeFolder: @Sendable (Data) async throws -> String
+  let writeFolder: @Sendable (Data, String?) async throws -> String
 
   static let live = MacCaptureDeliveryAdapters(
     writeClipboard: { pngData in
@@ -15,8 +15,8 @@ struct MacCaptureDeliveryAdapters: Sendable {
         }
       }
     },
-    writeFolder: { pngData in
-      let fileURL = try MacCaptureFolder.outputURL()
+    writeFolder: { pngData, saveDirectory in
+      let fileURL = try MacCaptureFolder.outputURL(saveDirectory: saveDirectory)
       try pngData.write(to: fileURL, options: .atomic)
       return fileURL.path
     }
@@ -27,6 +27,7 @@ enum MacCaptureDelivery {
   static func deliver(
     _ visualMatchPNG: Data,
     to delivery: OutputDelivery,
+    saveDirectory: String? = nil,
     using adapters: MacCaptureDeliveryAdapters = .live
   ) async -> [DeliveryResult] {
     var results: [DeliveryResult] = []
@@ -37,7 +38,7 @@ enum MacCaptureDelivery {
           try await adapters.writeClipboard(visualMatchPNG)
           results.append(.clipboardSuccess())
         case .folder:
-          let filePath = try await adapters.writeFolder(visualMatchPNG)
+          let filePath = try await adapters.writeFolder(visualMatchPNG, saveDirectory)
           results.append(.folderSuccess(filePath: filePath))
         }
       } catch {
@@ -79,9 +80,14 @@ enum MacCaptureDelivery {
 }
 
 private enum MacCaptureFolder {
-  static func outputURL(now: Date = Date()) throws -> URL {
-    let pictures = FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask)[0]
-    let directory = pictures.appendingPathComponent("Lumiere", isDirectory: true)
+  static func outputURL(saveDirectory: String?, now: Date = Date()) throws -> URL {
+    let directory: URL
+    if let saveDirectory {
+      directory = URL(fileURLWithPath: saveDirectory, isDirectory: true)
+    } else {
+      let pictures = FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask)[0]
+      directory = pictures.appendingPathComponent("Lumiere", isDirectory: true)
+    }
     try FileManager.default.createDirectory(
       at: directory,
       withIntermediateDirectories: true,

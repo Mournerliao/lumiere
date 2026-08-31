@@ -9,6 +9,7 @@ describe('SettingsView', () => {
         snapshot={{
           outputDelivery: 'clipboard',
           availableOutputDeliveries: ['clipboard'],
+          saveDirectory: '/Users/example/Pictures/Screenshots',
           captureShortcuts: {
             region: { accelerator: null, status: 'unconfigured' },
             display: { accelerator: null, status: 'unconfigured' },
@@ -33,6 +34,7 @@ describe('SettingsView', () => {
         error={null}
         onDone={() => undefined}
         onOutputDeliveryChange={() => undefined}
+        onChooseSaveDirectory={() => undefined}
         onAfterCaptureBehaviorChange={() => undefined}
         onHdrStatusRemindersChange={() => undefined}
         onShortcutChange={() => Promise.resolve()}
@@ -49,6 +51,8 @@ describe('SettingsView', () => {
     expect(markup).toContain('aria-label="Output settings" aria-pressed="true"')
     expect(markup).toContain('aria-label="Capture settings" aria-pressed="false"')
     expect(markup).toContain('Save folder')
+    expect(markup).toContain('Choose save folder')
+    expect(markup).toContain('/Users/example/Pictures/Screenshots')
     expect(markup).toContain('File naming')
   })
 })

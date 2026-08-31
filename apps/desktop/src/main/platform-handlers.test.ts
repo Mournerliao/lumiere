@@ -30,6 +30,7 @@ describe('platform handlers', () => {
     await handlers.capture({
       mode: 'region',
       delivery: 'both',
+      saveDirectory: '/tmp/captures',
       targetId: 'display-17',
       geometry: {
         coordinateSpace: 'target-logical',
@@ -44,6 +45,7 @@ describe('platform handlers', () => {
       {
         mode: 'region',
         delivery: 'both',
+        saveDirectory: '/tmp/captures',
         targetId: 'display-17',
         geometry: {
           coordinateSpace: 'target-logical',

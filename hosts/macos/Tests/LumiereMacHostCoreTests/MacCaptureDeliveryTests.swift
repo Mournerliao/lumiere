@@ -11,13 +11,19 @@ func deliversBothTargetsFromTheSameVisualMatchPNG() async throws {
     writeClipboard: { data in
       await recorder.recordClipboard(data)
     },
-    writeFolder: { data in
+    writeFolder: { data, saveDirectory in
       await recorder.recordFolder(data)
+      await recorder.recordSaveDirectory(saveDirectory)
       return "/tmp/Lumiere-2026-08-25-120000.png"
     }
   )
 
-  let results = await MacCaptureDelivery.deliver(expectedPNG, to: .both, using: adapters)
+  let results = await MacCaptureDelivery.deliver(
+    expectedPNG,
+    to: .both,
+    saveDirectory: "/tmp/custom-captures",
+    using: adapters
+  )
 
   #expect(
     results == [
@@ -27,13 +33,14 @@ func deliversBothTargetsFromTheSameVisualMatchPNG() async throws {
   )
   #expect(await recorder.clipboardData() == expectedPNG)
   #expect(await recorder.folderData() == expectedPNG)
+  #expect(await recorder.saveDirectory() == "/tmp/custom-captures")
 }
 
 @Test
 func preservesEachTargetFailureWithoutFailingTheConvertedCapture() async {
   let adapters = MacCaptureDeliveryAdapters(
     writeClipboard: { _ in throw DeliveryStubError.clipboard },
-    writeFolder: { _ in throw DeliveryStubError.folder }
+    writeFolder: { _, _ in throw DeliveryStubError.folder }
   )
 
   let results = await MacCaptureDelivery.deliver(Data([1, 2, 3]), to: .both, using: adapters)
@@ -44,9 +51,30 @@ func preservesEachTargetFailureWithoutFailingTheConvertedCapture() async {
   #expect(results.allSatisfy { $0.failure?.code == .deliveryFailed })
 }
 
+@Test
+func createsAndWritesToCustomSaveDirectory() async throws {
+  let directory = FileManager.default.temporaryDirectory
+    .appendingPathComponent("lumiere-custom-folder-\(UUID().uuidString)", isDirectory: true)
+  defer { try? FileManager.default.removeItem(at: directory) }
+  let expectedData = Data([1, 2, 3, 4])
+
+  let results = await MacCaptureDelivery.deliver(
+    expectedData,
+    to: .folder,
+    saveDirectory: directory.path
+  )
+
+  let result = try #require(results.first)
+  #expect(result.status == "success")
+  let filePath = try #require(result.filePath)
+  #expect(filePath.hasPrefix(directory.path))
+  #expect(try Data(contentsOf: URL(fileURLWithPath: filePath)) == expectedData)
+}
+
 private actor DeliveryRecorder {
   private var clipboard: Data?
   private var folder: Data?
+  private var directory: String?
 
   func recordClipboard(_ data: Data) {
     clipboard = data
@@ -56,12 +84,20 @@ private actor DeliveryRecorder {
     folder = data
   }
 
+  func recordSaveDirectory(_ value: String?) {
+    directory = value
+  }
+
   func clipboardData() -> Data? {
     clipboard
   }
 
   func folderData() -> Data? {
     folder
+  }
+
+  func saveDirectory() -> String? {
+    directory
   }
 }
 

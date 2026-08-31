@@ -54,6 +54,39 @@ public sealed class WindowsHostOperationsTests
     }
 
     [Fact]
+    public async Task CaptureAsync_ForwardsCustomSaveDirectoryWithoutResolvingDefault()
+    {
+        var engine = new StubCaptureEngine
+        {
+            Result = TestCaptureResults.FolderSuccess("D:\\Screenshots\\capture.png"),
+        };
+        var defaultDirectoryCalls = 0;
+        string? createdDirectory = null;
+        await using var operations = new WindowsHostOperations(
+            () => engine,
+            NoTargetCapability,
+            static () => "target-token",
+            () =>
+            {
+                defaultDirectoryCalls++;
+                return "C:\\Pictures\\Lumiere";
+            },
+            path => createdDirectory = path);
+
+        var result = await operations.CaptureAsync(
+            "capture-custom",
+            new HostCaptureRequest(
+                "display",
+                "folder",
+                SaveDirectory: "D:\\Screenshots"));
+
+        Assert.Equal("completed", result.Status);
+        Assert.Equal(0, defaultDirectoryCalls);
+        Assert.Equal("D:\\Screenshots", createdDirectory);
+        Assert.Equal("D:\\Screenshots", engine.Request?.SaveDirectory);
+    }
+
+    [Fact]
     public async Task CaptureAsync_ForwardsClipboardWithoutCreatingFolder()
     {
         var engine = new StubCaptureEngine

@@ -42,10 +42,12 @@ export type CaptureRequest =
   | {
       mode: 'display'
       delivery: OutputDelivery
+      saveDirectory?: string
     }
   | {
       mode: 'region'
       delivery: OutputDelivery
+      saveDirectory?: string
       targetId: string
       geometry: CaptureGeometry
     }
@@ -142,26 +144,51 @@ export function parseCaptureRequest(value: unknown): CaptureRequest {
   if (!outputDeliveries.includes(value.delivery as OutputDelivery)) {
     throw new PlatformContractError('Output delivery must be clipboard, folder, or both.')
   }
+  const delivery = value.delivery as OutputDelivery
+  const saveDirectory = parseSaveDirectory(value.saveDirectory, delivery)
 
   if (value.mode === 'display') {
-    requireExactKeys(value, ['mode', 'delivery'])
+    requireExactKeys(
+      value,
+      saveDirectory ? ['mode', 'delivery', 'saveDirectory'] : ['mode', 'delivery'],
+    )
     return {
       mode: 'display',
-      delivery: value.delivery as OutputDelivery,
+      delivery,
+      ...(saveDirectory ? { saveDirectory } : {}),
     }
   }
 
-  requireExactKeys(value, ['mode', 'delivery', 'targetId', 'geometry'])
+  requireExactKeys(
+    value,
+    saveDirectory
+      ? ['mode', 'delivery', 'saveDirectory', 'targetId', 'geometry']
+      : ['mode', 'delivery', 'targetId', 'geometry'],
+  )
   if (typeof value.targetId !== 'string' || value.targetId.length === 0) {
     throw new PlatformContractError('Region target id must be a non-empty string.')
   }
   const geometry = parseCaptureGeometry(value.geometry)
   return {
     mode: 'region',
-    delivery: value.delivery as OutputDelivery,
+    delivery,
+    ...(saveDirectory ? { saveDirectory } : {}),
     targetId: value.targetId,
     geometry,
   }
+}
+
+function parseSaveDirectory(value: unknown, delivery: OutputDelivery): string | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+  if (delivery === 'clipboard') {
+    throw new PlatformContractError('Clipboard-only capture must not include a save directory.')
+  }
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new PlatformContractError('Save directory must be a non-empty string.')
+  }
+  return value
 }
 
 export function deliveryTargetsFor(delivery: OutputDelivery): readonly DeliveryTarget[] {

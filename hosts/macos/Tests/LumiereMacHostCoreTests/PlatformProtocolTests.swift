@@ -28,6 +28,26 @@ func decodesDisplayFolderCaptureRequest() throws {
 }
 
 @Test
+func decodesCustomSaveDirectoryForFolderCapture() throws {
+  let request = try PlatformRequestDecoder.decode(
+    line:
+      #"{"version":2,"id":"capture-custom","method":"capture","params":{"mode":"display","delivery":"folder","saveDirectory":"/tmp/custom-captures"}}"#
+  )
+
+  #expect(request.capture?.saveDirectory == "/tmp/custom-captures")
+}
+
+@Test
+func rejectsSaveDirectoryForClipboardOnlyCapture() {
+  #expect(throws: PlatformProtocolError.self) {
+    try PlatformRequestDecoder.decode(
+      line:
+        #"{"version":2,"id":"capture-invalid-directory","method":"capture","params":{"mode":"display","delivery":"clipboard","saveDirectory":"/tmp/custom-captures"}}"#
+    )
+  }
+}
+
+@Test
 func decodesTargetLocalRegionCaptureRequest() throws {
   let request = try PlatformRequestDecoder.decode(
     line:

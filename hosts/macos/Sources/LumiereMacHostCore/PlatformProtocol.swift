@@ -61,17 +61,20 @@ public struct CaptureGeometry: Codable, Equatable, Sendable {
 public struct CaptureParameters: Codable, Equatable, Sendable {
   public let mode: CaptureMode
   public let delivery: OutputDelivery
+  public let saveDirectory: String?
   public let targetId: String?
   public let geometry: CaptureGeometry?
 
   public init(
     mode: CaptureMode,
     delivery: OutputDelivery,
+    saveDirectory: String? = nil,
     targetId: String? = nil,
     geometry: CaptureGeometry? = nil
   ) {
     self.mode = mode
     self.delivery = delivery
+    self.saveDirectory = saveDirectory
     self.targetId = targetId
     self.geometry = geometry
   }
@@ -304,16 +307,22 @@ public enum PlatformRequestDecoder {
         "Capture delivery must be clipboard, folder, or both."
       )
     }
+    let saveDirectory = try decodeSaveDirectory(parameters, delivery: delivery)
 
     if mode == .display {
-      try requireExactKeys(parameters, expected: ["mode", "delivery"])
-      return CaptureParameters(mode: mode, delivery: delivery)
+      var expectedKeys: Set<String> = ["mode", "delivery"]
+      if saveDirectory != nil { expectedKeys.insert("saveDirectory") }
+      try requireExactKeys(parameters, expected: expectedKeys)
+      return CaptureParameters(
+        mode: mode,
+        delivery: delivery,
+        saveDirectory: saveDirectory
+      )
     }
 
-    try requireExactKeys(
-      parameters,
-      expected: ["mode", "delivery", "targetId", "geometry"]
-    )
+    var expectedKeys: Set<String> = ["mode", "delivery", "targetId", "geometry"]
+    if saveDirectory != nil { expectedKeys.insert("saveDirectory") }
+    try requireExactKeys(parameters, expected: expectedKeys)
     guard let targetId = parameters["targetId"] as? String, !targetId.isEmpty,
       let geometryObject = parameters["geometry"] as? [String: Any]
     else {
@@ -325,9 +334,30 @@ public enum PlatformRequestDecoder {
     return CaptureParameters(
       mode: mode,
       delivery: delivery,
+      saveDirectory: saveDirectory,
       targetId: targetId,
       geometry: geometry
     )
+  }
+
+  private static func decodeSaveDirectory(
+    _ parameters: [String: Any],
+    delivery: OutputDelivery
+  ) throws -> String? {
+    guard let value = parameters["saveDirectory"] else {
+      return nil
+    }
+    guard delivery != .clipboard else {
+      throw PlatformProtocolError.invalidEnvelope(
+        "Clipboard-only capture must not include a save directory."
+      )
+    }
+    guard let path = value as? String, !path.isEmpty, path.hasPrefix("/") else {
+      throw PlatformProtocolError.invalidEnvelope(
+        "Save directory must be an absolute non-empty path."
+      )
+    }
+    return path
   }
 
   private static func decodeGeometry(_ object: [String: Any]) throws -> CaptureGeometry {

@@ -61,6 +61,13 @@ requested. The shell derives full success, partial success, or total delivery fa
 from these per-target results and never treats artifact delivery as proof of visual
 match or HDR preservation.
 
+Folder and Both capture parameters may include an absolute, platform-native
+`saveDirectory`. Its absence preserves the Host's Pictures/Lumiere default. A
+clipboard-only request must not include it. The shell owns directory selection and
+preference persistence; the Host owns directory creation, fixed timestamp naming, file
+writing, and the folder delivery result. Directory failure remains target-local so a
+successful clipboard delivery is preserved.
+
 ### Cancellation ownership
 
 Before a `capture` request is sent, the shell owns cancellation, Overlay teardown, and

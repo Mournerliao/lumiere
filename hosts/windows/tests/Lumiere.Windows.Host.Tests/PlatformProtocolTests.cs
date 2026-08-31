@@ -55,6 +55,38 @@ public sealed class PlatformProtocolTests
     }
 
     [Fact]
+    public async Task Capture_ForwardsCustomSaveDirectory()
+    {
+        var engine = new StubCaptureEngine
+        {
+            Result = TestCaptureResults.FolderSuccess("D:\\Screenshots\\capture.png"),
+        };
+        await using var operations = CreateOperations(engine);
+
+        var response = await PlatformProtocol.ProcessLineAsync(
+            """{"version":2,"id":"capture-custom","method":"capture","params":{"mode":"display","delivery":"folder","saveDirectory":"D:\\Screenshots"}}""",
+            operations);
+
+        using var document = JsonDocument.Parse(response.ResponseLine);
+        Assert.Equal("completed", document.RootElement.GetProperty("result").GetProperty("status").GetString());
+        Assert.Equal("D:\\Screenshots", engine.Request?.SaveDirectory);
+    }
+
+    [Fact]
+    public async Task Capture_RejectsSaveDirectoryForClipboardOnlyRequest()
+    {
+        await using var operations = CreateOperations();
+        var response = await PlatformProtocol.ProcessLineAsync(
+            """{"version":2,"id":"capture-invalid-directory","method":"capture","params":{"mode":"display","delivery":"clipboard","saveDirectory":"D:\\Screenshots"}}""",
+            operations);
+
+        using var document = JsonDocument.Parse(response.ResponseLine);
+        Assert.Equal(
+            "invalid-request",
+            document.RootElement.GetProperty("error").GetProperty("code").GetString());
+    }
+
+    [Fact]
     public async Task Capture_SerializesBothDeliveryOutcomes()
     {
         var engine = new StubCaptureEngine

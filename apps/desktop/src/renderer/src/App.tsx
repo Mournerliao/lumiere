@@ -302,6 +302,19 @@ function SettingsWindow({ onDone }: { onDone: () => void }): React.JSX.Element {
     }
   }
 
+  const chooseSaveDirectory = async (): Promise<void> => {
+    setIsSaving(true)
+    setError(null)
+    try {
+      setSnapshot(await window.lumierePlatform.chooseSaveDirectory())
+      setSurfaceSnapshot(await window.lumierePlatform.getCaptureSurfaceSnapshot())
+    } catch {
+      setError('The save folder could not be changed. Try again.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const setAfterCaptureBehavior = async (behavior: AfterCaptureBehavior): Promise<void> => {
     setIsSaving(true)
     setError(null)
@@ -353,6 +366,7 @@ function SettingsWindow({ onDone }: { onDone: () => void }): React.JSX.Element {
       error={error}
       onDone={onDone}
       onOutputDeliveryChange={(delivery) => void setOutputDelivery(delivery)}
+      onChooseSaveDirectory={() => void chooseSaveDirectory()}
       onAfterCaptureBehaviorChange={(behavior) => void setAfterCaptureBehavior(behavior)}
       onHdrStatusRemindersChange={(enabled) => void setHdrStatusReminders(enabled)}
       onShortcutChange={setCaptureShortcut}

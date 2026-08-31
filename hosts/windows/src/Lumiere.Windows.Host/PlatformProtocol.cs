@@ -20,7 +20,8 @@ public sealed record HostCaptureRequest(
     string Mode,
     string Delivery,
     string? TargetId = null,
-    HostCaptureGeometry? Geometry = null);
+    HostCaptureGeometry? Geometry = null,
+    string? SaveDirectory = null);
 
 public sealed record HostLogicalSize(double Width, double Height);
 
@@ -160,11 +161,16 @@ public static class PlatformProtocol
             throw new PlatformProtocolException(
                 "Capture delivery must be clipboard, folder, or both.");
         }
+        var saveDirectory = ReadSaveDirectory(parameters, delivery);
 
         if (mode == "display")
         {
-            RequireExactProperties(parameters, "mode", "delivery");
-            return new HostCaptureRequest(mode, delivery);
+            RequireExactProperties(
+                parameters,
+                saveDirectory is null
+                    ? ["mode", "delivery"]
+                    : ["mode", "delivery", "saveDirectory"]);
+            return new HostCaptureRequest(mode, delivery, SaveDirectory: saveDirectory);
         }
 
         if (mode != "region")
@@ -172,7 +178,11 @@ public static class PlatformProtocol
             throw new PlatformProtocolException("Capture mode must be region or display.");
         }
 
-        RequireExactProperties(parameters, "mode", "delivery", "targetId", "geometry");
+        RequireExactProperties(
+            parameters,
+            saveDirectory is null
+                ? ["mode", "delivery", "targetId", "geometry"]
+                : ["mode", "delivery", "targetId", "geometry", "saveDirectory"]);
         var targetId = RequireNonEmptyString(parameters, "targetId", "Region target id");
         var geometry = RequireObject(parameters, "geometry", "Region geometry");
         RequireExactProperties(geometry, "coordinateSpace", "x", "y", "width", "height");
@@ -191,7 +201,32 @@ public static class PlatformProtocol
             mode,
             delivery,
             targetId,
-            new HostCaptureGeometry(x, y, width, height));
+            new HostCaptureGeometry(x, y, width, height),
+            saveDirectory);
+    }
+
+    private static string? ReadSaveDirectory(JsonElement parameters, string delivery)
+    {
+        if (!parameters.TryGetProperty("saveDirectory", out var property))
+        {
+            return null;
+        }
+
+        if (delivery == "clipboard")
+        {
+            throw new PlatformProtocolException(
+                "Clipboard-only capture must not include a save directory.");
+        }
+
+        if (property.ValueKind != JsonValueKind.String
+            || string.IsNullOrWhiteSpace(property.GetString())
+            || !Path.IsPathFullyQualified(property.GetString()!))
+        {
+            throw new PlatformProtocolException(
+                "Save directory must be an absolute non-empty path.");
+        }
+
+        return property.GetString();
     }
 
     private static ProtocolLineResult Success(string requestId, object result) =>

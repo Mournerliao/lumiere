@@ -1,5 +1,5 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
+import { dirname, isAbsolute } from 'node:path'
 import type { CapturePreferences, CapturePreferencesReader } from './capture-command-router'
 import {
   parseAfterCaptureBehavior,
@@ -14,15 +14,17 @@ import {
 } from '../shared/shortcut-command'
 import type { OutputDelivery } from '../shared/platform-contract'
 
-const SETTINGS_VERSION = 4 as const
+const SETTINGS_VERSION = 5 as const
 const DEFAULT_OUTPUT_DELIVERY: OutputDelivery = 'both'
 const DEFAULT_CAPTURE_SHORTCUTS: CaptureShortcuts = { region: null, display: null }
 const DEFAULT_AFTER_CAPTURE_BEHAVIOR: AfterCaptureBehavior = 'do-nothing'
 const DEFAULT_HDR_STATUS_REMINDERS = true
+const DEFAULT_SAVE_DIRECTORY = null
 
-interface PersistedSettingsV4 {
+interface PersistedSettingsV5 {
   version: typeof SETTINGS_VERSION
   outputDelivery: OutputDelivery
+  saveDirectory: string | null
   captureShortcuts: CaptureShortcuts
   afterCaptureBehavior: AfterCaptureBehavior
   hdrStatusReminders: boolean
@@ -30,6 +32,7 @@ interface PersistedSettingsV4 {
 
 export class SettingsStore implements CapturePreferencesReader {
   private outputDelivery: OutputDelivery = DEFAULT_OUTPUT_DELIVERY
+  private saveDirectory: string | null = DEFAULT_SAVE_DIRECTORY
   private captureShortcuts: CaptureShortcuts = { ...DEFAULT_CAPTURE_SHORTCUTS }
   private afterCaptureBehavior: AfterCaptureBehavior = DEFAULT_AFTER_CAPTURE_BEHAVIOR
   private hdrStatusReminders = DEFAULT_HDR_STATUS_REMINDERS
@@ -42,6 +45,7 @@ export class SettingsStore implements CapturePreferencesReader {
       const parsed: unknown = JSON.parse(await readFile(this.filePath, 'utf8'))
       const settings = parsePersistedSettings(parsed)
       this.outputDelivery = settings.outputDelivery
+      this.saveDirectory = settings.saveDirectory
       this.captureShortcuts = settings.captureShortcuts
       this.afterCaptureBehavior = settings.afterCaptureBehavior
       this.hdrStatusReminders = settings.hdrStatusReminders
@@ -50,6 +54,7 @@ export class SettingsStore implements CapturePreferencesReader {
         return
       }
       this.outputDelivery = DEFAULT_OUTPUT_DELIVERY
+      this.saveDirectory = DEFAULT_SAVE_DIRECTORY
       this.captureShortcuts = { ...DEFAULT_CAPTURE_SHORTCUTS }
       this.afterCaptureBehavior = DEFAULT_AFTER_CAPTURE_BEHAVIOR
       this.hdrStatusReminders = DEFAULT_HDR_STATUS_REMINDERS
@@ -57,11 +62,19 @@ export class SettingsStore implements CapturePreferencesReader {
   }
 
   public getCapturePreferences(): CapturePreferences {
-    return { delivery: this.outputDelivery, hdrStatusReminders: this.hdrStatusReminders }
+    return {
+      delivery: this.outputDelivery,
+      ...(this.saveDirectory ? { saveDirectory: this.saveDirectory } : {}),
+      hdrStatusReminders: this.hdrStatusReminders,
+    }
   }
 
   public getOutputDelivery(): OutputDelivery {
     return this.outputDelivery
+  }
+
+  public getSaveDirectory(): string | null {
+    return this.saveDirectory
   }
 
   public getCaptureShortcuts(): CaptureShortcuts {
@@ -81,11 +94,29 @@ export class SettingsStore implements CapturePreferencesReader {
     const write = async (): Promise<void> => {
       await this.writeSettings(
         next,
+        this.saveDirectory,
         this.captureShortcuts,
         this.afterCaptureBehavior,
         this.hdrStatusReminders,
       )
       this.outputDelivery = next
+    }
+
+    this.pendingWrite = this.pendingWrite.then(write, write)
+    await this.pendingWrite
+  }
+
+  public async setSaveDirectory(saveDirectory: string): Promise<void> {
+    const next = parseSaveDirectory(saveDirectory)
+    const write = async (): Promise<void> => {
+      await this.writeSettings(
+        this.outputDelivery,
+        next,
+        this.captureShortcuts,
+        this.afterCaptureBehavior,
+        this.hdrStatusReminders,
+      )
+      this.saveDirectory = next
     }
 
     this.pendingWrite = this.pendingWrite.then(write, write)
@@ -98,6 +129,7 @@ export class SettingsStore implements CapturePreferencesReader {
       const shortcuts = { ...this.captureShortcuts, [mode]: next }
       await this.writeSettings(
         this.outputDelivery,
+        this.saveDirectory,
         shortcuts,
         this.afterCaptureBehavior,
         this.hdrStatusReminders,
@@ -114,6 +146,7 @@ export class SettingsStore implements CapturePreferencesReader {
     const write = async (): Promise<void> => {
       await this.writeSettings(
         this.outputDelivery,
+        this.saveDirectory,
         this.captureShortcuts,
         next,
         this.hdrStatusReminders,
@@ -130,6 +163,7 @@ export class SettingsStore implements CapturePreferencesReader {
     const write = async (): Promise<void> => {
       await this.writeSettings(
         this.outputDelivery,
+        this.saveDirectory,
         this.captureShortcuts,
         this.afterCaptureBehavior,
         next,
@@ -143,13 +177,15 @@ export class SettingsStore implements CapturePreferencesReader {
 
   private async writeSettings(
     outputDelivery: OutputDelivery,
+    saveDirectory: string | null,
     captureShortcuts: CaptureShortcuts,
     afterCaptureBehavior: AfterCaptureBehavior,
     hdrStatusReminders: boolean,
   ): Promise<void> {
-    const settings: PersistedSettingsV4 = {
+    const settings: PersistedSettingsV5 = {
       version: SETTINGS_VERSION,
       outputDelivery,
+      saveDirectory,
       captureShortcuts,
       afterCaptureBehavior,
       hdrStatusReminders,
@@ -161,10 +197,11 @@ export class SettingsStore implements CapturePreferencesReader {
   }
 }
 
-function parsePersistedSettings(value: unknown): Omit<PersistedSettingsV4, 'version'> {
+function parsePersistedSettings(value: unknown): Omit<PersistedSettingsV5, 'version'> {
   if (isPersistedV1(value)) {
     return {
       outputDelivery: parseOutputDelivery(value.outputDelivery),
+      saveDirectory: DEFAULT_SAVE_DIRECTORY,
       captureShortcuts: { ...DEFAULT_CAPTURE_SHORTCUTS },
       afterCaptureBehavior: DEFAULT_AFTER_CAPTURE_BEHAVIOR,
       hdrStatusReminders: DEFAULT_HDR_STATUS_REMINDERS,
@@ -173,6 +210,7 @@ function parsePersistedSettings(value: unknown): Omit<PersistedSettingsV4, 'vers
   if (isPersistedV2(value)) {
     return {
       outputDelivery: parseOutputDelivery(value.outputDelivery),
+      saveDirectory: DEFAULT_SAVE_DIRECTORY,
       captureShortcuts: parsePersistedShortcuts(value.captureShortcuts),
       afterCaptureBehavior: DEFAULT_AFTER_CAPTURE_BEHAVIOR,
       hdrStatusReminders: DEFAULT_HDR_STATUS_REMINDERS,
@@ -181,18 +219,29 @@ function parsePersistedSettings(value: unknown): Omit<PersistedSettingsV4, 'vers
   if (isPersistedV3(value)) {
     return {
       outputDelivery: parseOutputDelivery(value.outputDelivery),
+      saveDirectory: DEFAULT_SAVE_DIRECTORY,
       captureShortcuts: parsePersistedShortcuts(value.captureShortcuts),
       afterCaptureBehavior: parseAfterCaptureBehavior(value.afterCaptureBehavior),
       hdrStatusReminders: DEFAULT_HDR_STATUS_REMINDERS,
+    }
+  }
+  if (isPersistedV4(value)) {
+    return {
+      outputDelivery: parseOutputDelivery(value.outputDelivery),
+      saveDirectory: DEFAULT_SAVE_DIRECTORY,
+      captureShortcuts: parsePersistedShortcuts(value.captureShortcuts),
+      afterCaptureBehavior: parseAfterCaptureBehavior(value.afterCaptureBehavior),
+      hdrStatusReminders: parseHdrStatusReminders(value.hdrStatusReminders),
     }
   }
   if (
     typeof value !== 'object' ||
     value === null ||
     Array.isArray(value) ||
-    Object.keys(value).length !== 5 ||
+    Object.keys(value).length !== 6 ||
     !('version' in value) ||
     !('outputDelivery' in value) ||
+    !('saveDirectory' in value) ||
     !('captureShortcuts' in value) ||
     !('afterCaptureBehavior' in value) ||
     !('hdrStatusReminders' in value) ||
@@ -203,10 +252,32 @@ function parsePersistedSettings(value: unknown): Omit<PersistedSettingsV4, 'vers
 
   return {
     outputDelivery: parseOutputDelivery(value.outputDelivery),
+    saveDirectory: value.saveDirectory === null ? null : parseSaveDirectory(value.saveDirectory),
     captureShortcuts: parsePersistedShortcuts(value.captureShortcuts),
     afterCaptureBehavior: parseAfterCaptureBehavior(value.afterCaptureBehavior),
     hdrStatusReminders: parseHdrStatusReminders(value.hdrStatusReminders),
   }
+}
+
+function isPersistedV4(value: unknown): value is {
+  version: 4
+  outputDelivery: unknown
+  captureShortcuts: unknown
+  afterCaptureBehavior: unknown
+  hdrStatusReminders: unknown
+} {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.keys(value).length === 5 &&
+    'version' in value &&
+    value.version === 4 &&
+    'outputDelivery' in value &&
+    'captureShortcuts' in value &&
+    'afterCaptureBehavior' in value &&
+    'hdrStatusReminders' in value
+  )
 }
 
 function isPersistedV3(value: unknown): value is {
@@ -270,6 +341,13 @@ function parsePersistedShortcuts(value: unknown): CaptureShortcuts {
     region: value.region === null ? null : parseShortcutAccelerator(value.region),
     display: value.display === null ? null : parseShortcutAccelerator(value.display),
   }
+}
+
+function parseSaveDirectory(value: unknown): string {
+  if (typeof value !== 'string' || value.trim().length === 0 || !isAbsolute(value)) {
+    throw new Error('The save directory setting is invalid.')
+  }
+  return value
 }
 
 function isMissingFile(error: unknown): boolean {

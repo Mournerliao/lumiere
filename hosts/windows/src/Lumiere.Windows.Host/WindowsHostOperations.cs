@@ -152,13 +152,23 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
             string? directory = null;
             if (delivery is OutputTarget.Folder or OutputTarget.Both)
             {
-                directory = outputDirectory();
+                directory = request.SaveDirectory ?? outputDirectory();
                 if (string.IsNullOrWhiteSpace(directory))
                 {
                     throw new InvalidOperationException("The Windows capture folder could not be resolved.");
                 }
 
-                createDirectory(directory);
+                try
+                {
+                    createDirectory(directory);
+                }
+                catch (Exception exception)
+                {
+                    logger.LogWarning(
+                        exception,
+                        "operation=CaptureDirectory, stage=CreateFailed, correlation={CorrelationId}",
+                        requestId);
+                }
             }
 
             var captureRequest = new WindowsCaptureRequest(requestId, delivery, directory);

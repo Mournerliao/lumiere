@@ -8,6 +8,7 @@ export const settingsCommandChannels = {
   setCaptureShortcut: 'settings:set-capture-shortcut',
   setHdrStatusReminders: 'settings:set-hdr-status-reminders',
   setOutputDelivery: 'settings:set-output-delivery',
+  chooseSaveDirectory: 'settings:choose-save-directory',
   setShortcutRecording: 'settings:set-shortcut-recording',
   showRequested: 'settings:show-requested',
 } as const
@@ -19,6 +20,7 @@ export type AfterCaptureBehavior = (typeof afterCaptureBehaviorOptions)[number]
 export interface SettingsSnapshot {
   outputDelivery: OutputDelivery
   availableOutputDeliveries: readonly OutputDelivery[]
+  saveDirectory: string
   captureShortcuts: CaptureShortcutSnapshot
   afterCaptureBehavior: AfterCaptureBehavior
   hdrStatusReminders: boolean
@@ -29,6 +31,7 @@ export type ShortcutUpdateResult =
 
 export interface LumiereSettingsApi {
   getSettingsSnapshot(): Promise<SettingsSnapshot>
+  chooseSaveDirectory(): Promise<SettingsSnapshot>
   setOutputDelivery(delivery: OutputDelivery): Promise<SettingsSnapshot>
   setAfterCaptureBehavior(behavior: AfterCaptureBehavior): Promise<SettingsSnapshot>
   setHdrStatusReminders(enabled: boolean): Promise<SettingsSnapshot>

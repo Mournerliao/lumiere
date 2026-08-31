@@ -1,6 +1,6 @@
 # Current Project State
 
-- Updated: 2026-08-30
+- Updated: 2026-08-31
 - Current milestone: 1 — Cross-platform HDR-aware MVP
 - Release target: Windows + macOS HDR-aware MVP with sRGB Visual Match
 - Completed foundation record: [GitHub Issue #1](https://github.com/Mournerliao/lumiere/issues/1)
@@ -43,7 +43,11 @@ persists whether non-blocking HDR status reminders are shown. The default remain
 main-owned IPC writes the setting, the capture router
 projects an advisory only when the Host still declares capture available, and disabling the
 preference hides neither the underlying target status nor any blocking Host, permission, or
-capture failure. Settings v4 migrates v1 through v3 values with the reminder default intact.
+  capture failure. Settings v5 now also persists an optional custom save directory while migrating
+  v1 through v4 values. Main owns the native directory picker and exposes only a no-argument,
+  task-shaped preload command; Folder and Both capture requests may carry the selected absolute
+  path through protocol v2 while each Host retains directory creation, fixed naming, file writing,
+  and target-local delivery failure. The platform default remains Pictures/Lumiere.
 The Windows engine now exposes one
 deep capture operation that owns target resolution and target-bound Region cropping,
 target-aware HDR probing, first-frame acquisition, one sRGB Visual Match conversion,
@@ -78,7 +82,7 @@ WinUI and the old validation/HDR10-JXR paths remain removed.
 | 0. Foundation | Complete | Final layout, secure shell, language-neutral protocol, paused Windows engine; macOS and Windows CI pass | None |
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
 | 1B. Windows host adapter | Complete ([#7](https://github.com/Mournerliao/lumiere/issues/7), [#10](https://github.com/Mournerliao/lumiere/issues/10)) | The v2 Host has strict JSON Lines handling, structured diagnostics, Electron supervision, target-aware HDR/logical-geometry capabilities, SDR-white-aware HDR Visual Match conversion, Display plus target-bound Region routing, Clipboard/Folder/Both delivery, sanitized protocol failures, deterministic teardown, and verified interactive HDR/SDR runtime journeys | None |
-| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture/HDR-reminder surfaces, generated tokens, persisted capability-gated output, shortcut, after-capture, and HDR-reminder preferences, one main-process capture router, capability-gated tray/menu-bar, v2 target/delivery contract, shared Region Overlay, HiDPI-aware macOS geometry, and verified macOS display/region/after-capture journeys | Resolve custom save-directory ownership separately, then complete the cross-platform product verification |
+| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture/HDR-reminder/save-directory surfaces, generated tokens, persisted capability-gated preferences, one main-process capture router, capability-gated tray/menu-bar, v2 target/delivery/custom-directory contract, shared Region Overlay, HiDPI-aware macOS geometry, and verified macOS display/region/after-capture/custom-directory journeys | Run the updated Windows repository/runtime gates and remaining cross-platform product verification |
 | 1D. Distribution and release | Not started | The traditional Windows installer remains the primary path; borderless WGC requires a signed external-location sparse identity package and user consent | Implement identity-package registration/upgrade/removal and bordered fallback, produce the signed/notarized macOS artifact, then complete clean-machine and hardware verification |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
 | 3. Cross-platform HDR fidelity | Planned; not started | Fidelity is separated from artifact success and HDR preservation | Define support matrix/tolerances and run fixed-scene verification |
@@ -88,9 +92,9 @@ acceptance criteria and implementation status for each vertical slice.
 
 ## Verification Truth
 
-- **Repository:** frozen install, layout and TypeScript checks, eighty-two cross-platform
-  shell/protocol/process/settings/UI tests, three macOS path tests, twenty-five Swift
-  protocol/capability/permission/diagnostic/geometry tests plus two native-delivery tests, twenty-eight
+- **Repository:** frozen install, layout and TypeScript checks, eighty-four cross-platform
+  shell/protocol/process/settings/UI tests, three macOS path tests, twenty-seven Swift
+  protocol/capability/permission/diagnostic/geometry tests plus three native-delivery tests, twenty-eight
   Windows Host protocol/lifecycle tests, and production builds pass locally on the named Windows
   machine and macOS. Shared, macOS, and Windows test gates are
   explicit and platform-scoped.
@@ -99,6 +103,10 @@ acceptance criteria and implementation status for each vertical slice.
   enabled advisory, Capture Settings switch, disabled reminder state, and stable no-scroll layout;
   it used typed local preload-state fixtures and therefore establishes renderer behavior only, not
   Windows or macOS runtime persistence.
+  The custom-directory slice passed the current macOS repository checks, all eighty-four shared
+  tests, three macOS path tests, thirty Swift tests, Swift formatting, and the production Electron
+  build. Its updated Windows Host source and tests were not run on this Mac because `dotnet` is not
+  installed; the prior Windows counts do not verify this slice.
 - **macOS development runtime:** the Electron display action drove ScreenCaptureKit to
   RGBA8 PNG files with alpha and an embedded sRGB IEC61966-2.1 profile on an Apple
   Silicon Mac. SDR capture was observed at 2560×1440 on an external display. Native
@@ -155,7 +163,16 @@ acceptance criteria and implementation status for each vertical slice.
   retained the embedded sRGB profile, and completed clipboard-plus-folder delivery. These
   observations establish corrected backing-pixel geometry and Region sharpness on the named
   scaled external display; the built-in Retina XDR path was not re-observed after this geometry
-  correction.
+  correction. The custom-directory Settings surface was then exercised through the real 480×370
+  development Electron window and native directory picker. A Display-to-Both capture wrote
+  `Lumiere-2026-08-31-115523.png` (20,824,119 bytes) to a non-default temporary directory and
+  reported copy and save success. A full development-app restart restored that custom path in the
+  main-window summary. With `Show in folder` enabled, a second Display-to-Both capture wrote
+  `Lumiere-2026-08-31-115928.png` (20,857,480 bytes); Finder opened the custom directory with that
+  artifact selected. The final effective settings were restored to Pictures/Lumiere, Clipboard and
+  folder, and `Do nothing`. These observations establish custom-directory routing, persistence,
+  artifact delivery, and after-capture reveal behavior on macOS only; they add no Visual Match,
+  HDR-preservation, or Windows claim.
 - **GitHub CI:** the last recorded macOS shell and Windows engine workflow observation passed at
   `fccf812`; this establishes those configured repository gates at that commit, not current-HEAD CI, Windows Host
   runtime or hardware behavior.
@@ -226,10 +243,12 @@ may expose one frontier per environment-eligible lane while each writer or workt
 advances only one current working Issue at a time.
 
 - **Shared/macOS lane — [Issue #9](https://github.com/Mournerliao/lumiere/issues/9):**
-  resolve custom save-directory ownership and any required platform-host contract change before
-  implementing that independent Settings slice. The filename rule remains fixed and already has
-  an honest read-only Settings projection. Then complete the remaining cross-platform product
-  journeys required to close the Issue.
+  the custom-directory implementation, protocol v2 increment, Settings v5 migration, both Host
+  adapters, repository gates, native directory write, development Electron capture,
+  restart-persistence, and Show in folder journey are complete on the current Mac.
+- **Windows custom-directory verification lane — [Issue #9](https://github.com/Mournerliao/lumiere/issues/9):**
+  run the updated Host tests/build/format gates on Windows, then verify directory selection,
+  persistence, Folder/Both delivery, target-local folder failure, and Show in folder independently.
 - **Windows lane — [Issues #7](https://github.com/Mournerliao/lumiere/issues/7) and
   [#10](https://github.com/Mournerliao/lumiere/issues/10):** complete;
   the named Windows machine passed the required Display/Region, Clipboard/Folder/Both,
