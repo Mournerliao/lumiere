@@ -82,8 +82,10 @@ copy remains inside the approved HDR-aware/sRGB Visual Match claim boundary.
 
 ### 1D. Distribution And Release Verification
 
-Deliver a traditional Windows setup executable and a signed/notarized macOS artifact.
-Validate install, launch, upgrade, uninstall, and reinstall on non-development machines.
+Deliver a traditional Windows setup executable and a directly downloadable macOS disk
+image containing one coherently ad-hoc-signed application bundle. Validate install,
+launch, upgrade, uninstall, and reinstall on non-development machines, including the
+documented manual Gatekeeper first-launch step on macOS.
 The macOS and Windows distribution implementations may advance independently; evidence
 from either platform neither completes nor blocks implementation work owned by the other.
 The Windows setup must register a signed external-location sparse package for package
@@ -93,7 +95,8 @@ unsupported fallback. Upgrade must retain a stable identity and uninstall must r
 
 Release only after independent Windows and macOS repository, runtime, fixed-scene
 Visual Match, receiving-app, repeat-loop, and clean-exit verification passes. One platform's
-result never substitutes for the other.
+result never substitutes for the other. Developer ID signing, Apple notarization, Mac App
+Store distribution, and Homebrew distribution are not Milestone 1 exit criteria.
 
 ## Milestone 2: One HDR-Preserved Export Path
 

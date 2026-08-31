@@ -60,5 +60,5 @@ honest claims.
   never projects to the other.
 - ADR 0003 continues to require one conversion result for clipboard and folder within
   each host; it does not require the two operating systems to share one binary implementation.
-- ADR 0004 continues to own the Windows setup artifact. macOS signing, notarization,
-  and distribution require a separate future decision.
+- ADR 0004 continues to own the Windows setup artifact. ADR 0012 owns the direct,
+  ad-hoc-signed macOS distribution path and its explicit Gatekeeper boundary.

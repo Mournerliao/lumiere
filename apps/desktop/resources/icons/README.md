@@ -29,5 +29,6 @@ pnpm icons:check
 Development loads icons from this directory through `app.getAppPath()`. A future
 packager must copy this directory to `<resources>/icons`, configure
 `mac/app.icns` as the macOS bundle icon, and configure `windows/app.ico` as the
-Windows executable icon. Packaging, signing, notarization, and installer behavior
-remain owned by Milestone 1D.
+Windows executable icon. Packaging, platform-specific signing, release artifacts, and
+installer behavior remain owned by Milestone 1D; the macOS release policy uses coherent
+ad-hoc signing and direct disk-image distribution rather than Developer ID notarization.
