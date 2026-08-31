@@ -154,9 +154,10 @@ public sealed class PlatformProtocolTests
         Assert.False(string.IsNullOrWhiteSpace(sessionId));
         Assert.Equal("image/png", prepared.GetProperty("preview").GetProperty("mediaType").GetString());
 
-        var response = await PlatformProtocol.ProcessLineAsync(
-            $$"""{"version":3,"id":"commit-region","method":"commitRegion","params":{"sessionId":"{{sessionId}}","delivery":"clipboard","geometry":{"coordinateSpace":"target-logical","x":12.5,"y":20,"width":300,"height":200}}}""",
-            operations);
+        var commitRequest =
+            """{"version":3,"id":"commit-region","method":"commitRegion","params":{"sessionId":"__SESSION_ID__","delivery":"clipboard","geometry":{"coordinateSpace":"target-logical","x":12.5,"y":20,"width":300,"height":200}}}"""
+                .Replace("__SESSION_ID__", sessionId, StringComparison.Ordinal);
+        var response = await PlatformProtocol.ProcessLineAsync(commitRequest, operations);
 
         using var document = JsonDocument.Parse(response.ResponseLine);
         Assert.Equal("completed", document.RootElement.GetProperty("result").GetProperty("status").GetString());
