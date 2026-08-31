@@ -27,16 +27,16 @@ internal sealed class OutputFolderPathPolicy
         var directory = saveDirectory.Trim();
         var extension = NormalizeExtension(fileExtension);
         var baseName = timestampNaming
-            ? $"{FilePrefix}-{nowProvider():yyyyMMdd-HHmmss-fff}"
+            ? $"{FilePrefix}-{nowProvider():yyyy-MM-dd-HHmmss}"
             : FilePrefix;
         var candidate = Path.Combine(directory, $"{baseName}.{extension}");
-        var suffix = 1;
+        var suffix = 2;
 
         while (exists(candidate))
         {
             candidate = Path.Combine(directory, string.Create(
                 CultureInfo.InvariantCulture,
-                $"{baseName}-{suffix:00}.{extension}"));
+                $"{baseName}-{suffix}.{extension}"));
             suffix++;
         }
 

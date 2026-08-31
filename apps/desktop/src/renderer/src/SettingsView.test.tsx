@@ -58,5 +58,6 @@ describe('SettingsView', () => {
     expect(markup).toContain('…/Pictures/Screenshots')
     expect(markup).toContain('m9 18 6-6-6-6')
     expect(markup).toContain('File naming')
+    expect(markup).toContain('Lumiere-2026-08-25-162345.png')
   })
 })

@@ -234,7 +234,7 @@ function OutputSettings({
       <div className="settings-row">
         <span className="settings-row-copy">
           <span className="settings-row-label">File naming</span>
-          <span className="settings-row-hint">Lumiere 2026-08-21 at 11.24.08.png</span>
+          <span className="settings-row-hint">Lumiere-2026-08-25-162345.png</span>
         </span>
         <span className="settings-row-value settings-row-value--control">Timestamped</span>
       </div>
