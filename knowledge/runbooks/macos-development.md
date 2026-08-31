@@ -35,15 +35,17 @@ swift test --package-path hosts/macos
 
 The Vitest command owns macOS path semantics. Swift tests own the native Host. Both
 run only in macOS CI and are separate from the cross-platform `pnpm test:shared`
-suite. The host targets macOS 15 or newer and builds for the active architecture.
-Universal distribution, signing, and notarization belong to Milestone 1D.
+suite. The host targets macOS 15 or newer and builds for the active architecture. Final
+architecture policy, coherent ad-hoc signing, direct disk-image distribution, and
+clean-machine verification belong to Milestone 1D. Developer ID signing and notarization
+are not current release requirements.
 
 ## Protocol Smoke Test
 
-Build the host, then send exactly one platform-host v2 JSON Lines request:
+Build the host, then send exactly one platform-host v3 JSON Lines request:
 
 ```sh
-printf '%s\n' '{"version":2,"id":"capabilities-smoke","method":"getCapabilities","params":{}}' \
+printf '%s\n' '{"version":3,"id":"capabilities-smoke","method":"getCapabilities","params":{}}' \
   | hosts/macos/.build/debug/LumiereMacHost
 ```
 
@@ -70,9 +72,10 @@ candidate for that launch.
 The region and display actions should become available. The active target is the display
 under the pointer when the capability or display-capture request reaches the native
 host, with the current main screen and then the system primary display used only as
-recovery fallbacks. Region selection uses the short-lived target token and target-local
-logical geometry returned through platform-host v2; the Host rejects stale targets,
-topology changes, and out-of-bounds rectangles. A successful capture writes an
+recovery fallbacks. Region capture freezes one native frame during `prepareRegion`, then
+the Overlay selects in target-local logical geometry against that frozen preview.
+`commitRegion` crops the same frame; a stale session, topology change, or out-of-bounds
+rectangle returns `capture-unavailable`. A successful capture writes an
 RGBA8/sRGB PNG under `~/Pictures/Lumiere` using the
 `Lumiere-yyyy-MM-dd-HHmmss.png` rule and returns the exact path through the
 platform-host interface.
@@ -88,7 +91,7 @@ Security → Screen & System Audio Recording. `tccutil reset ScreenCapture` may 
 development permission database, but it also removes Screen Recording grants for other
 applications and should be used only as an explicit recovery action.
 
-Command-line host, development Electron, and a future signed application may be
+Command-line host, development Electron, and the packaged ad-hoc-signed application may be
 treated as different identities by TCC. One identity's permission result does not
 verify another.
 

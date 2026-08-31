@@ -10,10 +10,12 @@ import type {
   OutputDelivery,
   DeliveryResult,
   CaptureGeometry,
-  CaptureTarget,
+  LogicalSize,
+  PixelSize,
   PlatformCapabilities,
   PlatformFailure,
   PlatformHost,
+  PreparedRegionCapture,
 } from '../shared/platform-contract'
 import { deliveryTargetsFor } from '../shared/platform-contract'
 
@@ -28,7 +30,14 @@ export interface CapturePreferencesReader {
 }
 
 export type RegionCapturePreparation =
-  { status: 'ready'; target: CaptureTarget } | { status: 'failed'; result: CaptureCommandResult }
+  | {
+      status: 'ready'
+      targetSize: LogicalSize
+      previewPath: string
+      previewPixelSize: PixelSize
+      leaseMilliseconds: number
+    }
+  | { status: 'failed'; result: CaptureCommandResult }
 
 const defaultPreferences: CapturePreferencesReader = {
   getCapturePreferences: () => ({ delivery: 'both', hdrStatusReminders: true }),
@@ -36,6 +45,7 @@ const defaultPreferences: CapturePreferencesReader = {
 
 export class CaptureCommandRouter {
   private captureInFlight = false
+  private preparedRegion: PreparedRegionCapture | null = null
 
   public constructor(
     private readonly platform: LumierePlatform,
@@ -72,8 +82,7 @@ export class CaptureCommandRouter {
         return failedResult(unavailable)
       }
 
-      const result = await this.host.capture({
-        mode: 'display',
+      const result = await this.host.captureDisplay({
         delivery,
         ...(delivery !== 'clipboard' && saveDirectory ? { saveDirectory } : {}),
       })
@@ -111,39 +120,38 @@ export class CaptureCommandRouter {
         this.captureInFlight = false
         return { status: 'failed', result: failedResult(unavailable) }
       }
-      if (!capabilities.activeTarget) {
+      const prepared = await this.host.prepareRegion()
+      if (prepared.status === 'failed') {
         this.captureInFlight = false
-        return {
-          status: 'failed',
-          result: failedResult({
-            tone: 'caution',
-            title: 'Region capture unavailable',
-            detail: 'Move the pointer to a display and try again.',
-          }),
-        }
+        return { status: 'failed', result: failedResult(noticeForFailure(prepared.failure)) }
       }
-      return { status: 'ready', target: capabilities.activeTarget }
+      this.preparedRegion = prepared
+      return {
+        status: 'ready',
+        targetSize: prepared.targetLogicalSize,
+        previewPath: prepared.preview.filePath,
+        previewPixelSize: prepared.preview.pixelSize,
+        leaseMilliseconds: prepared.leaseMilliseconds,
+      }
     } catch {
       this.captureInFlight = false
       return { status: 'failed', result: captureFailed() }
     }
   }
 
-  public async completeRegionCapture(
-    target: CaptureTarget,
-    geometry: CaptureGeometry,
-  ): Promise<CaptureCommandResult> {
-    if (!this.captureInFlight) {
+  public async completeRegionCapture(geometry: CaptureGeometry): Promise<CaptureCommandResult> {
+    const prepared = this.preparedRegion
+    if (!this.captureInFlight || !prepared) {
       return captureFailed()
     }
 
+    this.preparedRegion = null
     try {
       const { delivery, saveDirectory } = this.preferences.getCapturePreferences()
-      const result = await this.host.capture({
-        mode: 'region',
+      const result = await this.host.commitRegion({
+        sessionId: prepared.sessionId,
         delivery,
         ...(delivery !== 'clipboard' && saveDirectory ? { saveDirectory } : {}),
-        targetId: target.id,
         geometry,
       })
       return projectCaptureResult(result)
@@ -154,13 +162,23 @@ export class CaptureCommandRouter {
     }
   }
 
-  public cancelRegionCapture(): void {
+  public async cancelRegionCapture(): Promise<void> {
+    const prepared = this.preparedRegion
+    this.preparedRegion = null
     this.captureInFlight = false
+    if (!prepared) {
+      return
+    }
+    try {
+      await this.host.cancelRegion(prepared.sessionId)
+    } catch {
+      // Host teardown still runs on process disposal; Overlay cancel must remain local.
+    }
   }
 }
 
 function projectCaptureResult(
-  result: Awaited<ReturnType<PlatformHost['capture']>>,
+  result: Awaited<ReturnType<PlatformHost['captureDisplay']>>,
 ): CaptureCommandResult {
   if (result.status === 'cancelled') {
     return { status: 'cancelled', feedback: 'Capture cancelled' }

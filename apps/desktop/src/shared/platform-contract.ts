@@ -1,22 +1,9 @@
-export const PLATFORM_CONTRACT_VERSION = 2 as const
-
-export const platformChannels = {
-  capture: 'platform:capture',
-  getCapabilities: 'platform:get-capabilities',
-} as const
+export const PLATFORM_CONTRACT_VERSION = 3 as const
 
 export type LumierePlatform = 'macos' | 'windows'
 export type CaptureMode = 'region' | 'display'
 export type OutputDelivery = 'clipboard' | 'folder' | 'both'
 export type DeliveryTarget = 'clipboard' | 'folder'
-
-export interface CaptureTarget {
-  id: string
-  logicalSize: {
-    width: number
-    height: number
-  }
-}
 
 export interface PlatformCapabilities {
   contractVersion: typeof PLATFORM_CONTRACT_VERSION
@@ -26,8 +13,17 @@ export interface PlatformCapabilities {
   deliveryTargets: readonly DeliveryTarget[]
   hdrCapture: 'supported' | 'unavailable' | 'unvalidated'
   outputProfiles: readonly ['srgb-visual-match']
-  activeTarget?: CaptureTarget
   unavailableReason?: PlatformFailure
+}
+
+export interface LogicalSize {
+  width: number
+  height: number
+}
+
+export interface PixelSize {
+  width: number
+  height: number
 }
 
 export interface CaptureGeometry {
@@ -38,35 +34,43 @@ export interface CaptureGeometry {
   height: number
 }
 
-export type CaptureRequest =
-  | {
-      mode: 'display'
-      delivery: OutputDelivery
-      saveDirectory?: string
-    }
-  | {
-      mode: 'region'
-      delivery: OutputDelivery
-      saveDirectory?: string
-      targetId: string
-      geometry: CaptureGeometry
-    }
+export interface DisplayCaptureRequest {
+  delivery: OutputDelivery
+  saveDirectory?: string
+}
+
+export interface CommitRegionRequest extends DisplayCaptureRequest {
+  sessionId: string
+  geometry: CaptureGeometry
+}
+
+export interface PreparedRegionCapture {
+  status: 'prepared'
+  sessionId: string
+  targetLogicalSize: LogicalSize
+  preview: {
+    filePath: string
+    mediaType: 'image/png'
+    pixelSize: PixelSize
+  }
+  leaseMilliseconds: number
+}
+
+export interface FailedCaptureResult {
+  status: 'failed'
+  failure: PlatformFailure
+}
+
+export type PrepareRegionResult = PreparedRegionCapture | FailedCaptureResult
+
+export interface ReleasedRegionCapture {
+  status: 'released'
+}
 
 export type DeliveryResult =
-  | {
-      target: 'clipboard'
-      status: 'success'
-    }
-  | {
-      target: 'folder'
-      status: 'success'
-      filePath: string
-    }
-  | {
-      target: DeliveryTarget
-      status: 'failed'
-      failure: PlatformFailure
-    }
+  | { target: 'clipboard'; status: 'success' }
+  | { target: 'folder'; status: 'success'; filePath: string }
+  | { target: DeliveryTarget; status: 'failed'; failure: PlatformFailure }
 
 export type CaptureResult =
   | {
@@ -75,13 +79,8 @@ export type CaptureResult =
       outputProfile: 'srgb-visual-match'
       deliveries: readonly DeliveryResult[]
     }
-  | {
-      status: 'cancelled'
-    }
-  | {
-      status: 'failed'
-      failure: PlatformFailure
-    }
+  | { status: 'cancelled' }
+  | FailedCaptureResult
 
 export interface PlatformFailure {
   code:
@@ -96,32 +95,48 @@ export interface PlatformFailure {
   retryable: boolean
 }
 
-export interface LumierePlatformApi {
+export interface PlatformHost {
   getCapabilities(): Promise<PlatformCapabilities>
-  capture(request: CaptureRequest): Promise<CaptureResult>
+  captureDisplay(request: DisplayCaptureRequest): Promise<CaptureResult>
+  prepareRegion(): Promise<PrepareRegionResult>
+  commitRegion(request: CommitRegionRequest): Promise<CaptureResult>
+  cancelRegion(sessionId: string): Promise<ReleasedRegionCapture>
 }
 
-export type PlatformHost = LumierePlatformApi
+export type HostMethod =
+  'getCapabilities' | 'captureDisplay' | 'prepareRegion' | 'commitRegion' | 'cancelRegion'
 
 export type PlatformRequestEnvelope =
   | {
       version: typeof PLATFORM_CONTRACT_VERSION
       id: string
-      method: 'getCapabilities'
+      method: 'getCapabilities' | 'prepareRegion'
       params: Record<string, never>
     }
   | {
       version: typeof PLATFORM_CONTRACT_VERSION
       id: string
-      method: 'capture'
-      params: CaptureRequest
+      method: 'captureDisplay'
+      params: DisplayCaptureRequest
+    }
+  | {
+      version: typeof PLATFORM_CONTRACT_VERSION
+      id: string
+      method: 'commitRegion'
+      params: CommitRegionRequest
+    }
+  | {
+      version: typeof PLATFORM_CONTRACT_VERSION
+      id: string
+      method: 'cancelRegion'
+      params: { sessionId: string }
     }
 
 export type PlatformResponseEnvelope =
   | {
       version: typeof PLATFORM_CONTRACT_VERSION
       id: string
-      result: PlatformCapabilities | CaptureResult
+      result: PlatformCapabilities | CaptureResult | PreparedRegionCapture | ReleasedRegionCapture
     }
   | {
       version: typeof PLATFORM_CONTRACT_VERSION
@@ -129,59 +144,64 @@ export type PlatformResponseEnvelope =
       error: PlatformFailure
     }
 
-const captureModes: readonly CaptureMode[] = ['region', 'display']
 const outputDeliveries: readonly OutputDelivery[] = ['clipboard', 'folder', 'both']
 
-export function parseCaptureRequest(value: unknown): CaptureRequest {
-  if (!isRecord(value)) {
-    throw new PlatformContractError('Capture request must be an object.')
-  }
-
-  if (!captureModes.includes(value.mode as CaptureMode)) {
-    throw new PlatformContractError('Capture mode must be region or display.')
-  }
-
-  if (!outputDeliveries.includes(value.delivery as OutputDelivery)) {
-    throw new PlatformContractError('Output delivery must be clipboard, folder, or both.')
-  }
-  const delivery = value.delivery as OutputDelivery
-  const saveDirectory = parseSaveDirectory(value.saveDirectory, delivery)
-
-  if (value.mode === 'display') {
-    requireExactKeys(
-      value,
-      saveDirectory ? ['mode', 'delivery', 'saveDirectory'] : ['mode', 'delivery'],
-    )
-    return {
-      mode: 'display',
-      delivery,
-      ...(saveDirectory ? { saveDirectory } : {}),
-    }
-  }
-
-  requireExactKeys(
-    value,
-    saveDirectory
-      ? ['mode', 'delivery', 'saveDirectory', 'targetId', 'geometry']
-      : ['mode', 'delivery', 'targetId', 'geometry'],
-  )
-  if (typeof value.targetId !== 'string' || value.targetId.length === 0) {
-    throw new PlatformContractError('Region target id must be a non-empty string.')
-  }
-  const geometry = parseCaptureGeometry(value.geometry)
+export function parseDisplayCaptureRequest(value: unknown): DisplayCaptureRequest {
+  const request = parseDeliveryRequest(value, [])
   return {
-    mode: 'region',
-    delivery,
-    ...(saveDirectory ? { saveDirectory } : {}),
-    targetId: value.targetId,
-    geometry,
+    delivery: request.delivery,
+    ...(request.saveDirectory ? { saveDirectory: request.saveDirectory } : {}),
   }
 }
 
-function parseSaveDirectory(value: unknown, delivery: OutputDelivery): string | undefined {
-  if (value === undefined) {
-    return undefined
+export function parseCommitRegionRequest(value: unknown): CommitRegionRequest {
+  const request = parseDeliveryRequest(value, ['sessionId', 'geometry'])
+  if (!isRecord(value) || typeof value.sessionId !== 'string' || value.sessionId.length === 0) {
+    throw new PlatformContractError('Region session id must be a non-empty string.')
   }
+  return {
+    sessionId: value.sessionId,
+    delivery: request.delivery,
+    ...(request.saveDirectory ? { saveDirectory: request.saveDirectory } : {}),
+    geometry: parseCaptureGeometry(value.geometry),
+  }
+}
+
+export function parseRegionSessionId(value: unknown): string {
+  if (
+    !isRecord(value) ||
+    typeof value.sessionId !== 'string' ||
+    value.sessionId.length === 0 ||
+    !hasExactKeys(value, ['sessionId'])
+  ) {
+    throw new PlatformContractError('Region session id must be a non-empty string.')
+  }
+  return value.sessionId
+}
+
+function parseDeliveryRequest(
+  value: unknown,
+  extraKeys: readonly string[],
+): { delivery: OutputDelivery; saveDirectory?: string } {
+  if (!isRecord(value)) {
+    throw new PlatformContractError('Capture request must be an object.')
+  }
+  if (!outputDeliveries.includes(value.delivery as OutputDelivery)) {
+    throw new PlatformContractError('Capture delivery must be clipboard, folder, or both.')
+  }
+  const delivery = value.delivery as OutputDelivery
+  const saveDirectory = parseSaveDirectory(value.saveDirectory, delivery)
+  const expected = saveDirectory
+    ? ['delivery', 'saveDirectory', ...extraKeys]
+    : ['delivery', ...extraKeys]
+  if (!hasExactKeys(value, expected)) {
+    throw new PlatformContractError('Capture request contains missing or unknown fields.')
+  }
+  return { delivery, ...(saveDirectory ? { saveDirectory } : {}) }
+}
+
+function parseSaveDirectory(value: unknown, delivery: OutputDelivery): string | undefined {
+  if (value === undefined) return undefined
   if (delivery === 'clipboard') {
     throw new PlatformContractError('Clipboard-only capture must not include a save directory.')
   }
@@ -192,10 +212,7 @@ function parseSaveDirectory(value: unknown, delivery: OutputDelivery): string | 
 }
 
 export function deliveryTargetsFor(delivery: OutputDelivery): readonly DeliveryTarget[] {
-  if (delivery === 'both') {
-    return ['clipboard', 'folder']
-  }
-  return [delivery]
+  return delivery === 'both' ? ['clipboard', 'folder'] : [delivery]
 }
 
 export class PlatformContractError extends Error {
@@ -209,7 +226,9 @@ export function parseCaptureGeometry(value: unknown): CaptureGeometry {
   if (!isRecord(value)) {
     throw new PlatformContractError('Region geometry must be an object.')
   }
-  requireExactKeys(value, ['coordinateSpace', 'x', 'y', 'width', 'height'])
+  if (!hasExactKeys(value, ['coordinateSpace', 'x', 'y', 'width', 'height'])) {
+    throw new PlatformContractError('Region geometry contains missing or unknown fields.')
+  }
   if (value.coordinateSpace !== 'target-logical') {
     throw new PlatformContractError('Region geometry must use target-logical coordinates.')
   }
@@ -228,13 +247,6 @@ export function parseCaptureGeometry(value: unknown): CaptureGeometry {
   }
 }
 
-function requireExactKeys(value: Record<string, unknown>, expected: readonly string[]): void {
-  const actual = Object.keys(value)
-  if (actual.length !== expected.length || !expected.every((key) => key in value)) {
-    throw new PlatformContractError('Capture request contains missing or unknown fields.')
-  }
-}
-
 function isPositiveFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value > 0
 }
@@ -245,4 +257,9 @@ function isNonNegativeFiniteNumber(value: unknown): value is number {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function hasExactKeys(value: Record<string, unknown>, expected: readonly string[]): boolean {
+  const actual = Object.keys(value)
+  return actual.length === expected.length && expected.every((key) => key in value)
 }

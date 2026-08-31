@@ -1,6 +1,6 @@
 # Windows Engine Development Runbook
 
-Windows host adaptation is active. The repository contains a platform-host v2 executable
+Windows host adaptation is active. The repository contains a platform-host v3 executable
 with a capability handshake plus the three retained native libraries. Windows is required
 for .NET restore, Release build, tests, formatting, WGC/D3D11/DXGI runtime behavior,
 clipboard behavior, and HDR hardware checks.
@@ -34,11 +34,11 @@ alias and does not execute macOS tests.
 The repository-root `pnpm dev` command builds the current Windows Debug Host unless
 `LUMIERE_WINDOWS_HOST_PATH` is set, then Electron selects that artifact ahead of a Release
 fallback. The current Host executes Display capture with Clipboard, Folder, or Both
-delivery from the same encoded sRGB Visual Match artifact. Region is
-advertised when the target under the pointer has effective-DPI logical geometry and a
-reconstructable native target snapshot; the Host consumes the issued short-lived token and
-converts target-local logical geometry to an outward-aligned pixel crop inside the native
-boundary.
+delivery from the same encoded sRGB Visual Match artifact. Region is advertised when
+the target under the pointer has effective-DPI logical geometry and a reconstructable
+native target snapshot. `prepareRegion` copies the first complete WGC frame into an
+application-owned texture; `commitRegion` crops that frozen frame to an outward-aligned
+pixel rectangle inside the native boundary.
 
 ## Truth Boundary
 

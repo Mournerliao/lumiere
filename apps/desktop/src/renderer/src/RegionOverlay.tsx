@@ -13,6 +13,7 @@ export function RegionOverlay(): React.JSX.Element {
   const [capturing, setCapturing] = useState(false)
   const startPoint = useRef<OverlayPoint | null>(null)
   const root = useRef<HTMLElement | null>(null)
+  const announcedReady = useRef(false)
 
   useEffect(() => {
     let isCurrent = true
@@ -21,7 +22,6 @@ export function RegionOverlay(): React.JSX.Element {
       .then((nextSnapshot) => {
         if (isCurrent) {
           setSnapshot(nextSnapshot)
-          root.current?.focus()
         }
       })
       .catch(() => {
@@ -122,6 +122,33 @@ export function RegionOverlay(): React.JSX.Element {
         }
       }}
     >
+      {snapshot ? (
+        <img
+          className="region-overlay-preview"
+          src={snapshot.previewUrl}
+          draggable={false}
+          aria-hidden="true"
+          onLoad={(event) => {
+            if (announcedReady.current) return
+            void event.currentTarget
+              .decode()
+              .catch(() => undefined)
+              .then(() => {
+                window.requestAnimationFrame(() => {
+                  window.requestAnimationFrame(() => {
+                    if (announcedReady.current) return
+                    announcedReady.current = true
+                    root.current?.focus()
+                    window.lumierePlatform.regionOverlayReady()
+                  })
+                })
+              })
+          }}
+          onError={() => {
+            window.lumierePlatform.cancelRegionOverlay()
+          }}
+        />
+      ) : null}
       {!selection ? <div className="region-overlay-scrim" aria-hidden="true" /> : null}
       {pointer && !capturing ? (
         <>

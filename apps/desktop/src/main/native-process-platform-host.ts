@@ -2,19 +2,23 @@ import { randomUUID } from 'node:crypto'
 import { access } from 'node:fs/promises'
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import type {
-  CaptureRequest,
   CaptureResult,
+  CommitRegionRequest,
   DeliveryResult,
+  DisplayCaptureRequest,
+  HostMethod,
   PlatformCapabilities,
   PlatformFailure,
   PlatformHost,
+  PrepareRegionResult,
+  ReleasedRegionCapture,
   LumierePlatform,
 } from '../shared/platform-contract'
 import { deliveryTargetsFor, PLATFORM_CONTRACT_VERSION } from '../shared/platform-contract'
 
 const requestTimeoutMilliseconds = 15_000
+const prepareRegionTimeoutMilliseconds = 30_000
 
-type HostMethod = 'getCapabilities' | 'capture'
 export type SpawnHost = (executablePath: string) => ChildProcessWithoutNullStreams
 
 interface PendingRequest {
@@ -45,9 +49,12 @@ export class NativeProcessPlatformHost implements PlatformHost {
     }
   }
 
-  public async capture(request: CaptureRequest): Promise<CaptureResult> {
+  public async captureDisplay(request: DisplayCaptureRequest): Promise<CaptureResult> {
     try {
-      const result = parseCaptureResult(await this.request('capture', request), this.platform)
+      const result = parseCaptureResult(
+        await this.request('captureDisplay', request),
+        this.platform,
+      )
       validateCaptureDeliveries(request, result)
       return result
     } catch (error) {
@@ -55,6 +62,32 @@ export class NativeProcessPlatformHost implements PlatformHost {
         status: 'failed',
         failure: failureFromError(error, this.platform),
       }
+    }
+  }
+
+  public async prepareRegion(): Promise<PrepareRegionResult> {
+    try {
+      return parsePrepareRegionResult(await this.request('prepareRegion', {}), this.platform)
+    } catch (error) {
+      return { status: 'failed', failure: failureFromError(error, this.platform) }
+    }
+  }
+
+  public async commitRegion(request: CommitRegionRequest): Promise<CaptureResult> {
+    try {
+      const result = parseCaptureResult(await this.request('commitRegion', request), this.platform)
+      validateCaptureDeliveries(request, result)
+      return result
+    } catch (error) {
+      return { status: 'failed', failure: failureFromError(error, this.platform) }
+    }
+  }
+
+  public async cancelRegion(sessionId: string): Promise<ReleasedRegionCapture> {
+    try {
+      return parseReleasedRegion(await this.request('cancelRegion', { sessionId }), this.platform)
+    } catch {
+      return { status: 'released' }
     }
   }
 
@@ -79,12 +112,15 @@ export class NativeProcessPlatformHost implements PlatformHost {
     })
 
     return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        this.handleTermination(
-          child,
-          new Error(`The ${this.platform} host timed out while handling ${method}.`),
-        )
-      }, requestTimeoutMilliseconds)
+      const timeout = setTimeout(
+        () => {
+          this.handleTermination(
+            child,
+            new Error(`The ${this.platform} host timed out while handling ${method}.`),
+          )
+        },
+        method === 'prepareRegion' ? prepareRegionTimeoutMilliseconds : requestTimeoutMilliseconds,
+      )
       this.pending.set(id, { method, resolve, reject, timeout })
 
       child.stdin.write(`${line}\n`, (error) => {
@@ -206,9 +242,7 @@ export class NativeProcessPlatformHost implements PlatformHost {
       const value =
         'error' in envelope
           ? new NativeHostFailure(parseFailure(envelope.error))
-          : pending.method === 'getCapabilities'
-            ? parseCapabilities(envelope.result, this.platform)
-            : parseCaptureResult(envelope.result, this.platform)
+          : parseHostResult(pending.method, envelope.result, this.platform)
       clearTimeout(pending.timeout)
       this.pending.delete(envelope.id)
       if (value instanceof NativeHostFailure) {
@@ -329,9 +363,8 @@ function parseCapabilities(value: unknown, platform: LumierePlatform): PlatformC
         'hdrCapture',
         'outputProfiles',
       ],
-      ['activeTarget', 'unavailableReason'],
+      ['unavailableReason'],
     ) ||
-    (captureModes.includes('region') && value.activeTarget === undefined) ||
     (value.hostStatus === 'unavailable' && value.unavailableReason === undefined)
   ) {
     throw new Error(`The ${platform} host returned invalid capabilities.`)
@@ -340,11 +373,63 @@ function parseCapabilities(value: unknown, platform: LumierePlatform): PlatformC
   if (value.unavailableReason !== undefined) {
     parseFailure(value.unavailableReason)
   }
-  if (value.activeTarget !== undefined) {
-    parseCaptureTarget(value.activeTarget)
-  }
-
   return value as unknown as PlatformCapabilities
+}
+
+function parseHostResult(
+  method: HostMethod,
+  value: unknown,
+  platform: LumierePlatform,
+): PlatformCapabilities | CaptureResult | PrepareRegionResult | ReleasedRegionCapture {
+  switch (method) {
+    case 'getCapabilities':
+      return parseCapabilities(value, platform)
+    case 'captureDisplay':
+    case 'commitRegion':
+      return parseCaptureResult(value, platform)
+    case 'prepareRegion':
+      return parsePrepareRegionResult(value, platform)
+    case 'cancelRegion':
+      return parseReleasedRegion(value, platform)
+  }
+}
+
+function parsePrepareRegionResult(value: unknown, platform: LumierePlatform): PrepareRegionResult {
+  if (isRecord(value) && value.status === 'failed') {
+    return parseCaptureResult(value, platform) as PrepareRegionResult
+  }
+  if (
+    !isRecord(value) ||
+    value.status !== 'prepared' ||
+    typeof value.sessionId !== 'string' ||
+    value.sessionId.length === 0 ||
+    !isLogicalSize(value.targetLogicalSize) ||
+    !isRecord(value.preview) ||
+    typeof value.preview.filePath !== 'string' ||
+    value.preview.filePath.length === 0 ||
+    value.preview.mediaType !== 'image/png' ||
+    !isPixelSize(value.preview.pixelSize) ||
+    !Number.isSafeInteger(value.leaseMilliseconds) ||
+    (value.leaseMilliseconds as number) <= 0 ||
+    !hasExactKeys(value.preview, ['filePath', 'mediaType', 'pixelSize']) ||
+    !hasExactKeys(value, [
+      'status',
+      'sessionId',
+      'targetLogicalSize',
+      'preview',
+      'leaseMilliseconds',
+    ])
+  ) {
+    throw new Error(`The ${platform} host returned an invalid prepared Region capture.`)
+  }
+  return value as unknown as PrepareRegionResult
+}
+
+function parseReleasedRegion(value: unknown, platform: LumierePlatform): ReleasedRegionCapture {
+  if (!isRecord(value) || value.status !== 'released' || !hasExactKeys(value, ['status'])) {
+    throw new Error(`The ${platform} host returned an invalid Region release result.`)
+  }
+  return { status: 'released' }
 }
 
 function parseCaptureResult(value: unknown, platform: LumierePlatform): CaptureResult {
@@ -409,7 +494,10 @@ function parseDeliveryResult(value: unknown): DeliveryResult {
   throw new Error('The native host returned an invalid delivery result.')
 }
 
-function validateCaptureDeliveries(request: CaptureRequest, result: CaptureResult): void {
+function validateCaptureDeliveries(
+  request: { delivery: DisplayCaptureRequest['delivery'] },
+  result: CaptureResult,
+): void {
   if (result.status !== 'completed') {
     return
   }
@@ -422,19 +510,27 @@ function validateCaptureDeliveries(request: CaptureRequest, result: CaptureResul
   }
 }
 
-function parseCaptureTarget(value: unknown): void {
+function isLogicalSize(value: unknown): boolean {
   if (
     !isRecord(value) ||
-    typeof value.id !== 'string' ||
-    value.id.length === 0 ||
-    !isRecord(value.logicalSize) ||
-    !isPositiveFiniteNumber(value.logicalSize.width) ||
-    !isPositiveFiniteNumber(value.logicalSize.height) ||
-    !hasExactKeys(value.logicalSize, ['width', 'height']) ||
-    !hasExactKeys(value, ['id', 'logicalSize'])
+    !isPositiveFiniteNumber(value.width) ||
+    !isPositiveFiniteNumber(value.height) ||
+    !hasExactKeys(value, ['width', 'height'])
   ) {
-    throw new Error('The native host returned an invalid active target.')
+    return false
   }
+  return true
+}
+
+function isPixelSize(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    Number.isSafeInteger(value.width) &&
+    (value.width as number) > 0 &&
+    Number.isSafeInteger(value.height) &&
+    (value.height as number) > 0 &&
+    hasExactKeys(value, ['width', 'height'])
+  )
 }
 
 function parseFailure(value: unknown): PlatformFailure {

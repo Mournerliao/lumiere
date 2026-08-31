@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 
 const protocolDirectory = resolve(process.cwd(), '../../protocol/platform-host')
 
-describe.each([1, 2])('platform host protocol v%i', (version) => {
+describe.each([1, 2, 3])('platform host protocol v%i', (version) => {
   it('keeps every checked-in fixture conformant with its language-neutral schema', async () => {
     const validate = await validatorFor(version)
     const fixtureDirectory = `${protocolDirectory}/fixtures/v${String(version)}`
@@ -28,12 +28,21 @@ describe.each([1, 2])('platform host protocol v%i', (version) => {
     const validate = await validatorFor(version)
 
     expect(
-      validate({
-        version,
-        id: 'invalid-1',
-        method: 'capture',
-        params: { mode: 'display', delivery: 'folder', rawFrame: true },
-      }),
+      validate(
+        version === 3
+          ? {
+              version,
+              id: 'invalid-1',
+              method: 'captureDisplay',
+              params: { delivery: 'folder', rawFrame: true },
+            }
+          : {
+              version,
+              id: 'invalid-1',
+              method: 'capture',
+              params: { mode: 'display', delivery: 'folder', rawFrame: true },
+            },
+      ),
     ).toBe(false)
   })
 })

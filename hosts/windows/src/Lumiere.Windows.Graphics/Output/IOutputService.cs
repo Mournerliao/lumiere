@@ -1,3 +1,5 @@
+using Lumiere.Windows.Graphics.Presentation;
+
 namespace Lumiere.Windows.Graphics.Output;
 
 /// <summary>
@@ -13,4 +15,10 @@ internal interface IOutputService
     /// <param name="cancellationToken">Optional cancellation token.</param>
     /// <returns>An OutputResult indicating success, failure, or skipped for each target.</returns>
     Task<OutputResult> ExecuteOutputAsync(OutputRequest request, CancellationToken cancellationToken = default);
+
+    Task<byte[]> EncodePngAsync(
+        CapturedFrameTexture texture,
+        CropPixelRect? cropRegion,
+        SrgbVisualMatchConversionContext context,
+        CancellationToken cancellationToken = default);
 }

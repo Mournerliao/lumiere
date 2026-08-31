@@ -17,33 +17,34 @@ Every response echoes `version` and `id`, and contains exactly one of `result` o
 
 Unknown versions, methods, fields, or enum values are protocol errors. Additive
 changes require a new schema version when an older host cannot safely reject or ignore
-them. Version 1 is frozen in [`v1.schema.json`](v1.schema.json); version 2 is the current
-shared/macOS contract in [`v2.schema.json`](v2.schema.json).
+them. Version 1 is frozen in [`v1.schema.json`](v1.schema.json). Version 2 is frozen in
+[`v2.schema.json`](v2.schema.json). Version 3 is the current shared contract in
+[`v3.schema.json`](v3.schema.json).
 
-## Version 2
+## Version 3
 
-`getCapabilities` reports capture modes and delivery targets independently. It may
-also return the active capture target. A target id is an opaque, short-lived Host token,
-not an Electron display id or native handle. Its HDR state and logical size describe
-the same target snapshot.
+`getCapabilities` is a pure query. It reports capture modes and delivery targets
+independently and must not issue a target token. Display capture remains a one-request
+`captureDisplay` operation: the Host resolves the display under the pointer when the
+request arrives, then uses the current main display and system primary display only as
+recovery fallbacks.
 
-Display capture has no target field. The Host resolves the display under the pointer
-when the capture request reaches it, then uses the current main display and system
-primary display only as recovery fallbacks.
+Region capture is a short-lived native frozen-frame session:
 
-Region capture requires the `targetId` previously returned by `getCapabilities` and a
-`target-logical` rectangle:
+1. `prepareRegion` hides no Shell state itself; the Shell hides Lumiere-owned surfaces
+   first, then the Host captures one complete native frame, retains it, and returns a
+   session id plus an encoded sRGB preview path.
+2. `commitRegion` crops that same frozen frame with a `target-logical` rectangle and
+   runs the existing Visual Match and delivery path. It never captures a second frame.
+3. `cancelRegion` releases the session. Unknown session ids still return `released`.
 
-- the origin is the target's top-left corner;
-- coordinates are logical desktop units and may be fractional;
-- width and height must be positive;
-- the rectangle must fit within the advertised logical size;
-- a stale target, changed topology, or out-of-bounds rectangle returns
-  `capture-unavailable`.
+`target-logical` geometry is unchanged from v2: origin at the target's top-left,
+logical desktop units, positive width and height, and `capture-unavailable` for a
+stale session, changed topology, or out-of-bounds rectangle.
 
-The shell owns pointer geometry and the selection Overlay. Native coordinate
-conversion, display scaling, pixel alignment, capture, conversion, and resource
-lifetime stay inside the Host. Raw pixels and native handles never cross this seam.
+The preview file is Host-private. Electron main may grant a revocable custom-protocol
+URL to the sandboxed Overlay; renderer IPC carries neither file paths nor image bytes.
+Raw pixels and native handles never cross this seam.
 
 ### Delivery results
 
@@ -70,20 +71,23 @@ successful clipboard delivery is preserved.
 
 ### Cancellation ownership
 
-Before a `capture` request is sent, the shell owns cancellation, Overlay teardown, and
-selection cleanup. An invalid click or too-small selection cancels locally and must not
-start native capture.
+Before `prepareRegion` succeeds, the shell owns Overlay startup and local abort. After
+the Host accepts prepare, the Host owns the frozen native frame, preview file, lease,
+and deterministic release. Overlay Esc, timeout, Host teardown, and application
+shutdown all converge on `cancelRegion` or Host disposal. Native or task cancellation
+of Display or Region commit returns `cancelled`.
 
-After the Host receives a `capture` request, the Host owns native work, cancellation
-classification, deterministic resource disposal, and the final response. Native or
-task cancellation returns `cancelled`. Application shutdown disposes the Host process
-and pending shell state. Version 2 intentionally has no interrupt request because MVP
-selection cancellation occurs before dispatch and native screenshot operations are
-short-lived; add one in a later protocol version if an observable in-flight cancel
-journey requires it.
+## Version 2
+
+Version 2 remains compatibility history. It used one `capture` method, advertised an
+`activeTarget` token from `getCapabilities`, and dispatched Region capture only after
+pointer release. Delivery results, `saveDirectory`, and target-local geometry from v2
+are retained in v3. Region timing is superseded by
+[`knowledge/decisions/0013-frozen-region-capture-session.md`](../../knowledge/decisions/0013-frozen-region-capture-session.md).
 
 ## Fixtures
 
-[`fixtures/v1`](fixtures/v1) and [`fixtures/v2`](fixtures/v2) are executable examples.
-The desktop protocol tests validate every fixture against its owning schema. Fixtures
-illustrate wire shape; they do not replace the cross-field checks described above.
+[`fixtures/v1`](fixtures/v1), [`fixtures/v2`](fixtures/v2), and
+[`fixtures/v3`](fixtures/v3) are executable examples. The desktop protocol tests
+validate every fixture against its owning schema. Fixtures illustrate wire shape; they
+do not replace the cross-field checks described above.

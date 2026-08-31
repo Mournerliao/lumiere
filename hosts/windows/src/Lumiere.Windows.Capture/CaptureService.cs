@@ -3,6 +3,9 @@ using Lumiere.Windows.Graphics.Devices;
 using Lumiere.Windows.Graphics.Hdr;
 using Lumiere.Windows.Graphics.Presentation;
 using Lumiere.Windows.Interop;
+using Vortice.Direct3D11;
+using Vortice.DXGI;
+using Vortice.Mathematics;
 using Lumiere.Windows.Interop.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Windows.Foundation;
@@ -184,6 +187,39 @@ internal sealed class CaptureService
                 command.Mode);
             return CaptureCommandResult.Accepted(command);
         }
+    }
+
+    internal CapturedFrameTexture CopyToOwnedTexture(CapturedFrameTexture source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        if (source.Texture is null)
+        {
+            return source;
+        }
+
+        var description = source.Texture.Description;
+        description.Width = (uint)source.Width;
+        description.Height = (uint)source.Height;
+        description.MipLevels = 1;
+        description.ArraySize = 1;
+        description.Usage = ResourceUsage.Default;
+        description.BindFlags = BindFlags.ShaderResource;
+        description.CPUAccessFlags = CpuAccessFlags.None;
+        description.MiscFlags = ResourceOptionFlags.None;
+        description.SampleDescription = new SampleDescription(1, 0);
+
+        var owned = deviceResources.Device.CreateTexture2D(description);
+        var sourceBox = new Box(0, 0, 0, source.Width, source.Height, 1);
+        deviceResources.ImmediateContext.CopySubresourceRegion(
+            owned,
+            0,
+            0,
+            0,
+            0,
+            source.Texture,
+            0,
+            sourceBox);
+        return new CapturedFrameTexture(owned, source.Width, source.Height, "Owned frozen frame");
     }
 
     public CaptureStartResult StartCapture(

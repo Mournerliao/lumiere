@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type {
-  CaptureRequest,
   CaptureResult,
+  DisplayCaptureRequest,
   PlatformCapabilities,
   PlatformHost,
 } from '../shared/platform-contract'
@@ -14,7 +14,7 @@ describe('platform handlers', () => {
     const host = new RecordingPlatformHost()
     const handlers = createPlatformHandlers(host)
 
-    const result = await handlers.capture({ mode: 'window', delivery: 'folder' })
+    const result = await handlers.captureDisplay({ mode: 'window', delivery: 'folder' })
 
     expect(result).toMatchObject({
       status: 'failed',
@@ -27,33 +27,15 @@ describe('platform handlers', () => {
     const host = new RecordingPlatformHost()
     const handlers = createPlatformHandlers(host)
 
-    await handlers.capture({
-      mode: 'region',
+    await handlers.captureDisplay({
       delivery: 'both',
       saveDirectory: '/tmp/captures',
-      targetId: 'display-17',
-      geometry: {
-        coordinateSpace: 'target-logical',
-        x: 10,
-        y: 20,
-        width: 640,
-        height: 360,
-      },
     })
 
     expect(host.requests).toEqual([
       {
-        mode: 'region',
         delivery: 'both',
         saveDirectory: '/tmp/captures',
-        targetId: 'display-17',
-        geometry: {
-          coordinateSpace: 'target-logical',
-          x: 10,
-          y: 20,
-          width: 640,
-          height: 360,
-        },
       },
     ])
   })
@@ -62,10 +44,10 @@ describe('platform handlers', () => {
     const handlers = createPlatformHandlers(new UnavailablePlatformHost('macos'))
 
     const capabilities = await handlers.getCapabilities()
-    const result = await handlers.capture({ mode: 'display', delivery: 'clipboard' })
+    const result = await handlers.captureDisplay({ delivery: 'clipboard' })
 
     expect(capabilities).toMatchObject({
-      contractVersion: 2,
+      contractVersion: 3,
       platform: 'macos',
       hostStatus: 'unavailable',
       hdrCapture: 'unavailable',
@@ -79,7 +61,7 @@ describe('platform handlers', () => {
 })
 
 class RecordingPlatformHost implements PlatformHost {
-  public readonly requests: CaptureRequest[] = []
+  public readonly requests: DisplayCaptureRequest[] = []
 
   public getCapabilities(): Promise<PlatformCapabilities> {
     return Promise.resolve({
@@ -93,7 +75,7 @@ class RecordingPlatformHost implements PlatformHost {
     })
   }
 
-  public capture(request: CaptureRequest): Promise<CaptureResult> {
+  public captureDisplay(request: DisplayCaptureRequest): Promise<CaptureResult> {
     this.requests.push(request)
     return Promise.resolve({
       status: 'completed',
@@ -109,5 +91,23 @@ class RecordingPlatformHost implements PlatformHost {
             ? [{ target: 'clipboard', status: 'success' }]
             : [{ target: 'folder', status: 'success', filePath: '/tmp/lumiere.png' }],
     })
+  }
+
+  public prepareRegion(): Promise<{
+    status: 'failed'
+    failure: { code: 'capture-unavailable'; message: string; retryable: true }
+  }> {
+    return Promise.resolve({
+      status: 'failed',
+      failure: { code: 'capture-unavailable', message: 'Unavailable', retryable: true },
+    })
+  }
+
+  public commitRegion(): Promise<CaptureResult> {
+    return Promise.resolve({ status: 'cancelled' })
+  }
+
+  public cancelRegion(): Promise<{ status: 'released' }> {
+    return Promise.resolve({ status: 'released' })
   }
 }

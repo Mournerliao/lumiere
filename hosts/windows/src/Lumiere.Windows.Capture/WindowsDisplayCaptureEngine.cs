@@ -27,11 +27,15 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
         Action<CapturedFrameTexture>,
         Action<EngineReadinessStatus>,
         CaptureStartResult> startCapture;
+    private static readonly int RegionLeaseMilliseconds = 60_000;
     private readonly IOutputService output;
+    private readonly Func<CapturedFrameTexture, CapturedFrameTexture> copyOwnedFrame;
     private readonly IDisposable? ownedResources;
     private readonly TimeSpan frameTimeout;
     private readonly SemaphoreSlim operationGate = new(1, 1);
     private readonly CancellationTokenSource lifetimeCancellation = new();
+    private readonly object frozenLock = new();
+    private FrozenRegionSession? frozenRegion;
     private int disposed;
 
     internal WindowsDisplayCaptureEngine(
@@ -42,7 +46,8 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
         Func<CaptureTarget, Action<CapturedFrameTexture>, Action<EngineReadinessStatus>, CaptureStartResult> startCapture,
         IOutputService output,
         IDisposable? ownedResources = null,
-        TimeSpan? frameTimeout = null)
+        TimeSpan? frameTimeout = null,
+        Func<CapturedFrameTexture, CapturedFrameTexture>? copyOwnedFrame = null)
     {
         this.reserveCommand = reserveCommand ?? throw new ArgumentNullException(nameof(reserveCommand));
         this.updateSessionState = updateSessionState ?? throw new ArgumentNullException(nameof(updateSessionState));
@@ -50,6 +55,7 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
         this.probeHdrCapability = probeHdrCapability ?? throw new ArgumentNullException(nameof(probeHdrCapability));
         this.startCapture = startCapture ?? throw new ArgumentNullException(nameof(startCapture));
         this.output = output ?? throw new ArgumentNullException(nameof(output));
+        this.copyOwnedFrame = copyOwnedFrame ?? (frame => frame);
         this.ownedResources = ownedResources;
         this.frameTimeout = frameTimeout ?? DefaultFrameTimeout;
         if (this.frameTimeout <= TimeSpan.Zero)
@@ -76,7 +82,8 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
                 WindowsDisplayTargetFactory.ProbeHdrCapability,
                 captureService.StartCapture,
                 output,
-                deviceResources);
+                deviceResources,
+                copyOwnedFrame: captureService.CopyToOwnedTexture);
         }
         catch
         {
@@ -91,136 +98,119 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
     public async Task<WindowsCaptureResult> CaptureDisplayAsync(
         WindowsCaptureRequest request,
         CancellationToken cancellationToken = default)
-        => await CaptureAsync(request, target: null, geometry: null, cancellationToken);
+    {
+        if (HasFrozenRegion())
+        {
+            return new WindowsCaptureResult(
+                WindowsCaptureOutcome.Unavailable,
+                "Region capture is already in progress",
+                "A frozen Region capture is still active.");
+        }
 
-    public async Task<WindowsCaptureResult> CaptureRegionAsync(
-        WindowsCaptureRequest request,
+        var acquired = await CaptureAsync(request, freezeTarget: null, cancellationToken);
+        return acquired.Result;
+    }
+
+    public async Task<WindowsPrepareRegionResult> PrepareRegionAsync(
         WindowsTargetCapability target,
-        WindowsRegionGeometry geometry,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(target);
-        ArgumentNullException.ThrowIfNull(geometry);
-        return await CaptureAsync(request, target, geometry, cancellationToken);
-    }
-
-    private async Task<WindowsCaptureResult> CaptureAsync(
-        WindowsCaptureRequest request,
-        WindowsTargetCapability? target,
-        WindowsRegionGeometry? geometry,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-        ThrowIfDisposed();
-
-        using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken,
-            lifetimeCancellation.Token);
-        var token = operationCancellation.Token;
-
-        try
+        await ReleaseFrozenRegionAsync();
+        var request = new WindowsCaptureRequest("prepare-region", OutputTarget.Folder);
+        var acquired = await CaptureAsync(request, target, cancellationToken);
+        if (acquired.HeldFrame is null)
         {
-            await operationGate.WaitAsync(token);
-        }
-        catch (OperationCanceledException)
-        {
-            return Cancelled("Capture was cancelled before it started.");
+            return new WindowsPrepareRegionResult(
+                false,
+                acquired.Result.Outcome,
+                acquired.Result.UserMessage,
+                acquired.Result.TechnicalDetail);
         }
 
         try
         {
-            ThrowIfDisposed();
-            using var diagnosticScope = SessionDiagnosticScope.Begin(
-                LoggerHolder.Value,
-                correlationId: request.CorrelationId);
-
-            var command = target is null
-                ? CaptureCommand.Fullscreen()
-                : CaptureCommand.Region();
-            var reservation = reserveCommand(command);
-            if (!reservation.IsAccepted)
+            var previewBytes = await output.EncodePngAsync(
+                acquired.HeldFrame.Texture,
+                cropRegion: null,
+                ResolveVisualMatchContext(acquired.HeldFrame.HdrCapability),
+                cancellationToken);
+            var previewPath = WriteRegionPreview(previewBytes);
+            var sessionId = Guid.NewGuid().ToString("N");
+            var session = new FrozenRegionSession(
+                sessionId,
+                acquired.HeldFrame,
+                previewPath,
+                new CancellationTokenSource(TimeSpan.FromMilliseconds(RegionLeaseMilliseconds)));
+            session.Lease.Token.Register(() =>
             {
-                return new WindowsCaptureResult(
-                    WindowsCaptureOutcome.Failed,
-                    "Capture is already active",
-                    reservation.Readiness?.TechnicalDetail ?? "The Windows capture engine rejected the request.");
+                if (Volatile.Read(ref disposed) != 0)
+                {
+                    return;
+                }
+
+                _ = ReleaseFrozenRegionAsync(sessionId);
+            });
+            lock (frozenLock)
+            {
+                frozenRegion = session;
             }
 
-            return target is null
-                ? await CaptureReservedDisplayAsync(request, token)
-                : await CaptureReservedRegionAsync(request, target, geometry!, token);
+            return new WindowsPrepareRegionResult(
+                true,
+                WindowsCaptureOutcome.Delivered,
+                "Frozen region frame is ready.",
+                $"Prepared {acquired.HeldFrame.Texture.Width}x{acquired.HeldFrame.Texture.Height} frozen frame.",
+                sessionId,
+                target.LogicalSize,
+                previewPath,
+                acquired.HeldFrame.Texture.Width,
+                acquired.HeldFrame.Texture.Height,
+                RegionLeaseMilliseconds);
         }
-        catch (OperationCanceledException)
+        catch
         {
-            return Cancelled("Capture was cancelled by the caller.");
-        }
-        catch (Exception exception)
-        {
-            DiagnosticContext.CaptureFailure(
-                stage: target is null ? "DisplayCapture" : "RegionCapture",
-                userFacingState: "Capture failed",
-                technicalDetail: exception.Message,
-                correlationId: request.CorrelationId,
-                exception: exception).LogTo(LoggerHolder.Value);
-            return new WindowsCaptureResult(
-                WindowsCaptureOutcome.Failed,
-                "Capture failed",
-                $"{exception.GetType().Name}: {exception.Message}");
-        }
-        finally
-        {
-            updateSessionState(CaptureSessionState.Idle());
-            operationGate.Release();
+            acquired.HeldFrame.Dispose();
+            throw;
         }
     }
 
-    private async Task<WindowsCaptureResult> CaptureReservedDisplayAsync(
+    public async Task<WindowsCaptureResult> CommitRegionAsync(
+        string sessionId,
         WindowsCaptureRequest request,
-        CancellationToken cancellationToken)
-    {
-        var selection = await selectTargetAsync(cancellationToken);
-        updateSessionState(CaptureSessionState.FromSelectionResult(selection));
-        if (!selection.IsSelected)
-        {
-            var outcome = selection.IsUnsupported
-                ? WindowsCaptureOutcome.Unsupported
-                : selection.IsCanceled
-                    ? WindowsCaptureOutcome.Cancelled
-                    : WindowsCaptureOutcome.Unavailable;
-            return new WindowsCaptureResult(
-                outcome,
-                selection.Readiness.UserMessage,
-                selection.Readiness.TechnicalDetail ?? selection.Readiness.UserMessage);
-        }
-
-        return await CaptureSelectedTargetAsync(
-            request,
-            selection.Target,
-            cropRegion: null,
-            cancellationToken);
-    }
-
-    private async Task<WindowsCaptureResult> CaptureReservedRegionAsync(
-        WindowsCaptureRequest request,
-        WindowsTargetCapability targetSnapshot,
         WindowsRegionGeometry geometry,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(geometry);
+
+        FrozenRegionSession? session;
+        lock (frozenLock)
+        {
+            session = frozenRegion;
+            if (session is null || session.Id != sessionId)
+            {
+                return new WindowsCaptureResult(
+                    WindowsCaptureOutcome.Unavailable,
+                    "Region capture is unavailable",
+                    "The frozen Region capture expired. Select the region again.");
+            }
+
+            frozenRegion = null;
+        }
+
+        session.Lease.Dispose();
+        using var held = session.Frame;
+        TryDeletePreview(session.PreviewPath);
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var target = targetSnapshot.CreateCaptureTarget();
-            var cropRegion = RegionCropResolver.Resolve(geometry, targetSnapshot, target);
-            updateSessionState(CaptureSessionState.FromSelectionResult(
-                CaptureTargetSelectionResult.Selected(
-                    target,
-                    EngineReadinessStatus.Initializing(
-                        EngineReadinessStage.Capture,
-                        "Region target selected.",
-                        $"Resolved issued target {target.DisplayName}."))));
-            return await CaptureSelectedTargetAsync(
+            var cropRegion = RegionCropResolver.Resolve(geometry, held.Target, held.CaptureTarget);
+            return await DeliverHeldFrameAsync(
                 request,
-                target,
+                held.Texture,
+                held.HdrCapability,
                 cropRegion,
                 cancellationToken);
         }
@@ -238,12 +228,165 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
                 "Region capture is unavailable",
                 exception.Message);
         }
+        catch (OperationCanceledException)
+        {
+            return Cancelled("Capture was cancelled by the caller.");
+        }
     }
 
-    private async Task<WindowsCaptureResult> CaptureSelectedTargetAsync(
+    public Task ReleaseRegionAsync(string sessionId) =>
+        ReleaseFrozenRegionAsync(sessionId);
+
+    private async Task<CaptureAcquireResult> CaptureAsync(
+        WindowsCaptureRequest request,
+        WindowsTargetCapability? freezeTarget,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ThrowIfDisposed();
+
+        using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            lifetimeCancellation.Token);
+        var token = operationCancellation.Token;
+
+        try
+        {
+            await operationGate.WaitAsync(token);
+        }
+        catch (OperationCanceledException)
+        {
+            return new CaptureAcquireResult(Cancelled("Capture was cancelled before it started."), null);
+        }
+
+        try
+        {
+            ThrowIfDisposed();
+            using var diagnosticScope = SessionDiagnosticScope.Begin(
+                LoggerHolder.Value,
+                correlationId: request.CorrelationId);
+
+            var command = freezeTarget is null
+                ? CaptureCommand.Fullscreen()
+                : CaptureCommand.Region();
+            var reservation = reserveCommand(command);
+            if (!reservation.IsAccepted)
+            {
+                return new CaptureAcquireResult(
+                    new WindowsCaptureResult(
+                        WindowsCaptureOutcome.Failed,
+                        "Capture is already active",
+                        reservation.Readiness?.TechnicalDetail ?? "The Windows capture engine rejected the request."),
+                    null);
+            }
+
+            return freezeTarget is null
+                ? await CaptureReservedDisplayAsync(request, token)
+                : await CaptureReservedFrozenAsync(request, freezeTarget, token);
+        }
+        catch (OperationCanceledException)
+        {
+            return new CaptureAcquireResult(Cancelled("Capture was cancelled by the caller."), null);
+        }
+        catch (Exception exception)
+        {
+            DiagnosticContext.CaptureFailure(
+                stage: freezeTarget is null ? "DisplayCapture" : "RegionCapture",
+                userFacingState: "Capture failed",
+                technicalDetail: exception.Message,
+                correlationId: request.CorrelationId,
+                exception: exception).LogTo(LoggerHolder.Value);
+            return new CaptureAcquireResult(
+                new WindowsCaptureResult(
+                    WindowsCaptureOutcome.Failed,
+                    "Capture failed",
+                    $"{exception.GetType().Name}: {exception.Message}"),
+                null);
+        }
+        finally
+        {
+            updateSessionState(CaptureSessionState.Idle());
+            operationGate.Release();
+        }
+    }
+
+    private async Task<CaptureAcquireResult> CaptureReservedDisplayAsync(
+        WindowsCaptureRequest request,
+        CancellationToken cancellationToken)
+    {
+        var selection = await selectTargetAsync(cancellationToken);
+        updateSessionState(CaptureSessionState.FromSelectionResult(selection));
+        if (!selection.IsSelected)
+        {
+            var outcome = selection.IsUnsupported
+                ? WindowsCaptureOutcome.Unsupported
+                : selection.IsCanceled
+                    ? WindowsCaptureOutcome.Cancelled
+                    : WindowsCaptureOutcome.Unavailable;
+            return new CaptureAcquireResult(
+                new WindowsCaptureResult(
+                    outcome,
+                    selection.Readiness.UserMessage,
+                    selection.Readiness.TechnicalDetail ?? selection.Readiness.UserMessage),
+                null);
+        }
+
+        return await CaptureSelectedTargetAsync(
+            request,
+            selection.Target,
+            capability: null,
+            holdFrame: false,
+            cancellationToken);
+    }
+
+    private async Task<CaptureAcquireResult> CaptureReservedFrozenAsync(
+        WindowsCaptureRequest request,
+        WindowsTargetCapability targetSnapshot,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var target = targetSnapshot.CreateCaptureTarget();
+            updateSessionState(CaptureSessionState.FromSelectionResult(
+                CaptureTargetSelectionResult.Selected(
+                    target,
+                    EngineReadinessStatus.Initializing(
+                        EngineReadinessStage.Capture,
+                        "Region target selected.",
+                        $"Resolved issued target {target.DisplayName}."))));
+            return await CaptureSelectedTargetAsync(
+                request,
+                target,
+                targetSnapshot,
+                holdFrame: true,
+                cancellationToken);
+        }
+        catch (ArgumentOutOfRangeException exception)
+        {
+            return new CaptureAcquireResult(
+                new WindowsCaptureResult(
+                    WindowsCaptureOutcome.Unavailable,
+                    "Region capture is unavailable",
+                    exception.Message),
+                null);
+        }
+        catch (InvalidOperationException exception)
+        {
+            return new CaptureAcquireResult(
+                new WindowsCaptureResult(
+                    WindowsCaptureOutcome.Unavailable,
+                    "Region capture is unavailable",
+                    exception.Message),
+                null);
+        }
+    }
+
+    private async Task<CaptureAcquireResult> CaptureSelectedTargetAsync(
         WindowsCaptureRequest request,
         CaptureTarget target,
-        CropPixelRect? cropRegion,
+        WindowsTargetCapability? capability,
+        bool holdFrame,
         CancellationToken cancellationToken)
     {
         var hdrCapability = probeHdrCapability(target);
@@ -273,13 +416,15 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
         updateSessionState(CaptureSessionState.FromStartResult(target, startResult));
         if (!startResult.Started)
         {
-            return new WindowsCaptureResult(
-                startResult.Readiness.State == EngineReadinessState.Unsupported
-                    ? WindowsCaptureOutcome.Unsupported
-                    : WindowsCaptureOutcome.Failed,
-                startResult.Readiness.UserMessage,
-                startResult.Readiness.TechnicalDetail ?? startResult.Readiness.UserMessage,
-                hdrCapability);
+            return new CaptureAcquireResult(
+                new WindowsCaptureResult(
+                    startResult.Readiness.State == EngineReadinessState.Unsupported
+                        ? WindowsCaptureOutcome.Unsupported
+                        : WindowsCaptureOutcome.Failed,
+                    startResult.Readiness.UserMessage,
+                    startResult.Readiness.TechnicalDetail ?? startResult.Readiness.UserMessage,
+                    hdrCapability),
+                null);
         }
 
         using var sessionResources = startResult.SessionResources!;
@@ -308,11 +453,13 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
                 frameCompletion.Task.Result.Texture?.Dispose();
             }
 
-            return new WindowsCaptureResult(
-                WindowsCaptureOutcome.TimedOut,
-                "Capture timed out",
-                $"No frame arrived within {frameTimeout}.",
-                hdrCapability);
+            return new CaptureAcquireResult(
+                new WindowsCaptureResult(
+                    WindowsCaptureOutcome.TimedOut,
+                    "Capture timed out",
+                    $"No frame arrived within {frameTimeout}.",
+                    hdrCapability),
+                null);
         }
         finally
         {
@@ -322,20 +469,72 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
         if (frameResult.Texture is null)
         {
             var readiness = frameResult.Readiness!;
-            return new WindowsCaptureResult(
-                WindowsCaptureOutcome.Failed,
-                readiness.UserMessage,
-                readiness.TechnicalDetail ?? readiness.UserMessage,
-                hdrCapability);
+            return new CaptureAcquireResult(
+                new WindowsCaptureResult(
+                    WindowsCaptureOutcome.Failed,
+                    readiness.UserMessage,
+                    readiness.TechnicalDetail ?? readiness.UserMessage,
+                    hdrCapability),
+                null);
         }
 
-        using var texture = frameResult.Texture;
+        var source = frameResult.Texture;
+        CapturedFrameTexture owned;
+        try
+        {
+            owned = holdFrame ? copyOwnedFrame(source) : source;
+            if (holdFrame && !ReferenceEquals(owned, source))
+            {
+                source.Dispose();
+            }
+        }
+        catch
+        {
+            source.Dispose();
+            throw;
+        }
+
         updateSessionState(CaptureSessionState.Capturing(
             target,
             EngineReadinessStatus.Ready(
                 "Captured frame is ready for sRGB Visual Match conversion.",
-                $"Captured {texture.Width}x{texture.Height} from {target.DisplayName}.")));
+                $"Captured {owned.Width}x{owned.Height} from {target.DisplayName}.")));
 
+        if (holdFrame)
+        {
+            return new CaptureAcquireResult(
+                new WindowsCaptureResult(
+                    WindowsCaptureOutcome.Delivered,
+                    "Frozen region frame is ready.",
+                    $"Captured {owned.Width}x{owned.Height} from {target.DisplayName}.",
+                    hdrCapability),
+                new HeldFrozenFrame(owned, target, capability!, hdrCapability));
+        }
+
+        try
+        {
+            return new CaptureAcquireResult(
+                await DeliverHeldFrameAsync(
+                    request,
+                    owned,
+                    hdrCapability,
+                    cropRegion: null,
+                    cancellationToken),
+                null);
+        }
+        finally
+        {
+            owned.Dispose();
+        }
+    }
+
+    private async Task<WindowsCaptureResult> DeliverHeldFrameAsync(
+        WindowsCaptureRequest request,
+        CapturedFrameTexture texture,
+        HdrDisplayCapability hdrCapability,
+        CropPixelRect? cropRegion,
+        CancellationToken cancellationToken)
+    {
         var outputResult = await output.ExecuteOutputAsync(
             new OutputRequest
             {
@@ -378,6 +577,60 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
     private static WindowsCaptureResult Cancelled(string detail) =>
         new(WindowsCaptureOutcome.Cancelled, "Capture cancelled", detail);
 
+    private bool HasFrozenRegion()
+    {
+        lock (frozenLock)
+        {
+            return frozenRegion is not null;
+        }
+    }
+
+    private async Task ReleaseFrozenRegionAsync(string? sessionId = null)
+    {
+        FrozenRegionSession? session;
+        lock (frozenLock)
+        {
+            if (frozenRegion is null || (sessionId is not null && frozenRegion.Id != sessionId))
+            {
+                return;
+            }
+
+            session = frozenRegion;
+            frozenRegion = null;
+        }
+
+        session.Lease.Dispose();
+        session.Frame.Dispose();
+        TryDeletePreview(session.PreviewPath);
+        await Task.CompletedTask;
+    }
+
+    private static string WriteRegionPreview(byte[] previewBytes)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "lumiere-region-preview");
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, $"{Guid.NewGuid():N}.png");
+        File.WriteAllBytes(path, previewBytes);
+        return path;
+    }
+
+    private static void TryDeletePreview(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
+
     private void ThrowIfDisposed()
     {
         ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
@@ -394,6 +647,7 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
         await operationGate.WaitAsync();
         try
         {
+            await ReleaseFrozenRegionAsync();
             ownedResources?.Dispose();
         }
         finally
@@ -402,6 +656,36 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
             operationGate.Dispose();
             lifetimeCancellation.Dispose();
         }
+    }
+
+    private sealed record CaptureAcquireResult(
+        WindowsCaptureResult Result,
+        HeldFrozenFrame? HeldFrame);
+
+    private sealed class HeldFrozenFrame(
+        CapturedFrameTexture texture,
+        CaptureTarget captureTarget,
+        WindowsTargetCapability target,
+        HdrDisplayCapability hdrCapability) : IDisposable
+    {
+        public CapturedFrameTexture Texture { get; } = texture;
+        public CaptureTarget CaptureTarget { get; } = captureTarget;
+        public WindowsTargetCapability Target { get; } = target;
+        public HdrDisplayCapability HdrCapability { get; } = hdrCapability;
+
+        public void Dispose() => Texture.Dispose();
+    }
+
+    private sealed class FrozenRegionSession(
+        string id,
+        HeldFrozenFrame frame,
+        string previewPath,
+        CancellationTokenSource lease)
+    {
+        public string Id { get; } = id;
+        public HeldFrozenFrame Frame { get; } = frame;
+        public string PreviewPath { get; } = previewPath;
+        public CancellationTokenSource Lease { get; } = lease;
     }
 
     private sealed record FrameCaptureResult(

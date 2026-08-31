@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { CaptureCommandRouter } from './capture-command-router'
 import type {
-  CaptureRequest,
   CaptureResult,
+  CommitRegionRequest,
+  DisplayCaptureRequest,
   PlatformCapabilities,
   PlatformHost,
+  PrepareRegionResult,
 } from '../shared/platform-contract'
 import { PLATFORM_CONTRACT_VERSION } from '../shared/platform-contract'
 
@@ -84,7 +86,7 @@ describe('CaptureCommandRouter', () => {
       feedback: 'Copied and saved to “Lumiere”',
       filePath: '/tmp/lumiere.png',
     })
-    expect(host.requests).toEqual([{ mode: 'display', delivery: 'both' }])
+    expect(host.requests).toEqual([{ operation: 'display', delivery: 'both' }])
   })
 
   it('routes a custom save directory only to file-capable capture requests', async () => {
@@ -105,7 +107,7 @@ describe('CaptureCommandRouter', () => {
     await router.captureDisplay()
 
     expect(host.requests).toEqual([
-      { mode: 'display', delivery: 'folder', saveDirectory: '/tmp/custom' },
+      { operation: 'display', delivery: 'folder', saveDirectory: '/tmp/custom' },
     ])
     await expect(router.getSurfaceSnapshot()).resolves.toMatchObject({
       output: { location: '/tmp/custom' },
@@ -113,12 +115,10 @@ describe('CaptureCommandRouter', () => {
   })
 
   it('prepares and completes a target-local region capture', async () => {
-    const target = { id: 'target-token-17', logicalSize: { width: 1512, height: 982 } }
     const host = new StubHost(
       {
         ...availableCapabilities(),
         captureModes: ['region', 'display'],
-        activeTarget: target,
       },
       {
         status: 'completed',
@@ -132,9 +132,15 @@ describe('CaptureCommandRouter', () => {
     )
     const router = new CaptureCommandRouter('macos', host)
 
-    await expect(router.beginRegionCapture()).resolves.toEqual({ status: 'ready', target })
+    await expect(router.beginRegionCapture()).resolves.toEqual({
+      status: 'ready',
+      targetSize: { width: 1512, height: 982 },
+      previewPath: '/tmp/frozen-region.png',
+      previewPixelSize: { width: 3024, height: 1964 },
+      leaseMilliseconds: 60_000,
+    })
     await expect(
-      router.completeRegionCapture(target, {
+      router.completeRegionCapture({
         coordinateSpace: 'target-logical',
         x: 12.5,
         y: 20,
@@ -148,9 +154,9 @@ describe('CaptureCommandRouter', () => {
     })
     expect(host.requests).toEqual([
       {
-        mode: 'region',
+        operation: 'commit-region',
         delivery: 'both',
-        targetId: 'target-token-17',
+        sessionId: 'region-session-17',
         geometry: {
           coordinateSpace: 'target-logical',
           x: 12.5,
@@ -166,27 +172,37 @@ describe('CaptureCommandRouter', () => {
     const host = new StubHost({
       ...availableCapabilities(),
       captureModes: ['region', 'display'],
-      activeTarget: { id: 'target-token-17', logicalSize: { width: 1512, height: 982 } },
     })
     const router = new CaptureCommandRouter('macos', host)
 
     await expect(router.beginRegionCapture()).resolves.toMatchObject({ status: 'ready' })
-    router.cancelRegionCapture()
+    await router.cancelRegionCapture()
     await expect(router.captureDisplay()).resolves.toMatchObject({ status: 'cancelled' })
-    expect(host.requests).toEqual([{ mode: 'display', delivery: 'both' }])
+    expect(host.requests).toEqual([
+      { operation: 'cancel-region', sessionId: 'region-session-17' },
+      { operation: 'display', delivery: 'both' },
+    ])
   })
 
   it('does not open a region overlay without an active target', async () => {
-    const host = new StubHost({
-      ...availableCapabilities(),
-      captureModes: ['region', 'display'],
-    })
+    const host = new StubHost(
+      { ...availableCapabilities(), captureModes: ['region', 'display'] },
+      { status: 'cancelled' },
+      {
+        status: 'failed',
+        failure: {
+          code: 'capture-unavailable',
+          message: 'No target is available.',
+          retryable: true,
+        },
+      },
+    )
 
     await expect(
       new CaptureCommandRouter('macos', host).beginRegionCapture(),
     ).resolves.toMatchObject({
       status: 'failed',
-      result: { status: 'failed', feedback: 'Region capture unavailable' },
+      result: { status: 'failed', feedback: 'Capture failed' },
     })
   })
 
@@ -313,17 +329,32 @@ describe('CaptureCommandRouter', () => {
     })
     await router.captureDisplay()
 
-    expect(host.requests).toEqual([{ mode: 'display', delivery: 'clipboard' }])
+    expect(host.requests).toEqual([{ operation: 'display', delivery: 'clipboard' }])
   })
 })
 
 class StubHost implements PlatformHost {
-  public readonly requests: CaptureRequest[] = []
+  public readonly requests: (
+    | ({ operation: 'display' } & DisplayCaptureRequest)
+    | ({ operation: 'commit-region' } & CommitRegionRequest)
+    | { operation: 'cancel-region'; sessionId: string }
+  )[] = []
 
   public constructor(
     private readonly capabilities: PlatformCapabilities,
     private readonly result: CaptureResult | Promise<CaptureResult> = {
       status: 'cancelled',
+    },
+    private readonly prepared: PrepareRegionResult = {
+      status: 'prepared',
+      sessionId: 'region-session-17',
+      targetLogicalSize: { width: 1512, height: 982 },
+      preview: {
+        filePath: '/tmp/frozen-region.png',
+        mediaType: 'image/png',
+        pixelSize: { width: 3024, height: 1964 },
+      },
+      leaseMilliseconds: 60_000,
     },
   ) {}
 
@@ -331,9 +362,23 @@ class StubHost implements PlatformHost {
     return Promise.resolve(this.capabilities)
   }
 
-  public capture(request: CaptureRequest): Promise<CaptureResult> {
-    this.requests.push(request)
+  public captureDisplay(request: DisplayCaptureRequest): Promise<CaptureResult> {
+    this.requests.push({ operation: 'display', ...request })
     return Promise.resolve(this.result)
+  }
+
+  public prepareRegion(): Promise<PrepareRegionResult> {
+    return Promise.resolve(this.prepared)
+  }
+
+  public commitRegion(request: CommitRegionRequest): Promise<CaptureResult> {
+    this.requests.push({ operation: 'commit-region', ...request })
+    return Promise.resolve(this.result)
+  }
+
+  public cancelRegion(sessionId: string): Promise<{ status: 'released' }> {
+    this.requests.push({ operation: 'cancel-region', sessionId })
+    return Promise.resolve({ status: 'released' })
   }
 }
 

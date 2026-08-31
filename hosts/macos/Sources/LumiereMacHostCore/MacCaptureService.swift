@@ -7,7 +7,8 @@ import ImageIO
 import ScreenCaptureKit
 
 public actor MacCaptureService {
-  private var issuedRegionTarget: IssuedRegionTarget?
+  private static let regionLeaseMilliseconds = 60_000
+  private var frozenRegion: FrozenRegionSession?
 
   public init() {}
 
@@ -15,27 +16,45 @@ public actor MacCaptureService {
     switch request.method {
     case .getCapabilities:
       return .success(id: request.id, result: .capabilities(await capabilities()))
-    case .capture:
-      guard let parameters = request.capture else {
-        return .failure(
-          id: request.id,
-          error: HostFailure(
-            code: .invalidRequest,
-            message: "Capture parameters are required.",
-            retryable: false
-          )
-        )
+    case .captureDisplay:
+      guard let parameters = request.displayCapture else {
+        return invalidRequest(id: request.id, message: "Display capture parameters are required.")
       }
       return .success(
         id: request.id,
-        result: .capture(await capture(parameters: parameters))
+        result: .capture(await captureDisplay(parameters: parameters))
       )
+    case .prepareRegion:
+      let result = await prepareRegion()
+      switch result {
+      case .success(let prepared):
+        return .success(id: request.id, result: .preparedRegion(prepared))
+      case .failure(let failure):
+        return .success(id: request.id, result: .capture(.failed(failure)))
+      }
+    case .commitRegion:
+      guard let parameters = request.commitRegion else {
+        return invalidRequest(id: request.id, message: "Region commit parameters are required.")
+      }
+      return .success(
+        id: request.id,
+        result: .capture(await commitRegion(parameters: parameters))
+      )
+    case .cancelRegion:
+      guard let sessionId = request.sessionId else {
+        return invalidRequest(id: request.id, message: "Region session id is required.")
+      }
+      cancelRegion(sessionId: sessionId)
+      return .success(id: request.id, result: .releasedRegion(.released))
     }
+  }
+
+  public func shutdown() {
+    releaseFrozenRegion()
   }
 
   private func capabilities() async -> PlatformCapabilities {
     guard let target = await ActiveDisplayTargetResolver.resolve() else {
-      issuedRegionTarget = nil
       return PlatformCapabilities(
         contractVersion: platformContractVersion,
         platform: "macos",
@@ -46,8 +65,6 @@ public actor MacCaptureService {
         outputProfiles: ["srgb-visual-match"]
       )
     }
-    let regionTarget = IssuedRegionTarget(id: UUID().uuidString, target: target)
-    issuedRegionTarget = regionTarget
     return PlatformCapabilities(
       contractVersion: platformContractVersion,
       platform: "macos",
@@ -55,119 +72,30 @@ public actor MacCaptureService {
       captureModes: [.region, .display],
       deliveryTargets: [.clipboard, .folder],
       hdrCapture: target.supportsHDR ? "supported" : "unavailable",
-      outputProfiles: ["srgb-visual-match"],
-      activeTarget: CaptureTarget(
-        id: regionTarget.id,
-        logicalSize: LogicalSize(width: target.logicalWidth, height: target.logicalHeight)
-      )
+      outputProfiles: ["srgb-visual-match"]
     )
   }
 
-  private func capture(parameters: CaptureParameters) async -> CaptureResult {
-    guard let captureTarget = await resolveCaptureTarget(for: parameters) else {
+  private func captureDisplay(parameters: DisplayCaptureParameters) async -> CaptureResult {
+    guard let target = await ActiveDisplayTargetResolver.resolve() else {
       return .failed(
         HostFailure(
-          code: .captureUnavailable,
-          message: "The capture target changed or is no longer available.",
+          code: .captureUnavailable, message: "The capture target is unavailable.",
           retryable: true
         )
       )
     }
 
-    let permission = ScreenRecordingPermission.resolve(
-      preflightGranted: CGPreflightScreenCaptureAccess(),
-      requestAccess: CGRequestScreenCaptureAccess
-    )
-    guard permission == .granted else {
-      return .failed(
-        HostFailure(
-          code: .permissionDenied,
-          message: "Screen Recording permission is required for capture.",
-          retryable: false
-        )
-      )
-    }
-
     do {
-      let content = try await SCShareableContent.excludingDesktopWindows(
-        false,
-        onScreenWindowsOnly: true
-      )
-      guard
-        let display = content.displays.first(where: {
-          $0.displayID == captureTarget.target.displayID
-        })
-      else {
-        return .failed(
-          HostFailure(
-            code: .captureUnavailable,
-            message: "The active display is not available for capture.",
-            retryable: true
-          )
-        )
-      }
-
-      let filter = SCContentFilter(display: display, excludingWindows: [])
-      guard
-        let outputGeometry = CaptureOutputGeometry.resolve(
-          targetLogicalSize: LogicalSize(
-            width: captureTarget.target.logicalWidth,
-            height: captureTarget.target.logicalHeight
-          ),
-          filterLogicalSize: LogicalSize(
-            width: Double(filter.contentRect.width),
-            height: Double(filter.contentRect.height)
-          ),
-          pointPixelScale: Double(filter.pointPixelScale),
-          region: captureTarget.region
-        )
-      else {
-        return .failed(
-          HostFailure(
-            code: .captureUnavailable,
-            message: "The capture target changed or is no longer available.",
-            retryable: true
-          )
-        )
-      }
-
-      let capturesHDR = captureTarget.target.supportsHDR
-      let configuration =
-        capturesHDR
-        ? SCStreamConfiguration(preset: .captureHDRScreenshotLocalDisplay)
-        : SCStreamConfiguration()
-      outputGeometry.apply(to: configuration)
-      configuration.showsCursor = true
-
-      let capturedImage = try await SCScreenshotManager.captureImage(
-        contentFilter: filter,
-        configuration: configuration
-      )
-      guard
-        outputGeometry.matchesCapture(
-          imageWidth: capturedImage.width,
-          imageHeight: capturedImage.height
-        )
-      else {
-        throw CapturePipelineError.unexpectedImageDimensions(
-          expectedWidth: outputGeometry.capturePixelWidth,
-          expectedHeight: outputGeometry.capturePixelHeight,
-          actualWidth: capturedImage.width,
-          actualHeight: capturedImage.height
-        )
-      }
-      guard let image = outputGeometry.makeOutputImage(from: capturedImage) else {
-        throw CapturePipelineError.cropFailed
-      }
-      let visualMatchPNG = try makeVisualMatchPNG(image, sourceIsHDR: capturesHDR)
+      let frame = try await acquireFrozenFrame(target: target)
+      let visualMatchPNG = try makeVisualMatchPNG(frame.image, sourceIsHDR: frame.capturesHDR)
       let deliveries = await MacCaptureDelivery.deliver(
         visualMatchPNG,
         to: parameters.delivery,
         saveDirectory: parameters.saveDirectory
       )
-
       return .completed(
-        dynamicRange: capturesHDR ? "hdr" : "sdr",
+        dynamicRange: frame.capturesHDR ? "hdr" : "sdr",
         deliveries: deliveries
       )
     } catch let error where CaptureErrorClassification.isCancellation(error) {
@@ -177,33 +105,207 @@ public actor MacCaptureService {
     }
   }
 
-  private func resolveCaptureTarget(
-    for parameters: CaptureParameters
-  ) async -> ResolvedCaptureTarget? {
-    if parameters.mode == .display {
-      guard let target = await ActiveDisplayTargetResolver.resolve() else {
-        return nil
-      }
-      return ResolvedCaptureTarget(target: target, region: nil)
+  private func prepareRegion() async -> PrepareOutcome {
+    releaseFrozenRegion()
+    guard let target = await ActiveDisplayTargetResolver.resolve() else {
+      return .failure(
+        HostFailure(
+          code: .captureUnavailable,
+          message: "The capture target is unavailable.",
+          retryable: true
+        )
+      )
     }
 
-    guard let targetId = parameters.targetId,
-      let geometry = parameters.geometry,
-      let issued = issuedRegionTarget,
-      issued.id == targetId
-    else {
-      return nil
+    do {
+      let frame = try await acquireFrozenFrame(target: target)
+      let previewData = try makeVisualMatchPNG(frame.image, sourceIsHDR: frame.capturesHDR)
+      let previewURL = try writeRegionPreview(previewData)
+      let sessionId = UUID().uuidString
+      let expiration = Task { [weak self] in
+        try? await Task.sleep(for: .milliseconds(Self.regionLeaseMilliseconds))
+        await self?.expireRegion(sessionId: sessionId)
+      }
+      frozenRegion = FrozenRegionSession(
+        id: sessionId,
+        frame: frame,
+        previewURL: previewURL,
+        expiration: expiration
+      )
+      return .success(
+        PreparedRegionResult(
+          status: "prepared",
+          sessionId: sessionId,
+          targetLogicalSize: LogicalSize(
+            width: target.logicalWidth,
+            height: target.logicalHeight
+          ),
+          preview: PreparedRegionResult.Preview(
+            filePath: previewURL.path,
+            mediaType: "image/png",
+            pixelSize: PixelSize(width: frame.image.width, height: frame.image.height)
+          ),
+          leaseMilliseconds: Self.regionLeaseMilliseconds
+        )
+      )
+    } catch {
+      return .failure(mapCaptureError(error))
     }
-    issuedRegionTarget = nil
+  }
+
+  private func commitRegion(parameters: CommitRegionParameters) async -> CaptureResult {
+    guard let session = frozenRegion, session.id == parameters.sessionId else {
+      return .failed(
+        HostFailure(
+          code: .captureUnavailable,
+          message: "The frozen Region capture expired. Select the region again.",
+          retryable: true
+        )
+      )
+    }
+    frozenRegion = nil
+    session.expiration.cancel()
+    defer { try? FileManager.default.removeItem(at: session.previewURL) }
 
     guard
-      let current = await ActiveDisplayTargetResolver.resolve(displayID: issued.target.displayID),
-      current.hasSameTopology(as: issued.target)
+      let geometry = CaptureOutputGeometry.resolve(
+        targetLogicalSize: session.frame.targetLogicalSize,
+        filterLogicalSize: session.frame.filterLogicalSize,
+        pointPixelScale: session.frame.pointPixelScale,
+        region: parameters.geometry
+      ),
+      let image = geometry.makeOutputImage(from: session.frame.image)
     else {
-      return nil
+      return .failed(
+        HostFailure(
+          code: .captureUnavailable,
+          message: "The Region selection is outside the frozen capture.",
+          retryable: true
+        )
+      )
     }
 
-    return ResolvedCaptureTarget(target: current, region: geometry)
+    do {
+      let visualMatchPNG = try makeVisualMatchPNG(
+        image,
+        sourceIsHDR: session.frame.capturesHDR
+      )
+      let deliveries = await MacCaptureDelivery.deliver(
+        visualMatchPNG,
+        to: parameters.delivery,
+        saveDirectory: parameters.saveDirectory
+      )
+      return .completed(
+        dynamicRange: session.frame.capturesHDR ? "hdr" : "sdr",
+        deliveries: deliveries
+      )
+    } catch let error where CaptureErrorClassification.isCancellation(error) {
+      return .cancelled()
+    } catch {
+      return .failed(mapCaptureError(error))
+    }
+  }
+
+  private func cancelRegion(sessionId: String) {
+    guard frozenRegion?.id == sessionId else { return }
+    releaseFrozenRegion()
+  }
+
+  private func expireRegion(sessionId: String) {
+    guard frozenRegion?.id == sessionId else { return }
+    releaseFrozenRegion()
+  }
+
+  private func releaseFrozenRegion() {
+    guard let session = frozenRegion else { return }
+    frozenRegion = nil
+    session.expiration.cancel()
+    try? FileManager.default.removeItem(at: session.previewURL)
+  }
+
+  private func acquireFrozenFrame(target: ActiveDisplayTarget) async throws -> FrozenFrame {
+    let permission = ScreenRecordingPermission.resolve(
+      preflightGranted: CGPreflightScreenCaptureAccess(),
+      requestAccess: CGRequestScreenCaptureAccess
+    )
+    guard permission == .granted else {
+      throw MacCaptureSessionError.permissionDenied
+    }
+
+    let content = try await SCShareableContent.excludingDesktopWindows(
+      false,
+      onScreenWindowsOnly: true
+    )
+    guard let display = content.displays.first(where: { $0.displayID == target.displayID }) else {
+      throw MacCaptureSessionError.targetUnavailable
+    }
+    let filter = SCContentFilter(display: display, excludingWindows: [])
+    let targetLogicalSize = LogicalSize(width: target.logicalWidth, height: target.logicalHeight)
+    let filterLogicalSize = LogicalSize(
+      width: Double(filter.contentRect.width),
+      height: Double(filter.contentRect.height)
+    )
+    let pointPixelScale = Double(filter.pointPixelScale)
+    guard
+      let geometry = CaptureOutputGeometry.resolve(
+        targetLogicalSize: targetLogicalSize,
+        filterLogicalSize: filterLogicalSize,
+        pointPixelScale: pointPixelScale,
+        region: nil
+      )
+    else {
+      throw MacCaptureSessionError.targetUnavailable
+    }
+    let capturesHDR = target.supportsHDR
+    let configuration = capturesHDR
+      ? SCStreamConfiguration(preset: .captureHDRScreenshotLocalDisplay)
+      : SCStreamConfiguration()
+    geometry.apply(to: configuration)
+    configuration.showsCursor = true
+    let image = try await SCScreenshotManager.captureImage(
+      contentFilter: filter,
+      configuration: configuration
+    )
+    guard geometry.matchesCapture(imageWidth: image.width, imageHeight: image.height) else {
+      throw CapturePipelineError.unexpectedImageDimensions(
+        expectedWidth: geometry.capturePixelWidth,
+        expectedHeight: geometry.capturePixelHeight,
+        actualWidth: image.width,
+        actualHeight: image.height
+      )
+    }
+    return FrozenFrame(
+      image: image,
+      capturesHDR: capturesHDR,
+      targetLogicalSize: targetLogicalSize,
+      filterLogicalSize: filterLogicalSize,
+      pointPixelScale: pointPixelScale
+    )
+  }
+
+  private func writeRegionPreview(_ data: Data) throws -> URL {
+    let directory = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+      .appendingPathComponent("lumiere-region-preview", isDirectory: true)
+    try FileManager.default.createDirectory(
+      at: directory,
+      withIntermediateDirectories: true,
+      attributes: nil
+    )
+    let fileURL = directory.appendingPathComponent("\(UUID().uuidString).png")
+    try data.write(to: fileURL, options: .atomic)
+    return fileURL
+  }
+
+  private func invalidRequest(id: String, message: String) -> PlatformResponse {
+    .failure(
+      id: id,
+      error: HostFailure(code: .invalidRequest, message: message, retryable: false)
+    )
+  }
+
+  private enum PrepareOutcome {
+    case success(PreparedRegionResult)
+    case failure(HostFailure)
   }
 
   private func makeVisualMatchPNG(
@@ -267,6 +369,22 @@ public actor MacCaptureService {
   }
 
   private func mapCaptureError(_ error: Error) -> HostFailure {
+    if let sessionError = error as? MacCaptureSessionError {
+      switch sessionError {
+      case .permissionDenied:
+        return HostFailure(
+          code: .permissionDenied,
+          message: "Screen Recording permission is required for capture.",
+          retryable: false
+        )
+      case .targetUnavailable:
+        return HostFailure(
+          code: .captureUnavailable,
+          message: "The active display is not available for capture.",
+          retryable: true
+        )
+      }
+    }
     if let pipelineError = error as? CapturePipelineError,
       case .unexpectedImageDimensions(
         let expectedWidth,
@@ -302,6 +420,26 @@ public actor MacCaptureService {
   }
 }
 
+private enum MacCaptureSessionError: Error {
+  case permissionDenied
+  case targetUnavailable
+}
+
+private struct FrozenFrame {
+  let image: CGImage
+  let capturesHDR: Bool
+  let targetLogicalSize: LogicalSize
+  let filterLogicalSize: LogicalSize
+  let pointPixelScale: Double
+}
+
+private struct FrozenRegionSession {
+  let id: String
+  let frame: FrozenFrame
+  let previewURL: URL
+  let expiration: Task<Void, Never>
+}
+
 private struct ActiveDisplayTarget: Sendable {
   let displayID: CGDirectDisplayID
   let maximumPotentialHeadroom: CGFloat?
@@ -324,16 +462,6 @@ private struct ActiveDisplayTarget: Sendable {
       && abs(logicalWidth - other.logicalWidth) < 0.001
       && abs(logicalHeight - other.logicalHeight) < 0.001
   }
-}
-
-private struct IssuedRegionTarget: Sendable {
-  let id: String
-  let target: ActiveDisplayTarget
-}
-
-private struct ResolvedCaptureTarget: Sendable {
-  let target: ActiveDisplayTarget
-  let region: CaptureGeometry?
 }
 
 struct CaptureOutputGeometry: Equatable, Sendable {

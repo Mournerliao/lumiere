@@ -62,14 +62,16 @@ public sealed class WindowsDisplayCaptureEngineTests
     }
 
     [Fact]
-    public async Task CaptureRegionAsync_UsesIssuedTargetAndPixelAlignedCrop()
+    public async Task PrepareThenCommitRegion_CropsTheFrozenFrameWithoutRecapturing()
     {
         var target = CreateTarget();
         var output = new RecordingOutput();
+        var frameArrivals = 0;
         await using var engine = CreateEngine(
             target,
             (onFrame, _) =>
             {
+                frameArrivals++;
                 onFrame(new CapturedFrameTexture(null, 2, 2, "test frame"));
                 return CaptureStartResult.StartSucceeded(
                     new CaptureSessionResources(() => { }),
@@ -81,13 +83,27 @@ public sealed class WindowsDisplayCaptureEngineTests
             new WindowsTargetLogicalSize(1, 1),
             target);
 
-        var result = await engine.CaptureRegionAsync(
+        var prepared = await engine.PrepareRegionAsync(targetSnapshot);
+        Assert.True(prepared.Prepared);
+        Assert.False(string.IsNullOrWhiteSpace(prepared.SessionId));
+        Assert.True(File.Exists(prepared.PreviewPath));
+        Assert.Equal(1, frameArrivals);
+
+        var result = await engine.CommitRegionAsync(
+            prepared.SessionId!,
             new WindowsCaptureRequest("request-region", OutputTarget.Folder, "C:\\captures"),
-            targetSnapshot,
             new WindowsRegionGeometry(0.25, 0.25, 0.5, 0.5));
 
         Assert.Equal(WindowsCaptureOutcome.Delivered, result.Outcome);
         Assert.Equal(new CropPixelRect(0, 0, 2, 2), output.Request?.CropRegion);
+        Assert.Equal(1, frameArrivals);
+        Assert.False(File.Exists(prepared.PreviewPath));
+
+        var repeated = await engine.CommitRegionAsync(
+            prepared.SessionId!,
+            new WindowsCaptureRequest("request-region-repeat", OutputTarget.Folder, "C:\\captures"),
+            new WindowsRegionGeometry(0.25, 0.25, 0.5, 0.5));
+        Assert.Equal(WindowsCaptureOutcome.Unavailable, repeated.Outcome);
     }
 
     [Fact]
@@ -226,6 +242,13 @@ public sealed class WindowsDisplayCaptureEngineTests
                     OutputTarget.Folder,
                     "Saved to folder",
                     artifactPath: "C:\\captures\\test.png")));
+
+        public Task<byte[]> EncodePngAsync(
+            CapturedFrameTexture texture,
+            CropPixelRect? cropRegion,
+            SrgbVisualMatchConversionContext context,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(PreviewPng);
     }
 
     private sealed class RecordingOutput : IOutputService
@@ -243,6 +266,13 @@ public sealed class WindowsDisplayCaptureEngineTests
                     "Saved to folder",
                     artifactPath: "C:\\captures\\test.png")));
         }
+
+        public Task<byte[]> EncodePngAsync(
+            CapturedFrameTexture texture,
+            CropPixelRect? cropRegion,
+            SrgbVisualMatchConversionContext context,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(PreviewPng);
     }
 
     private sealed class ThrowingOutput : IOutputService
@@ -251,5 +281,14 @@ public sealed class WindowsDisplayCaptureEngineTests
             OutputRequest request,
             CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException("encoding failed");
+
+        public Task<byte[]> EncodePngAsync(
+            CapturedFrameTexture texture,
+            CropPixelRect? cropRegion,
+            SrgbVisualMatchConversionContext context,
+            CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("encoding failed");
     }
+
+    private static readonly byte[] PreviewPng = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 }

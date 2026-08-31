@@ -24,6 +24,9 @@ const platformApi: LumiereRendererApi = {
   },
   getRegionOverlaySnapshot: () =>
     ipcRenderer.invoke(captureCommandChannels.getRegionOverlaySnapshot),
+  regionOverlayReady: () => {
+    ipcRenderer.send(captureCommandChannels.regionOverlayReady)
+  },
   cancelRegionOverlay: () => {
     ipcRenderer.send(captureCommandChannels.cancelRegionOverlay)
   },

@@ -3,6 +3,8 @@ import type {
   LumierePlatform,
   PlatformCapabilities,
   PlatformHost,
+  PrepareRegionResult,
+  ReleasedRegionCapture,
 } from '../shared/platform-contract'
 import { PLATFORM_CONTRACT_VERSION } from '../shared/platform-contract'
 
@@ -26,15 +28,31 @@ export class UnavailablePlatformHost implements PlatformHost {
     })
   }
 
-  public capture(): Promise<CaptureResult> {
-    return Promise.resolve({
+  public captureDisplay(): Promise<CaptureResult> {
+    return Promise.resolve(this.unavailableResult())
+  }
+
+  public prepareRegion(): Promise<PrepareRegionResult> {
+    return Promise.resolve(this.unavailableResult())
+  }
+
+  public commitRegion(): Promise<CaptureResult> {
+    return Promise.resolve(this.unavailableResult())
+  }
+
+  public cancelRegion(): Promise<ReleasedRegionCapture> {
+    return Promise.resolve({ status: 'released' })
+  }
+
+  private unavailableResult(): Extract<CaptureResult, { status: 'failed' }> {
+    return {
       status: 'failed',
       failure: {
         code: 'host-unavailable',
         message: `The ${this.platform} native capture host has not been connected yet.`,
         retryable: false,
       },
-    })
+    }
   }
 }
 

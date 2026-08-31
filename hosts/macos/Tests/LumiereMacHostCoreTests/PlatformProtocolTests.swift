@@ -8,33 +8,34 @@ import Testing
 @Test
 func decodesGetCapabilitiesRequest() throws {
   let request = try PlatformRequestDecoder.decode(
-    line: #"{"version":2,"id":"capabilities-1","method":"getCapabilities","params":{}}"#
+    line: #"{"version":3,"id":"capabilities-1","method":"getCapabilities","params":{}}"#
   )
 
-  #expect(request.version == 2)
+  #expect(request.version == 3)
   #expect(request.id == "capabilities-1")
   #expect(request.method == .getCapabilities)
-  #expect(request.capture == nil)
+  #expect(request.displayCapture == nil)
+  #expect(request.commitRegion == nil)
 }
 
 @Test
 func decodesDisplayFolderCaptureRequest() throws {
   let request = try PlatformRequestDecoder.decode(
     line:
-      #"{"version":2,"id":"capture-1","method":"capture","params":{"mode":"display","delivery":"folder"}}"#
+      #"{"version":3,"id":"capture-1","method":"captureDisplay","params":{"delivery":"folder"}}"#
   )
 
-  #expect(request.capture == CaptureParameters(mode: .display, delivery: .folder))
+  #expect(request.displayCapture == DisplayCaptureParameters(delivery: .folder))
 }
 
 @Test
 func decodesCustomSaveDirectoryForFolderCapture() throws {
   let request = try PlatformRequestDecoder.decode(
     line:
-      #"{"version":2,"id":"capture-custom","method":"capture","params":{"mode":"display","delivery":"folder","saveDirectory":"/tmp/custom-captures"}}"#
+      #"{"version":3,"id":"capture-custom","method":"captureDisplay","params":{"delivery":"folder","saveDirectory":"/tmp/custom-captures"}}"#
   )
 
-  #expect(request.capture?.saveDirectory == "/tmp/custom-captures")
+  #expect(request.displayCapture?.saveDirectory == "/tmp/custom-captures")
 }
 
 @Test
@@ -42,29 +43,49 @@ func rejectsSaveDirectoryForClipboardOnlyCapture() {
   #expect(throws: PlatformProtocolError.self) {
     try PlatformRequestDecoder.decode(
       line:
-        #"{"version":2,"id":"capture-invalid-directory","method":"capture","params":{"mode":"display","delivery":"clipboard","saveDirectory":"/tmp/custom-captures"}}"#
+        #"{"version":3,"id":"capture-invalid-directory","method":"captureDisplay","params":{"delivery":"clipboard","saveDirectory":"/tmp/custom-captures"}}"#
     )
   }
 }
 
 @Test
-func decodesTargetLocalRegionCaptureRequest() throws {
+func decodesPrepareRegionRequest() throws {
   let request = try PlatformRequestDecoder.decode(
-    line:
-      #"{"version":2,"id":"capture-2","method":"capture","params":{"mode":"region","delivery":"both","targetId":"display-17","geometry":{"coordinateSpace":"target-logical","x":10.5,"y":20,"width":640,"height":360}}}"#
+    line: #"{"version":3,"id":"prepare-1","method":"prepareRegion","params":{}}"#
   )
 
-  #expect(request.capture?.mode == .region)
-  #expect(request.capture?.targetId == "display-17")
-  #expect(request.capture?.geometry?.x == 10.5)
-  #expect(request.capture?.geometry?.width == 640)
+  #expect(request.method == .prepareRegion)
+}
+
+@Test
+func decodesCommitRegionRequest() throws {
+  let request = try PlatformRequestDecoder.decode(
+    line:
+      #"{"version":3,"id":"commit-1","method":"commitRegion","params":{"sessionId":"region-session-17","delivery":"both","geometry":{"coordinateSpace":"target-logical","x":10.5,"y":20,"width":640,"height":360}}}"#
+  )
+
+  #expect(request.commitRegion?.sessionId == "region-session-17")
+  #expect(request.commitRegion?.delivery == .both)
+  #expect(request.commitRegion?.geometry.x == 10.5)
+  #expect(request.commitRegion?.geometry.width == 640)
+}
+
+@Test
+func decodesCancelRegionRequest() throws {
+  let request = try PlatformRequestDecoder.decode(
+    line:
+      #"{"version":3,"id":"cancel-1","method":"cancelRegion","params":{"sessionId":"region-session-17"}}"#
+  )
+
+  #expect(request.method == .cancelRegion)
+  #expect(request.sessionId == "region-session-17")
 }
 
 @Test
 func rejectsUnknownFields() {
   #expect(throws: PlatformProtocolError.self) {
     try PlatformRequestDecoder.decode(
-      line: #"{"version":2,"id":"bad-1","method":"getCapabilities","params":{},"extra":true}"#
+      line: #"{"version":3,"id":"bad-1","method":"getCapabilities","params":{},"extra":true}"#
     )
   }
 }
@@ -73,7 +94,7 @@ func rejectsUnknownFields() {
 func rejectsUnknownProtocolVersion() {
   #expect(throws: PlatformProtocolError.self) {
     try PlatformRequestDecoder.decode(
-      line: #"{"version":1,"id":"bad-2","method":"getCapabilities","params":{}}"#
+      line: #"{"version":2,"id":"bad-2","method":"getCapabilities","params":{}}"#
     )
   }
 }
@@ -84,7 +105,7 @@ func encodesCapabilitiesResponseWithoutOptionalNulls() throws {
     id: "capabilities-1",
     result: .capabilities(
       PlatformCapabilities(
-        contractVersion: 2,
+        contractVersion: 3,
         platform: "macos",
         hostStatus: "available",
         captureModes: [.display],
@@ -100,11 +121,12 @@ func encodesCapabilitiesResponseWithoutOptionalNulls() throws {
     JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any]
   )
 
-  #expect(object["version"] as? Int == 2)
+  #expect(object["version"] as? Int == 3)
   #expect(object["id"] as? String == "capabilities-1")
   #expect(object["error"] == nil)
   let result = try #require(object["result"] as? [String: Any])
   #expect(result["platform"] as? String == "macos")
+  #expect(result["activeTarget"] == nil)
 }
 
 @Test(arguments: [

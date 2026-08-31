@@ -1,4 +1,15 @@
-import { app, BrowserWindow, dialog, globalShortcut, ipcMain, screen, shell } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  globalShortcut,
+  ipcMain,
+  protocol,
+  screen,
+  shell,
+} from 'electron'
+import { readFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   applyMacDockIcon,
@@ -15,6 +26,7 @@ import { WindowsPlatformHost } from './windows-platform-host'
 import { SettingsStore } from './settings-store'
 import { ShortcutRegistrationError, ShortcutService } from './shortcut-service'
 import { applyAfterCaptureBehavior } from './after-capture'
+import { RegionPreviewRegistry, regionPreviewScheme } from './region-preview-registry'
 import {
   captureCommandChannels,
   type CaptureCommandResult,
@@ -32,9 +44,19 @@ import { parseShortcutUpdate } from '../shared/shortcut-command'
 import {
   parseCaptureGeometry,
   type CaptureGeometry,
-  type CaptureTarget,
+  type LogicalSize,
   type PlatformHost,
 } from '../shared/platform-contract'
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: regionPreviewScheme,
+    privileges: { standard: true, secure: true, supportFetchAPI: true },
+  },
+])
+
+const regionPreviewDirectory = join(tmpdir(), 'lumiere-region-preview')
+const regionPreviewRegistry = new RegionPreviewRegistry(regionPreviewDirectory)
 
 let mainWindow: BrowserWindow | null = null
 let applicationTray: ApplicationTray | null = null
@@ -46,7 +68,11 @@ let regionOverlaySession: RegionOverlaySession | null = null
 
 interface RegionOverlaySession {
   window: BrowserWindow
-  target: CaptureTarget
+  targetSize: LogicalSize
+  previewToken: string
+  previewUrl: string
+  leaseTimeout: NodeJS.Timeout
+  ready: boolean
   submitted: boolean
   resolve(result: CaptureCommandResult): void
   stopWatchingDisplays(): void
@@ -114,8 +140,8 @@ function createRegionOverlayWindow(bounds: Electron.Rectangle): BrowserWindow {
     ...bounds,
     show: false,
     frame: false,
-    transparent: true,
-    backgroundColor: '#00000000',
+    transparent: false,
+    backgroundColor: '#000000',
     resizable: false,
     movable: false,
     minimizable: false,
@@ -166,6 +192,29 @@ function showMainWindow(): BrowserWindow {
   return mainWindow
 }
 
+function registerRegionPreviewProtocol(): void {
+  protocol.handle(regionPreviewScheme, async (request) => {
+    if (request.method !== 'GET') {
+      return new Response(null, { status: 405 })
+    }
+    const filePath = regionPreviewRegistry.resolve(request.url)
+    if (!filePath) {
+      return new Response(null, { status: 404 })
+    }
+    try {
+      return new Response(await readFile(filePath), {
+        status: 200,
+        headers: {
+          'Content-Type': 'image/png',
+          'Cache-Control': 'no-store',
+        },
+      })
+    } catch {
+      return new Response(null, { status: 410 })
+    }
+  })
+}
+
 function registerIpc(): void {
   platformHost ??= createPlatformHost()
   settingsStore ??= new SettingsStore(join(app.getPath('userData'), 'settings.json'))
@@ -179,6 +228,7 @@ function registerIpc(): void {
   ipcMain.removeHandler(captureCommandChannels.captureDisplay)
   ipcMain.removeHandler(captureCommandChannels.captureRegion)
   ipcMain.removeHandler(captureCommandChannels.getRegionOverlaySnapshot)
+  ipcMain.removeAllListeners(captureCommandChannels.regionOverlayReady)
   ipcMain.removeAllListeners(captureCommandChannels.cancelRegionOverlay)
   ipcMain.removeAllListeners(captureCommandChannels.submitRegionSelection)
   ipcMain.removeHandler(settingsCommandChannels.getSnapshot)
@@ -234,11 +284,28 @@ function registerIpc(): void {
   ipcMain.handle(captureCommandChannels.getRegionOverlaySnapshot, (event, ...args) => {
     assertTrustedWindow(event, regionOverlaySession?.window ?? null)
     assertNoArguments(args)
-    const target = regionOverlaySession?.target
-    if (!target) {
+    const session = regionOverlaySession
+    if (!session) {
       throw new Error('Region overlay is not ready.')
     }
-    return { targetSize: target.logicalSize } satisfies RegionOverlaySnapshot
+    return {
+      targetSize: session.targetSize,
+      previewUrl: session.previewUrl,
+    } satisfies RegionOverlaySnapshot
+  })
+
+  ipcMain.on(captureCommandChannels.regionOverlayReady, (event, ...args) => {
+    try {
+      assertTrustedWindow(event, regionOverlaySession?.window ?? null)
+      assertNoArguments(args)
+    } catch {
+      return
+    }
+    const session = regionOverlaySession
+    if (!session || session.ready || session.window.isDestroyed()) return
+    session.ready = true
+    session.window.show()
+    session.window.focus()
   })
 
   ipcMain.on(captureCommandChannels.cancelRegionOverlay, (event, ...args) => {
@@ -248,7 +315,7 @@ function registerIpc(): void {
     } catch {
       return
     }
-    cancelRegionOverlay(router)
+    void cancelRegionOverlay(router)
   })
 
   ipcMain.on(captureCommandChannels.submitRegionSelection, (event, ...args) => {
@@ -379,25 +446,31 @@ function registerIpc(): void {
 async function captureRegion(router: CaptureCommandRouter): Promise<CaptureCommandResult> {
   const restoreMainWindow = mainWindow?.isVisible() === true
   const initialDisplay = screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
+  mainWindow?.hide()
   const preparation = await router.beginRegionCapture()
   if (preparation.status === 'failed') {
+    if (restoreMainWindow) showMainWindow()
     return preparation.result
   }
 
   const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
   if (
     display.id !== initialDisplay.id ||
-    !displayMatchesTarget(display.bounds, preparation.target)
+    !displayMatchesTarget(display.bounds, preparation.targetSize)
   ) {
-    router.cancelRegionCapture()
+    await router.cancelRegionCapture()
+    if (restoreMainWindow) showMainWindow()
     return displayChangedResult()
   }
 
   let overlay: BrowserWindow
+  let preview: { token: string; url: string }
   try {
+    preview = regionPreviewRegistry.grant(preparation.previewPath)
     overlay = createRegionOverlayWindow(display.bounds)
   } catch {
-    router.cancelRegionCapture()
+    await router.cancelRegionCapture()
+    if (restoreMainWindow) showMainWindow()
     return {
       status: 'failed',
       feedback: 'Capture failed',
@@ -408,10 +481,9 @@ async function captureRegion(router: CaptureCommandRouter): Promise<CaptureComma
       },
     }
   }
-  mainWindow?.hide()
   return new Promise<CaptureCommandResult>((resolve) => {
     const handleDisplayChange = (): void => {
-      failRegionOverlay(router, displayChangedResult())
+      void failRegionOverlay(router, displayChangedResult())
     }
     screen.on('display-added', handleDisplayChange)
     screen.on('display-removed', handleDisplayChange)
@@ -424,18 +496,28 @@ async function captureRegion(router: CaptureCommandRouter): Promise<CaptureComma
 
     regionOverlaySession = {
       window: overlay,
-      target: preparation.target,
+      targetSize: preparation.targetSize,
+      previewToken: preview.token,
+      previewUrl: preview.url,
+      leaseTimeout: setTimeout(() => {
+        void failRegionOverlay(router, {
+          status: 'failed',
+          feedback: 'Capture timed out',
+          notice: {
+            tone: 'caution',
+            title: 'Capture timed out',
+            detail: 'Start a new capture and select a region sooner.',
+          },
+        })
+      }, preparation.leaseMilliseconds),
+      ready: false,
       submitted: false,
       resolve,
       stopWatchingDisplays,
       restoreMainWindow,
     }
-    overlay.once('ready-to-show', () => {
-      overlay.show()
-      overlay.focus()
-    })
     overlay.webContents.once('did-fail-load', () => {
-      failRegionOverlay(router, {
+      void failRegionOverlay(router, {
         status: 'failed',
         feedback: 'Capture failed',
         notice: {
@@ -447,7 +529,7 @@ async function captureRegion(router: CaptureCommandRouter): Promise<CaptureComma
     })
     overlay.once('closed', () => {
       if (regionOverlaySession?.window === overlay && !regionOverlaySession.submitted) {
-        cancelRegionOverlay(router)
+        void cancelRegionOverlay(router)
       }
     })
   })
@@ -458,36 +540,39 @@ function submitRegionSelection(router: CaptureCommandRouter, geometry: CaptureGe
   if (!session || session.submitted) {
     return
   }
-  if (!geometryFitsTarget(geometry, session.target)) {
-    failRegionOverlay(router, displayChangedResult())
+  if (!geometryFitsTarget(geometry, session.targetSize)) {
+    void failRegionOverlay(router, displayChangedResult())
     return
   }
 
   session.submitted = true
   session.window.hide()
   session.window.destroy()
-  setTimeout(() => {
-    void router.completeRegionCapture(session.target, geometry).then((result) => {
-      finishRegionOverlay(session, result)
-    })
-  }, 50)
+  void router.completeRegionCapture(geometry).then((result) => {
+    finishRegionOverlay(session, result)
+  })
 }
 
-function cancelRegionOverlay(router: CaptureCommandRouter): void {
+async function cancelRegionOverlay(router: CaptureCommandRouter): Promise<void> {
   const session = regionOverlaySession
   if (!session || session.submitted) {
     return
   }
-  router.cancelRegionCapture()
+  session.submitted = true
+  await router.cancelRegionCapture()
   finishRegionOverlay(session, { status: 'cancelled', feedback: 'Capture cancelled' })
 }
 
-function failRegionOverlay(router: CaptureCommandRouter, result: CaptureCommandResult): void {
+async function failRegionOverlay(
+  router: CaptureCommandRouter,
+  result: CaptureCommandResult,
+): Promise<void> {
   const session = regionOverlaySession
   if (!session || session.submitted) {
     return
   }
-  router.cancelRegionCapture()
+  session.submitted = true
+  await router.cancelRegionCapture()
   finishRegionOverlay(session, result)
 }
 
@@ -496,6 +581,8 @@ function finishRegionOverlay(session: RegionOverlaySession, result: CaptureComma
     return
   }
   regionOverlaySession = null
+  clearTimeout(session.leaseTimeout)
+  regionPreviewRegistry.revoke(session.previewToken)
   session.stopWatchingDisplays()
   if (!session.window.isDestroyed()) {
     session.window.destroy()
@@ -504,17 +591,17 @@ function finishRegionOverlay(session: RegionOverlaySession, result: CaptureComma
   session.resolve(result)
 }
 
-function displayMatchesTarget(bounds: Electron.Rectangle, target: CaptureTarget): boolean {
+function displayMatchesTarget(bounds: Electron.Rectangle, targetSize: LogicalSize): boolean {
   return (
-    Math.abs(bounds.width - target.logicalSize.width) <= 1 &&
-    Math.abs(bounds.height - target.logicalSize.height) <= 1
+    Math.abs(bounds.width - targetSize.width) <= 1 &&
+    Math.abs(bounds.height - targetSize.height) <= 1
   )
 }
 
-function geometryFitsTarget(geometry: CaptureGeometry, target: CaptureTarget): boolean {
+function geometryFitsTarget(geometry: CaptureGeometry, targetSize: LogicalSize): boolean {
   return (
-    geometry.x + geometry.width <= target.logicalSize.width + Number.EPSILON &&
-    geometry.y + geometry.height <= target.logicalSize.height + Number.EPSILON
+    geometry.x + geometry.width <= targetSize.width + Number.EPSILON &&
+    geometry.y + geometry.height <= targetSize.height + Number.EPSILON
   )
 }
 
@@ -536,7 +623,9 @@ function disposeRegionOverlay(router: CaptureCommandRouter): void {
     return
   }
   regionOverlaySession = null
-  router.cancelRegionCapture()
+  clearTimeout(session.leaseTimeout)
+  regionPreviewRegistry.revoke(session.previewToken)
+  void router.cancelRegionCapture()
   session.stopWatchingDisplays()
   if (!session.window.isDestroyed()) {
     session.window.destroy()
@@ -657,6 +746,7 @@ function createPlatformHost(): PlatformHost {
 }
 
 void app.whenReady().then(async () => {
+  registerRegionPreviewProtocol()
   platformHost = createPlatformHost()
   settingsStore = new SettingsStore(join(app.getPath('userData'), 'settings.json'))
   await settingsStore.load()
@@ -705,4 +795,5 @@ app.on('before-quit', () => {
   if (platformHost instanceof NativeProcessPlatformHost) {
     platformHost.dispose()
   }
+  regionPreviewRegistry.clear()
 })

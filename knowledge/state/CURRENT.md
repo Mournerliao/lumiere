@@ -11,20 +11,22 @@
 The repository has converged on the final `apps/`, `protocol/`, `hosts/`, and
 `knowledge/` ownership layout. Lumiere has an Electron/React shared shell,
 language-neutral platform-host schemas with versioned executable fixtures, explicit
-unavailable behavior, dual-platform CI, and isolated native host trees. Protocol v1 is
-frozen; v2 now owns target-local region geometry, delivery availability, per-target
-delivery outcomes, and the cancellation responsibility boundary.
+unavailable behavior, dual-platform CI, and isolated native host trees. Protocol v1 and
+v2 are frozen; v3 owns capture-before-overlay Region sessions, a query-only capability
+handshake, per-target delivery outcomes, and the cancellation responsibility boundary.
 
 The compact shared main window now uses the approved generated tokens and drives an
 integrated Swift ScreenCaptureKit host through one main-process capture command router
-and the platform-host v2 JSON Lines process interface. The router owns capability and
+and the platform-host v3 JSON Lines process interface. The router owns capability and
 delivery gating, persisted clipboard/folder/both preferences with a clipboard-and-folder
 default, in-flight state, per-target result projection, and product failure mapping. The
 approved Settings output surface now reads and writes that main-owned preference through
 validated task-shaped preload/IPC, updates the main-window summary and next capture
-immediately, and restores the value after restart. The shared Region Overlay now owns
-target-local selection geometry and pre-dispatch cancellation while main retains the
-short-lived target token. macOS display and region capture convert once to a timestamped
+immediately, and restores the value after restart. Region capture now freezes one native
+frame before the Overlay appears: the Host retains that frame, Electron main grants a
+revocable preview URL, and commit crops the same frozen frame. The Overlay owns only
+target-local selection geometry and local cancel; it never sees the preview file path.
+macOS display and region capture convert once to a timestamped
 RGBA8/sRGB PNG representation and deliver those same bytes through native clipboard and
 folder adapters. The macOS Host now derives Display and Region output dimensions from the
 selected ScreenCaptureKit filter's point-to-pixel scale, so scaled 4K and Retina targets
@@ -46,25 +48,26 @@ preference hides neither the underlying target status nor any blocking Host, per
   capture failure. Settings v5 now also persists an optional custom save directory while migrating
   v1 through v4 values. Main owns the native directory picker and exposes only a no-argument,
   task-shaped preload command; Folder and Both capture requests may carry the selected absolute
-  path through protocol v2 while each Host retains directory creation, fixed naming, file writing,
+  path through protocol v3 while each Host retains directory creation, fixed naming, file writing,
   and target-local delivery failure. The platform default remains Pictures/Lumiere.
-The Windows engine now exposes one
-deep capture operation that owns target resolution and target-bound Region cropping,
-target-aware HDR probing, first-frame acquisition, one sRGB Visual Match conversion,
-delivery, cancellation, and teardown. On HDR-active targets, that conversion now resolves
+The Windows engine now exposes Display as one complete capture operation and Region as
+a frozen-frame prepare/commit session. Both paths own target resolution, target-aware
+HDR probing, first-frame acquisition, one sRGB Visual Match conversion, delivery,
+cancellation, and teardown. Region commit crops the retained owned texture rather than
+acquiring a second WGC frame. On HDR-active targets, that conversion now resolves
 the target's Windows SDR white level and normalizes captured scRGB input before tone mapping;
 an unavailable white level fails capture rather than producing an unverified Visual Match
-artifact. A .NET platform-host v2 executable now owns the
+artifact. A .NET platform-host v3 executable now owns the
 Windows JSON Lines process boundary, strict request validation, correlated structured
 diagnostics, and typed unavailable behavior. The Host connects that engine for Display and
-target-token-bound Region capture, owns its process-scoped lifetime, creates the default
+frozen-frame Region capture, owns its process-scoped lifetime, creates the default
 Pictures/Lumiere destination when needed, and maps Clipboard, Folder, and Both outcomes
-independently from one encoded artifact into protocol v2. Its capability provider
+independently from one encoded artifact into protocol v3. Its capability provider
 now resolves the display under the pointer independently of capture, probes that target's HDR
-state, converts physical pixels through effective monitor DPI, and returns an opaque target
-token plus target-local logical size when the snapshot is available. Region is advertised
-only with a reconstructable native target snapshot; the token is consumed once and target-local
-logical geometry becomes an outward-aligned native pixel crop without exposing a monitor handle.
+state, and converts physical pixels through effective monitor DPI. Region is advertised
+only when a reconstructable native target snapshot exists; prepare captures one complete
+frame, copies it to an application-owned D3D11 texture, and commit crops that frozen
+frame without a second WGC acquisition.
 The development entry
 point builds its current Debug artifact, and Electron selects and supervises it through the
 shared native-process transport. Unpackaged Windows development builds intentionally retain
@@ -82,8 +85,8 @@ WinUI and the old validation/HDR10-JXR paths remain removed.
 | 0. Foundation | Complete | Final layout, secure shell, language-neutral protocol, paused Windows engine; macOS and Windows CI pass | None |
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
 | 1B. Windows host adapter | Complete ([#7](https://github.com/Mournerliao/lumiere/issues/7), [#10](https://github.com/Mournerliao/lumiere/issues/10)) | The v2 Host has strict JSON Lines handling, structured diagnostics, Electron supervision, target-aware HDR/logical-geometry capabilities, SDR-white-aware HDR Visual Match conversion, Display plus target-bound Region routing, Clipboard/Folder/Both delivery, sanitized protocol failures, deterministic teardown, and verified interactive HDR/SDR runtime journeys | None |
-| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture/HDR-reminder/save-directory surfaces, generated tokens, persisted capability-gated preferences, one main-process capture router, capability-gated tray/menu-bar, v2 target/delivery/custom-directory contract, shared Region Overlay, HiDPI-aware macOS geometry, and verified macOS display/region/after-capture/custom-directory journeys | Run the updated Windows repository/runtime gates and remaining cross-platform product verification |
-| 1D. Distribution and release | Not started | The traditional Windows installer remains the primary path; borderless WGC requires a signed external-location sparse identity package and user consent | Implement identity-package registration/upgrade/removal and bordered fallback, produce the signed/notarized macOS artifact, then complete clean-machine and hardware verification |
+| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture/HDR-reminder/save-directory surfaces, generated tokens, persisted capability-gated preferences, one main-process capture router, capability-gated tray/menu-bar, v3 frozen-region/delivery/custom-directory contract, shared Region Overlay over a Host-frozen preview, HiDPI-aware macOS geometry, and verified macOS display/region/after-capture/custom-directory journeys before this freeze | Run the updated Windows repository/runtime gates and remaining frozen-region product verification |
+| 1D. Distribution and release | Not started | Windows retains its traditional signed installer path; macOS will publish a normal direct GitHub release as an ad-hoc-signed app in a disk image, with no App Store, Homebrew, Developer ID, or notarization requirement | Implement each platform-owned package, document the macOS Gatekeeper exception, then complete clean-machine and hardware verification independently |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
 | 3. Cross-platform HDR fidelity | Planned; not started | Fidelity is separated from artifact success and HDR preservation | Define support matrix/tolerances and run fixed-scene verification |
 
@@ -92,12 +95,16 @@ acceptance criteria and implementation status for each vertical slice.
 
 ## Verification Truth
 
-- **Repository:** frozen install, layout and TypeScript checks, eighty-four cross-platform
-  shell/protocol/process/settings/UI tests, three macOS path tests, twenty-seven Swift
-  protocol/capability/permission/diagnostic/geometry tests plus three native-delivery tests, twenty-eight
-  Windows Host protocol/lifecycle tests, and production builds pass locally on the named Windows
-  machine and macOS. Shared, macOS, and Windows test gates are
-  explicit and platform-scoped.
+- **Repository:** frozen install, layout and TypeScript checks, eighty-nine cross-platform
+  shell/protocol/process/settings/UI tests, three macOS path tests, thirty-two Swift
+  protocol/capability/permission/diagnostic/geometry/native-delivery tests, and the current
+  production TypeScript check pass on this Mac. Windows Host/engine tests for protocol v3
+  frozen Region sessions are in source but were not run here because `dotnet` is not
+  installed. Shared, macOS, and Windows test gates remain explicit and platform-scoped.
+  The frozen-region slice passed `pnpm check`, all eighty-nine shared tests, three macOS
+  path tests, and thirty-two Swift tests on this Mac. That verifies repository contract
+  shape, not the interactive freeze → select → commit journey, Windows Host compilation,
+  or hardware Visual Match.
   The HDR-reminder slice passed all eighty-two shared tests, repository checks, and the production
   Electron build on the named Windows machine. A 480×370 local renderer observation covered the
   enabled advisory, Capture Settings switch, disabled reminder state, and stable no-scroll layout;
@@ -243,17 +250,30 @@ may expose one frontier per environment-eligible lane while each writer or workt
 advances only one current working Issue at a time.
 
 - **Shared/macOS lane — [Issue #9](https://github.com/Mournerliao/lumiere/issues/9):**
-  the custom-directory implementation, protocol v2 increment, Settings v5 migration, both Host
-  adapters, repository gates, native directory write, development Electron capture,
-  restart-persistence, and Show in folder journey are complete on the current Mac. This lane
-  may hand off Issue #9 and advance the next acceptance-ready macOS-owned frontier without
-  waiting for Windows verification.
-- **macOS distribution lane — Milestone 1D:** define an acceptance-ready owning Issue for
-  the signed/notarized macOS artifact and its platform-scoped install, launch, upgrade,
-  uninstall, reinstall, and clean-machine verification, then advance that work on macOS.
-- **Windows custom-directory verification lane — [Issue #9](https://github.com/Mournerliao/lumiere/issues/9):**
+  frozen Region capture is implemented under
+  [ADR 0013](../decisions/0013-frozen-region-capture-session.md) and protocol v3:
+  capture-before-overlay, Host-owned frozen frames, Electron-main preview capability,
+  and commit-from-the-same-frame. macOS Host, shared shell, and protocol fixtures are
+  in this worktree. Windows Host/engine source matches the same contract but has not
+  been run here because `dotnet` is not installed. Next: verify the macOS shortcut →
+  freeze → select → commit journey on this Mac, then hand Windows Host tests/runtime
+  to the Windows lane.
+- **macOS distribution lane — [Issue #11](https://github.com/Mournerliao/lumiere/issues/11):**
+  the next slice is a reproducible packaged-app foundation under
+  [ADR 0012](../decisions/0012-direct-ad-hoc-signed-macos-distribution.md).
+  Define an acceptance-ready owning Issue, record the stable bundle identity, deployment target,
+  and architecture policy, then add the smallest packaging path that builds the current Electron
+  shell, generated icons, and Release Swift Host into a coherently ad-hoc-signed, locally runnable
+  `.app`. Verify packaged Host discovery, Region and Display capture,
+  Clipboard/Folder/Both delivery, permission identity, repeat capture, and clean exit on the
+  named Mac. A following slice owns the direct GitHub Release disk image, SHA-256 checksum,
+  manual Gatekeeper instructions, replacement upgrade, and clean-machine verification. Developer
+  ID signing, notarization, Mac App Store distribution, and Homebrew distribution are out of scope.
+- **Windows custom-directory and frozen-region verification lane — [Issue #9](https://github.com/Mournerliao/lumiere/issues/9):**
   run the updated Host tests/build/format gates on Windows, then verify directory selection,
-  persistence, Folder/Both delivery, target-local folder failure, and Show in folder independently.
+  persistence, Folder/Both delivery, target-local folder failure, Show in folder, and the
+  frozen Region journey (shortcut freezes the frame; commit is that frame, not release time)
+  independently.
 - **Windows lane — [Issues #7](https://github.com/Mournerliao/lumiere/issues/7) and
   [#10](https://github.com/Mournerliao/lumiere/issues/10):** complete;
   the named Windows machine passed the required Display/Region, Clipboard/Folder/Both,

@@ -11,11 +11,17 @@ public interface IWindowsCaptureEngine : IAsyncDisposable
         WindowsCaptureRequest request,
         CancellationToken cancellationToken = default);
 
-    Task<WindowsCaptureResult> CaptureRegionAsync(
-        WindowsCaptureRequest request,
+    Task<WindowsPrepareRegionResult> PrepareRegionAsync(
         WindowsTargetCapability target,
+        CancellationToken cancellationToken = default);
+
+    Task<WindowsCaptureResult> CommitRegionAsync(
+        string sessionId,
+        WindowsCaptureRequest request,
         WindowsRegionGeometry geometry,
         CancellationToken cancellationToken = default);
+
+    Task ReleaseRegionAsync(string sessionId);
 }
 
 public sealed class WindowsHostOperations : IWindowsHostOperations
@@ -23,18 +29,15 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
     private readonly object sync = new();
     private readonly Func<IWindowsCaptureEngine> engineFactory;
     private readonly Func<WindowsTargetCapability?> getTargetCapability;
-    private readonly Func<string> targetTokenFactory;
     private readonly Func<string> outputDirectory;
     private readonly Action<string> createDirectory;
     private readonly ILogger logger;
     private IWindowsCaptureEngine? engine;
-    private IssuedTarget? issuedTarget;
     private int disposed;
 
     public WindowsHostOperations(
         Func<IWindowsCaptureEngine> engineFactory,
         Func<WindowsTargetCapability?> getTargetCapability,
-        Func<string> targetTokenFactory,
         Func<string> outputDirectory,
         Action<string> createDirectory,
         ILogger? logger = null)
@@ -42,8 +45,6 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
         this.engineFactory = engineFactory ?? throw new ArgumentNullException(nameof(engineFactory));
         this.getTargetCapability = getTargetCapability
             ?? throw new ArgumentNullException(nameof(getTargetCapability));
-        this.targetTokenFactory = targetTokenFactory
-            ?? throw new ArgumentNullException(nameof(targetTokenFactory));
         this.outputDirectory = outputDirectory ?? throw new ArgumentNullException(nameof(outputDirectory));
         this.createDirectory = createDirectory ?? throw new ArgumentNullException(nameof(createDirectory));
         this.logger = logger ?? NullLogger.Instance;
@@ -56,7 +57,6 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
             static () => new WindowsDisplayCaptureEngineAdapter(
                 WindowsDisplayCaptureEngine.CreateDefault()),
             capabilityProvider.GetCurrent,
-            static () => Guid.NewGuid().ToString("N"),
             WindowsCaptureFolder.GetDefaultPath,
             static path => _ = Directory.CreateDirectory(path),
             logger);
@@ -66,15 +66,7 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
     {
         ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
         var target = getTargetCapability();
-        var activeTarget = CreateActiveTarget(target);
-        var supportsRegion = target?.SupportsRegionCapture == true && activeTarget is not null;
-        lock (sync)
-        {
-            issuedTarget = supportsRegion
-                ? new IssuedTarget(activeTarget!.Id, target!)
-                : null;
-        }
-
+        var supportsRegion = target?.SupportsRegionCapture == true;
         return new HostCapabilities(
             PlatformProtocol.ContractVersion,
             "windows",
@@ -82,11 +74,10 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
             supportsRegion ? ["region", "display"] : ["display"],
             ["clipboard", "folder"],
             MapHdrCapture(target?.HdrState),
-            ["srgb-visual-match"],
-            activeTarget);
+            ["srgb-visual-match"]);
     }
 
-    public async Task<HostCaptureResult> CaptureAsync(
+    public Task<HostCaptureResult> CaptureDisplayAsync(
         string requestId,
         HostCaptureRequest request,
         CancellationToken cancellationToken = default)
@@ -94,52 +85,130 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
         ArgumentException.ThrowIfNullOrWhiteSpace(requestId);
         ArgumentNullException.ThrowIfNull(request);
         ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
+        return ExecuteCaptureAsync(
+            requestId,
+            request.Delivery,
+            request.SaveDirectory,
+            captureMode: "display",
+            (engine, captureRequest, token) => engine.CaptureDisplayAsync(captureRequest, token),
+            cancellationToken);
+    }
 
-        if (request.Mode is not ("display" or "region"))
+    public async Task<HostPrepareRegionResult> PrepareRegionAsync(
+        string requestId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(requestId);
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
+
+        var target = getTargetCapability();
+        if (target?.SupportsRegionCapture != true || target.LogicalSize is null)
         {
-            return Failed(
+            return PrepareFailed(
                 "capture-unavailable",
-                "The requested capture mode is unavailable.",
-                retryable: false);
+                "Region capture is unavailable on the current target.",
+                retryable: true);
         }
 
-        IssuedTarget? regionTarget = null;
-        WindowsRegionGeometry? regionGeometry = null;
-        if (request.Mode == "region")
+        try
         {
-            if (request.TargetId is null || request.Geometry is null)
+            var prepared = await GetOrCreateEngine().PrepareRegionAsync(target, cancellationToken);
+            if (!prepared.Prepared
+                || string.IsNullOrWhiteSpace(prepared.SessionId)
+                || string.IsNullOrWhiteSpace(prepared.PreviewPath)
+                || prepared.TargetLogicalSize is null
+                || prepared.PreviewPixelWidth <= 0
+                || prepared.PreviewPixelHeight <= 0)
             {
-                return Failed(
-                    "capture-unavailable",
-                    "Region capture requires a current target and valid selection.",
-                    retryable: false);
+                return MapPrepareFailure(prepared, requestId);
             }
 
-            lock (sync)
-            {
-                if (issuedTarget?.Token == request.TargetId)
-                {
-                    regionTarget = issuedTarget;
-                    issuedTarget = null;
-                }
-            }
+            return new HostPrepareRegionResult(
+                "prepared",
+                prepared.SessionId,
+                new HostLogicalSize(
+                    prepared.TargetLogicalSize.Width,
+                    prepared.TargetLogicalSize.Height),
+                new HostRegionPreview(
+                    prepared.PreviewPath,
+                    "image/png",
+                    new HostPixelSize(prepared.PreviewPixelWidth, prepared.PreviewPixelHeight)),
+                prepared.LeaseMilliseconds);
+        }
+        catch (OperationCanceledException)
+        {
+            return PrepareFailed(
+                "capture-unavailable",
+                "Windows capture timed out. Try again.",
+                retryable: true);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                exception,
+                "operation=PrepareRegion, stage=Failed, correlation={CorrelationId}",
+                requestId);
+            return PrepareFailed(
+                "unexpected-failure",
+                "Windows capture failed. Try again.",
+                retryable: true);
+        }
+    }
 
-            if (regionTarget is null)
-            {
-                return Failed(
-                    "capture-unavailable",
-                    "The capture target changed. Select the region again.",
-                    retryable: true);
-            }
+    public Task<HostCaptureResult> CommitRegionAsync(
+        string requestId,
+        HostCommitRegionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(requestId);
+        ArgumentNullException.ThrowIfNull(request);
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
 
-            regionGeometry = new WindowsRegionGeometry(
-                request.Geometry.X,
-                request.Geometry.Y,
-                request.Geometry.Width,
-                request.Geometry.Height);
+        var geometry = new WindowsRegionGeometry(
+            request.Geometry.X,
+            request.Geometry.Y,
+            request.Geometry.Width,
+            request.Geometry.Height);
+        return ExecuteCaptureAsync(
+            requestId,
+            request.Delivery,
+            request.SaveDirectory,
+            captureMode: "region",
+            (engine, captureRequest, token) => engine.CommitRegionAsync(
+                request.SessionId,
+                captureRequest,
+                geometry,
+                token),
+            cancellationToken);
+    }
+
+    public async Task<HostReleasedRegion> CancelRegionAsync(string sessionId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
+        IWindowsCaptureEngine? ownedEngine;
+        lock (sync)
+        {
+            ownedEngine = engine;
         }
 
-        if (!TryMapDelivery(request.Delivery, out var delivery))
+        if (ownedEngine is not null)
+        {
+            await ownedEngine.ReleaseRegionAsync(sessionId);
+        }
+
+        return new HostReleasedRegion();
+    }
+
+    private async Task<HostCaptureResult> ExecuteCaptureAsync(
+        string requestId,
+        string deliveryValue,
+        string? saveDirectory,
+        string captureMode,
+        Func<IWindowsCaptureEngine, WindowsCaptureRequest, CancellationToken, Task<WindowsCaptureResult>> capture,
+        CancellationToken cancellationToken)
+    {
+        if (!TryMapDelivery(deliveryValue, out var delivery))
         {
             return Failed(
                 "delivery-unavailable",
@@ -152,7 +221,7 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
             string? directory = null;
             if (delivery is OutputTarget.Folder or OutputTarget.Both)
             {
-                directory = request.SaveDirectory ?? outputDirectory();
+                directory = saveDirectory ?? outputDirectory();
                 if (string.IsNullOrWhiteSpace(directory))
                 {
                     throw new InvalidOperationException("The Windows capture folder could not be resolved.");
@@ -172,16 +241,8 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
             }
 
             var captureRequest = new WindowsCaptureRequest(requestId, delivery, directory);
-            var captureResult = request.Mode == "region"
-                ? await GetOrCreateEngine().CaptureRegionAsync(
-                    captureRequest,
-                    regionTarget!.Target,
-                    regionGeometry!,
-                    cancellationToken)
-                : await GetOrCreateEngine().CaptureDisplayAsync(
-                    captureRequest,
-                    cancellationToken);
-            return MapCaptureResult(captureResult, delivery, requestId, request.Mode);
+            var captureResult = await capture(GetOrCreateEngine(), captureRequest, cancellationToken);
+            return MapCaptureResult(captureResult, delivery, requestId, captureMode);
         }
         catch (OperationCanceledException)
         {
@@ -207,21 +268,6 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
             ObjectDisposedException.ThrowIf(disposed != 0, this);
             return engine ??= engineFactory();
         }
-    }
-
-    private HostCaptureTarget? CreateActiveTarget(WindowsTargetCapability? target)
-    {
-        if (target?.LogicalSize is not { } logicalSize)
-        {
-            return null;
-        }
-
-        var token = targetTokenFactory();
-        return string.IsNullOrWhiteSpace(token)
-            ? null
-            : new HostCaptureTarget(
-                token,
-                new HostLogicalSize(logicalSize.Width, logicalSize.Height));
     }
 
     private static string MapHdrCapture(WindowsTargetHdrState? state) =>
@@ -284,7 +330,7 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
             WindowsCaptureOutcome.Unavailable => Failed(
                 "capture-unavailable",
                 captureMode == "region"
-                    ? "The capture target changed. Select the region again."
+                    ? "The frozen Region capture expired. Select the region again."
                     : "The capture target is unavailable. Try again.",
                 retryable: true),
             WindowsCaptureOutcome.Unsupported => Failed(
@@ -292,6 +338,36 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
                 "Screen capture is unavailable on this Windows system.",
                 retryable: false),
             _ => Failed(
+                "unexpected-failure",
+                "Windows capture failed. Try again.",
+                retryable: true),
+        };
+    }
+
+    private HostPrepareRegionResult MapPrepareFailure(
+        WindowsPrepareRegionResult result,
+        string requestId)
+    {
+        logger.LogWarning(
+            "operation=PrepareRegion, stage={Outcome}, correlation={CorrelationId}, detail={Detail}",
+            result.Outcome,
+            requestId,
+            result.TechnicalDetail);
+        return result.Outcome switch
+        {
+            WindowsCaptureOutcome.TimedOut => PrepareFailed(
+                "capture-unavailable",
+                "Windows capture timed out. Try again.",
+                retryable: true),
+            WindowsCaptureOutcome.Unavailable or WindowsCaptureOutcome.Unsupported => PrepareFailed(
+                "capture-unavailable",
+                "The capture target is unavailable. Try again.",
+                retryable: true),
+            WindowsCaptureOutcome.Cancelled => PrepareFailed(
+                "capture-unavailable",
+                "Windows capture timed out. Try again.",
+                retryable: true),
+            _ => PrepareFailed(
                 "unexpected-failure",
                 "Windows capture failed. Try again.",
                 retryable: true),
@@ -358,6 +434,12 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
         bool retryable) =>
         new("failed", Failure: new PlatformFailure(code, message, retryable));
 
+    private static HostPrepareRegionResult PrepareFailed(
+        string code,
+        string message,
+        bool retryable) =>
+        new("failed", Failure: new PlatformFailure(code, message, retryable));
+
     public async ValueTask DisposeAsync()
     {
         if (Interlocked.Exchange(ref disposed, 1) != 0)
@@ -370,7 +452,6 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
         {
             ownedEngine = engine;
             engine = null;
-            issuedTarget = null;
         }
 
         if (ownedEngine is not null)
@@ -387,17 +468,23 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
             CancellationToken cancellationToken = default) =>
             inner.CaptureDisplayAsync(request, cancellationToken);
 
-        public Task<WindowsCaptureResult> CaptureRegionAsync(
-            WindowsCaptureRequest request,
+        public Task<WindowsPrepareRegionResult> PrepareRegionAsync(
             WindowsTargetCapability target,
+            CancellationToken cancellationToken = default) =>
+            inner.PrepareRegionAsync(target, cancellationToken);
+
+        public Task<WindowsCaptureResult> CommitRegionAsync(
+            string sessionId,
+            WindowsCaptureRequest request,
             WindowsRegionGeometry geometry,
             CancellationToken cancellationToken = default) =>
-            inner.CaptureRegionAsync(request, target, geometry, cancellationToken);
+            inner.CommitRegionAsync(sessionId, request, geometry, cancellationToken);
+
+        public Task ReleaseRegionAsync(string sessionId) =>
+            inner.ReleaseRegionAsync(sessionId);
 
         public ValueTask DisposeAsync() => inner.DisposeAsync();
     }
-
-    private sealed record IssuedTarget(string Token, WindowsTargetCapability Target);
 }
 
 internal static class WindowsCaptureFolder

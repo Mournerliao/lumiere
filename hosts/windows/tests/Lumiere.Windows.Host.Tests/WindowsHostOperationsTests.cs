@@ -18,13 +18,12 @@ public sealed class WindowsHostOperationsTests
         await using var operations = new WindowsHostOperations(
             () => engine,
             NoTargetCapability,
-            static () => "target-token",
             () => "C:\\Pictures\\Lumiere",
             path => createdDirectory = path);
 
-        var result = await operations.CaptureAsync(
+        var result = await operations.CaptureDisplayAsync(
             "capture-1",
-            new HostCaptureRequest("display", "folder"));
+            new HostCaptureRequest("folder"));
 
         Assert.Equal("completed", result.Status);
         Assert.Equal("C:\\Pictures\\Lumiere", createdDirectory);
@@ -44,9 +43,9 @@ public sealed class WindowsHostOperationsTests
         };
         await using var operations = CreateOperations(engine);
 
-        var result = await operations.CaptureAsync(
+        var result = await operations.CaptureDisplayAsync(
             "capture-1",
-            new HostCaptureRequest("display", "folder"));
+            new HostCaptureRequest("folder"));
 
         Assert.Equal("hdr", result.SourceDynamicRange);
         Assert.Equal("srgb-visual-match", result.OutputProfile);
@@ -65,7 +64,6 @@ public sealed class WindowsHostOperationsTests
         await using var operations = new WindowsHostOperations(
             () => engine,
             NoTargetCapability,
-            static () => "target-token",
             () =>
             {
                 defaultDirectoryCalls++;
@@ -73,12 +71,9 @@ public sealed class WindowsHostOperationsTests
             },
             path => createdDirectory = path);
 
-        var result = await operations.CaptureAsync(
+        var result = await operations.CaptureDisplayAsync(
             "capture-custom",
-            new HostCaptureRequest(
-                "display",
-                "folder",
-                SaveDirectory: "D:\\Screenshots"));
+            new HostCaptureRequest("folder", "D:\\Screenshots"));
 
         Assert.Equal("completed", result.Status);
         Assert.Equal(0, defaultDirectoryCalls);
@@ -98,7 +93,6 @@ public sealed class WindowsHostOperationsTests
         await using var operations = new WindowsHostOperations(
             () => engine,
             NoTargetCapability,
-            static () => "target-token",
             () =>
             {
                 directoryCalls++;
@@ -106,9 +100,9 @@ public sealed class WindowsHostOperationsTests
             },
             _ => createDirectoryCalls++);
 
-        var result = await operations.CaptureAsync(
+        var result = await operations.CaptureDisplayAsync(
             "capture-clipboard",
-            new HostCaptureRequest("display", "clipboard"));
+            new HostCaptureRequest("clipboard"));
 
         Assert.Equal("completed", result.Status);
         Assert.Equal(OutputTarget.Clipboard, engine.Request?.Delivery);
@@ -130,9 +124,9 @@ public sealed class WindowsHostOperationsTests
         };
         await using var operations = CreateOperations(engine);
 
-        var result = await operations.CaptureAsync(
+        var result = await operations.CaptureDisplayAsync(
             "capture-both",
-            new HostCaptureRequest("display", "both"));
+            new HostCaptureRequest("both"));
 
         Assert.Equal("completed", result.Status);
         Assert.Equal(OutputTarget.Both, engine.Request?.Delivery);
@@ -152,13 +146,8 @@ public sealed class WindowsHostOperationsTests
             });
     }
 
-    [Theory]
-    [InlineData("region", "folder", "capture-unavailable")]
-    [InlineData("display", "other", "delivery-unavailable")]
-    public async Task CaptureAsync_RejectsUnimplementedSliceWithoutCreatingEngine(
-        string mode,
-        string delivery,
-        string expectedCode)
+    [Fact]
+    public async Task CaptureDisplayAsync_RejectsUnknownDeliveryWithoutCreatingEngine()
     {
         var factoryCalls = 0;
         await using var operations = new WindowsHostOperations(
@@ -168,16 +157,15 @@ public sealed class WindowsHostOperationsTests
                 return new StubCaptureEngine();
             },
             NoTargetCapability,
-            static () => "target-token",
             () => "C:\\Pictures\\Lumiere",
             _ => { });
 
-        var result = await operations.CaptureAsync(
+        var result = await operations.CaptureDisplayAsync(
             "capture-1",
-            new HostCaptureRequest(mode, delivery));
+            new HostCaptureRequest("other"));
 
         Assert.Equal("failed", result.Status);
-        Assert.Equal(expectedCode, result.Failure?.Code);
+        Assert.Equal("delivery-unavailable", result.Failure?.Code);
         Assert.Equal(0, factoryCalls);
     }
 
@@ -198,9 +186,9 @@ public sealed class WindowsHostOperationsTests
         };
         await using var operations = CreateOperations(engine);
 
-        var result = await operations.CaptureAsync(
+        var result = await operations.CaptureDisplayAsync(
             "capture-1",
-            new HostCaptureRequest("display", "folder"));
+            new HostCaptureRequest("folder"));
 
         Assert.Equal("completed", result.Status);
         var delivery = Assert.Single(result.Deliveries!);
@@ -229,9 +217,9 @@ public sealed class WindowsHostOperationsTests
         };
         await using var operations = CreateOperations(engine);
 
-        var result = await operations.CaptureAsync(
+        var result = await operations.CaptureDisplayAsync(
             "capture-failure",
-            new HostCaptureRequest("display", "folder"));
+            new HostCaptureRequest("folder"));
 
         Assert.Equal("failed", result.Status);
         Assert.Equal(expectedCode, result.Failure?.Code);
@@ -254,16 +242,15 @@ public sealed class WindowsHostOperationsTests
                 return engine;
             },
             NoTargetCapability,
-            static () => "target-token",
             () => "C:\\Pictures\\Lumiere",
             _ => { });
 
-        await operations.CaptureAsync(
+        await operations.CaptureDisplayAsync(
             "capture-1",
-            new HostCaptureRequest("display", "folder"));
-        await operations.CaptureAsync(
+            new HostCaptureRequest("folder"));
+        await operations.CaptureDisplayAsync(
             "capture-2",
-            new HostCaptureRequest("display", "folder"));
+            new HostCaptureRequest("folder"));
         await operations.DisposeAsync();
         await operations.DisposeAsync();
 
@@ -279,13 +266,12 @@ public sealed class WindowsHostOperationsTests
         var operations = new WindowsHostOperations(
             () => engine,
             NoTargetCapability,
-            static () => "target-token",
             () => "C:\\Pictures\\Lumiere",
             _ => { });
 
-        var capture = operations.CaptureAsync(
+        var capture = operations.CaptureDisplayAsync(
             "capture-in-flight",
-            new HostCaptureRequest("display", "folder"));
+            new HostCaptureRequest("folder"));
         await engine.CaptureStarted;
         await operations.DisposeAsync();
         var result = await capture;
@@ -307,33 +293,44 @@ public sealed class WindowsHostOperationsTests
             () => new WindowsTargetCapability(
                 hdrState,
                 new WindowsTargetLogicalSize(2560, 1440)),
-            static () => "target-token-17",
             () => "C:\\Pictures\\Lumiere",
             _ => { });
 
         var capabilities = operations.GetCapabilities();
 
         Assert.Equal(expectedHdrCapture, capabilities.HdrCapture);
-        Assert.Equal("target-token-17", capabilities.ActiveTarget?.Id);
-        Assert.Equal(2560, capabilities.ActiveTarget?.LogicalSize.Width);
-        Assert.Equal(1440, capabilities.ActiveTarget?.LogicalSize.Height);
         Assert.Equal(["display"], capabilities.CaptureModes);
         Assert.Equal(["clipboard", "folder"], capabilities.DeliveryTargets);
     }
 
     [Fact]
-    public async Task GetCapabilities_OmitsTargetWhenResolutionIsUnavailable()
+    public async Task GetCapabilities_OmitsRegionWhenResolutionIsUnavailable()
     {
         await using var operations = CreateOperations(new StubCaptureEngine());
 
         var capabilities = operations.GetCapabilities();
 
         Assert.Equal("unvalidated", capabilities.HdrCapture);
-        Assert.Null(capabilities.ActiveTarget);
+        Assert.Equal(["display"], capabilities.CaptureModes);
     }
 
     [Fact]
-    public async Task RegionCapture_ConsumesIssuedTargetAndForwardsLogicalGeometry()
+    public async Task GetCapabilities_AdvertisesRegionWithoutIssuingATargetToken()
+    {
+        await using var operations = new WindowsHostOperations(
+            () => new StubCaptureEngine(),
+            CreateRegionCapability,
+            () => "C:\\Pictures\\Lumiere",
+            _ => { });
+
+        var capabilities = operations.GetCapabilities();
+
+        Assert.Equal(["region", "display"], capabilities.CaptureModes);
+        Assert.Equal("supported", capabilities.HdrCapture);
+    }
+
+    [Fact]
+    public async Task RegionCapture_PreparesThenCommitsFrozenSessionOnce()
     {
         var engine = new StubCaptureEngine
         {
@@ -343,27 +340,26 @@ public sealed class WindowsHostOperationsTests
         await using var operations = new WindowsHostOperations(
             () => engine,
             () => target,
-            static () => "region-target-17",
             () => "C:\\Pictures\\Lumiere",
             _ => { });
         var capabilities = operations.GetCapabilities();
 
-        var result = await operations.CaptureAsync(
-            "capture-region",
-            new HostCaptureRequest(
-                "region",
+        var prepared = await operations.PrepareRegionAsync("prepare-region");
+        var result = await operations.CommitRegionAsync(
+            "commit-region",
+            new HostCommitRegionRequest(
+                prepared.SessionId!,
                 "clipboard",
-                capabilities.ActiveTarget!.Id,
                 new HostCaptureGeometry(12.5, 20, 300, 200)));
-        var repeated = await operations.CaptureAsync(
-            "capture-region-repeat",
-            new HostCaptureRequest(
-                "region",
+        var repeated = await operations.CommitRegionAsync(
+            "commit-region-repeat",
+            new HostCommitRegionRequest(
+                prepared.SessionId!,
                 "clipboard",
-                capabilities.ActiveTarget.Id,
                 new HostCaptureGeometry(12.5, 20, 300, 200)));
 
         Assert.Equal(["region", "display"], capabilities.CaptureModes);
+        Assert.Equal("prepared", prepared.Status);
         Assert.Equal("completed", result.Status);
         Assert.Same(target, engine.RegionTarget);
         Assert.Equal(new WindowsRegionGeometry(12.5, 20, 300, 200), engine.RegionGeometry);
@@ -375,7 +371,6 @@ public sealed class WindowsHostOperationsTests
         new(
             () => engine,
             NoTargetCapability,
-            static () => "target-token",
             () => "C:\\Pictures\\Lumiere",
             _ => { });
 
@@ -409,6 +404,8 @@ internal sealed class StubCaptureEngine : IWindowsCaptureEngine
 
     public int DisposeCalls { get; private set; }
 
+    public string? ActiveSessionId { get; private set; }
+
     public Task<WindowsCaptureResult> CaptureDisplayAsync(
         WindowsCaptureRequest request,
         CancellationToken cancellationToken = default)
@@ -418,17 +415,54 @@ internal sealed class StubCaptureEngine : IWindowsCaptureEngine
         return Task.FromResult(Result);
     }
 
-    public Task<WindowsCaptureResult> CaptureRegionAsync(
-        WindowsCaptureRequest request,
+    public Task<WindowsPrepareRegionResult> PrepareRegionAsync(
         WindowsTargetCapability target,
+        CancellationToken cancellationToken = default)
+    {
+        RegionTarget = target;
+        ActiveSessionId = Guid.NewGuid().ToString("N");
+        var logicalSize = target.LogicalSize ?? new WindowsTargetLogicalSize(2560, 1440);
+        return Task.FromResult(new WindowsPrepareRegionResult(
+            true,
+            WindowsCaptureOutcome.Delivered,
+            "Frozen region frame is ready.",
+            "Prepared frozen frame.",
+            ActiveSessionId,
+            logicalSize,
+            Path.Combine(Path.GetTempPath(), "lumiere-region-preview", $"{ActiveSessionId}.png"),
+            3840,
+            2160));
+    }
+
+    public Task<WindowsCaptureResult> CommitRegionAsync(
+        string sessionId,
+        WindowsCaptureRequest request,
         WindowsRegionGeometry geometry,
         CancellationToken cancellationToken = default)
     {
+        if (ActiveSessionId is null || ActiveSessionId != sessionId)
+        {
+            return Task.FromResult(new WindowsCaptureResult(
+                WindowsCaptureOutcome.Unavailable,
+                "Region capture is unavailable",
+                "The frozen Region capture expired. Select the region again."));
+        }
+
+        ActiveSessionId = null;
         Request = request;
-        RegionTarget = target;
         RegionGeometry = geometry;
         CaptureCalls++;
         return Task.FromResult(Result);
+    }
+
+    public Task ReleaseRegionAsync(string sessionId)
+    {
+        if (ActiveSessionId == sessionId)
+        {
+            ActiveSessionId = null;
+        }
+
+        return Task.CompletedTask;
     }
 
     public ValueTask DisposeAsync()
@@ -500,12 +534,19 @@ internal sealed class BlockingCaptureEngine : IWindowsCaptureEngine
         return captureCompletion.Task;
     }
 
-    public Task<WindowsCaptureResult> CaptureRegionAsync(
-        WindowsCaptureRequest request,
+    public Task<WindowsPrepareRegionResult> PrepareRegionAsync(
         WindowsTargetCapability target,
+        CancellationToken cancellationToken = default) =>
+        throw new InvalidOperationException("Prepare must not start while display capture is in flight.");
+
+    public Task<WindowsCaptureResult> CommitRegionAsync(
+        string sessionId,
+        WindowsCaptureRequest request,
         WindowsRegionGeometry geometry,
         CancellationToken cancellationToken = default) =>
         CaptureDisplayAsync(request, cancellationToken);
+
+    public Task ReleaseRegionAsync(string sessionId) => Task.CompletedTask;
 
     public ValueTask DisposeAsync()
     {

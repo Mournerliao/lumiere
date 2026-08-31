@@ -16,16 +16,19 @@ public sealed record ProtocolLineResult(
 
 public sealed record HostCaptureGeometry(double X, double Y, double Width, double Height);
 
-public sealed record HostCaptureRequest(
-    string Mode,
+public sealed record HostCaptureRequest(string Delivery, string? SaveDirectory = null);
+
+public sealed record HostCommitRegionRequest(
+    string SessionId,
     string Delivery,
-    string? TargetId = null,
-    HostCaptureGeometry? Geometry = null,
+    HostCaptureGeometry Geometry,
     string? SaveDirectory = null);
 
 public sealed record HostLogicalSize(double Width, double Height);
 
-public sealed record HostCaptureTarget(string Id, HostLogicalSize LogicalSize);
+public sealed record HostPixelSize(int Width, int Height);
+
+public sealed record HostRegionPreview(string FilePath, string MediaType, HostPixelSize PixelSize);
 
 public sealed record HostCapabilities(
     int ContractVersion,
@@ -34,8 +37,7 @@ public sealed record HostCapabilities(
     IReadOnlyList<string> CaptureModes,
     IReadOnlyList<string> DeliveryTargets,
     string HdrCapture,
-    IReadOnlyList<string> OutputProfiles,
-    HostCaptureTarget? ActiveTarget = null);
+    IReadOnlyList<string> OutputProfiles);
 
 public sealed record HostDeliveryResult(
     string Target,
@@ -50,19 +52,40 @@ public sealed record HostCaptureResult(
     IReadOnlyList<HostDeliveryResult>? Deliveries = null,
     PlatformFailure? Failure = null);
 
+public sealed record HostPrepareRegionResult(
+    string Status,
+    string? SessionId = null,
+    HostLogicalSize? TargetLogicalSize = null,
+    HostRegionPreview? Preview = null,
+    int? LeaseMilliseconds = null,
+    PlatformFailure? Failure = null);
+
+public sealed record HostReleasedRegion(string Status = "released");
+
 public interface IWindowsHostOperations : IAsyncDisposable
 {
     HostCapabilities GetCapabilities();
 
-    Task<HostCaptureResult> CaptureAsync(
+    Task<HostCaptureResult> CaptureDisplayAsync(
         string requestId,
         HostCaptureRequest request,
         CancellationToken cancellationToken = default);
+
+    Task<HostPrepareRegionResult> PrepareRegionAsync(
+        string requestId,
+        CancellationToken cancellationToken = default);
+
+    Task<HostCaptureResult> CommitRegionAsync(
+        string requestId,
+        HostCommitRegionRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<HostReleasedRegion> CancelRegionAsync(string sessionId);
 }
 
 public static class PlatformProtocol
 {
-    public const int ContractVersion = 2;
+    public const int ContractVersion = 3;
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -100,11 +123,22 @@ public static class PlatformProtocol
             return method switch
             {
                 "getCapabilities" => ProcessGetCapabilities(requestId, parameters, operations),
-                "capture" => await ProcessCaptureAsync(
+                "captureDisplay" => await ProcessCaptureDisplayAsync(
                     requestId,
                     parameters,
                     operations,
                     cancellationToken),
+                "prepareRegion" => await ProcessPrepareRegionAsync(
+                    requestId,
+                    parameters,
+                    operations,
+                    cancellationToken),
+                "commitRegion" => await ProcessCommitRegionAsync(
+                    requestId,
+                    parameters,
+                    operations,
+                    cancellationToken),
+                "cancelRegion" => await ProcessCancelRegionAsync(requestId, parameters, operations),
                 _ => throw new PlatformProtocolException("Unknown platform-host method."),
             };
         }
@@ -135,14 +169,55 @@ public static class PlatformProtocol
         return Success(requestId, operations.GetCapabilities());
     }
 
-    private static async Task<ProtocolLineResult> ProcessCaptureAsync(
+    private static async Task<ProtocolLineResult> ProcessCaptureDisplayAsync(
         string requestId,
         JsonElement parameters,
         IWindowsHostOperations operations,
         CancellationToken cancellationToken)
     {
-        var request = ValidateCaptureParameters(parameters);
-        var result = await operations.CaptureAsync(requestId, request, cancellationToken);
+        var request = ValidateDisplayParameters(parameters);
+        var result = await operations.CaptureDisplayAsync(requestId, request, cancellationToken);
+        return CaptureResult(requestId, result);
+    }
+
+    private static async Task<ProtocolLineResult> ProcessPrepareRegionAsync(
+        string requestId,
+        JsonElement parameters,
+        IWindowsHostOperations operations,
+        CancellationToken cancellationToken)
+    {
+        RequireExactProperties(parameters);
+        var result = await operations.PrepareRegionAsync(requestId, cancellationToken);
+        var failure = result.Failure;
+        return new ProtocolLineResult(
+            Serialize(new { version = ContractVersion, id = requestId, result }),
+            failure is null ? null : new HostDiagnostic(failure.Code, requestId, failure));
+    }
+
+    private static async Task<ProtocolLineResult> ProcessCommitRegionAsync(
+        string requestId,
+        JsonElement parameters,
+        IWindowsHostOperations operations,
+        CancellationToken cancellationToken)
+    {
+        var request = ValidateCommitRegionParameters(parameters);
+        var result = await operations.CommitRegionAsync(requestId, request, cancellationToken);
+        return CaptureResult(requestId, result);
+    }
+
+    private static async Task<ProtocolLineResult> ProcessCancelRegionAsync(
+        string requestId,
+        JsonElement parameters,
+        IWindowsHostOperations operations)
+    {
+        RequireExactProperties(parameters, "sessionId");
+        var sessionId = RequireNonEmptyString(parameters, "sessionId", "Region session id");
+        var result = await operations.CancelRegionAsync(sessionId);
+        return Success(requestId, result);
+    }
+
+    private static ProtocolLineResult CaptureResult(string requestId, HostCaptureResult result)
+    {
         var failure = result.Failure
             ?? result.Deliveries?.FirstOrDefault(delivery => delivery.Failure is not null)?.Failure;
         return new ProtocolLineResult(
@@ -152,38 +227,30 @@ public static class PlatformProtocol
                 : new HostDiagnostic(failure.Code, requestId, failure));
     }
 
-    private static HostCaptureRequest ValidateCaptureParameters(JsonElement parameters)
+    private static HostCaptureRequest ValidateDisplayParameters(JsonElement parameters)
     {
-        var mode = RequireNonEmptyString(parameters, "mode", "Capture mode");
         var delivery = RequireNonEmptyString(parameters, "delivery", "Capture delivery");
-        if (delivery is not ("clipboard" or "folder" or "both"))
-        {
-            throw new PlatformProtocolException(
-                "Capture delivery must be clipboard, folder, or both.");
-        }
+        RequireSupportedDelivery(delivery);
         var saveDirectory = ReadSaveDirectory(parameters, delivery);
-
-        if (mode == "display")
-        {
-            RequireExactProperties(
-                parameters,
-                saveDirectory is null
-                    ? ["mode", "delivery"]
-                    : ["mode", "delivery", "saveDirectory"]);
-            return new HostCaptureRequest(mode, delivery, SaveDirectory: saveDirectory);
-        }
-
-        if (mode != "region")
-        {
-            throw new PlatformProtocolException("Capture mode must be region or display.");
-        }
-
         RequireExactProperties(
             parameters,
             saveDirectory is null
-                ? ["mode", "delivery", "targetId", "geometry"]
-                : ["mode", "delivery", "targetId", "geometry", "saveDirectory"]);
-        var targetId = RequireNonEmptyString(parameters, "targetId", "Region target id");
+                ? ["delivery"]
+                : ["delivery", "saveDirectory"]);
+        return new HostCaptureRequest(delivery, saveDirectory);
+    }
+
+    private static HostCommitRegionRequest ValidateCommitRegionParameters(JsonElement parameters)
+    {
+        var sessionId = RequireNonEmptyString(parameters, "sessionId", "Region session id");
+        var delivery = RequireNonEmptyString(parameters, "delivery", "Capture delivery");
+        RequireSupportedDelivery(delivery);
+        var saveDirectory = ReadSaveDirectory(parameters, delivery);
+        RequireExactProperties(
+            parameters,
+            saveDirectory is null
+                ? ["sessionId", "delivery", "geometry"]
+                : ["sessionId", "delivery", "geometry", "saveDirectory"]);
         var geometry = RequireObject(parameters, "geometry", "Region geometry");
         RequireExactProperties(geometry, "coordinateSpace", "x", "y", "width", "height");
         if (RequireNonEmptyString(geometry, "coordinateSpace", "Region coordinate space")
@@ -193,16 +260,24 @@ public static class PlatformProtocol
                 "Region geometry must use target-logical coordinates.");
         }
 
-        var x = RequireFiniteNumber(geometry, "x", positive: false);
-        var y = RequireFiniteNumber(geometry, "y", positive: false);
-        var width = RequireFiniteNumber(geometry, "width", positive: true);
-        var height = RequireFiniteNumber(geometry, "height", positive: true);
-        return new HostCaptureRequest(
-            mode,
+        return new HostCommitRegionRequest(
+            sessionId,
             delivery,
-            targetId,
-            new HostCaptureGeometry(x, y, width, height),
+            new HostCaptureGeometry(
+                RequireFiniteNumber(geometry, "x", positive: false),
+                RequireFiniteNumber(geometry, "y", positive: false),
+                RequireFiniteNumber(geometry, "width", positive: true),
+                RequireFiniteNumber(geometry, "height", positive: true)),
             saveDirectory);
+    }
+
+    private static void RequireSupportedDelivery(string delivery)
+    {
+        if (delivery is not ("clipboard" or "folder" or "both"))
+        {
+            throw new PlatformProtocolException(
+                "Capture delivery must be clipboard, folder, or both.");
+        }
     }
 
     private static string? ReadSaveDirectory(JsonElement parameters, string delivery)
@@ -254,7 +329,7 @@ public static class PlatformProtocol
             || !version.TryGetInt32(out var value)
             || value != ContractVersion)
         {
-            throw new PlatformProtocolException("Protocol version must be 2.");
+            throw new PlatformProtocolException("Protocol version must be 3.");
         }
     }
 

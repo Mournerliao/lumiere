@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "id": "prepare-1",
+  "method": "prepareRegion",
+  "params": {}
+}

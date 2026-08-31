@@ -15,17 +15,13 @@ describe('Windows platform host process transport', () => {
       const result =
         request.method === 'getCapabilities'
           ? {
-              contractVersion: 2,
+              contractVersion: 3,
               platform: 'windows',
               hostStatus: 'available',
               captureModes: ['display'],
               deliveryTargets: ['folder'],
               hdrCapture: 'supported',
               outputProfiles: ['srgb-visual-match'],
-              activeTarget: {
-                id: 'target-token-17',
-                logicalSize: { width: 2560, height: 1440 },
-              },
             }
           : {
               status: 'completed',
@@ -39,7 +35,7 @@ describe('Windows platform host process transport', () => {
                 },
               ],
             }
-      process.respond({ version: 2, id: request.id, result })
+      process.respond({ version: 3, id: request.id, result })
     })
 
     const host = new WindowsPlatformHost([execPath], () => {
@@ -53,13 +49,9 @@ describe('Windows platform host process transport', () => {
       captureModes: ['display'],
       deliveryTargets: ['folder'],
       hdrCapture: 'supported',
-      activeTarget: {
-        id: 'target-token-17',
-        logicalSize: { width: 2560, height: 1440 },
-      },
     })
-    const firstCapture = await host.capture({ mode: 'display', delivery: 'folder' })
-    const secondCapture = await host.capture({ mode: 'display', delivery: 'folder' })
+    const firstCapture = await host.captureDisplay({ delivery: 'folder' })
+    const secondCapture = await host.captureDisplay({ delivery: 'folder' })
 
     expect(firstCapture).toMatchObject({
       status: 'completed',
@@ -86,7 +78,7 @@ describe('Windows platform host process transport', () => {
     })
     const host = new WindowsPlatformHost([execPath], () => process.asChildProcess())
 
-    const capture = host.capture({ mode: 'display', delivery: 'folder' })
+    const capture = host.captureDisplay({ delivery: 'folder' })
     await requestWasWritten
     host.dispose()
 

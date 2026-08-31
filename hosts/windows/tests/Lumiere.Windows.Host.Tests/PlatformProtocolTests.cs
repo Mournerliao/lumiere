@@ -12,13 +12,13 @@ public sealed class PlatformProtocolTests
     {
         await using var operations = CreateOperations();
         var response = await PlatformProtocol.ProcessLineAsync(
-            """{"version":2,"id":"capabilities-1","method":"getCapabilities","params":{}}""",
+            """{"version":3,"id":"capabilities-1","method":"getCapabilities","params":{}}""",
             operations);
 
         using var document = JsonDocument.Parse(response.ResponseLine);
         var root = document.RootElement;
         var result = root.GetProperty("result");
-        Assert.Equal(2, root.GetProperty("version").GetInt32());
+        Assert.Equal(3, root.GetProperty("version").GetInt32());
         Assert.Equal("capabilities-1", root.GetProperty("id").GetString());
         Assert.Equal("windows", result.GetProperty("platform").GetString());
         Assert.Equal("available", result.GetProperty("hostStatus").GetString());
@@ -27,11 +27,12 @@ public sealed class PlatformProtocolTests
         Assert.Equal("folder", result.GetProperty("deliveryTargets")[1].GetString());
         Assert.Equal("unvalidated", result.GetProperty("hdrCapture").GetString());
         Assert.Equal("srgb-visual-match", result.GetProperty("outputProfiles")[0].GetString());
+        Assert.False(result.TryGetProperty("activeTarget", out _));
         Assert.Null(response.Diagnostic);
     }
 
     [Fact]
-    public async Task Capture_SerializesCompletedFolderDelivery()
+    public async Task CaptureDisplay_SerializesCompletedFolderDelivery()
     {
         var engine = new StubCaptureEngine
         {
@@ -39,7 +40,7 @@ public sealed class PlatformProtocolTests
         };
         await using var operations = CreateOperations(engine);
         var response = await PlatformProtocol.ProcessLineAsync(
-            """{"version":2,"id":"capture-1","method":"capture","params":{"mode":"display","delivery":"folder"}}""",
+            """{"version":3,"id":"capture-1","method":"captureDisplay","params":{"delivery":"folder"}}""",
             operations);
 
         using var document = JsonDocument.Parse(response.ResponseLine);
@@ -55,7 +56,7 @@ public sealed class PlatformProtocolTests
     }
 
     [Fact]
-    public async Task Capture_ForwardsCustomSaveDirectory()
+    public async Task CaptureDisplay_ForwardsCustomSaveDirectory()
     {
         var engine = new StubCaptureEngine
         {
@@ -64,7 +65,7 @@ public sealed class PlatformProtocolTests
         await using var operations = CreateOperations(engine);
 
         var response = await PlatformProtocol.ProcessLineAsync(
-            """{"version":2,"id":"capture-custom","method":"capture","params":{"mode":"display","delivery":"folder","saveDirectory":"D:\\Screenshots"}}""",
+            """{"version":3,"id":"capture-custom","method":"captureDisplay","params":{"delivery":"folder","saveDirectory":"D:\\Screenshots"}}""",
             operations);
 
         using var document = JsonDocument.Parse(response.ResponseLine);
@@ -73,11 +74,11 @@ public sealed class PlatformProtocolTests
     }
 
     [Fact]
-    public async Task Capture_RejectsSaveDirectoryForClipboardOnlyRequest()
+    public async Task CaptureDisplay_RejectsSaveDirectoryForClipboardOnlyRequest()
     {
         await using var operations = CreateOperations();
         var response = await PlatformProtocol.ProcessLineAsync(
-            """{"version":2,"id":"capture-invalid-directory","method":"capture","params":{"mode":"display","delivery":"clipboard","saveDirectory":"D:\\Screenshots"}}""",
+            """{"version":3,"id":"capture-invalid-directory","method":"captureDisplay","params":{"delivery":"clipboard","saveDirectory":"D:\\Screenshots"}}""",
             operations);
 
         using var document = JsonDocument.Parse(response.ResponseLine);
@@ -87,7 +88,7 @@ public sealed class PlatformProtocolTests
     }
 
     [Fact]
-    public async Task Capture_SerializesBothDeliveryOutcomes()
+    public async Task CaptureDisplay_SerializesBothDeliveryOutcomes()
     {
         var engine = new StubCaptureEngine
         {
@@ -96,7 +97,7 @@ public sealed class PlatformProtocolTests
         };
         await using var operations = CreateOperations(engine);
         var response = await PlatformProtocol.ProcessLineAsync(
-            """{"version":2,"id":"capture-both","method":"capture","params":{"mode":"display","delivery":"both"}}""",
+            """{"version":3,"id":"capture-both","method":"captureDisplay","params":{"delivery":"both"}}""",
             operations);
 
         using var document = JsonDocument.Parse(response.ResponseLine);
@@ -115,27 +116,25 @@ public sealed class PlatformProtocolTests
     }
 
     [Fact]
-    public async Task GetCapabilities_SerializesTargetAwareSnapshot()
+    public async Task GetCapabilities_SerializesHdrWithoutActiveTarget()
     {
         await using var operations = CreateOperations(
             targetCapability: new WindowsTargetCapability(
                 WindowsTargetHdrState.Active,
                 new WindowsTargetLogicalSize(2560, 1440)));
         var response = await PlatformProtocol.ProcessLineAsync(
-            """{"version":2,"id":"capabilities-2","method":"getCapabilities","params":{}}""",
+            """{"version":3,"id":"capabilities-2","method":"getCapabilities","params":{}}""",
             operations);
 
         using var document = JsonDocument.Parse(response.ResponseLine);
         var result = document.RootElement.GetProperty("result");
-        var target = result.GetProperty("activeTarget");
         Assert.Equal("supported", result.GetProperty("hdrCapture").GetString());
-        Assert.Equal("target-token-17", target.GetProperty("id").GetString());
-        Assert.Equal(2560, target.GetProperty("logicalSize").GetProperty("width").GetDouble());
-        Assert.Equal(1440, target.GetProperty("logicalSize").GetProperty("height").GetDouble());
+        Assert.Equal("display", result.GetProperty("captureModes")[0].GetString());
+        Assert.False(result.TryGetProperty("activeTarget", out _));
     }
 
     [Fact]
-    public async Task RegionCapture_PreservesTargetTokenAndLogicalGeometry()
+    public async Task RegionCapture_PreparesThenCommitsFrozenGeometry()
     {
         var engine = new StubCaptureEngine
         {
@@ -144,12 +143,19 @@ public sealed class PlatformProtocolTests
         await using var operations = CreateOperations(
             engine,
             WindowsHostOperationsTests.CreateRegionCapability());
-        _ = await PlatformProtocol.ProcessLineAsync(
-            """{"version":2,"id":"capabilities-region","method":"getCapabilities","params":{}}""",
+
+        var preparedResponse = await PlatformProtocol.ProcessLineAsync(
+            """{"version":3,"id":"prepare-region","method":"prepareRegion","params":{}}""",
             operations);
+        using var preparedDocument = JsonDocument.Parse(preparedResponse.ResponseLine);
+        var prepared = preparedDocument.RootElement.GetProperty("result");
+        Assert.Equal("prepared", prepared.GetProperty("status").GetString());
+        var sessionId = prepared.GetProperty("sessionId").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(sessionId));
+        Assert.Equal("image/png", prepared.GetProperty("preview").GetProperty("mediaType").GetString());
 
         var response = await PlatformProtocol.ProcessLineAsync(
-            """{"version":2,"id":"capture-region","method":"capture","params":{"mode":"region","delivery":"clipboard","targetId":"target-token-17","geometry":{"coordinateSpace":"target-logical","x":12.5,"y":20,"width":300,"height":200}}}""",
+            $$"""{"version":3,"id":"commit-region","method":"commitRegion","params":{"sessionId":"{{sessionId}}","delivery":"clipboard","geometry":{"coordinateSpace":"target-logical","x":12.5,"y":20,"width":300,"height":200}}}""",
             operations);
 
         using var document = JsonDocument.Parse(response.ResponseLine);
@@ -158,11 +164,23 @@ public sealed class PlatformProtocolTests
     }
 
     [Fact]
+    public async Task CancelRegion_ReleasesUnknownSession()
+    {
+        await using var operations = CreateOperations();
+        var response = await PlatformProtocol.ProcessLineAsync(
+            """{"version":3,"id":"cancel-1","method":"cancelRegion","params":{"sessionId":"missing-session"}}""",
+            operations);
+
+        using var document = JsonDocument.Parse(response.ResponseLine);
+        Assert.Equal("released", document.RootElement.GetProperty("result").GetProperty("status").GetString());
+    }
+
+    [Fact]
     public async Task InvalidRequest_PreservesValidRequestIdForCorrelation()
     {
         await using var operations = CreateOperations();
         var response = await PlatformProtocol.ProcessLineAsync(
-            """{"version":2,"id":"bad-1","method":"getCapabilities","params":{},"extra":true}""",
+            """{"version":3,"id":"bad-1","method":"getCapabilities","params":{},"extra":true}""",
             operations);
 
         using var document = JsonDocument.Parse(response.ResponseLine);
@@ -174,9 +192,10 @@ public sealed class PlatformProtocolTests
 
     [Theory]
     [InlineData("not-json")]
-    [InlineData("{\"version\":1,\"id\":\"bad-2\",\"method\":\"getCapabilities\",\"params\":{}}")]
-    [InlineData("{\"version\":2,\"id\":\"bad-3\",\"method\":\"unknown\",\"params\":{}}")]
-    [InlineData("{\"version\":2,\"id\":\"bad-4\",\"method\":\"capture\",\"params\":{\"mode\":\"region\",\"delivery\":\"both\"}}")]
+    [InlineData("{\"version\":2,\"id\":\"bad-2\",\"method\":\"getCapabilities\",\"params\":{}}")]
+    [InlineData("{\"version\":3,\"id\":\"bad-3\",\"method\":\"unknown\",\"params\":{}}")]
+    [InlineData("{\"version\":3,\"id\":\"bad-4\",\"method\":\"capture\",\"params\":{\"delivery\":\"folder\"}}")]
+    [InlineData("{\"version\":3,\"id\":\"bad-5\",\"method\":\"commitRegion\",\"params\":{\"delivery\":\"both\"}}")]
     public async Task InvalidRequests_ReturnProtocolErrors(string line)
     {
         await using var operations = CreateOperations();
@@ -196,7 +215,6 @@ public sealed class PlatformProtocolTests
         new(
             () => engine ?? new StubCaptureEngine(),
             () => targetCapability,
-            static () => "target-token-17",
             () => "C:\\Pictures\\Lumiere",
             _ => { });
 }

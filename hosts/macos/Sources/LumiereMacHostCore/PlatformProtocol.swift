@@ -1,6 +1,6 @@
 import Foundation
 
-public let platformContractVersion = 2
+public let platformContractVersion = 3
 
 public enum HostFailureCode: String, Codable, Sendable {
   case hostUnavailable = "host-unavailable"
@@ -43,11 +43,21 @@ public enum DeliveryTarget: String, Codable, Sendable {
 public struct LogicalSize: Codable, Equatable, Sendable {
   public let width: Double
   public let height: Double
+
+  public init(width: Double, height: Double) {
+    self.width = width
+    self.height = height
+  }
 }
 
-public struct CaptureTarget: Codable, Equatable, Sendable {
-  public let id: String
-  public let logicalSize: LogicalSize
+public struct PixelSize: Codable, Equatable, Sendable {
+  public let width: Int
+  public let height: Int
+
+  public init(width: Int, height: Int) {
+    self.width = width
+    self.height = height
+  }
 }
 
 public struct CaptureGeometry: Codable, Equatable, Sendable {
@@ -56,40 +66,54 @@ public struct CaptureGeometry: Codable, Equatable, Sendable {
   public let y: Double
   public let width: Double
   public let height: Double
-}
-
-public struct CaptureParameters: Codable, Equatable, Sendable {
-  public let mode: CaptureMode
-  public let delivery: OutputDelivery
-  public let saveDirectory: String?
-  public let targetId: String?
-  public let geometry: CaptureGeometry?
 
   public init(
-    mode: CaptureMode,
-    delivery: OutputDelivery,
-    saveDirectory: String? = nil,
-    targetId: String? = nil,
-    geometry: CaptureGeometry? = nil
+    coordinateSpace: String,
+    x: Double,
+    y: Double,
+    width: Double,
+    height: Double
   ) {
-    self.mode = mode
+    self.coordinateSpace = coordinateSpace
+    self.x = x
+    self.y = y
+    self.width = width
+    self.height = height
+  }
+}
+
+public struct DisplayCaptureParameters: Equatable, Sendable {
+  public let delivery: OutputDelivery
+  public let saveDirectory: String?
+
+  public init(delivery: OutputDelivery, saveDirectory: String? = nil) {
     self.delivery = delivery
     self.saveDirectory = saveDirectory
-    self.targetId = targetId
-    self.geometry = geometry
   }
+}
+
+public struct CommitRegionParameters: Equatable, Sendable {
+  public let sessionId: String
+  public let delivery: OutputDelivery
+  public let saveDirectory: String?
+  public let geometry: CaptureGeometry
 }
 
 public enum PlatformMethod: String, Codable, Sendable {
   case getCapabilities
-  case capture
+  case captureDisplay
+  case prepareRegion
+  case commitRegion
+  case cancelRegion
 }
 
 public struct PlatformRequest: Equatable, Sendable {
   public let version: Int
   public let id: String
   public let method: PlatformMethod
-  public let capture: CaptureParameters?
+  public let displayCapture: DisplayCaptureParameters?
+  public let commitRegion: CommitRegionParameters?
+  public let sessionId: String?
 }
 
 public struct PlatformCapabilities: Codable, Equatable, Sendable {
@@ -100,7 +124,6 @@ public struct PlatformCapabilities: Codable, Equatable, Sendable {
   public let deliveryTargets: [DeliveryTarget]
   public let hdrCapture: String
   public let outputProfiles: [String]
-  public let activeTarget: CaptureTarget?
   public let unavailableReason: HostFailure?
 
   public init(
@@ -111,7 +134,6 @@ public struct PlatformCapabilities: Codable, Equatable, Sendable {
     deliveryTargets: [DeliveryTarget],
     hdrCapture: String,
     outputProfiles: [String],
-    activeTarget: CaptureTarget? = nil,
     unavailableReason: HostFailure? = nil
   ) {
     self.contractVersion = contractVersion
@@ -121,7 +143,6 @@ public struct PlatformCapabilities: Codable, Equatable, Sendable {
     self.deliveryTargets = deliveryTargets
     self.hdrCapture = hdrCapture
     self.outputProfiles = outputProfiles
-    self.activeTarget = activeTarget
     self.unavailableReason = unavailableReason
   }
 }
@@ -152,10 +173,7 @@ public struct CaptureResult: Codable, Equatable, Sendable {
   public let deliveries: [DeliveryResult]?
   public let failure: HostFailure?
 
-  public static func completed(
-    dynamicRange: String,
-    deliveries: [DeliveryResult]
-  ) -> CaptureResult {
+  public static func completed(dynamicRange: String, deliveries: [DeliveryResult]) -> CaptureResult {
     CaptureResult(
       status: "completed",
       sourceDynamicRange: dynamicRange,
@@ -186,9 +204,31 @@ public struct CaptureResult: Codable, Equatable, Sendable {
   }
 }
 
+public struct PreparedRegionResult: Codable, Equatable, Sendable {
+  public struct Preview: Codable, Equatable, Sendable {
+    public let filePath: String
+    public let mediaType: String
+    public let pixelSize: PixelSize
+  }
+
+  public let status: String
+  public let sessionId: String
+  public let targetLogicalSize: LogicalSize
+  public let preview: Preview
+  public let leaseMilliseconds: Int
+}
+
+public struct ReleasedRegionResult: Codable, Equatable, Sendable {
+  public let status: String
+
+  public static let released = ReleasedRegionResult(status: "released")
+}
+
 public enum PlatformResult: Equatable, Sendable {
   case capabilities(PlatformCapabilities)
   case capture(CaptureResult)
+  case preparedRegion(PreparedRegionResult)
+  case releasedRegion(ReleasedRegionResult)
 }
 
 public struct PlatformResponse: Encodable, Sendable {
@@ -205,28 +245,21 @@ public struct PlatformResponse: Encodable, Sendable {
     PlatformResponse(version: platformContractVersion, id: id, result: nil, error: error)
   }
 
-  private enum CodingKeys: String, CodingKey {
-    case version
-    case id
-    case result
-    case error
-  }
+  private enum CodingKeys: String, CodingKey { case version, id, result, error }
 
   public func encode(to encoder: Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
     try container.encode(version, forKey: .version)
     try container.encode(id, forKey: .id)
-
     if let error {
       try container.encode(error, forKey: .error)
       return
     }
-
     switch result {
-    case .capabilities(let capabilities):
-      try container.encode(capabilities, forKey: .result)
-    case .capture(let capture):
-      try container.encode(capture, forKey: .result)
+    case .capabilities(let value): try container.encode(value, forKey: .result)
+    case .capture(let value): try container.encode(value, forKey: .result)
+    case .preparedRegion(let value): try container.encode(value, forKey: .result)
+    case .releasedRegion(let value): try container.encode(value, forKey: .result)
     case nil:
       throw EncodingError.invalidValue(
         self,
@@ -245,10 +278,8 @@ public enum PlatformProtocolError: Error, Equatable, CustomStringConvertible {
 
   public var description: String {
     switch self {
-    case .invalidJSON:
-      return "Request must be one complete JSON object."
-    case .invalidEnvelope(let message):
-      return message
+    case .invalidJSON: return "Request must be one complete JSON object."
+    case .invalidEnvelope(let message): return message
     }
   }
 }
@@ -258,48 +289,100 @@ public enum PlatformRequestDecoder {
     guard let data = line.data(using: .utf8),
       let object = try? JSONSerialization.jsonObject(with: data),
       let envelope = object as? [String: Any]
-    else {
-      throw PlatformProtocolError.invalidJSON
-    }
+    else { throw PlatformProtocolError.invalidJSON }
 
     try requireExactKeys(envelope, expected: ["version", "id", "method", "params"])
-
     guard let version = envelope["version"] as? Int, version == platformContractVersion else {
-      throw PlatformProtocolError.invalidEnvelope("Protocol version must be 2.")
+      throw PlatformProtocolError.invalidEnvelope("Protocol version must be 3.")
     }
-
     guard let id = envelope["id"] as? String, !id.isEmpty else {
       throw PlatformProtocolError.invalidEnvelope("Request id must be a non-empty string.")
     }
-
     guard let methodValue = envelope["method"] as? String,
-      let method = PlatformMethod(rawValue: methodValue)
-    else {
-      throw PlatformProtocolError.invalidEnvelope("Unknown platform-host method.")
-    }
-
-    guard let parameters = envelope["params"] as? [String: Any] else {
-      throw PlatformProtocolError.invalidEnvelope("Request params must be an object.")
-    }
+      let method = PlatformMethod(rawValue: methodValue),
+      let parameters = envelope["params"] as? [String: Any]
+    else { throw PlatformProtocolError.invalidEnvelope("Unknown platform-host method.") }
 
     switch method {
-    case .getCapabilities:
+    case .getCapabilities, .prepareRegion:
       try requireExactKeys(parameters, expected: [])
-      return PlatformRequest(version: version, id: id, method: method, capture: nil)
-    case .capture:
-      let capture = try decodeCaptureParameters(parameters)
-      return PlatformRequest(version: version, id: id, method: method, capture: capture)
+      return PlatformRequest(
+        version: version,
+        id: id,
+        method: method,
+        displayCapture: nil,
+        commitRegion: nil,
+        sessionId: nil
+      )
+    case .captureDisplay:
+      return PlatformRequest(
+        version: version,
+        id: id,
+        method: method,
+        displayCapture: try decodeDisplayCapture(parameters),
+        commitRegion: nil,
+        sessionId: nil
+      )
+    case .commitRegion:
+      return PlatformRequest(
+        version: version,
+        id: id,
+        method: method,
+        displayCapture: nil,
+        commitRegion: try decodeCommitRegion(parameters),
+        sessionId: nil
+      )
+    case .cancelRegion:
+      try requireExactKeys(parameters, expected: ["sessionId"])
+      guard let sessionId = parameters["sessionId"] as? String, !sessionId.isEmpty else {
+        throw PlatformProtocolError.invalidEnvelope(
+          "Region session id must be a non-empty string."
+        )
+      }
+      return PlatformRequest(
+        version: version,
+        id: id,
+        method: method,
+        displayCapture: nil,
+        commitRegion: nil,
+        sessionId: sessionId
+      )
     }
   }
 
-  private static func decodeCaptureParameters(
+  private static func decodeDisplayCapture(
     _ parameters: [String: Any]
-  ) throws -> CaptureParameters {
-    guard let modeValue = parameters["mode"] as? String,
-      let mode = CaptureMode(rawValue: modeValue)
+  ) throws -> DisplayCaptureParameters {
+    let (delivery, saveDirectory) = try decodeDelivery(parameters, extraKeys: [])
+    return DisplayCaptureParameters(delivery: delivery, saveDirectory: saveDirectory)
+  }
+
+  private static func decodeCommitRegion(
+    _ parameters: [String: Any]
+  ) throws -> CommitRegionParameters {
+    let (delivery, saveDirectory) = try decodeDelivery(
+      parameters,
+      extraKeys: ["sessionId", "geometry"]
+    )
+    guard let sessionId = parameters["sessionId"] as? String, !sessionId.isEmpty,
+      let geometryObject = parameters["geometry"] as? [String: Any]
     else {
-      throw PlatformProtocolError.invalidEnvelope("Capture mode must be region or display.")
+      throw PlatformProtocolError.invalidEnvelope(
+        "Region commit requires a non-empty session id and geometry."
+      )
     }
+    return CommitRegionParameters(
+      sessionId: sessionId,
+      delivery: delivery,
+      saveDirectory: saveDirectory,
+      geometry: try decodeGeometry(geometryObject)
+    )
+  }
+
+  private static func decodeDelivery(
+    _ parameters: [String: Any],
+    extraKeys: Set<String>
+  ) throws -> (OutputDelivery, String?) {
     guard let deliveryValue = parameters["delivery"] as? String,
       let delivery = OutputDelivery(rawValue: deliveryValue)
     else {
@@ -308,45 +391,17 @@ public enum PlatformRequestDecoder {
       )
     }
     let saveDirectory = try decodeSaveDirectory(parameters, delivery: delivery)
-
-    if mode == .display {
-      var expectedKeys: Set<String> = ["mode", "delivery"]
-      if saveDirectory != nil { expectedKeys.insert("saveDirectory") }
-      try requireExactKeys(parameters, expected: expectedKeys)
-      return CaptureParameters(
-        mode: mode,
-        delivery: delivery,
-        saveDirectory: saveDirectory
-      )
-    }
-
-    var expectedKeys: Set<String> = ["mode", "delivery", "targetId", "geometry"]
-    if saveDirectory != nil { expectedKeys.insert("saveDirectory") }
-    try requireExactKeys(parameters, expected: expectedKeys)
-    guard let targetId = parameters["targetId"] as? String, !targetId.isEmpty,
-      let geometryObject = parameters["geometry"] as? [String: Any]
-    else {
-      throw PlatformProtocolError.invalidEnvelope(
-        "Region capture requires a non-empty target id and geometry."
-      )
-    }
-    let geometry = try decodeGeometry(geometryObject)
-    return CaptureParameters(
-      mode: mode,
-      delivery: delivery,
-      saveDirectory: saveDirectory,
-      targetId: targetId,
-      geometry: geometry
-    )
+    var expected = extraKeys.union(["delivery"])
+    if saveDirectory != nil { expected.insert("saveDirectory") }
+    try requireExactKeys(parameters, expected: expected)
+    return (delivery, saveDirectory)
   }
 
   private static func decodeSaveDirectory(
     _ parameters: [String: Any],
     delivery: OutputDelivery
   ) throws -> String? {
-    guard let value = parameters["saveDirectory"] else {
-      return nil
-    }
+    guard let value = parameters["saveDirectory"] else { return nil }
     guard delivery != .clipboard else {
       throw PlatformProtocolError.invalidEnvelope(
         "Clipboard-only capture must not include a save directory."
@@ -388,9 +443,7 @@ public enum PlatformRequestDecoder {
     guard let number = value as? NSNumber,
       CFGetTypeID(number) != CFBooleanGetTypeID(),
       number.doubleValue.isFinite
-    else {
-      return nil
-    }
+    else { return nil }
     return number.doubleValue
   }
 
@@ -398,8 +451,7 @@ public enum PlatformRequestDecoder {
     _ object: [String: Any],
     expected: Set<String>
   ) throws {
-    let actual = Set(object.keys)
-    guard actual == expected else {
+    guard Set(object.keys) == expected else {
       throw PlatformProtocolError.invalidEnvelope("Request contains missing or unknown fields.")
     }
   }

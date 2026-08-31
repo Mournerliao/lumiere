@@ -24,7 +24,7 @@ describe('macOS platform host process transport', () => {
 
       const [capabilitiesRequest, captureRequest] = requests
       process.respond({
-        version: 2,
+        version: 3,
         id: captureRequest.id,
         result: {
           status: 'completed',
@@ -34,10 +34,10 @@ describe('macOS platform host process transport', () => {
         },
       })
       process.respond({
-        version: 2,
+        version: 3,
         id: capabilitiesRequest.id,
         result: {
-          contractVersion: 2,
+          contractVersion: 3,
           platform: 'macos',
           hostStatus: 'available',
           captureModes: ['display'],
@@ -53,7 +53,7 @@ describe('macOS platform host process transport', () => {
       return process.asChildProcess()
     })
     const capabilitiesPromise = host.getCapabilities()
-    const capturePromise = host.capture({ mode: 'display', delivery: 'folder' })
+    const capturePromise = host.captureDisplay({ delivery: 'folder' })
 
     await expect(capabilitiesPromise).resolves.toMatchObject({
       hostStatus: 'available',
@@ -85,7 +85,7 @@ describe('macOS platform host process transport', () => {
       })
     })
 
-    const capture = host.capture({ mode: 'display', delivery: 'folder' })
+    const capture = host.captureDisplay({ delivery: 'folder' })
     await requestWasWritten
     await vi.advanceTimersByTimeAsync(15_000)
 
@@ -98,10 +98,10 @@ describe('macOS platform host process transport', () => {
     secondProcess.stdin.once('data', (chunk: Buffer) => {
       const request = JSON.parse(chunk.toString('utf8')) as Record<string, unknown>
       secondProcess.respond({
-        version: 2,
+        version: 3,
         id: request.id,
         result: {
-          contractVersion: 2,
+          contractVersion: 3,
           platform: 'macos',
           hostStatus: 'available',
           captureModes: ['display'],
@@ -120,7 +120,7 @@ describe('macOS platform host process transport', () => {
     process.stdin.once('data', (chunk: Buffer) => {
       const request = JSON.parse(chunk.toString('utf8')) as Record<string, unknown>
       process.respond({
-        version: 2,
+        version: 3,
         id: request.id,
         result: { status: 'cancelled' },
         error: {
@@ -132,7 +132,7 @@ describe('macOS platform host process transport', () => {
     })
     const host = new MacOSPlatformHost([execPath], () => process.asChildProcess())
 
-    await expect(host.capture({ mode: 'display', delivery: 'folder' })).resolves.toMatchObject({
+    await expect(host.captureDisplay({ delivery: 'folder' })).resolves.toMatchObject({
       status: 'failed',
       failure: { code: 'host-unavailable', retryable: true },
     })
@@ -144,14 +144,14 @@ describe('macOS platform host process transport', () => {
     process.stdin.once('data', (chunk: Buffer) => {
       const request = JSON.parse(chunk.toString('utf8')) as Record<string, unknown>
       process.respond({
-        version: 2,
+        version: 3,
         id: request.id,
         result: { status: 'cancelled', unexpected: true },
       })
     })
     const host = new MacOSPlatformHost([execPath], () => process.asChildProcess())
 
-    await expect(host.capture({ mode: 'display', delivery: 'folder' })).resolves.toMatchObject({
+    await expect(host.captureDisplay({ delivery: 'folder' })).resolves.toMatchObject({
       status: 'failed',
       failure: { code: 'host-unavailable', retryable: true },
     })
@@ -173,7 +173,7 @@ describe('macOS platform host process transport', () => {
     firstProcess.stdin.once('data', () => {
       firstProcess.emit('exit', 17, null)
     })
-    await expect(host.capture({ mode: 'display', delivery: 'folder' })).resolves.toMatchObject({
+    await expect(host.captureDisplay({ delivery: 'folder' })).resolves.toMatchObject({
       status: 'failed',
       failure: { code: 'host-unavailable' },
     })
@@ -182,10 +182,10 @@ describe('macOS platform host process transport', () => {
       const request = JSON.parse(chunk.toString('utf8')) as Record<string, unknown>
       firstProcess.emit('exit', 17, null)
       secondProcess.respond({
-        version: 2,
+        version: 3,
         id: request.id,
         result: {
-          contractVersion: 2,
+          contractVersion: 3,
           platform: 'macos',
           hostStatus: 'available',
           captureModes: ['display'],
@@ -208,7 +208,7 @@ describe('macOS platform host process transport', () => {
     })
     const host = new MacOSPlatformHost([execPath], () => process.asChildProcess())
 
-    await expect(host.capture({ mode: 'display', delivery: 'folder' })).resolves.toMatchObject({
+    await expect(host.captureDisplay({ delivery: 'folder' })).resolves.toMatchObject({
       status: 'failed',
       failure: { code: 'host-unavailable', retryable: true },
     })
