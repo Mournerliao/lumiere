@@ -14,6 +14,10 @@ Multiple lane frontiers may exist, but one writer or worktree advances only one 
 working Issue at a time. Switching lanes or machines requires a clean, structured
 handoff. Repository, platform, and hardware truth remain separate, and progress in one
 lane never closes another lane's acceptance criteria or the shared milestone gate.
+Platform-owned implementation in a later slice of the active milestone may therefore
+advance when its own dependencies and verification scope are explicit, even while an
+earlier slice still awaits independent verification in another lane. Only the shared
+completion or release gate waits for every required lane.
 
 ## Context
 
@@ -31,5 +35,8 @@ writers, and projecting one platform's evidence to another.
   than one global implementation frontier.
 - Shared product work may overlap the Windows Host adapter, but its Windows journeys
   cannot pass until the Windows lane supplies and verifies the required Host behavior.
-- Milestone 1D distribution and release verification remains blocked until both native
-  lanes and the shared product journeys pass their independent exit criteria.
+- Milestone 1D macOS and Windows implementation lanes may advance independently when
+  their owning Issues are acceptance-ready; incomplete verification in one platform
+  does not idle eligible work on the other.
+- Cross-platform release verification and the Milestone 1 exit gate remain blocked until
+  both native lanes and the shared product journeys pass their independent criteria.

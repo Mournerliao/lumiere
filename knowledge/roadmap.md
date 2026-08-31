@@ -43,8 +43,11 @@ are explicit.
 The MVP has four vertical slices contributing to one milestone gate. Native-platform
 and shared-product work may overlap so development can follow the currently available
 machine; each slice must leave its owned surface runnable, platform implementation may
-differ, and public output semantics remain shared. Slice 1D remains gated on both
-native Hosts and the shared product journeys required by 1A through 1C.
+differ, and public output semantics remain shared. Platform-owned 1D implementation may
+advance in an eligible lane once its own dependencies and verification scope are explicit,
+even while another lane is completing earlier-slice verification. The shared release and
+Milestone 1 exit gates still require both native Hosts and all product journeys from 1A
+through 1D to pass independently.
 
 ### 1A. macOS Native Capture
 
@@ -81,6 +84,8 @@ copy remains inside the approved HDR-aware/sRGB Visual Match claim boundary.
 
 Deliver a traditional Windows setup executable and a signed/notarized macOS artifact.
 Validate install, launch, upgrade, uninstall, and reinstall on non-development machines.
+The macOS and Windows distribution implementations may advance independently; evidence
+from either platform neither completes nor blocks implementation work owned by the other.
 The Windows setup must register a signed external-location sparse package for package
 identity, declare and request borderless Graphics Capture consent, suppress the WGC system
 border when allowed, and preserve bordered capture as the denied, unavailable, or

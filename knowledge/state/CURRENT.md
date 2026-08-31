@@ -245,7 +245,12 @@ advances only one current working Issue at a time.
 - **Shared/macOS lane — [Issue #9](https://github.com/Mournerliao/lumiere/issues/9):**
   the custom-directory implementation, protocol v2 increment, Settings v5 migration, both Host
   adapters, repository gates, native directory write, development Electron capture,
-  restart-persistence, and Show in folder journey are complete on the current Mac.
+  restart-persistence, and Show in folder journey are complete on the current Mac. This lane
+  may hand off Issue #9 and advance the next acceptance-ready macOS-owned frontier without
+  waiting for Windows verification.
+- **macOS distribution lane — Milestone 1D:** define an acceptance-ready owning Issue for
+  the signed/notarized macOS artifact and its platform-scoped install, launch, upgrade,
+  uninstall, reinstall, and clean-machine verification, then advance that work on macOS.
 - **Windows custom-directory verification lane — [Issue #9](https://github.com/Mournerliao/lumiere/issues/9):**
   run the updated Host tests/build/format gates on Windows, then verify directory selection,
   persistence, Folder/Both delivery, target-local folder failure, and Show in folder independently.
@@ -254,7 +259,8 @@ advances only one current working Issue at a time.
   the named Windows machine passed the required Display/Region, Clipboard/Folder/Both,
   HDR/SDR-state, SDR-white-aware Visual Match, repeated capture, cancellation, teardown,
   and clean-exit criteria.
-- **Milestone gate:** 1D distribution and release work remains blocked until the remaining
-  shared cross-platform journeys in Issue #9 pass their independent criteria.
+- **Milestone gate:** platform-owned 1D implementation may advance independently, but
+  cross-platform release verification and the Milestone 1 exit gate remain blocked until
+  Issue #9 and both distribution lanes pass their independent criteria.
 
 Neither lane projects repository, runtime, hardware, or completion truth to the other.
