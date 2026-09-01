@@ -1,0 +1,128 @@
+name: Windows Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  actions: read
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    name: Build, sign, and publish Windows release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout tagged source
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm and Node
+        uses: pnpm/setup@v2
+        with:
+          runtime: node@22
+          cache: true
+          install: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Require tag and package versions to match
+        if: github.event_name == 'push'
+        shell: pwsh
+        run: |
+          $packageVersion = (Get-Content apps/desktop/package.json | ConvertFrom-Json).version
+          if ($env:GITHUB_REF_NAME -ne "v$packageVersion") {
+            throw "Tag $env:GITHUB_REF_NAME does not match package version $packageVersion."
+          }
+
+      - name: Prepare release shell, Host, and sparse identity
+        env:
+          LUMIERE_WINDOWS_PUBLISHER: ${{ vars.SIGNPATH_WINDOWS_PUBLISHER }}
+          LUMIERE_WINDOWS_PUBLISHER_DISPLAY_NAME: ${{ vars.SIGNPATH_WINDOWS_PUBLISHER_DISPLAY_NAME }}
+        run: node ./scripts/package-windows.mjs prepare-release
+
+      - name: Stage binaries for SignPath
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifacts/windows/signing-input | Out-Null
+          Copy-Item -Recurse artifacts/windows/staging/windows-host artifacts/windows/signing-input/windows-host
+          Copy-Item -Recurse artifacts/windows/staging/windows-identity artifacts/windows/signing-input/windows-identity
+
+      - name: Upload unsigned application artifacts
+        id: upload-unsigned-application
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-unsigned-application
+          path: artifacts/windows/signing-input
+
+      - name: Sign application artifacts
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_APPLICATION_ARTIFACT_CONFIGURATION_SLUG }}
+          github-artifact-id: ${{ steps.upload-unsigned-application.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: artifacts/windows/signed-staging
+
+      - name: Restore signed application artifacts
+        shell: pwsh
+        run: |
+          Copy-Item -Recurse -Force artifacts/windows/signed-staging/windows-host/* artifacts/windows/staging/windows-host/
+          Copy-Item -Force artifacts/windows/signed-staging/windows-identity/Lumiere.Identity.msix artifacts/windows/staging/windows-identity/Lumiere.Identity.msix
+
+      - name: Build assisted per-user installer
+        run: node ./scripts/package-windows.mjs build-installer
+
+      - name: Upload unsigned installer
+        id: upload-unsigned-installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-unsigned-installer
+          path: artifacts/windows/build/Lumiere-Setup-*-x64.exe
+
+      - name: Sign installer
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_INSTALLER_ARTIFACT_CONFIGURATION_SLUG }}
+          github-artifact-id: ${{ steps.upload-unsigned-installer.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: artifacts/windows/release
+
+      - name: Generate post-signing update metadata and checksum
+        run: pnpm release:windows:finalize
+
+      - name: Attest signed installer
+        uses: actions/attest@v4
+        with:
+          subject-path: artifacts/windows/release/Lumiere-Setup-*-x64.exe
+
+      - name: Publish GitHub Release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: gh release create $env:GITHUB_REF_NAME artifacts/windows/release/* --verify-tag --generate-notes
+
+      - name: Upload release bundle for manual runs
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-release
+          path: artifacts/windows/release

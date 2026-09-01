@@ -48,3 +48,49 @@ observations separately.
 
 If restore reports a partial NuGet cache, rerun restore with `--force` against the
 Windows solution before changing source.
+
+## Packaging and release
+
+The Windows distribution lane advances in this order:
+
+1. Land the packaging implementation and public MIT license, privacy policy,
+   code-signing policy, and accurate repository/download documentation.
+2. Run repository, Windows Host, installer, and packaged-runtime verification as a
+   separate phase.
+3. Publish a clearly labeled unsigned preview GitHub Release using the same assisted
+   NSIS artifact form intended for production signing. Its release page must document
+   functionality, installation, uninstall, and expected unsigned-publisher warnings.
+4. Apply to SignPath Foundation only after that public released/documented-project
+   prerequisite is satisfied.
+5. After approval, configure the assigned Publisher, GitHub trusted build system,
+   SignPath project, roles, signing policy, artifact configurations, repository
+   variables, and API-token secret.
+6. Publish a matching stable tag through the signed workflow, then verify signing,
+   identity registration, borderless/fallback behavior, full-installer update,
+   uninstall, checksums, provenance, and a clean-machine journey.
+
+The unsigned preview is an application prerequisite. It is not a production release
+and does not verify signing or borderless capture.
+
+Build an unsigned local preview installer from the repository root:
+
+```powershell
+pnpm package:windows
+```
+
+This produces `artifacts/windows/build/Lumiere-Setup-<version>-x64.exe`. Preview installers
+deliberately omit the production sparse identity and updater configuration, so WGC keeps
+the system capture border.
+
+Production releases run `.github/workflows/windows-release.yml` from a matching
+`v<package-version>` tag. Configure the SignPath organization, project, signing policy,
+application artifact configuration, installer artifact configuration, certificate
+Publisher, and Publisher display name as repository variables; store only the SignPath API
+token as a secret. The application artifact configuration must preserve the uploaded
+`windows-host/` and `windows-identity/` paths while signing Lumiere-owned PE files and
+`Lumiere.Identity.msix`. The installer configuration signs the final Setup executable.
+
+The workflow generates `latest.yml` and `SHA256SUMS` only after final signing, attests the
+signed Setup, and publishes all three files to GitHub Releases. Installer registration of
+the sparse identity is non-fatal; a failed registration or denied borderless consent falls
+back to the normal WGC system border.

@@ -27,11 +27,12 @@ public interface IWindowsCaptureEngine : IAsyncDisposable
 public sealed class WindowsHostOperations : IWindowsHostOperations
 {
     private readonly object sync = new();
-    private readonly Func<IWindowsCaptureEngine> engineFactory;
+    private readonly Func<CancellationToken, Task<IWindowsCaptureEngine>> engineFactory;
     private readonly Func<WindowsTargetCapability?> getTargetCapability;
     private readonly Func<string> outputDirectory;
     private readonly Action<string> createDirectory;
     private readonly ILogger logger;
+    private readonly SemaphoreSlim engineCreationGate = new(1, 1);
     private IWindowsCaptureEngine? engine;
     private int disposed;
 
@@ -42,7 +43,8 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
         Action<string> createDirectory,
         ILogger? logger = null)
     {
-        this.engineFactory = engineFactory ?? throw new ArgumentNullException(nameof(engineFactory));
+        ArgumentNullException.ThrowIfNull(engineFactory);
+        this.engineFactory = _ => Task.FromResult(engineFactory());
         this.getTargetCapability = getTargetCapability
             ?? throw new ArgumentNullException(nameof(getTargetCapability));
         this.outputDirectory = outputDirectory ?? throw new ArgumentNullException(nameof(outputDirectory));
@@ -54,12 +56,27 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
     {
         var capabilityProvider = new WindowsTargetCapabilityProvider();
         return new WindowsHostOperations(
-            static () => new WindowsDisplayCaptureEngineAdapter(
-                WindowsDisplayCaptureEngine.CreateDefault()),
+            static async cancellationToken => new WindowsDisplayCaptureEngineAdapter(
+                await WindowsDisplayCaptureEngine.CreateDefaultAsync(cancellationToken)),
             capabilityProvider.GetCurrent,
             WindowsCaptureFolder.GetDefaultPath,
             static path => _ = Directory.CreateDirectory(path),
             logger);
+    }
+
+    private WindowsHostOperations(
+        Func<CancellationToken, Task<IWindowsCaptureEngine>> engineFactory,
+        Func<WindowsTargetCapability?> getTargetCapability,
+        Func<string> outputDirectory,
+        Action<string> createDirectory,
+        ILogger? logger)
+    {
+        this.engineFactory = engineFactory ?? throw new ArgumentNullException(nameof(engineFactory));
+        this.getTargetCapability = getTargetCapability
+            ?? throw new ArgumentNullException(nameof(getTargetCapability));
+        this.outputDirectory = outputDirectory ?? throw new ArgumentNullException(nameof(outputDirectory));
+        this.createDirectory = createDirectory ?? throw new ArgumentNullException(nameof(createDirectory));
+        this.logger = logger ?? NullLogger.Instance;
     }
 
     public HostCapabilities GetCapabilities()
@@ -112,7 +129,8 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
 
         try
         {
-            var prepared = await GetOrCreateEngine().PrepareRegionAsync(target, cancellationToken);
+            var captureEngine = await GetOrCreateEngineAsync(cancellationToken);
+            var prepared = await captureEngine.PrepareRegionAsync(target, cancellationToken);
             if (!prepared.Prepared
                 || string.IsNullOrWhiteSpace(prepared.SessionId)
                 || string.IsNullOrWhiteSpace(prepared.PreviewPath)
@@ -241,7 +259,8 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
             }
 
             var captureRequest = new WindowsCaptureRequest(requestId, delivery, directory);
-            var captureResult = await capture(GetOrCreateEngine(), captureRequest, cancellationToken);
+            var captureEngine = await GetOrCreateEngineAsync(cancellationToken);
+            var captureResult = await capture(captureEngine, captureRequest, cancellationToken);
             return MapCaptureResult(captureResult, delivery, requestId, captureMode);
         }
         catch (OperationCanceledException)
@@ -261,12 +280,37 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
         }
     }
 
-    private IWindowsCaptureEngine GetOrCreateEngine()
+    private async Task<IWindowsCaptureEngine> GetOrCreateEngineAsync(
+        CancellationToken cancellationToken)
     {
-        lock (sync)
+        await engineCreationGate.WaitAsync(cancellationToken);
+        try
         {
-            ObjectDisposedException.ThrowIf(disposed != 0, this);
-            return engine ??= engineFactory();
+            lock (sync)
+            {
+                ObjectDisposedException.ThrowIf(disposed != 0, this);
+                if (engine is not null)
+                {
+                    return engine;
+                }
+            }
+
+            var created = await engineFactory(cancellationToken);
+            lock (sync)
+            {
+                if (disposed == 0)
+                {
+                    engine = created;
+                    return created;
+                }
+            }
+
+            await created.DisposeAsync();
+            throw new ObjectDisposedException(nameof(WindowsHostOperations));
+        }
+        finally
+        {
+            engineCreationGate.Release();
         }
     }
 

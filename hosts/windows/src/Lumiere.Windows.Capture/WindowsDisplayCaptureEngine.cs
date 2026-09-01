@@ -64,12 +64,20 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
         }
     }
 
-    public static WindowsDisplayCaptureEngine CreateDefault()
+    public static async Task<WindowsDisplayCaptureEngine> CreateDefaultAsync(
+        CancellationToken cancellationToken = default)
     {
+        var borderOptions = await CaptureBorderAccess.ResolveAsync(cancellationToken);
+        return CreateDefault(borderOptions);
+    }
+
+    internal static WindowsDisplayCaptureEngine CreateDefault(CaptureBorderOptions borderOptions)
+    {
+        ArgumentNullException.ThrowIfNull(borderOptions);
         var deviceResources = new GraphicsDeviceProvider().CreateDevice();
         try
         {
-            var captureService = new CaptureService(deviceResources);
+            var captureService = new CaptureService(deviceResources, borderOptions);
             var targetSelection = new DirectMonitorCaptureTargetSelectionService(
                 MonitorSelectionInterop.GetCurrentMonitorFromCursor,
                 WindowsDisplayTargetFactory.Create);

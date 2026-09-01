@@ -41,6 +41,7 @@ import {
   type SettingsSnapshot,
 } from '../shared/settings-command'
 import { parseShortcutUpdate } from '../shared/shortcut-command'
+import { configureWindowsUpdates } from './windows-updater'
 import {
   parseCaptureGeometry,
   type CaptureGeometry,
@@ -57,6 +58,10 @@ protocol.registerSchemesAsPrivileged([
 
 const regionPreviewDirectory = join(tmpdir(), 'lumiere-region-preview')
 const regionPreviewRegistry = new RegionPreviewRegistry(regionPreviewDirectory)
+
+if (process.platform === 'win32') {
+  app.setAppUserModelId('io.github.sousouliao.lumiere')
+}
 
 let mainWindow: BrowserWindow | null = null
 let applicationTray: ApplicationTray | null = null
@@ -774,6 +779,7 @@ void app.whenReady().then(async () => {
       app.quit()
     },
   })
+  void configureWindowsUpdates()
 
   app.on('activate', () => {
     showMainWindow()
