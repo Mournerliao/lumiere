@@ -33,12 +33,27 @@ swift build --package-path hosts/macos
 swift test --package-path hosts/macos
 ```
 
-The Vitest command owns macOS path semantics. Swift tests own the native Host. Both
-run only in macOS CI and are separate from the cross-platform `pnpm test:shared`
-suite. The host targets macOS 15 or newer and builds for the active architecture. Final
-architecture policy, coherent ad-hoc signing, direct disk-image distribution, and
-clean-machine verification belong to Milestone 1D. Developer ID signing and notarization
-are not current release requirements.
+The Vitest command owns macOS path and packaging-policy semantics. Swift tests own the
+native Host. Both run only in macOS CI and are separate from the cross-platform
+`pnpm test:shared` suite. The Host targets macOS 15 or newer. Development builds use the
+active architecture; distribution builds are universal (`arm64` + `x86_64`). Developer ID
+signing and notarization are not current release requirements.
+
+## Packaged Application
+
+Build the production Electron shell, both Release Host architectures, the universal
+application bundle, and its coherent ad-hoc signature from the repository root:
+
+```sh
+pnpm package:macos
+```
+
+The command produces `artifacts/macos/Lumiere.app` with bundle identifier
+`io.github.sousouliao.lumiere`, versioned from `apps/desktop/package.json`, and a minimum
+system version of macOS 15. It copies runtime icons under `Contents/Resources/icons` and
+the universal Host to `Contents/Resources/macos-host/LumiereMacHost`, then verifies the
+bundle signature, identity, version, minimum system version, and executable architectures.
+It does not produce the later release disk image or perform notarization.
 
 ## Protocol Smoke Test
 

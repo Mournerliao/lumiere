@@ -4,9 +4,9 @@ This directory owns the Swift ScreenCaptureKit adapter at the platform-host seam
 acquires HDR-aware frames, converts the official output to sRGB Visual Match, and
 performs native clipboard and file delivery.
 
-The first implementation targets macOS 15 or newer. Swift Package Manager builds for
-the active architecture; distribution will record and verify the final universal
-architecture policy separately. Apple Silicon uses ScreenCaptureKit's local-display
+The implementation targets macOS 15 or newer. Development builds use the active
+architecture; distribution builds a universal `arm64` + `x86_64` Host and verifies both
+slices before packaging. Apple Silicon uses ScreenCaptureKit's local-display
 HDR screenshot preset when the target display exposes potential EDR headroom above
 1.0. The target is the display under the pointer when the request reaches the host;
 main and system-primary displays are recovery fallbacks only. Intel capture remains
@@ -19,7 +19,7 @@ swift build --package-path hosts/macos
 swift test --package-path hosts/macos
 ```
 
-The executable reads platform-host v2 JSON Lines requests from standard input, writes
+The executable reads platform-host v3 JSON Lines requests from standard input, writes
 protocol responses to standard output, and reserves standard error for structured
 diagnostics correlated by request ID. The current implementation supports display and
 target-local region capture with clipboard, folder, or both-target delivery from one

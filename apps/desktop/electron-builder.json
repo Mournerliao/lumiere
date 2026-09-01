@@ -1,0 +1,33 @@
+{
+  "appId": "io.github.sousouliao.lumiere",
+  "productName": "Lumiere",
+  "asar": true,
+  "npmRebuild": false,
+  "directories": {
+    "output": "../../artifacts/macos/build"
+  },
+  "files": ["out/**/*"],
+  "extraResources": [
+    {
+      "from": "resources/icons",
+      "to": "icons"
+    },
+    {
+      "from": "../../hosts/macos/.build/distribution/staged/${arch}/LumiereMacHost",
+      "to": "macos-host/LumiereMacHost"
+    }
+  ],
+  "mac": {
+    "target": "dir",
+    "category": "public.app-category.graphics-design",
+    "icon": "resources/icons/mac/app.icns",
+    "minimumSystemVersion": "15.0",
+    "identity": "-",
+    "hardenedRuntime": true,
+    "entitlements": "build/entitlements.mac.plist",
+    "entitlementsInherit": "build/entitlements.mac.plist",
+    "binaries": ["Contents/Resources/macos-host/LumiereMacHost"],
+    "gatekeeperAssess": false,
+    "notarize": false
+  }
+}

@@ -4,8 +4,9 @@
 
 - Shared shell: Electron, React, TypeScript, and Chromium; Windows and macOS only.
 - Windows host: `.NET 10`, WGC, D3D11, DXGI, Vortice, `x64` / `win-x64`.
-- macOS host: Swift, ScreenCaptureKit, and native Apple color/GPU frameworks;
-  supported architecture and deployment target must be recorded before distribution.
+- macOS host: Swift, ScreenCaptureKit, and native Apple color/GPU frameworks; the
+  distribution bundle supports macOS 15 or newer and is universal (`arm64` + `x86_64`).
+  Apple Silicon owns HDR acquisition; Intel remains an SDR-only path.
 - MVP output: one shared semantic profile, RGBA8/sRGB Visual Match, delivered through
   platform-native clipboard and file adapters.
 
