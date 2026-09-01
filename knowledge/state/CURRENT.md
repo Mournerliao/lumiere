@@ -74,8 +74,8 @@ shared native-process transport. Unpackaged Windows development builds intention
 the WGC system capture border. Borderless capture is deferred to Milestone 1D, where the
 traditional installer will register a signed external-location sparse package, request
 `graphicsCaptureWithoutBorder` consent, and preserve the system border as the denied or
-unsupported fallback. The Windows Host adapter is complete through Issue #7;
-Issue #9 owns the remaining shared product surface and cross-platform product journeys.
+unsupported fallback. The Windows Host adapter and shared product surface are complete through
+Issues #7 and #9. Issue #11 owns the active macOS packaged-app foundation.
 WinUI and the old validation/HDR10-JXR paths remain removed.
 
 ## Progress At A Glance
@@ -85,8 +85,8 @@ WinUI and the old validation/HDR10-JXR paths remain removed.
 | 0. Foundation | Complete | Final layout, secure shell, language-neutral protocol, paused Windows engine; macOS and Windows CI pass | None |
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
 | 1B. Windows host adapter | Complete ([#7](https://github.com/Mournerliao/lumiere/issues/7), [#10](https://github.com/Mournerliao/lumiere/issues/10)) | The v2 Host has strict JSON Lines handling, structured diagnostics, Electron supervision, target-aware HDR/logical-geometry capabilities, SDR-white-aware HDR Visual Match conversion, Display plus target-bound Region routing, Clipboard/Folder/Both delivery, sanitized protocol failures, deterministic teardown, and verified interactive HDR/SDR runtime journeys | None |
-| 1C. Shared product surface | In progress ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture/HDR-reminder/save-directory surfaces, generated tokens, persisted capability-gated preferences, one main-process capture router, capability-gated tray/menu-bar, v3 frozen-region/delivery/custom-directory contract, shared Region Overlay over a Host-frozen preview, HiDPI-aware macOS geometry, and verified macOS display/region/after-capture/custom-directory plus Windows frozen-region/custom-directory journeys | Verify the remaining macOS shortcut → freeze → select → commit journey |
-| 1D. Distribution and release | Not started | Windows retains its traditional signed installer path; macOS will publish a normal direct GitHub release as an ad-hoc-signed app in a disk image, with no App Store, Homebrew, Developer ID, or notarization requirement | Implement each platform-owned package, document the macOS Gatekeeper exception, then complete clean-machine and hardware verification independently |
+| 1C. Shared product surface | Complete ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture/HDR-reminder/save-directory surfaces, generated tokens, persisted capability-gated preferences, one main-process capture router, capability-gated tray/menu-bar, v3 frozen-region/delivery/custom-directory contract, shared Region Overlay over a Host-frozen preview, HiDPI-aware macOS geometry, and independently verified macOS and Windows product journeys | None |
+| 1D. Distribution and release | Not started ([#11](https://github.com/Mournerliao/lumiere/issues/11)) | Windows retains its traditional signed installer path; macOS will publish a normal direct GitHub release as an ad-hoc-signed app in a disk image, with no App Store, Homebrew, Developer ID, or notarization requirement | Build and verify the first reproducible macOS `.app`, implement the independent Windows package, then complete each platform's release verification |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
 | 3. Cross-platform HDR fidelity | Planned; not started | Fidelity is separated from artifact success and HDR preservation | Define support matrix/tolerances and run fixed-scene verification |
 
@@ -182,7 +182,20 @@ acceptance criteria and implementation status for each vertical slice.
   artifact selected. The final effective settings were restored to Pictures/Lumiere, Clipboard and
   folder, and `Do nothing`. These observations establish custom-directory routing, persistence,
   artifact delivery, and after-capture reveal behavior on macOS only; they add no Visual Match,
-  HDR-preservation, or Windows claim.
+  HDR-preservation, or Windows claim. The final frozen-Region frontier then passed on a MacBook
+  Pro `Mac15,7` with Apple M3 Pro against a local wall-clock, quarter-second counter, and moving-bar
+  fixture on the named scaled external 4K display. With Chrome focused, the persisted
+  `Control+Alt+F12` Region shortcut prepared the frame before the Overlay appeared. The artifact
+  written at 15:44:24 retained 15:44:21 / tick 802 while a later reference had advanced to
+  15:44:27 / tick 825, establishing commit from the pre-selection frame rather than a second
+  ScreenCaptureKit acquisition. The result was a 2233×1551 RGBA PNG with alpha and the embedded
+  sRGB IEC61966-2.1 profile; the Overlay was absent. Esc cancellation returned the main window to
+  `Capture cancelled` without an artifact, and a following commit produced a 1050×750 RGBA/sRGB
+  PNG through the same Swift Host process without retained-memory growth in the bounded
+  observation. The shortcuts and other effective settings were restored to their defaults;
+  quitting returned code 0 and left no Lumiere Host process. This closes Issue #9's macOS
+  development-runtime gate only; it adds no packaged-app, HDR-preservation, or release-readiness
+  claim.
 - **GitHub CI:** the last recorded macOS shell and Windows engine workflow observation passed at
   `fccf812`; this establishes those configured repository gates at that commit, not current-HEAD CI, Windows Host
   runtime or hardware behavior.
@@ -254,25 +267,18 @@ release-ready until both owning platforms are explicitly verified.
 
 ## Execution Frontiers
 
-Milestone 1A is complete. Per
+Milestone 1A through 1C are complete. Per
 [ADR 0008](../decisions/0008-environment-aware-execution-lanes.md), the active milestone
 may expose one frontier per environment-eligible lane while each writer or worktree
 advances only one current working Issue at a time.
 
-- **Shared/macOS lane — [Issue #9](https://github.com/Mournerliao/lumiere/issues/9):**
-  frozen Region capture is implemented under
-  [ADR 0013](../decisions/0013-frozen-region-capture-session.md) and protocol v3:
-  capture-before-overlay, Host-owned frozen frames, Electron-main preview capability,
-  and commit-from-the-same-frame. macOS Host, shared shell, and protocol fixtures are
-  in this worktree, and the Windows Host/engine plus interactive product journey have passed on
-  the named Windows machine. Next: verify the macOS shortcut → freeze → select → commit journey.
 - **macOS distribution lane — [Issue #11](https://github.com/Mournerliao/lumiere/issues/11):**
   the next slice is a reproducible packaged-app foundation under
   [ADR 0012](../decisions/0012-direct-ad-hoc-signed-macos-distribution.md).
-  Define an acceptance-ready owning Issue, record the stable bundle identity, deployment target,
-  and architecture policy, then add the smallest packaging path that builds the current Electron
-  shell, generated icons, and Release Swift Host into a coherently ad-hoc-signed, locally runnable
-  `.app`. Verify packaged Host discovery, Region and Display capture,
+  The owning Issue is acceptance-ready. Next: record the stable bundle identity, deployment
+  target, and architecture policy, then add the smallest packaging path that builds the current
+  Electron shell, generated icons, and Release Swift Host into a coherently ad-hoc-signed,
+  locally runnable `.app`. Verify packaged Host discovery, Region and Display capture,
   Clipboard/Folder/Both delivery, permission identity, repeat capture, and clean exit on the
   named Mac. A following slice owns the direct GitHub Release disk image, SHA-256 checksum,
   manual Gatekeeper instructions, replacement upgrade, and clean-machine verification. Developer
@@ -284,6 +290,6 @@ advances only one current working Issue at a time.
   and clean-exit criteria.
 - **Milestone gate:** platform-owned 1D implementation may advance independently, but
   cross-platform release verification and the Milestone 1 exit gate remain blocked until
-  Issue #9 and both distribution lanes pass their independent criteria.
+  both distribution lanes pass their independent criteria.
 
 Neither lane projects repository, runtime, hardware, or completion truth to the other.
