@@ -217,9 +217,13 @@ acceptance criteria and implementation status for each vertical slice.
   product icon and install target legible. The contained app retained bundle identifier
   `io.github.sousouliao.lumiere`, version `0.1.0`, minimum system version 15.0, deep signature
   validity, and `arm64` plus `x86_64` Electron and Host executables. The SHA-256 manifest verified
-  against the final DMG bytes. This establishes local release-artifact construction and inspection
-  only; GitHub publication, quarantine/Gatekeeper, replacement upgrade, uninstall, reinstall, and
-  clean-machine truth remain for the next macOS verification slice.
+  against the final DMG bytes. Exact repository checks were `pnpm install --frozen-lockfile`,
+  `pnpm check`, `pnpm test:shared`, `pnpm test:macos`,
+  `swift test --package-path hosts/macos`, `pnpm release:macos`, and
+  `shasum -a 256 -c SHA256SUMS` from `artifacts/macos`. This establishes local release-artifact
+  construction and inspection only; GitHub publication, quarantine/Gatekeeper, replacement
+  upgrade, uninstall, reinstall, and clean-machine truth remain for the next macOS verification
+  slice.
 - **GitHub CI:** the last recorded macOS shell and Windows engine workflow observation passed at
   `fccf812`; this establishes those configured repository gates at that commit, not current-HEAD CI, Windows Host
   runtime or hardware behavior.

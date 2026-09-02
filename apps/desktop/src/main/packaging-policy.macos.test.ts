@@ -73,6 +73,9 @@ describe('macOS packaging policy', () => {
       const digest = await sha256File(artifactPath)
 
       expect(macOSReleaseArtifactName('0.1.0')).toBe('Lumiere-0.1.0-macos-universal.dmg')
+      expect(macOSReleaseArtifactName('0.1.0-beta.1+build.7')).toBe(
+        'Lumiere-0.1.0-beta.1+build.7-macos-universal.dmg',
+      )
       expect(digest).toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad')
       expect(checksumManifestLine(digest, 'Lumiere-0.1.0-macos-universal.dmg')).toBe(
         `${digest}  Lumiere-0.1.0-macos-universal.dmg\n`,

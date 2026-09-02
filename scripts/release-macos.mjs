@@ -11,7 +11,10 @@ const artifactsDirectory = join(repositoryRoot, 'artifacts', 'macos')
 const checksumManifestPath = join(artifactsDirectory, 'SHA256SUMS')
 
 export function macOSReleaseArtifactName(version) {
-  if (typeof version !== 'string' || !/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(version)) {
+  if (
+    typeof version !== 'string' ||
+    !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(version)
+  ) {
     throw new Error(`Invalid release version: ${String(version)}`)
   }
   return `${macOSPackagingPolicy.productName}-${version}-macos-universal.dmg`
