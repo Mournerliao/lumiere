@@ -29,5 +29,32 @@
     "binaries": ["Contents/Resources/macos-host/LumiereMacHost"],
     "gatekeeperAssess": false,
     "notarize": false
+  },
+  "dmg": {
+    "artifactName": "${productName}-${version}-macos-${arch}.${ext}",
+    "title": "Lumiere ${version}",
+    "backgroundColor": "#f4f2ee",
+    "iconSize": 96,
+    "window": {
+      "width": 520,
+      "height": 320
+    },
+    "contents": [
+      {
+        "x": 140,
+        "y": 160,
+        "type": "file"
+      },
+      {
+        "x": 380,
+        "y": 160,
+        "type": "link",
+        "path": "/Applications"
+      }
+    ],
+    "filesystem": "HFS+",
+    "format": "UDZO",
+    "sign": false,
+    "writeUpdateInfo": false
   }
 }

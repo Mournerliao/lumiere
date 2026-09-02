@@ -15,6 +15,7 @@ Lumiere does not currently claim HDR-preserved export support.
 - [Product contract](knowledge/contracts/product.md)
 - [Cross-platform development runbook](knowledge/runbooks/cross-platform-development.md)
 - [Windows development runbook](knowledge/runbooks/windows-development.md)
+- [macOS development and release runbook](knowledge/runbooks/macos-development.md)
 
 The repository uses a lightweight Contract → Frontier → Verification workflow.
 GitHub Issues own non-trivial tasks and observed checks, contracts own stable
@@ -27,6 +28,23 @@ D3D11, DXGI, Vortice) · macOS native host (Swift, ScreenCaptureKit)
 
 macOS can build and verify the shared shell. Each native host and all HDR claims still
 require runtime and hardware verification on its owning platform.
+
+## Install on macOS
+
+Lumiere's macOS release is ad-hoc signed and is not notarized by Apple. Download the DMG and
+`SHA256SUMS` from the same official release, place them in one directory, and verify the disk
+image before opening it:
+
+```sh
+shasum -a 256 -c SHA256SUMS
+```
+
+Open the DMG and drag `Lumiere.app` to Applications. On first launch, macOS may block the app
+because it is not registered with Apple by a known developer. After attempting to open Lumiere,
+open System Settings → Privacy & Security, scroll to Security, choose **Open Anyway**, authenticate,
+then confirm **Open**. Only make this exception when the checksum matches the official release.
+Apple documents the same manual override and its security implications in
+[Open a Mac app from an unknown developer](https://support.apple.com/guide/mac-help/mh40616/mac).
 
 ## Repository Layout
 

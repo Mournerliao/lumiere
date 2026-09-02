@@ -55,6 +55,34 @@ the universal Host to `Contents/Resources/macos-host/LumiereMacHost`, then verif
 bundle signature, identity, version, minimum system version, and executable architectures.
 It does not produce the later release disk image or perform notarization.
 
+## Direct-Release Artifact
+
+Build the verified application bundle, versioned universal DMG, and SHA-256 manifest:
+
+```sh
+pnpm release:macos
+```
+
+For version `0.1.0`, the final release files are:
+
+```text
+artifacts/macos/Lumiere-0.1.0-macos-universal.dmg
+artifacts/macos/SHA256SUMS
+```
+
+The version comes from `apps/desktop/package.json`. The DMG contains `Lumiere.app` and an
+Applications link; it does not publish a GitHub Release or notarize the app. Verify the final
+bytes from the artifact directory with:
+
+```sh
+cd artifacts/macos
+shasum -a 256 -c SHA256SUMS
+```
+
+Mount the DMG and inspect the contained app independently before recording release-artifact
+truth. Public-release, quarantine/Gatekeeper, replacement-upgrade, uninstall, reinstall, and
+clean-machine observations belong to the following verification slice.
+
 ## Protocol Smoke Test
 
 Build the host, then send exactly one platform-host v3 JSON Lines request:

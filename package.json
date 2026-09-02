@@ -19,6 +19,7 @@
     "package:macos": "node ./scripts/package-macos.mjs",
     "package:windows": "node ./scripts/package-windows.mjs",
     "release:windows:finalize": "node ./scripts/finalize-windows-release.mjs",
+    "release:macos": "node ./scripts/release-macos.mjs",
     "prepare": "simple-git-hooks",
     "start": "pnpm --filter @lumiere/desktop start",
     "test": "pnpm test:shared",

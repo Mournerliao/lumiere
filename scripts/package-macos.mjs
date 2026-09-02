@@ -25,9 +25,12 @@ export function swiftTriple(architecture) {
   throw new Error(`Unsupported macOS packaging architecture: ${architecture}`)
 }
 
-async function main() {
+export async function packageMacOS({ targets = ['dir'] } = {}) {
   if (process.platform !== 'darwin') {
     throw new Error('The macOS application bundle must be built on macOS.')
+  }
+  if (!targets.includes('dir') || targets.some((target) => target !== 'dir' && target !== 'dmg')) {
+    throw new Error('macOS packaging targets must include dir and may additionally include dmg.')
   }
 
   const desktopPackage = await readJson(join(desktopRoot, 'package.json'))
@@ -57,7 +60,7 @@ async function main() {
       'exec',
       'electron-builder',
       '--mac',
-      'dir',
+      ...targets,
       '--universal',
       '--config',
       'electron-builder.json',
@@ -80,6 +83,7 @@ async function main() {
 
   await verifyBundle(desktopPackage.version)
   console.log(`Packaged application: ${finalAppPath}`)
+  return { finalAppPath, version: desktopPackage.version }
 }
 
 async function buildAndStageHost(architecture, environment) {
@@ -252,7 +256,7 @@ function capture(command, args, options = {}) {
 
 const invokedUrl = process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : undefined
 if (import.meta.url === invokedUrl) {
-  main().catch((error) => {
+  packageMacOS().catch((error) => {
     console.error(error instanceof Error ? error.message : error)
     process.exitCode = 1
   })
