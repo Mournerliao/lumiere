@@ -173,7 +173,8 @@ public struct CaptureResult: Codable, Equatable, Sendable {
   public let deliveries: [DeliveryResult]?
   public let failure: HostFailure?
 
-  public static func completed(dynamicRange: String, deliveries: [DeliveryResult]) -> CaptureResult {
+  public static func completed(dynamicRange: String, deliveries: [DeliveryResult]) -> CaptureResult
+  {
     CaptureResult(
       status: "completed",
       sourceDynamicRange: dynamicRange,

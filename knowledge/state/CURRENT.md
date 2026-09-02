@@ -78,7 +78,7 @@ unregistered, and exception paths retain the WGC system border. Unpackaged devel
 and unsigned preview installers intentionally omit production identity and updates. This source
 has not yet passed the separate repository, installer, update, or clean-machine verification
 gates. The Windows Host adapter and shared product surface are complete through
-Issues #7 and #9. Issue #11 owns the active macOS packaged-app foundation.
+Issues #7 and #9. The macOS packaged-app foundation is complete through Issue #11.
 WinUI and the old validation/HDR10-JXR paths remain removed.
 
 ## Progress At A Glance
@@ -89,7 +89,7 @@ WinUI and the old validation/HDR10-JXR paths remain removed.
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
 | 1B. Windows host adapter | Complete ([#7](https://github.com/Mournerliao/lumiere/issues/7), [#10](https://github.com/Mournerliao/lumiere/issues/10)) | The v3 Host has strict JSON Lines handling, structured diagnostics, Electron supervision, target-aware HDR/logical-geometry capabilities, SDR-white-aware HDR Visual Match conversion, Display plus target-bound Region routing, Clipboard/Folder/Both delivery, sanitized protocol failures, deterministic teardown, and verified interactive HDR/SDR runtime journeys | None |
 | 1C. Shared product surface | Complete ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture/HDR-reminder/save-directory surfaces, generated tokens, persisted capability-gated preferences, one main-process capture router, capability-gated tray/menu-bar, v3 frozen-region/delivery/custom-directory contract, shared Region Overlay over a Host-frozen preview, HiDPI-aware macOS geometry, and independently verified macOS and Windows product journeys | None |
-| 1D. Distribution and release | In progress ([macOS #11](https://github.com/Mournerliao/lumiere/issues/11), [Windows #12](https://github.com/sousouliao/lumiere/issues/12)) | The repository builds a universal (`arm64` + `x86_64`), ad-hoc-signed `Lumiere.app`; Windows now has an unverified assisted NSIS, self-contained Host, sparse identity, SignPath, GitHub Release, and full-installer updater implementation | Complete the remaining packaged macOS observations and the Windows packaging, signing, install/update/uninstall, borderless/fallback, and clean-machine verification |
+| 1D. Distribution and release | In progress ([macOS #11](https://github.com/Mournerliao/lumiere/issues/11): packaged app complete, [Windows #12](https://github.com/sousouliao/lumiere/issues/12)) | The universal (`arm64` + `x86_64`), ad-hoc-signed macOS app and its packaged runtime are verified; Windows now has an unverified assisted NSIS, self-contained Host, sparse identity, SignPath, GitHub Release, and full-installer updater implementation | Build and verify the direct macOS release artifact, then complete Windows packaging, signing, install/update/uninstall, borderless/fallback, and clean-machine verification |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
 | 3. Cross-platform HDR fidelity | Planned; not started | Fidelity is separated from artifact success and HDR preservation | Define support matrix/tolerances and run fixed-scene verification |
 
@@ -99,7 +99,7 @@ acceptance criteria and implementation status for each vertical slice.
 ## Verification Truth
 
 - **Repository:** frozen install, layout and TypeScript checks, eighty-nine cross-platform
-  shell/protocol/process/settings/UI tests, three macOS path tests, thirty-two Swift
+  shell/protocol/process/settings/UI tests, four macOS path/packaging tests, thirty-two Swift
   protocol/capability/permission/diagnostic/geometry/native-delivery tests, and the current
   production TypeScript check pass on this Mac. Windows Host/engine tests for protocol v3
   frozen Region sessions are in source but were not run here because `dotnet` is not
@@ -199,6 +199,16 @@ acceptance criteria and implementation status for each vertical slice.
   quitting returned code 0 and left no Lumiere Host process. This closes Issue #9's macOS
   development-runtime gate only; it adds no packaged-app, HDR-preservation, or release-readiness
   claim.
+  The final Issue #11 bundle was then rebuilt and verified on the same MacBook Pro `Mac15,7`
+  with Apple M3 Pro. The ad-hoc-signed universal app launched from `artifacts/macos/Lumiere.app`
+  without a Host override, completed its bundled protocol v3 capability handshake, and exposed
+  Region and Display. Both capture modes completed Clipboard, Folder, and Both delivery on the
+  named scaled 5120×2880 external display; a sampled Display result was a 5120×2880 PNG with the
+  embedded sRGB IEC61966-2.1 profile. Ten further Display-to-Both captures used the same Host PID;
+  its RSS remained bounded between approximately 105 and 113 MB rather than growing linearly.
+  Quitting left no Electron or Swift Host process. This establishes packaged identity permission,
+  delivery, repeat, and clean-exit behavior on the named Mac only; it adds no notarization,
+  clean-machine, HDR-preservation, Visual Match, or Windows release claim.
 - **GitHub CI:** the last recorded macOS shell and Windows engine workflow observation passed at
   `fccf812`; this establishes those configured repository gates at that commit, not current-HEAD CI, Windows Host
   runtime or hardware behavior.
@@ -275,15 +285,15 @@ Milestone 1A through 1C are complete. Per
 may expose one frontier per environment-eligible lane while each writer or worktree
 advances only one current working Issue at a time.
 
-- **macOS distribution lane — [Issue #11](https://github.com/Mournerliao/lumiere/issues/11):**
+- **macOS distribution lane — [Issue #11](https://github.com/Mournerliao/lumiere/issues/11) complete:**
   the reproducible packaged-app foundation is implemented under
   [ADR 0012](../decisions/0012-direct-ad-hoc-signed-macos-distribution.md). The repository command
   builds the production Electron shell, generated icons, and universal Release Swift Host into
   an ad-hoc-signed `artifacts/macos/Lumiere.app`; signature, identity, version, minimum system
-  version, architecture, bundled Host discovery, basic Display/Region capture, and clean exit
-  passed on the named Mac. Next: complete the remaining packaged permission, delivery, and repeat
-  observations recorded by Issue #11. A following slice owns the direct GitHub Release disk image, SHA-256 checksum,
-  manual Gatekeeper instructions, replacement upgrade, and clean-machine verification. Developer
+  version, architecture, bundled Host discovery, packaged permission, Display/Region delivery,
+  repeat capture, and clean exit passed on the named Mac. Next: create the following slice for the
+  direct GitHub Release disk image, SHA-256 checksum, manual Gatekeeper instructions, replacement
+  upgrade, and clean-machine verification. Developer
   ID signing, notarization, Mac App Store distribution, and Homebrew distribution are out of scope.
 - **Windows distribution lane — [Issue #12](https://github.com/sousouliao/lumiere/issues/12):**
   the implementation source follows

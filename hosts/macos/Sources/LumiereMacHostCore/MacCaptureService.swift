@@ -257,7 +257,8 @@ public actor MacCaptureService {
       throw MacCaptureSessionError.targetUnavailable
     }
     let capturesHDR = target.supportsHDR
-    let configuration = capturesHDR
+    let configuration =
+      capturesHDR
       ? SCStreamConfiguration(preset: .captureHDRScreenshotLocalDisplay)
       : SCStreamConfiguration()
     geometry.apply(to: configuration)
