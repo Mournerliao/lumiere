@@ -31,6 +31,22 @@ D3D11, DXGI, Vortice) · macOS native host (Swift, ScreenCaptureKit)
 macOS can build and verify the shared shell. Each native host and all HDR claims still
 require runtime and hardware verification on its owning platform.
 
+## Install on Windows
+
+The Windows preview is an unsigned x64 installer for Windows 10 or newer. Download the Setup
+executable and `SHA256SUMS` from the same official release, then compare the installer's SHA-256
+digest before running it:
+
+```powershell
+Get-FileHash .\Lumiere-Setup-<version>-x64.exe -Algorithm SHA256
+```
+
+Windows will show an unknown-publisher warning because the preview is not code signed. Continue
+only when the digest matches `SHA256SUMS` from the official release. The assisted installer runs
+per user, allows a custom destination, and can create desktop and Start menu shortcuts. Uninstall
+Lumiere through Windows Settings or its Start menu shortcut. This preview intentionally excludes
+the production borderless-capture identity and automatic updates.
+
 ## Install on macOS
 
 Lumiere's macOS release is ad-hoc signed and is not notarized by Apple. Download the DMG and

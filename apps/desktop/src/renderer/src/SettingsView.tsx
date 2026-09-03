@@ -475,7 +475,7 @@ function SystemSettings({
         value={!snapshot ? 'Checking…' : hostAvailable ? 'Connected' : 'Unavailable'}
         tone={hostAvailable ? 'ready' : 'muted'}
       />
-      <SettingsRow label="Version" value="0.1.0" />
+      <SettingsRow label="Version" value="0.2.0-preview.1" />
       <p className="settings-semantics-note">
         Native HDR-aware capture. Everyday output is sRGB Visual Match. Copied and saved mean
         delivered, not certified.

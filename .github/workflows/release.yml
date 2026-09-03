@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: stable-release
+  group: release
   cancel-in-progress: false
 
 permissions:
@@ -24,7 +24,7 @@ jobs:
         if: github.ref != 'refs/heads/main'
         shell: bash
         run: |
-          echo "Stable releases must be dispatched from main."
+          echo "Releases must be dispatched from main."
           exit 1
 
       - name: Checkout release commit
@@ -126,7 +126,7 @@ jobs:
           if-no-files-found: error
 
   windows:
-    name: Build and sign Windows release
+    name: Build Windows release
     needs: audit
     if: needs.audit.outputs.windows == 'true'
     runs-on: windows-latest
@@ -158,13 +158,27 @@ jobs:
         shell: pwsh
         run: ./hosts/windows/scripts/verify.ps1
 
+      - name: Build unsigned preview installer
+        if: needs.audit.outputs.prerelease == 'true'
+        run: pnpm package:windows
+
+      - name: Upload unsigned preview artifact
+        if: needs.audit.outputs.prerelease == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-windows
+          path: artifacts/windows/build/Lumiere-Setup-*-x64.exe
+          if-no-files-found: error
+
       - name: Prepare release shell, Host, and sparse identity
+        if: needs.audit.outputs.prerelease == 'false'
         env:
           LUMIERE_WINDOWS_PUBLISHER: ${{ vars.SIGNPATH_WINDOWS_PUBLISHER }}
           LUMIERE_WINDOWS_PUBLISHER_DISPLAY_NAME: ${{ vars.SIGNPATH_WINDOWS_PUBLISHER_DISPLAY_NAME }}
         run: node ./scripts/package-windows.mjs prepare-release
 
       - name: Stage binaries for SignPath
+        if: needs.audit.outputs.prerelease == 'false'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force artifacts/windows/signing-input | Out-Null
@@ -172,6 +186,7 @@ jobs:
           Copy-Item -Recurse artifacts/windows/staging/windows-identity artifacts/windows/signing-input/windows-identity
 
       - name: Upload unsigned application artifacts
+        if: needs.audit.outputs.prerelease == 'false'
         id: upload-unsigned-application
         uses: actions/upload-artifact@v7
         with:
@@ -179,6 +194,7 @@ jobs:
           path: artifacts/windows/signing-input
 
       - name: Sign application artifacts
+        if: needs.audit.outputs.prerelease == 'false'
         uses: signpath/github-action-submit-signing-request@v2
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
@@ -191,15 +207,18 @@ jobs:
           output-artifact-directory: artifacts/windows/signed-staging
 
       - name: Restore signed application artifacts
+        if: needs.audit.outputs.prerelease == 'false'
         shell: pwsh
         run: |
           Copy-Item -Recurse -Force artifacts/windows/signed-staging/windows-host/* artifacts/windows/staging/windows-host/
           Copy-Item -Force artifacts/windows/signed-staging/windows-identity/Lumiere.Identity.msix artifacts/windows/staging/windows-identity/Lumiere.Identity.msix
 
       - name: Build assisted per-user installer
+        if: needs.audit.outputs.prerelease == 'false'
         run: node ./scripts/package-windows.mjs build-installer
 
       - name: Upload unsigned installer
+        if: needs.audit.outputs.prerelease == 'false'
         id: upload-unsigned-installer
         uses: actions/upload-artifact@v7
         with:
@@ -207,6 +226,7 @@ jobs:
           path: artifacts/windows/build/Lumiere-Setup-*-x64.exe
 
       - name: Sign installer
+        if: needs.audit.outputs.prerelease == 'false'
         uses: signpath/github-action-submit-signing-request@v2
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
@@ -219,14 +239,17 @@ jobs:
           output-artifact-directory: artifacts/windows/release
 
       - name: Generate updater metadata
+        if: needs.audit.outputs.prerelease == 'false'
         run: pnpm release:windows:finalize
 
       - name: Attest signed installer
+        if: needs.audit.outputs.prerelease == 'false'
         uses: actions/attest@v4
         with:
           subject-path: artifacts/windows/release/Lumiere-Setup-*-x64.exe
 
       - name: Upload Windows release artifacts
+        if: needs.audit.outputs.prerelease == 'false'
         uses: actions/upload-artifact@v7
         with:
           name: release-windows
