@@ -12,7 +12,7 @@ Developer Program membership, Developer ID certificate, or Apple notarization.
 
 The macOS release is a normal supported Lumiere release, not a Developer Preview. Because
 Gatekeeper cannot establish a known developer for an ad-hoc signature, the installation
-instructions and clean-machine verification must include Apple's supported Privacy &
+instructions and release verification must include Apple's supported Privacy &
 Security → Open Anyway flow. Product language must not describe the artifact as Developer
 ID signed, notarized, Apple verified, or free of the manual first-launch exception.
 
@@ -24,10 +24,15 @@ Gatekeeper launch behavior outside the Store, but they require a paid membership
 can transport an application but cannot supply the missing Gatekeeper identity, so adding a
 tap would not remove the manual trust step and is not part of the release path.
 
+For the MVP, a named real Mac after targeted Lumiere application-state and packaged-identity
+permission cleanup is sufficient for release lifecycle verification. A separate
+non-development clean Mac may provide useful follow-up evidence, but it is not a release or
+development gate; field defects are tracked through normal GitHub Issues.
+
 ## Consequences
 
 - Milestone 1D owns reproducible packaging, ad-hoc signing, the disk image, checksum,
-  installation guidance, upgrade behavior, and clean-machine verification.
+  installation guidance, upgrade behavior, and named-Mac release lifecycle verification.
 - Every bundled executable, including Electron helpers and `LumiereMacHost`, must be
   covered by the final ad-hoc code-signing pass and verified before release.
 - Screen Recording permission and settings persistence must be exercised across install,

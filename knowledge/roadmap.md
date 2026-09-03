@@ -84,8 +84,10 @@ copy remains inside the approved HDR-aware/sRGB Visual Match claim boundary.
 
 Deliver a traditional Windows setup executable and a directly downloadable macOS disk
 image containing one coherently ad-hoc-signed application bundle. Validate install,
-launch, upgrade, uninstall, and reinstall on non-development machines, including the
-documented manual Gatekeeper first-launch step on macOS.
+launch, upgrade, uninstall, and reinstall. Windows retains its non-development-machine
+installer gate. macOS may use a named real Mac after targeted application-state cleanup,
+including the documented manual Gatekeeper first-launch step; a second clean Mac is not
+an MVP exit requirement.
 The macOS and Windows distribution implementations may advance independently; evidence
 from either platform neither completes nor blocks implementation work owned by the other.
 The Windows setup must register a signed external-location sparse package for package

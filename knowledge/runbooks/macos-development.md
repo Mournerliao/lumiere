@@ -81,7 +81,9 @@ shasum -a 256 -c SHA256SUMS
 
 Mount the DMG and inspect the contained app independently before recording release-artifact
 truth. Public-release, quarantine/Gatekeeper, replacement-upgrade, uninstall, reinstall, and
-clean-machine observations belong to the following verification slice.
+installed-lifecycle observations belong to the following verification slice. That slice may use
+a named real Mac after targeted Lumiere state and packaged-identity permission cleanup; a separate
+clean non-development Mac is optional follow-up evidence, not an MVP gate.
 
 ## Protocol Smoke Test
 
