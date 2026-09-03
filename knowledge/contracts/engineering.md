@@ -72,7 +72,7 @@ Truth levels are distinct:
    pass. Windows verified and macOS verified are independent claims.
 3. **Hardware verified** — native capture, HDR behavior, sRGB Visual Match, and named
    receiving apps are observed on the named platform/display and recorded with the
-   release work when that phase is designed.
+   owning release work.
 
 MVP release requires the applicable level on both platforms. Public HDR-preserved
 claims require level 3 for every named platform. One platform's verification must never

@@ -16,6 +16,9 @@ Read only:
 Then follow that task's links and load only relevant contracts, ADRs, or runbooks.
 Do not preload the knowledge base.
 
+For release preparation, version selection, changelog, tags, or public publishing, read
+`knowledge/contracts/releases.md` and `knowledge/runbooks/releasing.md` before acting.
+
 ## Operating Model
 
 Lumiere uses **Contract → Frontier → Verification**:

@@ -23,7 +23,7 @@ describe('macOS packaging policy', () => {
       await readFile(resolve(desktopRoot, '..', '..', 'package.json'), 'utf8'),
     ) as { scripts?: Record<string, unknown> }
 
-    expect(desktopPackage.version).toBe('0.1.0')
+    expect(desktopPackage.version).toMatch(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/)
     expect(desktopPackage.productName).toBe('Lumiere')
     expect(builderConfig.appId).toBe('io.github.sousouliao.lumiere')
     expect(builderConfig.productName).toBe('Lumiere')

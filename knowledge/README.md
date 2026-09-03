@@ -17,6 +17,7 @@ truth. Start with this map and disclose detail only when the current task needs 
 | What can the product honestly claim? | [`contracts/claims.md`](contracts/claims.md) |
 | Where do platform APIs and dependencies belong? | [`contracts/architecture.md`](contracts/architecture.md) |
 | How should engineering work be performed? | [`contracts/engineering.md`](contracts/engineering.md) |
+| How are version, scope, and release platforms chosen? | [`contracts/releases.md`](contracts/releases.md) |
 | How should the shared desktop UI look and behave? | [`contracts/ui.md`](contracts/ui.md) |
 | What must the MVP prototype cover? | [`design/mvp-prototype-spec.md`](design/mvp-prototype-spec.md) |
 | What phase are we in and what is the frontier? | [`state/CURRENT.md`](state/CURRENT.md) |
@@ -25,6 +26,7 @@ truth. Start with this map and disclose detail only when the current task needs 
 | How is shared-shell development performed? | [`runbooks/cross-platform-development.md`](runbooks/cross-platform-development.md) |
 | How is macOS native development performed? | [`runbooks/macos-development.md`](runbooks/macos-development.md) |
 | How is Windows native development performed? | [`runbooks/windows-development.md`](runbooks/windows-development.md) |
+| How is an on-demand release prepared and published? | [`runbooks/releasing.md`](runbooks/releasing.md) |
 | What exact checks apply to this platform? | [`runbooks/`](runbooks/) |
 
 ## Maintenance Rules
@@ -33,7 +35,7 @@ truth. Start with this map and disclose detail only when the current task needs 
 - `CURRENT.md` owns only the one-screen project snapshot and contains no history.
 - Contracts own stable invariants, not progress updates.
 - ADRs own important decision rationale, one decision per file.
-- GitHub Issues and CI own observed verification; the repository contains no reusable
-  validation template until the release-validation phase is redesigned.
-- Git owns change history. Do not duplicate it with session or loop logs.
+- GitHub Issues and CI own observed verification; the release contract and runbook own the
+  reusable publication gate without replacing platform evidence.
+- Git owns implementation history; root `CHANGELOG.md` owns published user-visible history.
 - Update only the source that owns the changed fact, and delete superseded documents.

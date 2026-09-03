@@ -11,11 +11,13 @@ Lumiere does not currently claim HDR-preserved export support.
 
 - [Current project state](knowledge/state/CURRENT.md)
 - [Product roadmap](knowledge/roadmap.md)
+- [Changelog](CHANGELOG.md)
 - [Knowledge map](knowledge/README.md)
 - [Product contract](knowledge/contracts/product.md)
 - [Cross-platform development runbook](knowledge/runbooks/cross-platform-development.md)
 - [Windows development runbook](knowledge/runbooks/windows-development.md)
 - [macOS development and release runbook](knowledge/runbooks/macos-development.md)
+- [On-demand release runbook](knowledge/runbooks/releasing.md)
 
 The repository uses a lightweight Contract → Frontier → Verification workflow.
 GitHub Issues own non-trivial tasks and observed checks, contracts own stable

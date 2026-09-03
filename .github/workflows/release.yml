@@ -1,0 +1,340 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: stable-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Audit release metadata and shared shell
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.metadata.outputs.version }}
+      macos: ${{ steps.metadata.outputs.macos }}
+      windows: ${{ steps.metadata.outputs.windows }}
+      prerelease: ${{ steps.metadata.outputs.prerelease }}
+    steps:
+      - name: Require the main branch
+        if: github.ref != 'refs/heads/main'
+        shell: bash
+        run: |
+          echo "Stable releases must be dispatched from main."
+          exit 1
+
+      - name: Checkout release commit
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm and Node
+        uses: pnpm/setup@v2
+        with:
+          runtime: node@22
+          cache: true
+          install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate finalized release metadata
+        run: pnpm release:check -- --publishing
+
+      - name: Inspect release metadata
+        id: metadata
+        run: pnpm release:inspect -- --github-output "$GITHUB_OUTPUT"
+
+      - name: Require a new release and matching baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: v${{ steps.metadata.outputs.version }}
+        shell: bash
+        run: |
+          remote_tag="$(git ls-remote origin "refs/tags/$RELEASE_TAG")"
+          if [ -n "$remote_tag" ]; then
+            git fetch --no-tags origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+            target="$(git rev-list -n 1 "$RELEASE_TAG")"
+            if [ "$target" != "$GITHUB_SHA" ]; then
+              echo "Tag $RELEASE_TAG points to $target instead of $GITHUB_SHA."
+              exit 1
+            fi
+          fi
+          existing="$(gh release view "$RELEASE_TAG" --json isDraft,isPrerelease,targetCommitish 2>/dev/null || true)"
+          if [ -n "$existing" ]; then
+            is_draft="$(printf '%s' "$existing" | jq -r '.isDraft')"
+            is_prerelease="$(printf '%s' "$existing" | jq -r '.isPrerelease')"
+            target="$(printf '%s' "$existing" | jq -r '.targetCommitish')"
+            if [ "$is_draft" != "true" ] || [ "$is_prerelease" != "${{ steps.metadata.outputs.prerelease }}" ] || [ "$target" != "$GITHUB_SHA" ]; then
+              echo "Release $RELEASE_TAG already exists or targets a different commit."
+              exit 1
+            fi
+          fi
+          latest_tag="$(gh release list --exclude-drafts --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName')"
+          node ./scripts/release-metadata.mjs baseline --latest-tag "$latest_tag"
+
+      - name: Verify shared shell
+        run: |
+          pnpm check
+          pnpm test:shared
+          pnpm build
+
+      - name: Generate release notes
+        run: pnpm release:notes -- --output artifacts/release-notes.md
+
+      - name: Upload release notes
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-notes
+          path: artifacts/release-notes.md
+          if-no-files-found: error
+
+  macos:
+    name: Build macOS release
+    needs: audit
+    if: needs.audit.outputs.macos == 'true'
+    runs-on: macos-latest
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm and Node
+        uses: pnpm/setup@v2
+        with:
+          runtime: node@22
+          cache: true
+          install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify macOS integration and Host
+        run: |
+          pnpm test:macos
+          swift test --package-path hosts/macos
+
+      - name: Build macOS release artifact
+        run: pnpm release:macos
+
+      - name: Upload macOS release artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-macos
+          path: artifacts/macos/Lumiere-${{ needs.audit.outputs.version }}-macos-universal.dmg
+          if-no-files-found: error
+
+  windows:
+    name: Build and sign Windows release
+    needs: audit
+    if: needs.audit.outputs.windows == 'true'
+    runs-on: windows-latest
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm and Node
+        uses: pnpm/setup@v2
+        with:
+          runtime: node@22
+          cache: true
+          install: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify Windows Host
+        shell: pwsh
+        run: ./hosts/windows/scripts/verify.ps1
+
+      - name: Prepare release shell, Host, and sparse identity
+        env:
+          LUMIERE_WINDOWS_PUBLISHER: ${{ vars.SIGNPATH_WINDOWS_PUBLISHER }}
+          LUMIERE_WINDOWS_PUBLISHER_DISPLAY_NAME: ${{ vars.SIGNPATH_WINDOWS_PUBLISHER_DISPLAY_NAME }}
+        run: node ./scripts/package-windows.mjs prepare-release
+
+      - name: Stage binaries for SignPath
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifacts/windows/signing-input | Out-Null
+          Copy-Item -Recurse artifacts/windows/staging/windows-host artifacts/windows/signing-input/windows-host
+          Copy-Item -Recurse artifacts/windows/staging/windows-identity artifacts/windows/signing-input/windows-identity
+
+      - name: Upload unsigned application artifacts
+        id: upload-unsigned-application
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-unsigned-application
+          path: artifacts/windows/signing-input
+
+      - name: Sign application artifacts
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_APPLICATION_ARTIFACT_CONFIGURATION_SLUG }}
+          github-artifact-id: ${{ steps.upload-unsigned-application.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: artifacts/windows/signed-staging
+
+      - name: Restore signed application artifacts
+        shell: pwsh
+        run: |
+          Copy-Item -Recurse -Force artifacts/windows/signed-staging/windows-host/* artifacts/windows/staging/windows-host/
+          Copy-Item -Force artifacts/windows/signed-staging/windows-identity/Lumiere.Identity.msix artifacts/windows/staging/windows-identity/Lumiere.Identity.msix
+
+      - name: Build assisted per-user installer
+        run: node ./scripts/package-windows.mjs build-installer
+
+      - name: Upload unsigned installer
+        id: upload-unsigned-installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-unsigned-installer
+          path: artifacts/windows/build/Lumiere-Setup-*-x64.exe
+
+      - name: Sign installer
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_INSTALLER_ARTIFACT_CONFIGURATION_SLUG }}
+          github-artifact-id: ${{ steps.upload-unsigned-installer.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: artifacts/windows/release
+
+      - name: Generate updater metadata
+        run: pnpm release:windows:finalize
+
+      - name: Attest signed installer
+        uses: actions/attest@v4
+        with:
+          subject-path: artifacts/windows/release/Lumiere-Setup-*-x64.exe
+
+      - name: Upload Windows release artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-windows
+          path: |
+            artifacts/windows/release/Lumiere-Setup-*-x64.exe
+            artifacts/windows/release/latest.yml
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    needs: [audit, macos, windows]
+    if: >-
+      always() &&
+      needs.audit.result == 'success' &&
+      (needs.macos.result == 'success' || needs.macos.result == 'skipped') &&
+      (needs.windows.result == 'success' || needs.windows.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm and Node
+        uses: pnpm/setup@v2
+        with:
+          runtime: node@22
+          cache: false
+          install: false
+
+      - name: Download release notes
+        uses: actions/download-artifact@v8
+        with:
+          name: release-notes
+          path: artifacts/metadata
+
+      - name: Download macOS artifact
+        if: needs.audit.outputs.macos == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: release-macos
+          path: artifacts/publish
+
+      - name: Download Windows artifacts
+        if: needs.audit.outputs.windows == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: release-windows
+          path: artifacts/publish
+
+      - name: Generate unified checksum manifest
+        run: node ./scripts/release-metadata.mjs checksums --directory artifacts/publish --output artifacts/publish/SHA256SUMS
+
+      - name: Create or recover draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: v${{ needs.audit.outputs.version }}
+          RELEASE_TITLE: Lumiere ${{ needs.audit.outputs.version }}
+          RELEASE_PRERELEASE: ${{ needs.audit.outputs.prerelease }}
+        shell: bash
+        run: |
+          remote_tag="$(git ls-remote origin "refs/tags/$RELEASE_TAG")"
+          if [ -n "$remote_tag" ]; then
+            git fetch --no-tags origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+            target="$(git rev-list -n 1 "$RELEASE_TAG")"
+            if [ "$target" != "$GITHUB_SHA" ]; then
+              echo "Tag $RELEASE_TAG points to $target instead of $GITHUB_SHA."
+              exit 1
+            fi
+          fi
+
+          existing="$(gh release view "$RELEASE_TAG" --json isDraft,isPrerelease,targetCommitish 2>/dev/null || true)"
+          if [ -n "$existing" ]; then
+            is_draft="$(printf '%s' "$existing" | jq -r '.isDraft')"
+            is_prerelease="$(printf '%s' "$existing" | jq -r '.isPrerelease')"
+            target="$(printf '%s' "$existing" | jq -r '.targetCommitish')"
+            if [ "$is_draft" != "true" ] || [ "$is_prerelease" != "$RELEASE_PRERELEASE" ] || [ "$target" != "$GITHUB_SHA" ]; then
+              echo "Release $RELEASE_TAG is public or targets a different commit."
+              exit 1
+            fi
+            gh release edit "$RELEASE_TAG" --title "$RELEASE_TITLE" --notes-file artifacts/metadata/release-notes.md --draft
+            gh release upload "$RELEASE_TAG" artifacts/publish/* --clobber
+          else
+            flags=(--draft)
+            if [ "$RELEASE_PRERELEASE" = "true" ]; then
+              flags+=(--prerelease --latest=false)
+            fi
+            gh release create "$RELEASE_TAG" artifacts/publish/* "${flags[@]}" --target "$GITHUB_SHA" --title "$RELEASE_TITLE" --notes-file artifacts/metadata/release-notes.md
+          fi
+
+      - name: Verify and publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: v${{ needs.audit.outputs.version }}
+          RELEASE_PRERELEASE: ${{ needs.audit.outputs.prerelease }}
+        shell: bash
+        run: |
+          expected="$(find artifacts/publish -maxdepth 1 -type f -printf '%f\n' | sort)"
+          actual="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' | sort)"
+          if [ "$actual" != "$expected" ]; then
+            echo "Published asset set does not match the staged release set."
+            diff <(printf '%s\n' "$expected") <(printf '%s\n' "$actual") || true
+            exit 1
+          fi
+          if [ "$RELEASE_PRERELEASE" = "true" ]; then
+            gh release edit "$RELEASE_TAG" --draft=false --prerelease --latest=false
+          else
+            gh release edit "$RELEASE_TAG" --draft=false --latest
+          fi

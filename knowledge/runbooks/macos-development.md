@@ -71,7 +71,8 @@ artifacts/macos/SHA256SUMS
 ```
 
 The version comes from `apps/desktop/package.json`. The DMG contains `Lumiere.app` and an
-Applications link; it does not publish a GitHub Release or notarize the app. Verify the final
+Applications link; it does not publish a GitHub Release or notarize the app. Public publication
+is owned by the unified [release runbook](releasing.md). Verify the final
 bytes from the artifact directory with:
 
 ```sh

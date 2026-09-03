@@ -82,15 +82,16 @@ This produces `artifacts/windows/build/Lumiere-Setup-<version>-x64.exe`. Preview
 deliberately omit the production sparse identity and updater configuration, so WGC keeps
 the system capture border.
 
-Production releases run `.github/workflows/windows-release.yml` from a matching
-`v<package-version>` tag. Configure the SignPath organization, project, signing policy,
+Production releases run `.github/workflows/release.yml` from a finalized release commit on
+`main`; the unified workflow creates the matching `v<package-version>` tag only after all
+selected platform artifacts succeed. Configure the SignPath organization, project, signing policy,
 application artifact configuration, installer artifact configuration, certificate
 Publisher, and Publisher display name as repository variables; store only the SignPath API
 token as a secret. The application artifact configuration must preserve the uploaded
 `windows-host/` and `windows-identity/` paths while signing Lumiere-owned PE files and
 `Lumiere.Identity.msix`. The installer configuration signs the final Setup executable.
 
-The workflow generates `latest.yml` and `SHA256SUMS` only after final signing, attests the
-signed Setup, and publishes all three files to GitHub Releases. Installer registration of
+The workflow generates `latest.yml` only after final signing, attests the signed Setup, and
+adds the installer to the unified checksum manifest and GitHub Release. Installer registration of
 the sparse identity is non-fatal; a failed registration or denied borderless consent falls
 back to the normal WGC system border.
