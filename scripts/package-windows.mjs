@@ -3,6 +3,7 @@ import { access, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promise
 import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { parseSemver } from './release-metadata.mjs'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const desktopRoot = join(repositoryRoot, 'apps', 'desktop')
@@ -35,13 +36,19 @@ async function main() {
 
   const desktopPackage = await readJson(join(desktopRoot, 'package.json'))
   const baseConfig = await readJson(join(desktopRoot, 'electron-builder.windows.json'))
-  validateVersion(desktopPackage.version)
+  const version = parseSemver(desktopPackage.version)
+  const release = operation !== 'preview'
+  if (release && version.prerelease.length > 0) {
+    throw new Error(
+      `Signed Windows production packages require a stable three-component version: ${desktopPackage.version}`,
+    )
+  }
 
   if (operation === 'preview' || operation === 'prepare-release') {
-    await prepare(desktopPackage, operation === 'prepare-release')
+    await prepare(desktopPackage, release)
   }
   if (operation === 'preview' || operation === 'build-installer') {
-    await buildInstaller(baseConfig, desktopPackage.version, operation === 'build-installer')
+    await buildInstaller(baseConfig, desktopPackage.version, release)
   }
 }
 
@@ -210,12 +217,6 @@ function requiredEnvironment(name) {
   const value = process.env[name]
   if (!value) throw new Error(`${name} is required for a production Windows package.`)
   return value
-}
-
-function validateVersion(version) {
-  if (!/^\d+\.\d+\.\d+$/.test(version)) {
-    throw new Error(`Windows release versions must use three numeric components: ${version}`)
-  }
 }
 
 function escapeXml(value) {
