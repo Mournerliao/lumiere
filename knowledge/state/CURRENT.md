@@ -45,7 +45,10 @@ persists whether non-blocking HDR status reminders are shown. The default remain
 main-owned IPC writes the setting, the capture router
 projects an advisory only when the Host still declares capture available, and disabling the
 preference hides neither the underlying target status nor any blocking Host, permission, or
-  capture failure. Settings v5 now also persists an optional custom save directory while migrating
+capture failure. The main window now keeps one application-level capture-surface snapshot while a
+visible-window main-process monitor observes only pointer-display identity; target changes and
+explicit lifecycle invalidations requery the Host and push stable latest-target state without tying
+refreshes to Capture/Settings view remounts. Settings v5 now also persists an optional custom save directory while migrating
   v1 through v4 values. Main owns the native directory picker and exposes only a no-argument,
   task-shaped preload command; Folder and Both capture requests may carry the selected absolute
   path through protocol v3 while each Host retains directory creation, fixed naming, file writing,
@@ -100,7 +103,7 @@ acceptance criteria and implementation status for each vertical slice.
 
 ## Verification Truth
 
-- **Repository:** frozen install, layout and TypeScript checks, eighty-nine cross-platform
+- **Repository:** frozen install, layout and TypeScript checks, ninety-nine cross-platform
   shell/protocol/process/settings/UI tests, five macOS path/packaging/release tests, thirty-two Swift
   protocol/capability/permission/diagnostic/geometry/native-delivery tests, and the current
   production TypeScript check pass on this Mac. Windows Host/engine tests for protocol v3
@@ -110,6 +113,14 @@ acceptance criteria and implementation status for each vertical slice.
   path tests, and thirty-two Swift tests on this Mac. That verifies repository contract
   shape, not the interactive freeze → select → commit journey, Windows Host compilation,
   or hardware Visual Match.
+  The pointer-target status synchronization slice passed all ninety-nine shared tests,
+  `pnpm check`, the production Electron build, and the renderer design detector on this Mac.
+  A development launch showed the pointer-specific SDR advisory and kept that status when only
+  the window moved to the built-in XDR display while the pointer remained on the external SDR
+  display. The user then moved the pointer between the external SDR display and the built-in XDR
+  display and observed the main-window HDR status switch correctly in both directions without
+  opening Settings or restarting Lumiere. This closes the macOS interactive hardware confirmation
+  for pointer-target status synchronization only; it adds no HDR fidelity or Windows runtime claim.
   The HDR-reminder slice passed all eighty-two shared tests, repository checks, and the production
   Electron build on the named Windows machine. A 480×370 local renderer observation covered the
   enabled advisory, Capture Settings switch, disabled reminder state, and stable no-scroll layout;

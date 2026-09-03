@@ -8,6 +8,18 @@ const platform: LumierePlatform = process.platform === 'darwin' ? 'macos' : 'win
 const platformApi: LumiereRendererApi = {
   platform,
   getCaptureSurfaceSnapshot: () => ipcRenderer.invoke(captureCommandChannels.getSurfaceSnapshot),
+  onCaptureSurfaceChanged: (listener) => {
+    const handleChanged = (
+      _event: Electron.IpcRendererEvent,
+      snapshot: Parameters<typeof listener>[0],
+    ): void => {
+      listener(snapshot)
+    }
+    ipcRenderer.on(captureCommandChannels.surfaceChanged, handleChanged)
+    return () => {
+      ipcRenderer.removeListener(captureCommandChannels.surfaceChanged, handleChanged)
+    }
+  },
   captureDisplay: () => ipcRenderer.invoke(captureCommandChannels.captureDisplay),
   captureRegion: () => ipcRenderer.invoke(captureCommandChannels.captureRegion),
   onCaptureCompleted: (listener) => {

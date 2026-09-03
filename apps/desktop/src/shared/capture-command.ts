@@ -12,6 +12,7 @@ export const captureCommandChannels = {
   captureRegion: 'capture:region',
   completed: 'capture:completed',
   getSurfaceSnapshot: 'capture:get-surface-snapshot',
+  surfaceChanged: 'capture:surface-changed',
   getRegionOverlaySnapshot: 'region-overlay:get-snapshot',
   regionOverlayReady: 'region-overlay:ready',
   cancelRegionOverlay: 'region-overlay:cancel',
@@ -72,6 +73,7 @@ export type CaptureCommandResult =
 export interface LumiereRendererApi extends LumiereSettingsApi {
   readonly platform: LumierePlatform
   getCaptureSurfaceSnapshot(): Promise<CaptureSurfaceSnapshot>
+  onCaptureSurfaceChanged(listener: (snapshot: CaptureSurfaceSnapshot) => void): () => void
   captureDisplay(): Promise<CaptureCommandResult>
   captureRegion(): Promise<CaptureCommandResult>
   onCaptureCompleted(listener: (result: CaptureCommandResult) => void): () => void

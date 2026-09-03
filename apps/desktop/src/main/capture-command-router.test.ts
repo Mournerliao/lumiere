@@ -30,7 +30,7 @@ describe('CaptureCommandRouter', () => {
       advisoryNotice: {
         tone: 'caution',
         title: 'HDR-aware capture is unavailable for this display',
-        detail: 'Capture is still available with sRGB Visual Match.',
+        detail: 'The display under the pointer will use sRGB Visual Match.',
       },
       output: {
         delivery: 'both',

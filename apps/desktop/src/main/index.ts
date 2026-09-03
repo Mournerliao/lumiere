@@ -18,6 +18,7 @@ import {
   type ApplicationTray,
 } from './app-icons'
 import { CaptureCommandRouter } from './capture-command-router'
+import { CaptureSurfaceMonitor } from './capture-surface-monitor'
 import { MacOSPlatformHost } from './macos-platform-host'
 import { macOSHostCandidates, windowsHostCandidates } from './native-host-paths'
 import { NativeProcessPlatformHost } from './native-process-platform-host'
@@ -67,6 +68,7 @@ let mainWindow: BrowserWindow | null = null
 let applicationTray: ApplicationTray | null = null
 let platformHost: PlatformHost | null = null
 let captureRouter: CaptureCommandRouter | null = null
+let captureSurfaceMonitor: CaptureSurfaceMonitor | null = null
 let settingsStore: SettingsStore | null = null
 let shortcutService: ShortcutService | null = null
 let regionOverlaySession: RegionOverlaySession | null = null
@@ -130,6 +132,7 @@ function createRendererWindow(): BrowserWindow {
     shortcutService?.setRecording(false)
     if (mainWindow === window) mainWindow = null
   })
+  bindCaptureSurfaceMonitoring(window)
 
   if (!app.isPackaged && process.env.ELECTRON_RENDERER_URL) {
     void window.loadURL(process.env.ELECTRON_RENDERER_URL)
@@ -197,6 +200,36 @@ function showMainWindow(): BrowserWindow {
   return mainWindow
 }
 
+function bindCaptureSurfaceMonitoring(window: BrowserWindow): void {
+  if (!captureSurfaceMonitor) return
+  window.on('show', () => {
+    captureSurfaceMonitor?.start()
+  })
+  window.on('focus', () => {
+    void captureSurfaceMonitor?.refresh()
+  })
+  window.on('restore', () => {
+    captureSurfaceMonitor?.start()
+    void captureSurfaceMonitor?.refresh()
+  })
+  window.on('moved', () => {
+    void captureSurfaceMonitor?.refresh()
+  })
+  window.on('hide', () => {
+    captureSurfaceMonitor?.stop()
+  })
+  window.on('minimize', () => {
+    captureSurfaceMonitor?.stop()
+  })
+  window.on('closed', () => {
+    captureSurfaceMonitor?.stop()
+  })
+}
+
+function refreshCaptureSurfaceForDisplayChange(): void {
+  void captureSurfaceMonitor?.invalidate()
+}
+
 function registerRegionPreviewProtocol(): void {
   protocol.handle(regionPreviewScheme, async (request) => {
     if (request.method !== 'GET') {
@@ -228,6 +261,18 @@ function registerIpc(): void {
     platformHost,
     settingsStore,
   ))
+  captureSurfaceMonitor ??= new CaptureSurfaceMonitor({
+    readTargetId: () => screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).id,
+    readSnapshot: () => router.getSurfaceSnapshot(),
+    publish: (snapshot) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send(captureCommandChannels.surfaceChanged, snapshot)
+      }
+    },
+  })
+  if (mainWindow) {
+    bindCaptureSurfaceMonitoring(mainWindow)
+  }
 
   ipcMain.removeHandler(captureCommandChannels.getSurfaceSnapshot)
   ipcMain.removeHandler(captureCommandChannels.captureDisplay)
@@ -267,13 +312,14 @@ function registerIpc(): void {
   ipcMain.handle(captureCommandChannels.getSurfaceSnapshot, (event, ...args) => {
     assertTrustedWindow(event, mainWindow)
     assertNoArguments(args)
-    return router.getSurfaceSnapshot()
+    return captureSurfaceMonitor?.getSnapshot() ?? router.getSurfaceSnapshot()
   })
 
   ipcMain.handle(captureCommandChannels.captureDisplay, async (event, ...args) => {
     assertTrustedWindow(event, mainWindow)
     assertNoArguments(args)
     const result = completeCapture(await router.captureDisplay())
+    void captureSurfaceMonitor?.invalidate()
     await refreshApplicationTray()
     return result
   })
@@ -282,6 +328,7 @@ function registerIpc(): void {
     assertTrustedWindow(event, mainWindow)
     assertNoArguments(args)
     const result = completeCapture(await captureRegion(router))
+    void captureSurfaceMonitor?.invalidate()
     await refreshApplicationTray()
     return result
   })
@@ -665,6 +712,7 @@ function broadcastSettingsChanged(snapshot: SettingsSnapshot): void {
       window.webContents.send(settingsCommandChannels.changed, snapshot)
     }
   }
+  void captureSurfaceMonitor?.invalidate()
 }
 
 function broadcastCaptureCompleted(result: CaptureCommandResult): void {
@@ -680,6 +728,7 @@ async function runExternalCapture(mode: 'region' | 'display'): Promise<void> {
     mode === 'region' ? await captureRegion(router) : await router.captureDisplay(),
   )
   broadcastCaptureCompleted(result)
+  void captureSurfaceMonitor?.invalidate()
   await refreshApplicationTray()
 }
 
@@ -757,6 +806,9 @@ void app.whenReady().then(async () => {
   await settingsStore.load()
   mainWindow = createRendererWindow()
   registerIpc()
+  screen.on('display-added', refreshCaptureSurfaceForDisplayChange)
+  screen.on('display-removed', refreshCaptureSurfaceForDisplayChange)
+  screen.on('display-metrics-changed', refreshCaptureSurfaceForDisplayChange)
   if (!captureRouter) {
     throw new Error('Capture commands are not ready.')
   }
@@ -795,6 +847,10 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   shortcutService?.dispose()
+  screen.removeListener('display-added', refreshCaptureSurfaceForDisplayChange)
+  screen.removeListener('display-removed', refreshCaptureSurfaceForDisplayChange)
+  screen.removeListener('display-metrics-changed', refreshCaptureSurfaceForDisplayChange)
+  captureSurfaceMonitor?.dispose()
   if (captureRouter) {
     disposeRegionOverlay(captureRouter)
   }

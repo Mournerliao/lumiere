@@ -29,28 +29,56 @@ export function App(): React.JSX.Element {
 function ApplicationSurface(): React.JSX.Element {
   const [view, setView] = useState<'capture' | 'settings'>('capture')
   const [captureResult, setCaptureResult] = useState<CaptureCommandResult | null>(null)
+  const [surfaceSnapshot, setSurfaceSnapshot] = useState<CaptureSurfaceSnapshot | null>(null)
+  const [surfaceLoadFailed, setSurfaceLoadFailed] = useState(false)
 
   useEffect(() => {
+    let isCurrent = true
+    let receivedLiveSnapshot = false
     const stopSettingsListening = window.lumierePlatform.onShowSettingsRequested(() => {
       setView('settings')
     })
     const stopCaptureListening = window.lumierePlatform.onCaptureCompleted((result) => {
       setCaptureResult(result)
     })
+    const stopSurfaceListening = window.lumierePlatform.onCaptureSurfaceChanged((snapshot) => {
+      if (!isCurrent) return
+      receivedLiveSnapshot = true
+      setSurfaceSnapshot(snapshot)
+      setSurfaceLoadFailed(false)
+    })
+    void window.lumierePlatform
+      .getCaptureSurfaceSnapshot()
+      .then((snapshot) => {
+        if (isCurrent && !receivedLiveSnapshot) {
+          setSurfaceSnapshot(snapshot)
+          setSurfaceLoadFailed(false)
+        }
+      })
+      .catch(() => {
+        if (isCurrent && !receivedLiveSnapshot) {
+          setSurfaceLoadFailed(true)
+        }
+      })
     return () => {
+      isCurrent = false
       stopSettingsListening()
       stopCaptureListening()
+      stopSurfaceListening()
     }
   }, [])
 
   return view === 'settings' ? (
     <SettingsWindow
+      surfaceSnapshot={surfaceSnapshot}
       onDone={() => {
         setView('capture')
       }}
     />
   ) : (
     <MainWindow
+      snapshot={surfaceSnapshot}
+      loadFailed={surfaceLoadFailed}
       result={captureResult}
       onResultChange={setCaptureResult}
       onOpenSettings={() => {
@@ -61,44 +89,20 @@ function ApplicationSurface(): React.JSX.Element {
 }
 
 function MainWindow({
+  snapshot,
+  loadFailed,
   result,
   onResultChange,
   onOpenSettings,
 }: {
+  snapshot: CaptureSurfaceSnapshot | null
+  loadFailed: boolean
   result: CaptureCommandResult | null
   onResultChange: (result: CaptureCommandResult | null) => void
   onOpenSettings: () => void
 }): React.JSX.Element {
-  const [snapshot, setSnapshot] = useState<CaptureSurfaceSnapshot | null>(null)
   const [capturingMode, setCapturingMode] = useState<'region' | 'display' | null>(null)
   const [interactionHint, setInteractionHint] = useState<string | null>(null)
-  const [loadFailed, setLoadFailed] = useState(false)
-
-  useEffect(() => {
-    let isCurrent = true
-    const refreshSnapshot = (): void => {
-      void window.lumierePlatform
-        .getCaptureSurfaceSnapshot()
-        .then((nextSnapshot) => {
-          if (isCurrent) {
-            setSnapshot(nextSnapshot)
-          }
-        })
-        .catch(() => {
-          if (isCurrent) {
-            setLoadFailed(true)
-          }
-        })
-    }
-    refreshSnapshot()
-    const stopListening = window.lumierePlatform.onSettingsChanged(() => {
-      refreshSnapshot()
-    })
-    return () => {
-      stopListening()
-      isCurrent = false
-    }
-  }, [])
 
   const captureDisplay = async (): Promise<void> => {
     setCapturingMode('display')
@@ -255,23 +259,25 @@ function MainWindow({
   )
 }
 
-function SettingsWindow({ onDone }: { onDone: () => void }): React.JSX.Element {
+function SettingsWindow({
+  surfaceSnapshot,
+  onDone,
+}: {
+  surfaceSnapshot: CaptureSurfaceSnapshot | null
+  onDone: () => void
+}): React.JSX.Element {
   const [snapshot, setSnapshot] = useState<SettingsSnapshot | null>(null)
-  const [surfaceSnapshot, setSurfaceSnapshot] = useState<CaptureSurfaceSnapshot | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [savingShortcut, setSavingShortcut] = useState<CaptureMode | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let isCurrent = true
-    void Promise.all([
-      window.lumierePlatform.getSettingsSnapshot(),
-      window.lumierePlatform.getCaptureSurfaceSnapshot(),
-    ])
-      .then(([nextSnapshot, nextSurfaceSnapshot]) => {
+    void window.lumierePlatform
+      .getSettingsSnapshot()
+      .then((nextSnapshot) => {
         if (isCurrent) {
           setSnapshot(nextSnapshot)
-          setSurfaceSnapshot(nextSurfaceSnapshot)
         }
       })
       .catch(() => {
@@ -307,7 +313,6 @@ function SettingsWindow({ onDone }: { onDone: () => void }): React.JSX.Element {
     setError(null)
     try {
       setSnapshot(await window.lumierePlatform.chooseSaveDirectory())
-      setSurfaceSnapshot(await window.lumierePlatform.getCaptureSurfaceSnapshot())
     } catch {
       setError('The save folder could not be changed. Try again.')
     } finally {
