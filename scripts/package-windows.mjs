@@ -103,8 +103,9 @@ async function prepare(desktopPackage, release) {
 
 async function buildInstaller(baseConfig, version, release) {
   await access(join(hostStaging, 'Lumiere.Windows.Host.exe'))
-  const electronDist = join(desktopRoot, 'node_modules', 'electron', 'dist')
-  await access(join(electronDist, 'electron.exe'))
+  const electronRoot = join(desktopRoot, 'node_modules', 'electron')
+  const electronDist = join(electronRoot, 'dist')
+  await ensureElectronDistribution(electronRoot, electronDist)
   const config = structuredClone(baseConfig)
   config.electronDist = electronDist
   if (release) {
@@ -211,6 +212,22 @@ async function findWindowsSdkTool(name) {
     }
   }
   throw new Error(`${name} was not found in the Windows 10 SDK.`)
+}
+
+// pnpm records approved packages as built when it imports them from a warm
+// store, so a fresh checkout or CI runner can end up without the Electron
+// distribution; download it through Electron's own install script instead of
+// failing later inside electron-builder.
+async function ensureElectronDistribution(electronRoot, electronDist) {
+  try {
+    await access(join(electronDist, 'electron.exe'))
+    return
+  } catch {
+    // The distribution is downloaded below.
+  }
+  console.log('Electron distribution is missing; running the Electron install script.')
+  await run('node', ['install.js'], { cwd: electronRoot })
+  await access(join(electronDist, 'electron.exe'))
 }
 
 function requiredEnvironment(name) {
