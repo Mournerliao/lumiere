@@ -96,7 +96,10 @@ async function prepare(desktopPackage, release) {
 
 async function buildInstaller(baseConfig, version, release) {
   await access(join(hostStaging, 'Lumiere.Windows.Host.exe'))
+  const electronDist = join(desktopRoot, 'node_modules', 'electron', 'dist')
+  await access(join(electronDist, 'electron.exe'))
   const config = structuredClone(baseConfig)
+  config.electronDist = electronDist
   if (release) {
     await access(join(identityStaging, 'Lumiere.Identity.msix'))
     await access(releaseMarker)

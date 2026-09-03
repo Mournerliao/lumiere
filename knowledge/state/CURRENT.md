@@ -1,6 +1,6 @@
 # Current Project State
 
-- Updated: 2026-09-03
+- Updated: 2026-09-04
 - Current milestone: 1 — Cross-platform HDR-aware MVP
 - Release target: Windows + macOS HDR-aware MVP with sRGB Visual Match
 - Completed foundation record: [GitHub Issue #1](https://github.com/Mournerliao/lumiere/issues/1)
@@ -78,10 +78,12 @@ per-user NSIS lane, a self-contained x64 .NET Host, SignPath/GitHub Release orch
 post-signing updater metadata, and best-effort external-location sparse identity registration.
 The Host requests borderless consent only on the first real capture; denied, unavailable,
 unregistered, and exception paths retain the WGC system border. Unpackaged development builds
-and unsigned preview installers intentionally omit production identity and updates. This source
-has not yet passed the separate repository, installer, update, or clean-machine verification
-gates. The Windows Host adapter and shared product surface are complete through
-Issues #7 and #9. The macOS packaged-app foundation is complete through Issue #11,
+and unsigned preview installers intentionally omit production identity and updates. The unsigned
+preview installer now passes repository construction plus named-machine install, packaged capture,
+restart persistence, and uninstall/reinstall lifecycle verification. Signing, production identity,
+updates, publication, and clean-machine verification remain open. The Windows Host adapter and
+shared product surface are complete through Issues #7 and #9. The macOS packaged-app foundation
+is complete through Issue #11,
 Issue #13 owns the direct-release disk image and checksum, and completed Issue #14 owns
 public release plus installed lifecycle verification.
 WinUI and the old validation/HDR10-JXR paths remain removed.
@@ -94,7 +96,7 @@ WinUI and the old validation/HDR10-JXR paths remain removed.
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
 | 1B. Windows host adapter | Complete ([#7](https://github.com/Mournerliao/lumiere/issues/7), [#10](https://github.com/Mournerliao/lumiere/issues/10)) | The v3 Host has strict JSON Lines handling, structured diagnostics, Electron supervision, target-aware HDR/logical-geometry capabilities, SDR-white-aware HDR Visual Match conversion, Display plus target-bound Region routing, Clipboard/Folder/Both delivery, sanitized protocol failures, deterministic teardown, and verified interactive HDR/SDR runtime journeys | None |
 | 1C. Shared product surface | Complete ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture/HDR-reminder/save-directory surfaces, generated tokens, persisted capability-gated preferences, one main-process capture router, capability-gated tray/menu-bar, v3 frozen-region/delivery/custom-directory contract, shared Region Overlay over a Host-frozen preview, HiDPI-aware macOS geometry, and independently verified macOS and Windows product journeys | None |
-| 1D. Distribution and release | In progress (macOS complete through [#14](https://github.com/Mournerliao/lumiere/issues/14) and [#13](https://github.com/Mournerliao/lumiere/issues/13); [Windows #12](https://github.com/sousouliao/lumiere/issues/12)) | The universal (`arm64` + `x86_64`), ad-hoc-signed macOS app, versioned DMG, SHA-256 manifest, local artifact inspection, GitHub Release, published-asset integrity, browser-download quarantine, manual Gatekeeper exception, replacement, uninstall/reinstall, packaged capture, repeat, and clean exit are verified on the named development Mac; Windows now has an unverified assisted NSIS, self-contained Host, sparse identity, SignPath, GitHub Release, and full-installer updater implementation | Complete Windows packaging, signing, install/update/uninstall, borderless/fallback, and clean-machine verification |
+| 1D. Distribution and release | In progress (macOS complete through [#14](https://github.com/Mournerliao/lumiere/issues/14) and [#13](https://github.com/Mournerliao/lumiere/issues/13); [Windows #12](https://github.com/sousouliao/lumiere/issues/12)) | The universal (`arm64` + `x86_64`), ad-hoc-signed macOS app, versioned DMG, SHA-256 manifest, local artifact inspection, GitHub Release, published-asset integrity, browser-download quarantine, manual Gatekeeper exception, replacement, uninstall/reinstall, packaged capture, repeat, and clean exit are verified on the named development Mac; Windows has a locally verified unsigned assisted NSIS preview with a self-contained Host, custom-directory install, shortcuts, packaged Display/Region delivery, setting preservation, and clean uninstall, plus unverified sparse identity, SignPath, GitHub Release, and full-installer updater implementation | Publish the documented unsigned Windows preview, then complete signing, production identity/update, borderless/fallback, and clean-machine verification |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
 | 3. Cross-platform HDR fidelity | Planned; not started | Fidelity is separated from artifact success and HDR preservation | Define support matrix/tolerances and run fixed-scene verification |
 
@@ -313,6 +315,17 @@ acceptance criteria and implementation status for each vertical slice.
   to Pictures/Lumiere, Clipboard and folder, unconfigured shortcuts, and `Do nothing`. These
   observations establish Windows routing, persistence, artifact delivery, and lifecycle behavior;
   they add no new Visual Match or HDR-preservation claim.
+  The Windows distribution lane then passed `pnpm install --frozen-lockfile`, `pnpm check`, the
+  Windows verification script (Release build with zero warnings; Host 33, Capture 85, Graphics 47,
+  and Interop 35 tests; formatting clean), and `pnpm package:windows`. The resulting unsigned
+  `Lumiere-Setup-0.1.0-x64.exe` installed to the user-selected `D:\lumiere` directory and created
+  desktop plus Start menu shortcuts. Its packaged Display and Region actions both completed
+  Clipboard-and-Folder delivery; sampled artifacts were a 3840×2160 Display PNG and a 902×776
+  Region PNG. A changed HDR-reminder preference survived application restart, normal uninstall
+  preserved the settings file while removing the application directory, shortcuts, and processes,
+  and reinstall restored the disabled preference in Settings. This establishes unsigned-preview
+  construction and the named-machine installer lifecycle only; the artifact is not signed and
+  intentionally contains neither production sparse identity nor updater metadata.
 - **Hardware verified:** the macOS Retina XDR path passed fixed bright and dark scene
   observations. The bright ramp preserved ten distinct grayscale steps from 25 through
   255; the dark ramp preserved ten distinct steps from 0 through 32 and alternating
@@ -348,11 +361,13 @@ advances only one current working Issue at a time.
   required. Developer ID signing, notarization, Mac App Store distribution, and Homebrew
   distribution are out of scope.
 - **Windows distribution lane — [Issue #12](https://github.com/sousouliao/lumiere/issues/12):**
-  the implementation source follows
-  [ADR 0013](../decisions/0013-windows-nsis-sparse-identity-distribution.md) and remains
-  unverified. Next: run the separated repository and packaged-runtime verification, then
-  publish a documented unsigned preview Release before applying to SignPath Foundation.
-  Signed release and clean-machine verification follow only after approval.
+  the implementation follows
+  [ADR 0013](../decisions/0013-windows-nsis-sparse-identity-distribution.md). Repository checks,
+  unsigned NSIS construction, custom-directory install, shortcut creation, packaged Display/Region
+  Clipboard-and-Folder delivery, restart persistence, uninstall cleanup, and reinstall setting
+  restoration now pass on the named Windows development machine. Next: publish a documented
+  unsigned preview Release before applying to SignPath Foundation. Production sparse identity,
+  signed update, borderless/fallback, and clean-machine verification follow only after approval.
 - **Milestone gate:** platform-owned 1D implementation may advance independently, but
   cross-platform release verification and the Milestone 1 exit gate remain blocked until
   both distribution lanes pass their independent criteria.
