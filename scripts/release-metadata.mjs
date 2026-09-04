@@ -294,11 +294,14 @@ export function createReleaseNotes(release) {
   const changes = release.categories
     .map((category) => `## ${category.name}\n\n${category.content}`)
     .join('\n\n')
-  const downloads = release.platforms.map((platform) => {
+  const downloads = release.platforms.flatMap((platform) => {
     if (platform === 'macOS') {
-      return `- macOS: \`Lumiere-${release.version}-macos-universal.dmg\``
+      return [
+        `- macOS Apple Silicon: \`Lumiere-${release.version}-macos-arm64.dmg\``,
+        `- macOS Intel: \`Lumiere-${release.version}-macos-x64.dmg\``,
+      ]
     }
-    return `- Windows: \`Lumiere-Setup-${release.version}-x64.exe\``
+    return [`- Windows: \`Lumiere-Setup-${release.version}-x64.exe\``]
   })
   return [
     changes,

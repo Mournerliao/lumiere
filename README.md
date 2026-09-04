@@ -49,9 +49,10 @@ the production borderless-capture identity and automatic updates.
 
 ## Install on macOS
 
-Lumiere's macOS release is ad-hoc signed and is not notarized by Apple. Download the DMG and
-`SHA256SUMS` from the same official release, place them in one directory, and verify the disk
-image before opening it:
+Lumiere's macOS release is ad-hoc signed and is not notarized by Apple. Download the `arm64` DMG
+for an Apple Silicon Mac or the `x64` DMG for an Intel Mac, together with `SHA256SUMS` from the
+same official release. Older releases may instead provide one Universal DMG. Place the selected
+DMG and checksum manifest in one directory, then verify the disk image before opening it:
 
 ```sh
 shasum -a 256 -c SHA256SUMS

@@ -35,8 +35,9 @@ Display now have independent opt-in global shortcut settings;
 main owns atomic registration, conflict handling, versioned settings migration, and recording
 suspension, while the tray/menu-bar projects capability-gated Region/Display commands,
 registered accelerators, Open, Settings, and Quit through the same capture router. The macOS
-development launch now incrementally builds the current Swift Debug Host and resolves it
-ahead of any stale Release artifact; explicit Host overrides remain authoritative. The shared
+development launch now resolves Electron 43's lazy-installed executable before electron-vite,
+incrementally builds the current Swift Debug Host, and resolves that Host ahead of any stale
+Release artifact; explicit Host overrides remain authoritative. The shared
 Settings surface now also persists `Do nothing` or `Show in folder` after-capture behavior
 through validated main-owned IPC. One main-process completion path applies that preference
 to main-window, shortcut, and tray/menu-bar captures without changing artifact success when
@@ -86,7 +87,9 @@ updates, and clean-machine verification remain open. The Windows Host adapter an
 shared product surface are complete through Issues #7 and #9. The macOS packaged-app foundation
 is complete through Issue #11,
 Issue #13 owns the direct-release disk image and checksum, and completed Issue #14 owns
-public release plus installed lifecycle verification.
+public release plus installed lifecycle verification. The current source now builds separate,
+English-locale-only `arm64` and `x64` macOS applications and disk images instead of one Universal
+artifact; the published `v0.1.0` Universal release remains the latest stable macOS release.
 WinUI and the old validation/HDR10-JXR paths remain removed.
 
 ## Progress At A Glance
@@ -97,7 +100,7 @@ WinUI and the old validation/HDR10-JXR paths remain removed.
 | 1A. macOS native capture | Complete ([#4](https://github.com/Mournerliao/lumiere/issues/4), [PR #6](https://github.com/Mournerliao/lumiere/pull/6)) | Swift host, explicit permission/cancellation states, SDR/HDR display capture, sRGB PNG file delivery, Electron process integration, fixed bright/dark scene verification on XDR hardware | None |
 | 1B. Windows host adapter | Complete ([#7](https://github.com/Mournerliao/lumiere/issues/7), [#10](https://github.com/Mournerliao/lumiere/issues/10)) | The v3 Host has strict JSON Lines handling, structured diagnostics, Electron supervision, target-aware HDR/logical-geometry capabilities, SDR-white-aware HDR Visual Match conversion, Display plus target-bound Region routing, Clipboard/Folder/Both delivery, sanitized protocol failures, deterministic teardown, and verified interactive HDR/SDR runtime journeys | None |
 | 1C. Shared product surface | Complete ([#9](https://github.com/Mournerliao/lumiere/issues/9)) | Approved compact main window and Settings output/shortcut/after-capture/HDR-reminder/save-directory surfaces, generated tokens, persisted capability-gated preferences, one main-process capture router, capability-gated tray/menu-bar, v3 frozen-region/delivery/custom-directory contract, shared Region Overlay over a Host-frozen preview, HiDPI-aware macOS geometry, and independently verified macOS and Windows product journeys | None |
-| 1D. Distribution and release | In progress (macOS complete through [#14](https://github.com/Mournerliao/lumiere/issues/14) and [#13](https://github.com/Mournerliao/lumiere/issues/13); [Windows #12](https://github.com/sousouliao/lumiere/issues/12)) | The universal (`arm64` + `x86_64`), ad-hoc-signed macOS app, versioned DMG, SHA-256 manifest, local artifact inspection, GitHub Release, published-asset integrity, browser-download quarantine, manual Gatekeeper exception, replacement, uninstall/reinstall, packaged capture, repeat, and clean exit are verified on the named development Mac; Windows has a locally verified unsigned assisted NSIS preview with a self-contained Host, custom-directory install, shortcuts, packaged Display/Region delivery, setting preservation, and clean uninstall; the unified workflow then published the documented unsigned `v0.2.0-preview.1` GitHub prerelease with its checksum manifest, leaving sparse identity, SignPath, full-installer updater, and signed-release verification open | Apply to SignPath Foundation, then complete signing, production identity/update, borderless/fallback, and clean-machine verification |
+| 1D. Distribution and release | In progress (macOS complete through [#14](https://github.com/Mournerliao/lumiere/issues/14) and [#13](https://github.com/Mournerliao/lumiere/issues/13); [Windows #12](https://github.com/sousouliao/lumiere/issues/12)) | The published Universal (`arm64` + `x86_64`), ad-hoc-signed macOS app, versioned DMG, SHA-256 manifest, local artifact inspection, GitHub Release, published-asset integrity, browser-download quarantine, manual Gatekeeper exception, replacement, uninstall/reinstall, packaged capture, repeat, and clean exit are verified on the named development Mac; current source additionally builds independently signed, size-bounded arm64 and x64 apps/DMGs with only English Electron locales and required runtime resources; Windows has a locally verified unsigned assisted NSIS preview with a self-contained Host, custom-directory install, shortcuts, packaged Display/Region delivery, setting preservation, and clean uninstall; the unified workflow then published the documented unsigned `v0.2.0-preview.1` GitHub prerelease with its checksum manifest, leaving sparse identity, SignPath, full-installer updater, and signed-release verification open | Apply to SignPath Foundation, then complete signing, production identity/update, borderless/fallback, and clean-machine verification |
 | 2. HDR-preserved export | Planned; not started | Claim gate and milestone are defined | Choose format/viewers, specify semantics, implement and verify both platforms |
 | 3. Cross-platform HDR fidelity | Planned; not started | Fidelity is separated from artifact success and HDR preservation | Define support matrix/tolerances and run fixed-scene verification |
 
@@ -106,7 +109,7 @@ acceptance criteria and implementation status for each vertical slice.
 
 ## Verification Truth
 
-- **Repository:** frozen install, layout and TypeScript checks, ninety-nine cross-platform
+- **Repository:** frozen install, layout and TypeScript checks, one hundred thirteen cross-platform
   shell/protocol/process/settings/UI tests, five macOS path/packaging/release tests, thirty-two Swift
   protocol/capability/permission/diagnostic/geometry/native-delivery tests, and the current
   production TypeScript check pass on this Mac. Windows Host/engine tests for protocol v3
@@ -259,6 +262,25 @@ acceptance criteria and implementation status for each vertical slice.
   replacement, uninstall/reinstall, bounded repeat, packaged capture, setting/permission behavior,
   and clean-exit truth. A separate clean non-development Mac is optional follow-up evidence and no
   longer blocks macOS completion.
+  The later packaging-size slice replaced the source Universal build with independent arm64 and
+  x64 artifacts while retaining the published `v0.1.0` evidence above. A local
+  `pnpm release:macos` build produced a 108,269,221-byte arm64 DMG and a 113,237,353-byte x64 DMG;
+  their applications occupied 233.12 MiB and 235.69 MiB, respectively, and each `app.asar` was
+  3.16 MiB. Both checksum entries verified, both HFS+ images mounted with `Lumiere.app` and an
+  Applications link, both deep signatures passed, and every inspected Electron and Host binary
+  contained only its named architecture. The arm64 app launched natively and the x64 app launched
+  through Rosetta; both completed the Host capability handshake and exposed Region and Display.
+  A capture attempt in each reached the correct Screen Recording permission-required state because
+  the new local bundle paths were not authorized in TCC, so this observation does not re-establish
+  packaged capture, delivery, or repeat behavior for the split artifacts. Exact repository checks
+  were `pnpm check`, all 113 shared tests, five macOS tests, and 32 Swift tests using the complete
+  Xcode toolchain.
+  Reinstalling dependencies then exposed an Electron 43/electron-vite 5 development-start seam:
+  Electron's package defers its binary download until first resolution, while electron-vite expects
+  `path.txt` to exist before launch. The shared predev/prestart preparation now resolves and verifies
+  the Electron executable first. Its focused regression test passed, and a root `pnpm dev` run then
+  rebuilt the current Host, started the renderer server, and launched the Electron application;
+  the user manually confirmed the development application started and remained usable.
 - **GitHub CI:** the last recorded macOS shell and Windows engine workflow observation passed at
   `fccf812`; this establishes those configured repository gates at that commit, not current-HEAD CI, Windows Host
   runtime or hardware behavior.
@@ -360,11 +382,11 @@ advances only one current working Issue at a time.
 - **macOS distribution lane — [Issue #14](https://github.com/Mournerliao/lumiere/issues/14) complete:**
   the reproducible packaged-app and direct-release artifact are implemented under
   [ADR 0012](../decisions/0012-direct-ad-hoc-signed-macos-distribution.md). The repository command
-  builds the production Electron shell, generated icons, and universal Release Swift Host into
-  an ad-hoc-signed `artifacts/macos/Lumiere.app`; signature, identity, version, minimum system
+  The published `v0.1.0` build produced the production Electron shell, generated icons, and
+  Universal Release Swift Host in an ad-hoc-signed application; signature, identity, version, minimum system
   version, architecture, bundled Host discovery, packaged permission, Display/Region delivery,
-  repeat capture, and clean exit passed on the named Mac. `release:macos` now adds the versioned
-  universal DMG, Applications link, SHA-256 manifest, accurate manual Gatekeeper guidance, and
+  repeat capture, and clean exit passed on the named Mac. Current `release:macos` source now adds
+  versioned arm64 and x64 DMGs, Applications links, one SHA-256 manifest, accurate manual Gatekeeper guidance, and
   local mounted-artifact verification. The public `v0.1.0` GitHub Release now carries the verified
   DMG and checksum manifest. Browser-download quarantine, Gatekeeper Open Anyway, uninstall/reinstall,
   packaged Display/Region delivery, and clean exit have now passed on the named targeted-cleaned

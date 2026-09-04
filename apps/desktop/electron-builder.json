@@ -3,14 +3,23 @@
   "productName": "Lumiere",
   "asar": true,
   "npmRebuild": false,
+  "electronLanguages": ["en"],
   "directories": {
     "output": "../../artifacts/macos/build"
   },
   "files": ["out/**/*"],
   "extraResources": [
     {
-      "from": "resources/icons",
-      "to": "icons"
+      "from": "resources/icons/mac/app-icon.png",
+      "to": "icons/mac/app-icon.png"
+    },
+    {
+      "from": "resources/icons/mac/trayTemplate.png",
+      "to": "icons/mac/trayTemplate.png"
+    },
+    {
+      "from": "resources/icons/mac/trayTemplate@2x.png",
+      "to": "icons/mac/trayTemplate@2x.png"
     },
     {
       "from": "../../hosts/macos/.build/distribution/staged/${arch}/LumiereMacHost",

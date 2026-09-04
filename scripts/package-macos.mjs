@@ -1,5 +1,15 @@
 import { spawn } from 'node:child_process'
-import { access, chmod, copyFile, mkdir, readFile, readdir, rename, rm } from 'node:fs/promises'
+import {
+  access,
+  chmod,
+  copyFile,
+  mkdir,
+  readFile,
+  readdir,
+  rename,
+  rm,
+  stat,
+} from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -8,15 +18,26 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const desktopRoot = join(repositoryRoot, 'apps', 'desktop')
 const hostRoot = join(repositoryRoot, 'hosts', 'macos')
 const builderConfigPath = join(desktopRoot, 'electron-builder.json')
-const finalAppPath = join(repositoryRoot, 'artifacts', 'macos', 'Lumiere.app')
+const artifactsDirectory = join(repositoryRoot, 'artifacts', 'macos')
 const architectures = ['arm64', 'x64']
+const finalAppPaths = Object.freeze(
+  Object.fromEntries(
+    architectures.map((architecture) => [
+      architecture,
+      join(artifactsDirectory, 'apps', architecture, 'Lumiere.app'),
+    ]),
+  ),
+)
 
 export const macOSPackagingPolicy = Object.freeze({
   appId: 'io.github.sousouliao.lumiere',
   productName: 'Lumiere',
   minimumSystemVersion: '15.0',
   architectures,
-  finalAppPath,
+  electronLanguages: ['en'],
+  finalAppPaths,
+  maximumAppBytes: 270 * 1024 * 1024,
+  maximumAsarBytes: 8 * 1024 * 1024,
 })
 
 export function swiftTriple(architecture) {
@@ -61,29 +82,33 @@ export async function packageMacOS({ targets = ['dir'] } = {}) {
       'electron-builder',
       '--mac',
       ...targets,
-      '--universal',
+      '--arm64',
+      '--x64',
       '--config',
       'electron-builder.json',
     ],
     { cwd: repositoryRoot, env: process.env },
   )
 
-  const builtAppPath = join(
-    repositoryRoot,
-    'artifacts',
-    'macos',
-    'build',
-    'mac-universal',
-    'Lumiere.app',
-  )
-  await access(builtAppPath)
-  await mkdir(dirname(finalAppPath), { recursive: true })
-  await rm(finalAppPath, { force: true, recursive: true })
-  await rename(builtAppPath, finalAppPath)
+  const appPaths = {}
+  for (const architecture of architectures) {
+    const builtAppPath = join(
+      artifactsDirectory,
+      'build',
+      architecture === 'arm64' ? 'mac-arm64' : 'mac',
+      'Lumiere.app',
+    )
+    const finalAppPath = finalAppPaths[architecture]
+    await access(builtAppPath)
+    await mkdir(dirname(finalAppPath), { recursive: true })
+    await rm(finalAppPath, { force: true, recursive: true })
+    await rename(builtAppPath, finalAppPath)
+    await verifyBundle(finalAppPath, desktopPackage.version, architecture)
+    appPaths[architecture] = finalAppPath
+    console.log(`Packaged ${architecture} application: ${finalAppPath}`)
+  }
 
-  await verifyBundle(desktopPackage.version)
-  console.log(`Packaged application: ${finalAppPath}`)
-  return { finalAppPath, version: desktopPackage.version }
+  return { appPaths, architectures, version: desktopPackage.version }
 }
 
 async function buildAndStageHost(architecture, environment) {
@@ -115,13 +140,13 @@ async function buildAndStageHost(architecture, environment) {
   await chmod(stagedPath, 0o755)
 }
 
-async function verifyBundle(version) {
-  const contentsPath = join(finalAppPath, 'Contents')
+async function verifyBundle(appPath, version, architecture) {
+  const contentsPath = join(appPath, 'Contents')
   const executablePath = join(contentsPath, 'MacOS', 'Lumiere')
   const hostPath = join(contentsPath, 'Resources', 'macos-host', 'LumiereMacHost')
   const infoPlistPath = join(contentsPath, 'Info.plist')
 
-  await run('/usr/bin/codesign', ['--verify', '--deep', '--strict', '--verbose=2', finalAppPath])
+  await run('/usr/bin/codesign', ['--verify', '--deep', '--strict', '--verbose=2', appPath])
   await expectCommandOutput(
     '/usr/bin/plutil',
     ['-extract', 'CFBundleIdentifier', 'raw', infoPlistPath],
@@ -137,22 +162,96 @@ async function verifyBundle(version) {
     ['-extract', 'LSMinimumSystemVersion', 'raw', infoPlistPath],
     macOSPackagingPolicy.minimumSystemVersion,
   )
-  await expectArchitectures(executablePath)
-  await expectArchitectures(hostPath)
+  await expectArchitecture(executablePath, architecture)
+  await expectArchitecture(hostPath, architecture)
+  await expectAllMachOBinaries(contentsPath, architecture)
+  await expectEnglishOnlyLocales(contentsPath)
+  await expectRuntimeIcons(contentsPath)
+  await expectBundleSizes(appPath)
 
-  console.log('Electron executable build metadata:')
+  console.log(`${architecture} Electron executable build metadata:`)
   await run('/usr/bin/vtool', ['-show-build', executablePath])
-  console.log('LumiereMacHost build metadata:')
+  console.log(`${architecture} LumiereMacHost build metadata:`)
   await run('/usr/bin/vtool', ['-show-build', hostPath])
 }
 
-async function expectArchitectures(binaryPath) {
+async function expectArchitecture(binaryPath, expectedArchitecture) {
   const output = await capture('/usr/bin/lipo', ['-archs', binaryPath])
   const actual = new Set(output.trim().split(/\s+/))
-  const expected = new Set(['arm64', 'x86_64'])
-  if (actual.size !== expected.size || [...expected].some((arch) => !actual.has(arch))) {
+  const expected = expectedArchitecture === 'x64' ? 'x86_64' : expectedArchitecture
+  if (actual.size !== 1 || !actual.has(expected)) {
     throw new Error(`${binaryPath} has unexpected architectures: ${output.trim()}`)
   }
+}
+
+async function expectAllMachOBinaries(rootPath, architecture) {
+  const expected = architecture === 'x64' ? 'x86_64' : architecture
+  const files = await collectFiles(rootPath)
+  let machOCount = 0
+  for (const filePath of files) {
+    const output = await captureOptional('/usr/bin/lipo', ['-archs', filePath])
+    if (output === undefined) continue
+    const actual = new Set(output.trim().split(/\s+/))
+    if (actual.size !== 1 || !actual.has(expected)) {
+      throw new Error(`${filePath} has unexpected architectures: ${output.trim()}`)
+    }
+    machOCount += 1
+  }
+  if (machOCount === 0) {
+    throw new Error(`${rootPath} contains no verifiable Mach-O binaries.`)
+  }
+}
+
+async function collectFiles(rootPath) {
+  const files = []
+  for (const entry of await readdir(rootPath, { withFileTypes: true })) {
+    const entryPath = join(rootPath, entry.name)
+    if (entry.isDirectory()) files.push(...(await collectFiles(entryPath)))
+    else if (entry.isFile()) files.push(entryPath)
+  }
+  return files
+}
+
+async function expectEnglishOnlyLocales(contentsPath) {
+  const localeDirectories = [
+    join(contentsPath, 'Resources'),
+    join(contentsPath, 'Frameworks', 'Electron Framework.framework', 'Versions', 'A', 'Resources'),
+  ]
+  for (const directory of localeDirectories) {
+    const locales = (await readdir(directory))
+      .filter((name) => name.endsWith('.lproj'))
+      .map((name) => name.slice(0, -'.lproj'.length).toLowerCase().replaceAll('_', '-'))
+    if (locales.length === 0 || locales.some((locale) => !locale.startsWith('en'))) {
+      throw new Error(`${directory} contains unexpected Electron locales: ${locales.join(', ')}`)
+    }
+  }
+}
+
+async function expectRuntimeIcons(contentsPath) {
+  const iconsPath = join(contentsPath, 'Resources', 'icons', 'mac')
+  const actual = (await readdir(iconsPath)).sort()
+  const expected = ['app-icon.png', 'trayTemplate.png', 'trayTemplate@2x.png'].sort()
+  if (actual.length !== expected.length || actual.some((name, index) => name !== expected[index])) {
+    throw new Error(`${iconsPath} contains unexpected runtime icons: ${actual.join(', ')}`)
+  }
+}
+
+async function expectBundleSizes(appPath) {
+  const asarPath = join(appPath, 'Contents', 'Resources', 'app.asar')
+  const asarBytes = (await stat(asarPath)).size
+  const duOutput = await capture('/usr/bin/du', ['-sk', appPath])
+  const appBytes = Number.parseInt(duOutput.trim().split(/\s+/)[0], 10) * 1024
+  if (asarBytes > macOSPackagingPolicy.maximumAsarBytes) {
+    throw new Error(`${asarPath} is ${formatMiB(asarBytes)}, exceeding the 8 MiB packaging budget.`)
+  }
+  if (appBytes > macOSPackagingPolicy.maximumAppBytes) {
+    throw new Error(`${appPath} is ${formatMiB(appBytes)}, exceeding the 270 MiB packaging budget.`)
+  }
+  console.log(`Bundle sizes: app ${formatMiB(appBytes)}, app.asar ${formatMiB(asarBytes)}`)
+}
+
+function formatMiB(bytes) {
+  return `${(bytes / 1024 / 1024).toFixed(2)} MiB`
 }
 
 async function expectCommandOutput(command, args, expected) {
@@ -179,6 +278,13 @@ function validateConfiguration(desktopPackage, builderConfig) {
   }
   if (builderConfig.mac?.identity !== '-') {
     throw new Error('The macOS bundle must use an explicit ad-hoc signing identity.')
+  }
+  if (
+    !Array.isArray(builderConfig.electronLanguages) ||
+    builderConfig.electronLanguages.length !== 1 ||
+    builderConfig.electronLanguages[0] !== 'en'
+  ) {
+    throw new Error('The macOS bundle must keep only the supported English Electron locale.')
   }
 }
 
@@ -250,6 +356,21 @@ function capture(command, args, options = {}) {
             : `${command} exited with code ${String(code)}.`,
         ),
       )
+    })
+  })
+}
+
+function captureOptional(command, args, options = {}) {
+  return new Promise((resolvePromise, rejectPromise) => {
+    const child = spawn(command, args, { ...options, stdio: ['ignore', 'pipe', 'ignore'] })
+    let stdout = ''
+    child.stdout.setEncoding('utf8')
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk
+    })
+    child.once('error', rejectPromise)
+    child.once('exit', (code) => {
+      resolvePromise(code === 0 ? stdout : undefined)
     })
   })
 }

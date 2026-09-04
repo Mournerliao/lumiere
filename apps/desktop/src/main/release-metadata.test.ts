@@ -230,7 +230,8 @@ Release platforms: macOS
     const release = parseChangelog(finalized).releases[0]
     const notes = createReleaseNotes(release)
     expect(notes).toContain('## Fixed\n\n- Improved capture reliability.')
-    expect(notes).toContain('Lumiere-0.1.1-macos-universal.dmg')
+    expect(notes).toContain('macOS Apple Silicon: `Lumiere-0.1.1-macos-arm64.dmg`')
+    expect(notes).toContain('macOS Intel: `Lumiere-0.1.1-macos-x64.dmg`')
     expect(notes).toContain('/blob/v0.1.1/README.md')
     expect(notes).toContain('- Improved capture reliability.\n\n## Downloads')
     expect(notes).not.toContain('First release')
@@ -240,12 +241,14 @@ Release platforms: macOS
   it('creates one deterministic checksum manifest for selected platform binaries', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'lumiere-release-metadata-'))
     try {
-      await writeFile(join(directory, 'Lumiere-0.2.0-macos-universal.dmg'), 'mac', 'utf8')
+      await writeFile(join(directory, 'Lumiere-0.2.0-macos-arm64.dmg'), 'mac-arm64', 'utf8')
+      await writeFile(join(directory, 'Lumiere-0.2.0-macos-x64.dmg'), 'mac-x64', 'utf8')
       await writeFile(join(directory, 'Lumiere-Setup-0.2.0-x64.exe'), 'windows', 'utf8')
       await writeFile(join(directory, 'latest.yml'), 'ignored', 'utf8')
       const manifest = await createChecksumManifest(directory)
-      expect(manifest.trim().split('\n')).toHaveLength(2)
-      expect(manifest).toContain('Lumiere-0.2.0-macos-universal.dmg')
+      expect(manifest.trim().split('\n')).toHaveLength(3)
+      expect(manifest).toContain('Lumiere-0.2.0-macos-arm64.dmg')
+      expect(manifest).toContain('Lumiere-0.2.0-macos-x64.dmg')
       expect(manifest).toContain('Lumiere-Setup-0.2.0-x64.exe')
       expect(manifest).not.toContain('latest.yml')
     } finally {

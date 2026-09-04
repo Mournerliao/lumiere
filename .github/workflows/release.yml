@@ -122,7 +122,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: release-macos
-          path: artifacts/macos/Lumiere-${{ needs.audit.outputs.version }}-macos-universal.dmg
+          path: |
+            artifacts/macos/Lumiere-${{ needs.audit.outputs.version }}-macos-arm64.dmg
+            artifacts/macos/Lumiere-${{ needs.audit.outputs.version }}-macos-x64.dmg
           if-no-files-found: error
 
   windows:

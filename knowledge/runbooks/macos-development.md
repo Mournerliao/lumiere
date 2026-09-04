@@ -36,43 +36,46 @@ swift test --package-path hosts/macos
 The Vitest command owns macOS path and packaging-policy semantics. Swift tests own the
 native Host. Both run only in macOS CI and are separate from the cross-platform
 `pnpm test:shared` suite. The Host targets macOS 15 or newer. Development builds use the
-active architecture; distribution builds are universal (`arm64` + `x86_64`). Developer ID
-signing and notarization are not current release requirements.
+active architecture; distribution builds produce independent `arm64` and `x64` applications.
+Developer ID signing and notarization are not current release requirements.
 
 ## Packaged Application
 
-Build the production Electron shell, both Release Host architectures, the universal
-application bundle, and its coherent ad-hoc signature from the repository root:
+Build the production Electron shell and independent Release Host/application bundles for
+Apple Silicon and Intel, each with its own coherent ad-hoc signature:
 
 ```sh
 pnpm package:macos
 ```
 
-The command produces `artifacts/macos/Lumiere.app` with bundle identifier
-`io.github.sousouliao.lumiere`, versioned from `apps/desktop/package.json`, and a minimum
-system version of macOS 15. It copies runtime icons under `Contents/Resources/icons` and
-the universal Host to `Contents/Resources/macos-host/LumiereMacHost`, then verifies the
-bundle signature, identity, version, minimum system version, and executable architectures.
-It does not produce the later release disk image or perform notarization.
+The command produces `artifacts/macos/apps/arm64/Lumiere.app` and
+`artifacts/macos/apps/x64/Lumiere.app`. Both use bundle identifier
+`io.github.sousouliao.lumiere`, the version from `apps/desktop/package.json`, and a minimum
+system version of macOS 15. Each app contains only its matching Swift Host architecture,
+the English Electron locale family, and the three runtime macOS icons. The command verifies
+the bundle signature, identity, version, minimum system version, every Mach-O architecture,
+and the current package-size budgets. It does not produce disk images or notarize the apps.
 
 ## Direct-Release Artifact
 
-Build the verified application bundle, versioned universal DMG, and SHA-256 manifest:
+Build both verified application bundles, their versioned architecture-specific DMGs, and
+one SHA-256 manifest:
 
 ```sh
 pnpm release:macos
 ```
 
-For version `0.1.0`, the final release files are:
+For version `<version>`, the final release files are:
 
 ```text
-artifacts/macos/Lumiere-0.1.0-macos-universal.dmg
+artifacts/macos/Lumiere-<version>-macos-arm64.dmg
+artifacts/macos/Lumiere-<version>-macos-x64.dmg
 artifacts/macos/SHA256SUMS
 ```
 
-The version comes from `apps/desktop/package.json`. The DMG contains `Lumiere.app` and an
-Applications link; it does not publish a GitHub Release or notarize the app. Public publication
-is owned by the unified [release runbook](releasing.md). Verify the final
+The version comes from `apps/desktop/package.json`. Each DMG contains the matching-architecture
+`Lumiere.app` and an Applications link; the command does not publish a GitHub Release or notarize
+either app. Public publication is owned by the unified [release runbook](releasing.md). Verify the final
 bytes from the artifact directory with:
 
 ```sh
@@ -80,11 +83,13 @@ cd artifacts/macos
 shasum -a 256 -c SHA256SUMS
 ```
 
-Mount the DMG and inspect the contained app independently before recording release-artifact
-truth. Public-release, quarantine/Gatekeeper, replacement-upgrade, uninstall, reinstall, and
-installed-lifecycle observations belong to the following verification slice. That slice may use
-a named real Mac after targeted Lumiere state and packaged-identity permission cleanup; a separate
-clean non-development Mac is optional follow-up evidence, not an MVP gate.
+Mount both DMGs and inspect each contained app independently before recording release-artifact
+truth. Run the Apple Silicon app natively and the Intel app on an Intel Mac or under Rosetta;
+one architecture's runtime observation does not verify the other. Public-release,
+quarantine/Gatekeeper, replacement-upgrade, uninstall, reinstall, and installed-lifecycle
+observations belong to the following verification slice. That slice may use a named real Mac
+after targeted Lumiere state and packaged-identity permission cleanup; a separate clean
+non-development Mac is optional follow-up evidence, not an MVP gate.
 
 ## Protocol Smoke Test
 

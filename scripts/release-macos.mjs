@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
-import { access, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { access, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -9,15 +9,19 @@ import { macOSPackagingPolicy, packageMacOS } from './package-macos.mjs'
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const artifactsDirectory = join(repositoryRoot, 'artifacts', 'macos')
 const checksumManifestPath = join(artifactsDirectory, 'SHA256SUMS')
+const maximumDmgBytes = 140 * 1024 * 1024
 
-export function macOSReleaseArtifactName(version) {
+export function macOSReleaseArtifactName(version, architecture) {
   if (
     typeof version !== 'string' ||
     !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(version)
   ) {
     throw new Error(`Invalid release version: ${String(version)}`)
   }
-  return `${macOSPackagingPolicy.productName}-${version}-macos-universal.dmg`
+  if (!macOSPackagingPolicy.architectures.includes(architecture)) {
+    throw new Error(`Unsupported macOS release architecture: ${String(architecture)}`)
+  }
+  return `${macOSPackagingPolicy.productName}-${version}-macos-${architecture}.dmg`
 }
 
 export async function sha256File(filePath) {
@@ -38,36 +42,52 @@ export function checksumManifestLine(digest, fileName) {
   return `${digest}  ${fileName}\n`
 }
 
-async function prepareChecksumManifest(dmgPath) {
-  const digest = await sha256File(dmgPath)
-  const manifest = checksumManifestLine(digest, basename(dmgPath))
+export async function checksumManifestForArtifacts(dmgPaths) {
+  const manifestLines = []
+  for (const dmgPath of dmgPaths) {
+    manifestLines.push(checksumManifestLine(await sha256File(dmgPath), basename(dmgPath)))
+  }
+  return manifestLines.join('')
+}
+
+async function prepareChecksumManifest(dmgPaths) {
   const temporaryPath = `${checksumManifestPath}.tmp`
-  await writeFile(temporaryPath, manifest, 'utf8')
+  await writeFile(temporaryPath, await checksumManifestForArtifacts(dmgPaths), 'utf8')
   return temporaryPath
 }
 
 export async function releaseMacOS() {
-  const { version } = await packageMacOS({ targets: ['dir', 'dmg'] })
-  const artifactName = macOSReleaseArtifactName(version)
-  const builtDmgPath = join(artifactsDirectory, 'build', artifactName)
-  const finalDmgPath = join(artifactsDirectory, artifactName)
+  const { architectures, version } = await packageMacOS({ targets: ['dir', 'dmg'] })
+  const dmgPaths = {}
+  for (const architecture of architectures) {
+    const artifactName = macOSReleaseArtifactName(version, architecture)
+    const builtDmgPath = join(artifactsDirectory, 'build', artifactName)
+    const finalDmgPath = join(artifactsDirectory, artifactName)
+    await access(builtDmgPath)
+    await rm(`${builtDmgPath}.blockmap`, { force: true })
+    await rm(finalDmgPath, { force: true })
+    await rename(builtDmgPath, finalDmgPath)
+    const dmgBytes = (await stat(finalDmgPath)).size
+    if (dmgBytes > maximumDmgBytes) {
+      throw new Error(
+        `${finalDmgPath} is ${(dmgBytes / 1024 / 1024).toFixed(2)} MiB, exceeding the 140 MiB packaging budget.`,
+      )
+    }
+    dmgPaths[architecture] = finalDmgPath
+    console.log(`Release ${architecture} disk image: ${finalDmgPath}`)
+  }
 
-  await access(builtDmgPath)
-  await rm(`${builtDmgPath}.blockmap`, { force: true })
-  const temporaryManifestPath = await prepareChecksumManifest(builtDmgPath)
-  await rm(finalDmgPath, { force: true })
-  await rename(builtDmgPath, finalDmgPath)
+  const orderedDmgPaths = architectures.map((architecture) => dmgPaths[architecture])
+  const temporaryManifestPath = await prepareChecksumManifest(orderedDmgPaths)
   await rename(temporaryManifestPath, checksumManifestPath)
 
   const writtenManifest = await readFile(checksumManifestPath, 'utf8')
-  const verifiedDigest = await sha256File(finalDmgPath)
-  if (writtenManifest !== checksumManifestLine(verifiedDigest, artifactName)) {
+  if (writtenManifest !== (await checksumManifestForArtifacts(orderedDmgPaths))) {
     throw new Error('The written SHA256SUMS entry does not match the final disk image.')
   }
 
-  console.log(`Release disk image: ${finalDmgPath}`)
   console.log(`SHA-256 manifest: ${checksumManifestPath}`)
-  return { checksumManifestPath, dmgPath: finalDmgPath, version }
+  return { checksumManifestPath, dmgPaths, version }
 }
 
 const invokedUrl = process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : undefined
