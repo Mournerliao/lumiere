@@ -71,21 +71,6 @@ internal sealed class ConfiguredOutputService : IOutputService
         return OutputResult.FromTargets(results);
     }
 
-    public async Task<byte[]> EncodePngAsync(
-        CapturedFrameTexture texture,
-        CropPixelRect? cropRegion,
-        SrgbVisualMatchConversionContext context,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(texture);
-        var artifact = await encoder.EncodeArtifactAsync(
-            texture,
-            cropRegion,
-            context,
-            cancellationToken);
-        return artifact.Bytes;
-    }
-
     private IEnumerable<IOutputTargetAdapter> RequestedOutputs(OutputRequest request)
     {
         if (request.ShouldWriteClipboard)

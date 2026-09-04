@@ -360,6 +360,9 @@ public sealed class WindowsHostOperationsTests
 
         Assert.Equal(["region", "display"], capabilities.CaptureModes);
         Assert.Equal("prepared", prepared.Status);
+        Assert.Equal(2560, prepared.Preview!.PixelSize.Width);
+        Assert.Equal(1440, prepared.Preview.PixelSize.Height);
+        Assert.Equal("prepare-region", engine.PrepareRequestId);
         Assert.Equal("completed", result.Status);
         Assert.Same(target, engine.RegionTarget);
         Assert.Equal(new WindowsRegionGeometry(12.5, 20, 300, 200), engine.RegionGeometry);
@@ -398,6 +401,8 @@ internal sealed class StubCaptureEngine : IWindowsCaptureEngine
 
     public WindowsTargetCapability? RegionTarget { get; private set; }
 
+    public string? PrepareRequestId { get; private set; }
+
     public WindowsRegionGeometry? RegionGeometry { get; private set; }
 
     public int CaptureCalls { get; private set; }
@@ -416,9 +421,11 @@ internal sealed class StubCaptureEngine : IWindowsCaptureEngine
     }
 
     public Task<WindowsPrepareRegionResult> PrepareRegionAsync(
+        string requestId,
         WindowsTargetCapability target,
         CancellationToken cancellationToken = default)
     {
+        PrepareRequestId = requestId;
         RegionTarget = target;
         ActiveSessionId = Guid.NewGuid().ToString("N");
         var logicalSize = target.LogicalSize ?? new WindowsTargetLogicalSize(2560, 1440);
@@ -430,8 +437,8 @@ internal sealed class StubCaptureEngine : IWindowsCaptureEngine
             ActiveSessionId,
             logicalSize,
             Path.Combine(Path.GetTempPath(), "lumiere-region-preview", $"{ActiveSessionId}.png"),
-            3840,
-            2160));
+            checked((int)Math.Round(logicalSize.Width)),
+            checked((int)Math.Round(logicalSize.Height))));
     }
 
     public Task<WindowsCaptureResult> CommitRegionAsync(
@@ -535,6 +542,7 @@ internal sealed class BlockingCaptureEngine : IWindowsCaptureEngine
     }
 
     public Task<WindowsPrepareRegionResult> PrepareRegionAsync(
+        string requestId,
         WindowsTargetCapability target,
         CancellationToken cancellationToken = default) =>
         throw new InvalidOperationException("Prepare must not start while display capture is in flight.");

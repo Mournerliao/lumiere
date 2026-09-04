@@ -13,37 +13,38 @@ export function RegionOverlay(): React.JSX.Element {
   const [capturing, setCapturing] = useState(false)
   const startPoint = useRef<OverlayPoint | null>(null)
   const root = useRef<HTMLElement | null>(null)
-  const announcedReady = useRef(false)
+  const activeGeneration = useRef<number | null>(null)
 
   useEffect(() => {
-    let isCurrent = true
-    void window.lumierePlatform
-      .getRegionOverlaySnapshot()
-      .then((nextSnapshot) => {
-        if (isCurrent) {
-          setSnapshot(nextSnapshot)
-        }
-      })
-      .catch(() => {
-        if (isCurrent) {
-          window.lumierePlatform.cancelRegionOverlay()
-        }
-      })
-
     const resetSelection = (): void => {
       startPoint.current = null
       setSelection(null)
       setPointer(null)
+      setCapturing(false)
     }
+    const resetSession = (): void => {
+      activeGeneration.current = null
+      setSnapshot(null)
+      resetSelection()
+    }
+    const stopActivated = window.lumierePlatform.onRegionOverlayActivated((nextSnapshot) => {
+      activeGeneration.current = nextSnapshot.generation
+      resetSelection()
+      setSnapshot(nextSnapshot)
+    })
+    const stopReset = window.lumierePlatform.onRegionOverlayReset(resetSession)
     const cancelOnEscape = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') {
-        window.lumierePlatform.cancelRegionOverlay()
+      const generation = activeGeneration.current
+      if (event.key === 'Escape' && generation !== null) {
+        window.lumierePlatform.cancelRegionOverlay(generation)
       }
     }
     window.addEventListener('blur', resetSelection)
     window.addEventListener('keydown', cancelOnEscape)
+    window.lumierePlatform.regionOverlayHostReady()
     return () => {
-      isCurrent = false
+      stopActivated()
+      stopReset()
       window.removeEventListener('blur', resetSelection)
       window.removeEventListener('keydown', cancelOnEscape)
     }
@@ -63,8 +64,9 @@ export function RegionOverlay(): React.JSX.Element {
 
   const finishSelection = (current: OverlayPoint): void => {
     const completed = projectSelection(current)
-    if (!completed?.valid) {
-      window.lumierePlatform.cancelRegionOverlay()
+    const generation = activeGeneration.current
+    if (!completed?.valid || generation === null) {
+      if (generation !== null) window.lumierePlatform.cancelRegionOverlay(generation)
       return
     }
 
@@ -73,7 +75,9 @@ export function RegionOverlay(): React.JSX.Element {
     startPoint.current = null
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
-        window.lumierePlatform.submitRegionSelection(completed.geometry)
+        if (activeGeneration.current === generation) {
+          window.lumierePlatform.submitRegionSelection(generation, completed.geometry)
+        }
       })
     })
   }
@@ -94,7 +98,8 @@ export function RegionOverlay(): React.JSX.Element {
       aria-label="Select a region to capture"
       onContextMenu={(event) => {
         event.preventDefault()
-        window.lumierePlatform.cancelRegionOverlay()
+        const generation = activeGeneration.current
+        if (generation !== null) window.lumierePlatform.cancelRegionOverlay(generation)
       }}
       onPointerDown={(event) => {
         if (capturing || event.button !== 0) {
@@ -124,28 +129,30 @@ export function RegionOverlay(): React.JSX.Element {
     >
       {snapshot ? (
         <img
+          key={snapshot.generation}
           className="region-overlay-preview"
           src={snapshot.previewUrl}
           draggable={false}
           aria-hidden="true"
           onLoad={(event) => {
-            if (announcedReady.current) return
+            const generation = snapshot.generation
             void event.currentTarget
               .decode()
               .catch(() => undefined)
               .then(() => {
                 window.requestAnimationFrame(() => {
                   window.requestAnimationFrame(() => {
-                    if (announcedReady.current) return
-                    announcedReady.current = true
+                    if (activeGeneration.current !== generation) return
                     root.current?.focus()
-                    window.lumierePlatform.regionOverlayReady()
+                    window.lumierePlatform.regionOverlayReady(generation)
                   })
                 })
               })
           }}
           onError={() => {
-            window.lumierePlatform.cancelRegionOverlay()
+            if (activeGeneration.current === snapshot.generation) {
+              window.lumierePlatform.cancelRegionOverlay(snapshot.generation)
+            }
           }}
         />
       ) : null}

@@ -4,7 +4,10 @@ import LumiereMacHostCore
 @main
 enum LumiereMacHostMain {
   static func main() async {
-    let service = MacCaptureService()
+    let timingReporter: @Sendable (CaptureTiming) -> Void = { timing in
+      writeTimingDiagnostic(timing)
+    }
+    let service = MacCaptureService(timingReporter: timingReporter)
 
     while let line = readLine(strippingNewline: true) {
       let response: PlatformResponse
@@ -88,6 +91,37 @@ enum LumiereMacHostMain {
       "message": String(describing: error),
     ]
     guard let data = try? JSONSerialization.data(withJSONObject: diagnostic),
+      var line = String(data: data, encoding: .utf8)
+    else {
+      return
+    }
+    line.append("\n")
+    FileHandle.standardError.write(Data(line.utf8))
+  }
+
+  private static func writeTimingDiagnostic(_ timing: CaptureTiming) {
+    var diagnostic: [String: Any] = [
+      "level": "info",
+      "event": "region-capture-timing",
+      "requestID": timing.requestID,
+      "stage": timing.stage,
+      "elapsedMilliseconds": timing.elapsedMilliseconds,
+      "stageMilliseconds": timing.stageMilliseconds,
+    ]
+    if let width = timing.width {
+      diagnostic["width"] = width
+    }
+    if let height = timing.height {
+      diagnostic["height"] = height
+    }
+    if let bytes = timing.bytes {
+      diagnostic["bytes"] = bytes
+    }
+    guard
+      let data = try? JSONSerialization.data(
+        withJSONObject: diagnostic,
+        options: [.sortedKeys]
+      ),
       var line = String(data: data, encoding: .utf8)
     else {
       return

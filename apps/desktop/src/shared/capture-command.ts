@@ -13,14 +13,18 @@ export const captureCommandChannels = {
   completed: 'capture:completed',
   getSurfaceSnapshot: 'capture:get-surface-snapshot',
   surfaceChanged: 'capture:surface-changed',
-  getRegionOverlaySnapshot: 'region-overlay:get-snapshot',
+  regionOverlayHostReady: 'region-overlay:host-ready',
+  regionOverlayActivated: 'region-overlay:activated',
+  regionOverlayReset: 'region-overlay:reset',
   regionOverlayReady: 'region-overlay:ready',
   cancelRegionOverlay: 'region-overlay:cancel',
   submitRegionSelection: 'region-overlay:submit-selection',
 } as const
 
 export interface RegionOverlaySnapshot {
+  generation: number
   targetSize: LogicalSize
+  previewPixelSize: LogicalSize
   previewUrl: string
 }
 
@@ -77,8 +81,10 @@ export interface LumiereRendererApi extends LumiereSettingsApi {
   captureDisplay(): Promise<CaptureCommandResult>
   captureRegion(): Promise<CaptureCommandResult>
   onCaptureCompleted(listener: (result: CaptureCommandResult) => void): () => void
-  getRegionOverlaySnapshot(): Promise<RegionOverlaySnapshot>
-  regionOverlayReady(): void
-  cancelRegionOverlay(): void
-  submitRegionSelection(geometry: CaptureGeometry): void
+  onRegionOverlayActivated(listener: (snapshot: RegionOverlaySnapshot) => void): () => void
+  onRegionOverlayReset(listener: () => void): () => void
+  regionOverlayHostReady(): void
+  regionOverlayReady(generation: number): void
+  cancelRegionOverlay(generation: number): void
+  submitRegionSelection(generation: number, geometry: CaptureGeometry): void
 }

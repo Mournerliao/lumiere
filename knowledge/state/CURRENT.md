@@ -26,6 +26,16 @@ immediately, and restores the value after restart. Region capture now freezes on
 frame before the Overlay appears: the Host retains that frame, Electron main grants a
 revocable preview URL, and commit crops the same frozen frame. The Overlay owns only
 target-local selection geometry and local cancel; it never sees the preview file path.
+Region preparation now derives a lossless sRGB preview at one pixel per rounded target
+logical point while retaining the full backing-resolution authoritative frame. Electron
+prewarms and reuses one sandboxed Overlay renderer, scopes every activation and response to
+a generation, and prepares that renderer in parallel with native capture. macOS reuses one
+prewarmed `CIContext` and prefetches ScreenCaptureKit shareable content only after permission
+is already granted; Windows has a dedicated linear-light downsampling preview encoder that
+does not allocate a full-resolution BGRA8 intermediate. The temporary PNG/token bridge remains
+because measured file I/O is not the latency bottleneck.
+[Issue #15](https://github.com/sousouliao/lumiere/issues/15) tracks this slice and remains
+open for Windows build, runtime, performance, and resource-stability verification.
 macOS display and region capture convert once to a timestamped
 RGBA8/sRGB PNG representation and deliver those same bytes through native clipboard and
 folder adapters. The macOS Host now derives Display and Region output dimensions from the
@@ -109,8 +119,8 @@ acceptance criteria and implementation status for each vertical slice.
 
 ## Verification Truth
 
-- **Repository:** frozen install, layout and TypeScript checks, one hundred thirteen cross-platform
-  shell/protocol/process/settings/UI tests, five macOS path/packaging/release tests, thirty-two Swift
+- **Repository:** frozen install, layout and TypeScript checks, one hundred fifteen cross-platform
+  shell/protocol/process/settings/UI tests, five macOS path/packaging/release tests, thirty-four Swift
   protocol/capability/permission/diagnostic/geometry/native-delivery tests, and the current
   production TypeScript check pass on this Mac. Windows Host/engine tests for protocol v3
   frozen Region sessions are in source but were not run here because `dotnet` is not
@@ -142,6 +152,14 @@ acceptance criteria and implementation status for each vertical slice.
 - **macOS development runtime:** the Electron display action drove ScreenCaptureKit to
   RGBA8 PNG files with alpha and an embedded sRGB IEC61966-2.1 profile on an Apple
   Silicon Mac. SDR capture was observed at 2560×1440 on an external display. Native
+  Region preview latency on the 5120×2880 backing display now uses a 2560×1440 preview.
+  One permission-safe prewarmed cold sample reached the shown Overlay in 607 ms. Ten warm
+  samples reached it in 311–415 ms with a 343.5 ms median, satisfying the 650 ms cold,
+  350 ms warm-median, and 450 ms warm-maximum gates. A real 500×300 logical selection then
+  produced a 1000×600 PNG with the embedded sRGB IEC61966-2.1 profile, confirming that preview
+  downsampling does not replace the full-resolution commit path. These measurements establish
+  the named Mac's SDR Region latency and geometry only; Windows runtime and HDR Visual Match
+  remain separate truth.
   HDR acquisition and tone mapping were then observed at 1728×1117 on the built-in
   Retina XDR display through both the host and Electron process boundary. After the
   lifecycle review fixes, the Electron path again produced a 2560×1440 sRGB PNG from

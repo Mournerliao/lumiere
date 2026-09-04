@@ -51,6 +51,28 @@ public sealed class SrgbVisualMatchPixelConverterTests
             image.Bgra8PixelData);
     }
 
+    [Fact]
+    public void ConvertRgba16FloatToBgra8_DownscalesInLinearLightBeforeSrgbConversion()
+    {
+        var readback = CreateReadback(
+            2,
+            1,
+            [
+                (0f, 0f, 0f, 1f),
+                (1f, 1f, 1f, 1f),
+            ]);
+
+        var image = SrgbVisualMatchPixelConverter.ConvertRgba16FloatToBgra8(
+            readback,
+            1,
+            1,
+            SrgbVisualMatchConversionContext.ForSdrDisplay());
+
+        Assert.Equal(1, image.Width);
+        Assert.Equal(1, image.Height);
+        Assert.Equal([187, 187, 187, 255], image.Bgra8PixelData);
+    }
+
     [Theory]
     [InlineData(80f, 1f)]
     [InlineData(160f, 2f)]

@@ -10,33 +10,91 @@ internal static class SrgbVisualMatchPixelConverter
     public static SrgbVisualMatchImage ConvertRgba16FloatToBgra8(
         CapturedFrameReadback readback,
         SrgbVisualMatchConversionContext context)
+        => ConvertRgba16FloatToBgra8(readback, readback.Width, readback.Height, context);
+
+    public static SrgbVisualMatchImage ConvertRgba16FloatToBgra8(
+        CapturedFrameReadback readback,
+        int outputWidth,
+        int outputHeight,
+        SrgbVisualMatchConversionContext context)
     {
         ArgumentNullException.ThrowIfNull(readback);
-
-        var bgra8Data = new byte[checked(readback.Width * readback.Height * SrgbVisualMatchImage.BytesPerPixel)];
-        var pixelCount = checked(readback.Width * readback.Height);
-
-        for (int pixelIndex = 0; pixelIndex < pixelCount; pixelIndex++)
+        if (outputWidth <= 0)
         {
-            var sourceOffset = pixelIndex * CapturedFrameReadback.BytesPerPixel;
-            var destOffset = pixelIndex * SrgbVisualMatchImage.BytesPerPixel;
-
-            var r = ConvertChannel(ReadHalf(readback.PixelData, sourceOffset), context);
-            var g = ConvertChannel(ReadHalf(readback.PixelData, sourceOffset + 2), context);
-            var b = ConvertChannel(ReadHalf(readback.PixelData, sourceOffset + 4), context);
-            var a = ReadHalf(readback.PixelData, sourceOffset + 6);
-
-            bgra8Data[destOffset] = ToByte(b);
-            bgra8Data[destOffset + 1] = ToByte(g);
-            bgra8Data[destOffset + 2] = ToByte(r);
-            bgra8Data[destOffset + 3] = ToByte(a);
+            throw new ArgumentOutOfRangeException(nameof(outputWidth));
         }
 
-        return new SrgbVisualMatchImage(readback.Width, readback.Height, bgra8Data);
+        if (outputHeight <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(outputHeight));
+        }
+
+        var bgra8Data = new byte[checked(outputWidth * outputHeight * SrgbVisualMatchImage.BytesPerPixel)];
+
+        for (int outputY = 0; outputY < outputHeight; outputY++)
+        {
+            var sourceY = Math.Clamp(
+                ((outputY + 0.5f) * readback.Height / outputHeight) - 0.5f,
+                0f,
+                readback.Height - 1f);
+            var y0 = (int)MathF.Floor(sourceY);
+            var y1 = Math.Min(y0 + 1, readback.Height - 1);
+            var fy = sourceY - y0;
+            for (int outputX = 0; outputX < outputWidth; outputX++)
+            {
+                var sourceX = Math.Clamp(
+                    ((outputX + 0.5f) * readback.Width / outputWidth) - 0.5f,
+                    0f,
+                    readback.Width - 1f);
+                var x0 = (int)MathF.Floor(sourceX);
+                var x1 = Math.Min(x0 + 1, readback.Width - 1);
+                var fx = sourceX - x0;
+                var destOffset = ((outputY * outputWidth) + outputX) * SrgbVisualMatchImage.BytesPerPixel;
+
+                var r = ConvertChannel(SampleLinear(readback, x0, y0, x1, y1, fx, fy, 0), context);
+                var g = ConvertChannel(SampleLinear(readback, x0, y0, x1, y1, fx, fy, 2), context);
+                var b = ConvertChannel(SampleLinear(readback, x0, y0, x1, y1, fx, fy, 4), context);
+                var a = SampleLinear(readback, x0, y0, x1, y1, fx, fy, 6);
+
+                bgra8Data[destOffset] = ToByte(b);
+                bgra8Data[destOffset + 1] = ToByte(g);
+                bgra8Data[destOffset + 2] = ToByte(r);
+                bgra8Data[destOffset + 3] = ToByte(a);
+            }
+        }
+
+        return new SrgbVisualMatchImage(outputWidth, outputHeight, bgra8Data);
     }
 
-    private static Half ConvertChannel(Half capturedLinear, SrgbVisualMatchConversionContext context) =>
-        LinearToSrgb(ToneMapForVisualMatch((Half)((float)capturedLinear * context.InputLinearScale)));
+    private static Half ConvertChannel(float capturedLinear, SrgbVisualMatchConversionContext context) =>
+        LinearToSrgb(ToneMapForVisualMatch((Half)(capturedLinear * context.InputLinearScale)));
+
+    private static float SampleLinear(
+        CapturedFrameReadback readback,
+        int x0,
+        int y0,
+        int x1,
+        int y1,
+        float fx,
+        float fy,
+        int channelOffset)
+    {
+        var top = Lerp(
+            ReadChannel(readback, x0, y0, channelOffset),
+            ReadChannel(readback, x1, y0, channelOffset),
+            fx);
+        var bottom = Lerp(
+            ReadChannel(readback, x0, y1, channelOffset),
+            ReadChannel(readback, x1, y1, channelOffset),
+            fx);
+        return Lerp(top, bottom, fy);
+    }
+
+    private static float ReadChannel(CapturedFrameReadback readback, int x, int y, int channelOffset)
+    {
+        var offset = ((y * readback.Width) + x) * CapturedFrameReadback.BytesPerPixel;
+        return (float)ReadHalf(readback.PixelData, offset + channelOffset);
+    }
 
     private static Half ToneMapForVisualMatch(Half linear)
     {
@@ -81,6 +139,8 @@ internal static class SrgbVisualMatchPixelConverter
     private static float SmoothStep(float amount) =>
         amount * amount * (3f - (2f * amount));
 
-    private static byte ToByte(Half value) =>
-        (byte)(Math.Clamp((float)value, 0f, 1f) * 255);
+    private static byte ToByte(Half value) => ToByte((float)value);
+
+    private static byte ToByte(float value) =>
+        (byte)(Math.Clamp(value, 0f, 1f) * 255);
 }

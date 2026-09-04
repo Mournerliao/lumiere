@@ -66,6 +66,7 @@ public sealed class WindowsDisplayCaptureEngineTests
     {
         var target = CreateTarget();
         var output = new RecordingOutput();
+        var previewEncoder = new SuccessfulPreviewEncoder();
         var frameArrivals = 0;
         await using var engine = CreateEngine(
             target,
@@ -77,16 +78,20 @@ public sealed class WindowsDisplayCaptureEngineTests
                     new CaptureSessionResources(() => { }),
                     EngineReadinessStatus.Initializing("Capture started"));
             },
-            output);
+            output,
+            previewEncoder: previewEncoder);
         var targetSnapshot = WindowsTargetCapability.CreateForTest(
             WindowsTargetHdrState.Inactive,
             new WindowsTargetLogicalSize(1, 1),
             target);
 
-        var prepared = await engine.PrepareRegionAsync(targetSnapshot);
+        var prepared = await engine.PrepareRegionAsync("prepare-region-test", targetSnapshot);
         Assert.True(prepared.Prepared);
         Assert.False(string.IsNullOrWhiteSpace(prepared.SessionId));
         Assert.True(File.Exists(prepared.PreviewPath));
+        Assert.Equal(1, prepared.PreviewPixelWidth);
+        Assert.Equal(1, prepared.PreviewPixelHeight);
+        Assert.Equal((1, 1), previewEncoder.RequestedSize);
         Assert.Equal(1, frameArrivals);
 
         var result = await engine.CommitRegionAsync(
@@ -119,7 +124,8 @@ public sealed class WindowsDisplayCaptureEngineTests
                     "GetCursorPos returned access denied."))),
             _ => throw new InvalidOperationException("must not probe"),
             (_, _, _) => throw new InvalidOperationException("must not capture"),
-            new SuccessfulOutput());
+            new SuccessfulOutput(),
+            new SuccessfulPreviewEncoder());
 
         var result = await engine.CaptureDisplayAsync(
             new WindowsCaptureRequest("request-unavailable", OutputTarget.Folder, "C:\\captures"));
@@ -211,7 +217,8 @@ public sealed class WindowsDisplayCaptureEngineTests
         CaptureTarget target,
         Func<Action<CapturedFrameTexture>, Action<EngineReadinessStatus>, CaptureStartResult> startCapture,
         IOutputService? output = null,
-        HdrDisplayCapability? hdrCapability = null) =>
+        HdrDisplayCapability? hdrCapability = null,
+        IRegionPreviewEncoder? previewEncoder = null) =>
         new(
             command => CaptureCommandResult.Accepted(command),
             _ => { },
@@ -223,7 +230,8 @@ public sealed class WindowsDisplayCaptureEngineTests
                 ColorSpaceType.RgbFullG22NoneP709,
                 "test display"),
             (_, onFrame, onFailure) => startCapture(onFrame, onFailure),
-            output ?? new SuccessfulOutput());
+            output ?? new SuccessfulOutput(),
+            previewEncoder ?? new SuccessfulPreviewEncoder());
 
     private static CaptureTarget CreateTarget() =>
         CaptureTarget.CreateForTest(
@@ -243,12 +251,6 @@ public sealed class WindowsDisplayCaptureEngineTests
                     "Saved to folder",
                     artifactPath: "C:\\captures\\test.png")));
 
-        public Task<byte[]> EncodePngAsync(
-            CapturedFrameTexture texture,
-            CropPixelRect? cropRegion,
-            SrgbVisualMatchConversionContext context,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(PreviewPng);
     }
 
     private sealed class RecordingOutput : IOutputService
@@ -267,12 +269,6 @@ public sealed class WindowsDisplayCaptureEngineTests
                     artifactPath: "C:\\captures\\test.png")));
         }
 
-        public Task<byte[]> EncodePngAsync(
-            CapturedFrameTexture texture,
-            CropPixelRect? cropRegion,
-            SrgbVisualMatchConversionContext context,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(PreviewPng);
     }
 
     private sealed class ThrowingOutput : IOutputService
@@ -282,12 +278,22 @@ public sealed class WindowsDisplayCaptureEngineTests
             CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException("encoding failed");
 
-        public Task<byte[]> EncodePngAsync(
+    }
+
+    private sealed class SuccessfulPreviewEncoder : IRegionPreviewEncoder
+    {
+        public (int Width, int Height)? RequestedSize { get; private set; }
+
+        public Task<RegionPreviewArtifact> EncodePreviewAsync(
             CapturedFrameTexture texture,
-            CropPixelRect? cropRegion,
+            int outputWidth,
+            int outputHeight,
             SrgbVisualMatchConversionContext context,
-            CancellationToken cancellationToken = default) =>
-            throw new InvalidOperationException("encoding failed");
+            CancellationToken cancellationToken = default)
+        {
+            RequestedSize = (outputWidth, outputHeight);
+            return Task.FromResult(new RegionPreviewArtifact(PreviewPng, outputWidth, outputHeight));
+        }
     }
 
     private static readonly byte[] PreviewPng = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];

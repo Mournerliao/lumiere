@@ -29,6 +29,7 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
         CaptureStartResult> startCapture;
     private static readonly int RegionLeaseMilliseconds = 60_000;
     private readonly IOutputService output;
+    private readonly IRegionPreviewEncoder regionPreviewEncoder;
     private readonly Func<CapturedFrameTexture, CapturedFrameTexture> copyOwnedFrame;
     private readonly IDisposable? ownedResources;
     private readonly TimeSpan frameTimeout;
@@ -45,6 +46,7 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
         Func<CaptureTarget, HdrDisplayCapability> probeHdrCapability,
         Func<CaptureTarget, Action<CapturedFrameTexture>, Action<EngineReadinessStatus>, CaptureStartResult> startCapture,
         IOutputService output,
+        IRegionPreviewEncoder regionPreviewEncoder,
         IDisposable? ownedResources = null,
         TimeSpan? frameTimeout = null,
         Func<CapturedFrameTexture, CapturedFrameTexture>? copyOwnedFrame = null)
@@ -55,6 +57,7 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
         this.probeHdrCapability = probeHdrCapability ?? throw new ArgumentNullException(nameof(probeHdrCapability));
         this.startCapture = startCapture ?? throw new ArgumentNullException(nameof(startCapture));
         this.output = output ?? throw new ArgumentNullException(nameof(output));
+        this.regionPreviewEncoder = regionPreviewEncoder ?? throw new ArgumentNullException(nameof(regionPreviewEncoder));
         this.copyOwnedFrame = copyOwnedFrame ?? (frame => frame);
         this.ownedResources = ownedResources;
         this.frameTimeout = frameTimeout ?? DefaultFrameTimeout;
@@ -82,6 +85,8 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
                 MonitorSelectionInterop.GetCurrentMonitorFromCursor,
                 WindowsDisplayTargetFactory.Create);
             var output = ConfiguredOutputService.CreateDefault(deviceResources);
+            var regionPreviewEncoder = new SrgbRegionPreviewEncoder(
+                new CapturedFrameTextureReadback(deviceResources));
 
             return new WindowsDisplayCaptureEngine(
                 captureService.TryReserveCommand,
@@ -90,6 +95,7 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
                 WindowsDisplayTargetFactory.ProbeHdrCapability,
                 captureService.StartCapture,
                 output,
+                regionPreviewEncoder,
                 deviceResources,
                 copyOwnedFrame: captureService.CopyToOwnedTexture);
         }
@@ -120,11 +126,16 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
     }
 
     public async Task<WindowsPrepareRegionResult> PrepareRegionAsync(
+        string requestId,
         WindowsTargetCapability target,
         CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(requestId);
         ArgumentNullException.ThrowIfNull(target);
+        var startedAt = System.Diagnostics.Stopwatch.GetTimestamp();
+        var lastAt = startedAt;
         await ReleaseFrozenRegionAsync();
+        ReportRegionTiming(requestId, "target-resolved", startedAt, ref lastAt);
         var request = new WindowsCaptureRequest("prepare-region", OutputTarget.Folder);
         var acquired = await CaptureAsync(request, target, cancellationToken);
         if (acquired.HeldFrame is null)
@@ -135,15 +146,54 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
                 acquired.Result.UserMessage,
                 acquired.Result.TechnicalDetail);
         }
+        ReportRegionTiming(
+            requestId,
+            "frame-acquired",
+            startedAt,
+            ref lastAt,
+            acquired.HeldFrame.Texture.Width,
+            acquired.HeldFrame.Texture.Height);
 
         try
         {
-            var previewBytes = await output.EncodePngAsync(
+            var logicalSize = target.LogicalSize
+                ?? throw new InvalidOperationException("Region capture requires a logical target size.");
+            var previewWidth = checked((int)Math.Round(logicalSize.Width, MidpointRounding.AwayFromZero));
+            var previewHeight = checked((int)Math.Round(logicalSize.Height, MidpointRounding.AwayFromZero));
+            var previewStartedAt = System.Diagnostics.Stopwatch.GetTimestamp();
+            var preview = await regionPreviewEncoder.EncodePreviewAsync(
                 acquired.HeldFrame.Texture,
-                cropRegion: null,
+                previewWidth,
+                previewHeight,
                 ResolveVisualMatchContext(acquired.HeldFrame.HdrCapability),
                 cancellationToken);
-            var previewPath = WriteRegionPreview(previewBytes);
+            var previewBaseElapsed = (long)Math.Round(
+                System.Diagnostics.Stopwatch.GetElapsedTime(startedAt, previewStartedAt).TotalMilliseconds);
+            LogRegionTiming(
+                requestId,
+                "preview-rendered",
+                previewBaseElapsed + preview.RenderMilliseconds,
+                preview.RenderMilliseconds,
+                preview.Width,
+                preview.Height);
+            LogRegionTiming(
+                requestId,
+                "preview-encoded",
+                previewBaseElapsed + preview.RenderMilliseconds + preview.EncodeMilliseconds,
+                preview.EncodeMilliseconds,
+                preview.Width,
+                preview.Height,
+                preview.Bytes.Length);
+            lastAt = System.Diagnostics.Stopwatch.GetTimestamp();
+            var previewPath = WriteRegionPreview(preview.Bytes);
+            ReportRegionTiming(
+                requestId,
+                "preview-written",
+                startedAt,
+                ref lastAt,
+                preview.Width,
+                preview.Height,
+                preview.Bytes.Length);
             var sessionId = Guid.NewGuid().ToString("N");
             var session = new FrozenRegionSession(
                 sessionId,
@@ -172,8 +222,8 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
                 sessionId,
                 target.LogicalSize,
                 previewPath,
-                acquired.HeldFrame.Texture.Width,
-                acquired.HeldFrame.Texture.Height,
+                preview.Width,
+                preview.Height,
                 RegionLeaseMilliseconds);
         }
         catch
@@ -181,6 +231,45 @@ public sealed class WindowsDisplayCaptureEngine : IAsyncDisposable
             acquired.HeldFrame.Dispose();
             throw;
         }
+    }
+
+    private static void ReportRegionTiming(
+        string requestId,
+        string stage,
+        long startedAt,
+        ref long lastAt,
+        int? width = null,
+        int? height = null,
+        int? bytes = null,
+        long? stageMilliseconds = null)
+    {
+        var now = System.Diagnostics.Stopwatch.GetTimestamp();
+        var elapsed = (long)Math.Round(
+            System.Diagnostics.Stopwatch.GetElapsedTime(startedAt, now).TotalMilliseconds);
+        var adjacent = stageMilliseconds ?? (long)Math.Round(
+            System.Diagnostics.Stopwatch.GetElapsedTime(lastAt, now).TotalMilliseconds);
+        lastAt = now;
+        LogRegionTiming(requestId, stage, elapsed, adjacent, width, height, bytes);
+    }
+
+    private static void LogRegionTiming(
+        string requestId,
+        string stage,
+        long elapsedMilliseconds,
+        long stageMilliseconds,
+        int? width = null,
+        int? height = null,
+        int? bytes = null)
+    {
+        LoggerHolder.Value.LogInformation(
+            "region-capture-timing requestId={RequestId} stage={Stage} elapsedMilliseconds={ElapsedMilliseconds} stageMilliseconds={StageMilliseconds} width={Width} height={Height} bytes={Bytes}",
+            requestId,
+            stage,
+            elapsedMilliseconds,
+            stageMilliseconds,
+            width,
+            height,
+            bytes);
     }
 
     public async Task<WindowsCaptureResult> CommitRegionAsync(

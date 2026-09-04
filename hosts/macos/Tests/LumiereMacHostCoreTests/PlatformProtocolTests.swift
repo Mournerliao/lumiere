@@ -1,5 +1,6 @@
 import CoreGraphics
 import Foundation
+import ImageIO
 import ScreenCaptureKit
 import Testing
 
@@ -163,6 +164,57 @@ func resolvesHiDPIDisplayPixelsFromFilterScale() throws {
   #expect(output.capturePixelHeight == 2880)
   #expect(output.pixelWidth == 5120)
   #expect(output.pixelHeight == 2880)
+}
+
+@Test(
+  arguments: [
+    LogicalSize(width: 5120, height: 2880),
+    LogicalSize(width: 4096, height: 2304),
+    LogicalSize(width: 3413.33, height: 1920),
+    LogicalSize(width: 2560, height: 1440),
+  ]
+)
+func regionPreviewUsesOnePixelPerRoundedLogicalPoint(logicalSize: LogicalSize) throws {
+  let preview = try #require(RegionPreviewGeometry.pixelSize(for: logicalSize))
+
+  #expect(preview.width == Int(logicalSize.width.rounded()))
+  #expect(preview.height == Int(logicalSize.height.rounded()))
+}
+
+@Test(arguments: [false, true])
+func rendersLogicalSizePreviewAsSrgbPNG(sourceIsHDR: Bool) async throws {
+  let srgb = try #require(CGColorSpace(name: CGColorSpace.sRGB))
+  let context = try #require(
+    CGContext(
+      data: nil,
+      width: 4,
+      height: 2,
+      bitsPerComponent: 8,
+      bytesPerRow: 16,
+      space: srgb,
+      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+    )
+  )
+  let fillColor = try #require(
+    CGColor(colorSpace: srgb, components: [0.25, 0.5, 0.75, 1])
+  )
+  context.setFillColor(fillColor)
+  context.fill(CGRect(x: 0, y: 0, width: 4, height: 2))
+  let source = try #require(context.makeImage())
+  let service = MacCaptureService()
+
+  let preview = try await service.makeVisualMatchImage(
+    source,
+    sourceIsHDR: sourceIsHDR,
+    outputPixelSize: PixelSize(width: 2, height: 1)
+  )
+  let png = try await service.encodePNG(preview)
+  let imageSource = try #require(CGImageSourceCreateWithData(png as CFData, nil))
+  let decoded = try #require(CGImageSourceCreateImageAtIndex(imageSource, 0, nil))
+
+  #expect(decoded.width == 2)
+  #expect(decoded.height == 1)
+  #expect(decoded.colorSpace?.name == CGColorSpace.sRGB)
 }
 
 @Test

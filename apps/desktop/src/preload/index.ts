@@ -34,16 +34,38 @@ const platformApi: LumiereRendererApi = {
       ipcRenderer.removeListener(captureCommandChannels.completed, handleCompleted)
     }
   },
-  getRegionOverlaySnapshot: () =>
-    ipcRenderer.invoke(captureCommandChannels.getRegionOverlaySnapshot),
-  regionOverlayReady: () => {
-    ipcRenderer.send(captureCommandChannels.regionOverlayReady)
+  onRegionOverlayActivated: (listener) => {
+    const handleActivated = (
+      _event: Electron.IpcRendererEvent,
+      snapshot: Parameters<typeof listener>[0],
+    ): void => {
+      listener(snapshot)
+    }
+    ipcRenderer.on(captureCommandChannels.regionOverlayActivated, handleActivated)
+    return () => {
+      ipcRenderer.removeListener(captureCommandChannels.regionOverlayActivated, handleActivated)
+    }
   },
-  cancelRegionOverlay: () => {
-    ipcRenderer.send(captureCommandChannels.cancelRegionOverlay)
+  onRegionOverlayReset: (listener) => {
+    const handleReset = (): void => {
+      listener()
+    }
+    ipcRenderer.on(captureCommandChannels.regionOverlayReset, handleReset)
+    return () => {
+      ipcRenderer.removeListener(captureCommandChannels.regionOverlayReset, handleReset)
+    }
   },
-  submitRegionSelection: (geometry) => {
-    ipcRenderer.send(captureCommandChannels.submitRegionSelection, geometry)
+  regionOverlayHostReady: () => {
+    ipcRenderer.send(captureCommandChannels.regionOverlayHostReady)
+  },
+  regionOverlayReady: (generation) => {
+    ipcRenderer.send(captureCommandChannels.regionOverlayReady, generation)
+  },
+  cancelRegionOverlay: (generation) => {
+    ipcRenderer.send(captureCommandChannels.cancelRegionOverlay, generation)
+  },
+  submitRegionSelection: (generation, geometry) => {
+    ipcRenderer.send(captureCommandChannels.submitRegionSelection, generation, geometry)
   },
   getSettingsSnapshot: () => ipcRenderer.invoke(settingsCommandChannels.getSnapshot),
   chooseSaveDirectory: () => ipcRenderer.invoke(settingsCommandChannels.chooseSaveDirectory),

@@ -39,6 +39,8 @@ export type RegionCapturePreparation =
     }
   | { status: 'failed'; result: CaptureCommandResult }
 
+export type RegionCaptureTimingReporter = (stage: 'native-prepared') => void
+
 const defaultPreferences: CapturePreferencesReader = {
   getCapturePreferences: () => ({ delivery: 'both', hdrStatusReminders: true }),
 }
@@ -106,21 +108,17 @@ export class CaptureCommandRouter {
     }
   }
 
-  public async beginRegionCapture(): Promise<RegionCapturePreparation> {
+  public async beginRegionCapture(
+    reportTiming?: RegionCaptureTimingReporter,
+  ): Promise<RegionCapturePreparation> {
     if (this.captureInFlight) {
       return { status: 'failed', result: captureAlreadyInProgress() }
     }
 
     this.captureInFlight = true
     try {
-      const { delivery } = this.preferences.getCapturePreferences()
-      const capabilities = await this.host.getCapabilities()
-      const unavailable = captureUnavailableNotice(capabilities, 'region', delivery)
-      if (unavailable) {
-        this.captureInFlight = false
-        return { status: 'failed', result: failedResult(unavailable) }
-      }
       const prepared = await this.host.prepareRegion()
+      reportTiming?.('native-prepared')
       if (prepared.status === 'failed') {
         this.captureInFlight = false
         return { status: 'failed', result: failedResult(noticeForFailure(prepared.failure)) }

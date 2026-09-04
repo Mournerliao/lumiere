@@ -6,11 +6,49 @@ import Foundation
 import ImageIO
 import ScreenCaptureKit
 
+public struct CaptureTiming: Sendable {
+  public let requestID: String
+  public let stage: String
+  public let elapsedMilliseconds: Int
+  public let stageMilliseconds: Int
+  public let width: Int?
+  public let height: Int?
+  public let bytes: Int?
+
+  public init(
+    requestID: String,
+    stage: String,
+    elapsedMilliseconds: Int,
+    stageMilliseconds: Int,
+    width: Int? = nil,
+    height: Int? = nil,
+    bytes: Int? = nil
+  ) {
+    self.requestID = requestID
+    self.stage = stage
+    self.elapsedMilliseconds = elapsedMilliseconds
+    self.stageMilliseconds = stageMilliseconds
+    self.width = width
+    self.height = height
+    self.bytes = bytes
+  }
+}
+
 public actor MacCaptureService {
   private static let regionLeaseMilliseconds = 60_000
   private var frozenRegion: FrozenRegionSession?
+  private var warmedShareableContent: SCShareableContent?
+  private var timingLastInstant: [String: ContinuousClock.Instant] = [:]
+  private let timingReporter: (@Sendable (CaptureTiming) -> Void)?
+  private let visualMatchContext = CIContext(options: [
+    .workingColorSpace: CGColorSpace(name: CGColorSpace.extendedLinearSRGB) as Any,
+    .outputColorSpace: CGColorSpace(name: CGColorSpace.sRGB) as Any,
+  ])
 
-  public init() {}
+  public init(timingReporter: (@Sendable (CaptureTiming) -> Void)? = nil) {
+    self.timingReporter = timingReporter
+    Self.warmVisualMatchContext(visualMatchContext)
+  }
 
   public func response(for request: PlatformRequest) async -> PlatformResponse {
     switch request.method {
@@ -25,7 +63,7 @@ public actor MacCaptureService {
         result: .capture(await captureDisplay(parameters: parameters))
       )
     case .prepareRegion:
-      let result = await prepareRegion()
+      let result = await prepareRegion(requestID: request.id)
       switch result {
       case .success(let prepared):
         return .success(id: request.id, result: .preparedRegion(prepared))
@@ -65,6 +103,7 @@ public actor MacCaptureService {
         outputProfiles: ["srgb-visual-match"]
       )
     }
+    await warmScreenCaptureKitIfAuthorized()
     return PlatformCapabilities(
       contractVersion: platformContractVersion,
       platform: "macos",
@@ -105,7 +144,8 @@ public actor MacCaptureService {
     }
   }
 
-  private func prepareRegion() async -> PrepareOutcome {
+  private func prepareRegion(requestID: String) async -> PrepareOutcome {
+    let startedAt = ContinuousClock.now
     releaseFrozenRegion()
     guard let target = await ActiveDisplayTargetResolver.resolve() else {
       return .failure(
@@ -116,11 +156,51 @@ public actor MacCaptureService {
         )
       )
     }
+    reportTiming(requestID: requestID, stage: "target-resolved", startedAt: startedAt)
 
     do {
       let frame = try await acquireFrozenFrame(target: target)
-      let previewData = try makeVisualMatchPNG(frame.image, sourceIsHDR: frame.capturesHDR)
+      reportTiming(
+        requestID: requestID,
+        stage: "frame-acquired",
+        startedAt: startedAt,
+        width: frame.image.width,
+        height: frame.image.height
+      )
+      guard let previewPixelSize = RegionPreviewGeometry.pixelSize(for: frame.targetLogicalSize)
+      else {
+        throw MacCaptureSessionError.targetUnavailable
+      }
+      let previewImage = try makeVisualMatchImage(
+        frame.image,
+        sourceIsHDR: frame.capturesHDR,
+        outputPixelSize: previewPixelSize
+      )
+      reportTiming(
+        requestID: requestID,
+        stage: "preview-rendered",
+        startedAt: startedAt,
+        width: previewImage.width,
+        height: previewImage.height
+      )
+      let previewData = try encodePNG(previewImage)
+      reportTiming(
+        requestID: requestID,
+        stage: "preview-encoded",
+        startedAt: startedAt,
+        width: previewImage.width,
+        height: previewImage.height,
+        bytes: previewData.count
+      )
       let previewURL = try writeRegionPreview(previewData)
+      reportTiming(
+        requestID: requestID,
+        stage: "preview-written",
+        startedAt: startedAt,
+        width: previewPixelSize.width,
+        height: previewPixelSize.height,
+        bytes: previewData.count
+      )
       let sessionId = UUID().uuidString
       let expiration = Task { [weak self] in
         try? await Task.sleep(for: .milliseconds(Self.regionLeaseMilliseconds))
@@ -143,7 +223,7 @@ public actor MacCaptureService {
           preview: PreparedRegionResult.Preview(
             filePath: previewURL.path,
             mediaType: "image/png",
-            pixelSize: PixelSize(width: frame.image.width, height: frame.image.height)
+            pixelSize: previewPixelSize
           ),
           leaseMilliseconds: Self.regionLeaseMilliseconds
         )
@@ -151,6 +231,57 @@ public actor MacCaptureService {
     } catch {
       return .failure(mapCaptureError(error))
     }
+  }
+
+  private func reportTiming(
+    requestID: String,
+    stage: String,
+    startedAt: ContinuousClock.Instant,
+    width: Int? = nil,
+    height: Int? = nil,
+    bytes: Int? = nil
+  ) {
+    let now = ContinuousClock.now
+    let previous = timingLastInstant[requestID] ?? startedAt
+    timingLastInstant[requestID] = stage == "preview-written" ? nil : now
+    timingReporter?(
+      CaptureTiming(
+        requestID: requestID,
+        stage: stage,
+        elapsedMilliseconds: milliseconds(startedAt.duration(to: now)),
+        stageMilliseconds: milliseconds(previous.duration(to: now)),
+        width: width,
+        height: height,
+        bytes: bytes
+      )
+    )
+  }
+
+  private func milliseconds(_ duration: Duration) -> Int {
+    let components = duration.components
+    return Int(
+      (Double(components.seconds) * 1_000
+        + Double(components.attoseconds) / 1_000_000_000_000_000).rounded()
+    )
+  }
+
+  private static func warmVisualMatchContext(_ context: CIContext) {
+    guard let srgb = CGColorSpace(name: CGColorSpace.sRGB) else { return }
+    let input = CIImage(color: .white).cropped(to: CGRect(x: 0, y: 0, width: 2, height: 2))
+    let toneMap = CIFilter.toneMapHeadroom()
+    toneMap.inputImage = input
+    toneMap.sourceHeadroom = 1
+    toneMap.targetHeadroom = 1
+    let resize = CIFilter.lanczosScaleTransform()
+    resize.inputImage = toneMap.outputImage
+    resize.scale = 0.5
+    resize.aspectRatio = 1
+    _ = context.createCGImage(
+      resize.outputImage ?? input,
+      from: CGRect(x: 0, y: 0, width: 1, height: 1),
+      format: .RGBA8,
+      colorSpace: srgb
+    )
   }
 
   private func commitRegion(parameters: CommitRegionParameters) async -> CaptureResult {
@@ -232,10 +363,16 @@ public actor MacCaptureService {
       throw MacCaptureSessionError.permissionDenied
     }
 
-    let content = try await SCShareableContent.excludingDesktopWindows(
-      false,
-      onScreenWindowsOnly: true
-    )
+    let content: SCShareableContent
+    if let warmedShareableContent {
+      content = warmedShareableContent
+      self.warmedShareableContent = nil
+    } else {
+      content = try await SCShareableContent.excludingDesktopWindows(
+        false,
+        onScreenWindowsOnly: true
+      )
+    }
     guard let display = content.displays.first(where: { $0.displayID == target.displayID }) else {
       throw MacCaptureSessionError.targetUnavailable
     }
@@ -284,6 +421,14 @@ public actor MacCaptureService {
     )
   }
 
+  private func warmScreenCaptureKitIfAuthorized() async {
+    guard warmedShareableContent == nil, CGPreflightScreenCaptureAccess() else { return }
+    warmedShareableContent = try? await SCShareableContent.excludingDesktopWindows(
+      false,
+      onScreenWindowsOnly: true
+    )
+  }
+
   private func writeRegionPreview(_ data: Data) throws -> URL {
     let directory = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
       .appendingPathComponent("lumiere-region-preview", isDirectory: true)
@@ -313,12 +458,22 @@ public actor MacCaptureService {
     _ source: CGImage,
     sourceIsHDR: Bool
   ) throws -> Data {
+    try encodePNG(
+      makeVisualMatchImage(source, sourceIsHDR: sourceIsHDR, outputPixelSize: nil)
+    )
+  }
+
+  func makeVisualMatchImage(
+    _ source: CGImage,
+    sourceIsHDR: Bool,
+    outputPixelSize: PixelSize?
+  ) throws -> CGImage {
     guard let srgb = CGColorSpace(name: CGColorSpace.sRGB) else {
       throw CapturePipelineError.srgbColorSpaceUnavailable
     }
 
     let input = CIImage(cgImage: source)
-    let output: CIImage
+    var output: CIImage
     if sourceIsHDR {
       let toneMap = CIFilter.toneMapHeadroom()
       toneMap.inputImage = input
@@ -332,14 +487,32 @@ public actor MacCaptureService {
       output = input
     }
 
-    let context = CIContext(options: [
-      .workingColorSpace: CGColorSpace(name: CGColorSpace.extendedLinearSRGB) as Any,
-      .outputColorSpace: srgb,
-    ])
+    var outputExtent = output.extent
+    if let outputPixelSize,
+      outputPixelSize.width != source.width || outputPixelSize.height != source.height
+    {
+      let scale = CGFloat(outputPixelSize.width) / output.extent.width
+      let verticalScale = CGFloat(outputPixelSize.height) / output.extent.height
+      let resize = CIFilter.lanczosScaleTransform()
+      resize.inputImage = output
+      resize.scale = Float(scale)
+      resize.aspectRatio = Float(verticalScale / scale)
+      guard let resized = resize.outputImage else {
+        throw CapturePipelineError.renderFailed
+      }
+      output = resized
+      outputExtent = CGRect(
+        x: output.extent.origin.x,
+        y: output.extent.origin.y,
+        width: CGFloat(outputPixelSize.width),
+        height: CGFloat(outputPixelSize.height)
+      )
+    }
+
     guard
-      let rgba8 = context.createCGImage(
+      let rgba8 = visualMatchContext.createCGImage(
         output,
-        from: output.extent,
+        from: outputExtent,
         format: .RGBA8,
         colorSpace: srgb
       )
@@ -347,6 +520,10 @@ public actor MacCaptureService {
       throw CapturePipelineError.renderFailed
     }
 
+    return rgba8
+  }
+
+  func encodePNG(_ image: CGImage) throws -> Data {
     guard let data = CFDataCreateMutable(nil, 0),
       let destination = CGImageDestinationCreateWithData(
         data,
@@ -358,7 +535,7 @@ public actor MacCaptureService {
       throw CapturePipelineError.imageDestinationUnavailable
     }
     CGImageDestinationAddImage(
-      destination, rgba8,
+      destination, image,
       [
         kCGImagePropertyColorModel: kCGImagePropertyColorModelRGB,
         kCGImagePropertyProfileName: "sRGB IEC61966-2.1",
@@ -418,6 +595,21 @@ public actor MacCaptureService {
       message: "The macOS capture pipeline failed (\(nsError.domain):\(nsError.code)).",
       retryable: true
     )
+  }
+}
+
+enum RegionPreviewGeometry {
+  static func pixelSize(for targetLogicalSize: LogicalSize) -> PixelSize? {
+    let width = targetLogicalSize.width.rounded()
+    let height = targetLogicalSize.height.rounded()
+    guard
+      width.isFinite, height.isFinite,
+      width >= 1, height >= 1,
+      width <= Double(Int.max), height <= Double(Int.max)
+    else {
+      return nil
+    }
+    return PixelSize(width: Int(width), height: Int(height))
   }
 }
 

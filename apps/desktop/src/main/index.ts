@@ -11,6 +11,7 @@ import {
 import { readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { performance } from 'node:perf_hooks'
 import {
   applyMacDockIcon,
   createApplicationTray,
@@ -28,11 +29,8 @@ import { SettingsStore } from './settings-store'
 import { ShortcutRegistrationError, ShortcutService } from './shortcut-service'
 import { applyAfterCaptureBehavior } from './after-capture'
 import { RegionPreviewRegistry, regionPreviewScheme } from './region-preview-registry'
-import {
-  captureCommandChannels,
-  type CaptureCommandResult,
-  type RegionOverlaySnapshot,
-} from '../shared/capture-command'
+import { RegionOverlayController } from './region-overlay-controller'
+import { captureCommandChannels, type CaptureCommandResult } from '../shared/capture-command'
 import {
   availableOutputDeliveries,
   parseAfterCaptureBehavior,
@@ -72,9 +70,11 @@ let captureSurfaceMonitor: CaptureSurfaceMonitor | null = null
 let settingsStore: SettingsStore | null = null
 let shortcutService: ShortcutService | null = null
 let regionOverlaySession: RegionOverlaySession | null = null
+let regionOverlayController: RegionOverlayController | null = null
+let nextRegionOverlayGeneration = 0
 
 interface RegionOverlaySession {
-  window: BrowserWindow
+  generation: number
   targetSize: LogicalSize
   previewToken: string
   previewUrl: string
@@ -84,6 +84,24 @@ interface RegionOverlaySession {
   resolve(result: CaptureCommandResult): void
   stopWatchingDisplays(): void
   restoreMainWindow: boolean
+  timingStartedAt: number
+  timingLastAt: number
+}
+
+function reportRegionCaptureTiming(
+  stage: string,
+  startedAt: number,
+  details: Record<string, number> = {},
+): void {
+  process.stderr.write(
+    `${JSON.stringify({
+      level: 'info',
+      event: 'region-capture-timing',
+      stage,
+      elapsedMilliseconds: Math.round(performance.now() - startedAt),
+      ...details,
+    })}\n`,
+  )
 }
 
 function createRendererWindow(): BrowserWindow {
@@ -123,6 +141,7 @@ function createRendererWindow(): BrowserWindow {
 
   window.once('ready-to-show', () => {
     window.show()
+    setImmediate(() => regionOverlayController?.prewarm())
   })
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   window.webContents.on('will-navigate', (event) => {
@@ -130,7 +149,10 @@ function createRendererWindow(): BrowserWindow {
   })
   window.once('closed', () => {
     shortcutService?.setRecording(false)
-    if (mainWindow === window) mainWindow = null
+    if (mainWindow === window) {
+      mainWindow = null
+      if (process.platform === 'win32') regionOverlayController?.dispose()
+    }
   })
   bindCaptureSurfaceMonitoring(window)
 
@@ -138,53 +160,6 @@ function createRendererWindow(): BrowserWindow {
     void window.loadURL(process.env.ELECTRON_RENDERER_URL)
   } else {
     void window.loadFile(join(__dirname, '../renderer/index.html'))
-  }
-
-  return window
-}
-
-function createRegionOverlayWindow(bounds: Electron.Rectangle): BrowserWindow {
-  const window = new BrowserWindow({
-    ...bounds,
-    show: false,
-    frame: false,
-    transparent: false,
-    backgroundColor: '#000000',
-    resizable: false,
-    movable: false,
-    minimizable: false,
-    maximizable: false,
-    fullscreenable: false,
-    skipTaskbar: true,
-    alwaysOnTop: true,
-    hasShadow: false,
-    enableLargerThanScreen: true,
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
-  })
-
-  window.setContentProtection(true)
-  if (process.platform === 'darwin') {
-    window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
-    window.setAlwaysOnTop(true, 'screen-saver')
-  }
-  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
-  window.webContents.on('will-navigate', (event) => {
-    event.preventDefault()
-  })
-
-  if (!app.isPackaged && process.env.ELECTRON_RENDERER_URL) {
-    const rendererUrl = new URL(process.env.ELECTRON_RENDERER_URL)
-    rendererUrl.searchParams.set('surface', 'region-overlay')
-    void window.loadURL(rendererUrl.toString())
-  } else {
-    void window.loadFile(join(__dirname, '../renderer/index.html'), {
-      query: { surface: 'region-overlay' },
-    })
   }
 
   return window
@@ -240,7 +215,16 @@ function registerRegionPreviewProtocol(): void {
       return new Response(null, { status: 404 })
     }
     try {
-      return new Response(await readFile(filePath), {
+      const readStartedAt = performance.now()
+      const data = await readFile(filePath)
+      const timingSession = regionOverlaySession
+      if (timingSession) {
+        reportSessionTiming(timingSession, 'preview-read', {
+          readMilliseconds: Math.round(performance.now() - readStartedAt),
+          previewBytes: data.byteLength,
+        })
+      }
+      return new Response(data, {
         status: 200,
         headers: {
           'Content-Type': 'image/png',
@@ -261,6 +245,22 @@ function registerIpc(): void {
     platformHost,
     settingsStore,
   ))
+  regionOverlayController ??= new RegionOverlayController({
+    preloadPath: join(__dirname, '../preload/index.js'),
+    rendererDirectory: join(__dirname, '../renderer'),
+    ...(!app.isPackaged && process.env.ELECTRON_RENDERER_URL
+      ? { rendererUrl: process.env.ELECTRON_RENDERER_URL }
+      : {}),
+    onSessionFailure: (generation) => {
+      if (regionOverlaySession?.generation === generation) {
+        void failRegionOverlay(router, captureFailedResult())
+      }
+    },
+    onTiming: (stage) => {
+      const session = regionOverlaySession
+      if (session) reportSessionTiming(session, stage)
+    },
+  })
   captureSurfaceMonitor ??= new CaptureSurfaceMonitor({
     readTargetId: () => screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).id,
     readSnapshot: () => router.getSurfaceSnapshot(),
@@ -277,7 +277,7 @@ function registerIpc(): void {
   ipcMain.removeHandler(captureCommandChannels.getSurfaceSnapshot)
   ipcMain.removeHandler(captureCommandChannels.captureDisplay)
   ipcMain.removeHandler(captureCommandChannels.captureRegion)
-  ipcMain.removeHandler(captureCommandChannels.getRegionOverlaySnapshot)
+  ipcMain.removeAllListeners(captureCommandChannels.regionOverlayHostReady)
   ipcMain.removeAllListeners(captureCommandChannels.regionOverlayReady)
   ipcMain.removeAllListeners(captureCommandChannels.cancelRegionOverlay)
   ipcMain.removeAllListeners(captureCommandChannels.submitRegionSelection)
@@ -333,50 +333,35 @@ function registerIpc(): void {
     return result
   })
 
-  ipcMain.handle(captureCommandChannels.getRegionOverlaySnapshot, (event, ...args) => {
-    assertTrustedWindow(event, regionOverlaySession?.window ?? null)
-    assertNoArguments(args)
-    const session = regionOverlaySession
-    if (!session) {
-      throw new Error('Region overlay is not ready.')
-    }
-    return {
-      targetSize: session.targetSize,
-      previewUrl: session.previewUrl,
-    } satisfies RegionOverlaySnapshot
+  ipcMain.on(captureCommandChannels.regionOverlayHostReady, (event, ...args) => {
+    if (args.length !== 0 || !regionOverlayController?.owns(event.sender)) return
+    regionOverlayController.rendererBecameReady(event.sender)
   })
 
   ipcMain.on(captureCommandChannels.regionOverlayReady, (event, ...args) => {
-    try {
-      assertTrustedWindow(event, regionOverlaySession?.window ?? null)
-      assertNoArguments(args)
-    } catch {
-      return
-    }
+    if (!regionOverlayController?.owns(event.sender) || args.length !== 1) return
+    const generation = parseGeneration(args[0])
     const session = regionOverlaySession
-    if (!session || session.ready || session.window.isDestroyed()) return
+    if (!session) return
+    if (generation !== session.generation || session.ready) return
     session.ready = true
-    session.window.show()
-    session.window.focus()
+    reportSessionTiming(session, 'overlay-ready')
+    if (regionOverlayController.show(generation)) reportSessionTiming(session, 'overlay-shown')
   })
 
   ipcMain.on(captureCommandChannels.cancelRegionOverlay, (event, ...args) => {
-    try {
-      assertTrustedWindow(event, regionOverlaySession?.window ?? null)
-      assertNoArguments(args)
-    } catch {
-      return
-    }
+    if (!regionOverlayController?.owns(event.sender) || args.length !== 1) return
+    const generation = parseGeneration(args[0])
+    if (generation !== regionOverlaySession?.generation) return
     void cancelRegionOverlay(router)
   })
 
   ipcMain.on(captureCommandChannels.submitRegionSelection, (event, ...args) => {
     try {
-      assertTrustedWindow(event, regionOverlaySession?.window ?? null)
-      if (args.length !== 1) {
-        return
-      }
-      const geometry = parseCaptureGeometry(args[0])
+      if (!regionOverlayController?.owns(event.sender) || args.length !== 2) return
+      const generation = parseGeneration(args[0])
+      if (generation !== regionOverlaySession?.generation) return
+      const geometry = parseCaptureGeometry(args[1])
       submitRegionSelection(router, geometry)
     } catch {
       return
@@ -496,14 +481,47 @@ function registerIpc(): void {
 }
 
 async function captureRegion(router: CaptureCommandRouter): Promise<CaptureCommandResult> {
+  const timingStartedAt = performance.now()
+  let timingLastAt = timingStartedAt
+  const generation = ++nextRegionOverlayGeneration
+  const reportTiming = (stage: string, details: Record<string, number> = {}): void => {
+    const now = performance.now()
+    reportRegionCaptureTiming(stage, timingStartedAt, {
+      generation,
+      stageMilliseconds: Math.round(now - timingLastAt),
+      ...details,
+    })
+    timingLastAt = now
+  }
+  reportTiming('command-received')
   const restoreMainWindow = mainWindow?.isVisible() === true
   const initialDisplay = screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
   mainWindow?.hide()
-  const preparation = await router.beginRegionCapture()
+  reportTiming('main-window-hidden')
+  const overlay = regionOverlayController
+  if (!overlay) {
+    if (restoreMainWindow) showMainWindow()
+    return captureFailedResult()
+  }
+  const [preparation, overlayReady] = await Promise.all([
+    router.beginRegionCapture((stage) => {
+      reportTiming(stage)
+    }),
+    overlay.ensureReady().then(
+      () => true,
+      () => false,
+    ),
+  ])
   if (preparation.status === 'failed') {
     if (restoreMainWindow) showMainWindow()
     return preparation.result
   }
+  if (!overlayReady) {
+    await router.cancelRegionCapture()
+    if (restoreMainWindow) showMainWindow()
+    return captureFailedResult()
+  }
+  reportTiming('overlay-controller-ready')
 
   const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
   if (
@@ -515,25 +533,15 @@ async function captureRegion(router: CaptureCommandRouter): Promise<CaptureComma
     return displayChangedResult()
   }
 
-  let overlay: BrowserWindow
   let preview: { token: string; url: string }
   try {
     preview = regionPreviewRegistry.grant(preparation.previewPath)
-    overlay = createRegionOverlayWindow(display.bounds)
   } catch {
     await router.cancelRegionCapture()
     if (restoreMainWindow) showMainWindow()
-    return {
-      status: 'failed',
-      feedback: 'Capture failed',
-      notice: {
-        tone: 'critical',
-        title: 'Capture failed',
-        detail: 'Try again. Restart Lumiere if the issue continues.',
-      },
-    }
+    return captureFailedResult()
   }
-  return new Promise<CaptureCommandResult>((resolve) => {
+  const result = new Promise<CaptureCommandResult>((resolve) => {
     const handleDisplayChange = (): void => {
       void failRegionOverlay(router, displayChangedResult())
     }
@@ -547,7 +555,7 @@ async function captureRegion(router: CaptureCommandRouter): Promise<CaptureComma
     }
 
     regionOverlaySession = {
-      window: overlay,
+      generation,
       targetSize: preparation.targetSize,
       previewToken: preview.token,
       previewUrl: preview.url,
@@ -567,24 +575,33 @@ async function captureRegion(router: CaptureCommandRouter): Promise<CaptureComma
       resolve,
       stopWatchingDisplays,
       restoreMainWindow,
+      timingStartedAt,
+      timingLastAt,
     }
-    overlay.webContents.once('did-fail-load', () => {
-      void failRegionOverlay(router, {
-        status: 'failed',
-        feedback: 'Capture failed',
-        notice: {
-          tone: 'critical',
-          title: 'Capture failed',
-          detail: 'Try again. Restart Lumiere if the issue continues.',
-        },
-      })
-    })
-    overlay.once('closed', () => {
-      if (regionOverlaySession?.window === overlay && !regionOverlaySession.submitted) {
-        void cancelRegionOverlay(router)
-      }
-    })
   })
+  try {
+    await overlay.activate(
+      {
+        generation,
+        targetSize: preparation.targetSize,
+        previewPixelSize: preparation.previewPixelSize,
+        previewUrl: preview.url,
+      },
+      display.bounds,
+    )
+    const session = regionOverlaySession
+    if (session) {
+      reportSessionTiming(session, 'overlay-activated', {
+        targetWidth: Math.round(preparation.targetSize.width),
+        targetHeight: Math.round(preparation.targetSize.height),
+        previewWidth: Math.round(preparation.previewPixelSize.width),
+        previewHeight: Math.round(preparation.previewPixelSize.height),
+      })
+    }
+  } catch {
+    await failRegionOverlay(router, captureFailedResult())
+  }
+  return result
 }
 
 function submitRegionSelection(router: CaptureCommandRouter, geometry: CaptureGeometry): void {
@@ -598,8 +615,7 @@ function submitRegionSelection(router: CaptureCommandRouter, geometry: CaptureGe
   }
 
   session.submitted = true
-  session.window.hide()
-  session.window.destroy()
+  regionOverlayController?.reset(session.generation)
   void router.completeRegionCapture(geometry).then((result) => {
     finishRegionOverlay(session, result)
   })
@@ -636,9 +652,7 @@ function finishRegionOverlay(session: RegionOverlaySession, result: CaptureComma
   clearTimeout(session.leaseTimeout)
   regionPreviewRegistry.revoke(session.previewToken)
   session.stopWatchingDisplays()
-  if (!session.window.isDestroyed()) {
-    session.window.destroy()
-  }
+  regionOverlayController?.reset(session.generation)
   if (session.restoreMainWindow) showMainWindow()
   session.resolve(result)
 }
@@ -648,6 +662,36 @@ function displayMatchesTarget(bounds: Electron.Rectangle, targetSize: LogicalSiz
     Math.abs(bounds.width - targetSize.width) <= 1 &&
     Math.abs(bounds.height - targetSize.height) <= 1
   )
+}
+
+function reportSessionTiming(
+  session: RegionOverlaySession,
+  stage: string,
+  details: Record<string, number> = {},
+): void {
+  const now = performance.now()
+  reportRegionCaptureTiming(stage, session.timingStartedAt, {
+    generation: session.generation,
+    stageMilliseconds: Math.round(now - session.timingLastAt),
+    ...details,
+  })
+  session.timingLastAt = now
+}
+
+function parseGeneration(value: unknown): number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : -1
+}
+
+function captureFailedResult(): CaptureCommandResult {
+  return {
+    status: 'failed',
+    feedback: 'Capture failed',
+    notice: {
+      tone: 'critical',
+      title: 'Capture failed',
+      detail: 'Try again. Restart Lumiere if the issue continues.',
+    },
+  }
 }
 
 function geometryFitsTarget(geometry: CaptureGeometry, targetSize: LogicalSize): boolean {
@@ -679,9 +723,7 @@ function disposeRegionOverlay(router: CaptureCommandRouter): void {
   regionPreviewRegistry.revoke(session.previewToken)
   void router.cancelRegionCapture()
   session.stopWatchingDisplays()
-  if (!session.window.isDestroyed()) {
-    session.window.destroy()
-  }
+  regionOverlayController?.reset(session.generation)
 }
 
 async function getSettingsSnapshot(): Promise<SettingsSnapshot> {
@@ -854,6 +896,7 @@ app.on('before-quit', () => {
   if (captureRouter) {
     disposeRegionOverlay(captureRouter)
   }
+  regionOverlayController?.dispose()
   if (platformHost instanceof NativeProcessPlatformHost) {
     platformHost.dispose()
   }

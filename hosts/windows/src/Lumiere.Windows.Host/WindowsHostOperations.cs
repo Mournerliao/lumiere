@@ -12,6 +12,7 @@ public interface IWindowsCaptureEngine : IAsyncDisposable
         CancellationToken cancellationToken = default);
 
     Task<WindowsPrepareRegionResult> PrepareRegionAsync(
+        string requestId,
         WindowsTargetCapability target,
         CancellationToken cancellationToken = default);
 
@@ -130,7 +131,7 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
         try
         {
             var captureEngine = await GetOrCreateEngineAsync(cancellationToken);
-            var prepared = await captureEngine.PrepareRegionAsync(target, cancellationToken);
+            var prepared = await captureEngine.PrepareRegionAsync(requestId, target, cancellationToken);
             if (!prepared.Prepared
                 || string.IsNullOrWhiteSpace(prepared.SessionId)
                 || string.IsNullOrWhiteSpace(prepared.PreviewPath)
@@ -513,9 +514,10 @@ public sealed class WindowsHostOperations : IWindowsHostOperations
             inner.CaptureDisplayAsync(request, cancellationToken);
 
         public Task<WindowsPrepareRegionResult> PrepareRegionAsync(
+            string requestId,
             WindowsTargetCapability target,
             CancellationToken cancellationToken = default) =>
-            inner.PrepareRegionAsync(target, cancellationToken);
+            inner.PrepareRegionAsync(requestId, target, cancellationToken);
 
         public Task<WindowsCaptureResult> CommitRegionAsync(
             string sessionId,

@@ -131,14 +131,17 @@ describe('CaptureCommandRouter', () => {
       },
     )
     const router = new CaptureCommandRouter('macos', host)
+    const timingStages: string[] = []
 
-    await expect(router.beginRegionCapture()).resolves.toEqual({
+    await expect(router.beginRegionCapture((stage) => timingStages.push(stage))).resolves.toEqual({
       status: 'ready',
       targetSize: { width: 1512, height: 982 },
       previewPath: '/tmp/frozen-region.png',
-      previewPixelSize: { width: 3024, height: 1964 },
+      previewPixelSize: { width: 1512, height: 982 },
       leaseMilliseconds: 60_000,
     })
+    expect(timingStages).toEqual(['native-prepared'])
+    expect(host.capabilitiesRequests).toBe(0)
     await expect(
       router.completeRegionCapture({
         coordinateSpace: 'target-logical',
@@ -334,6 +337,7 @@ describe('CaptureCommandRouter', () => {
 })
 
 class StubHost implements PlatformHost {
+  public capabilitiesRequests = 0
   public readonly requests: (
     | ({ operation: 'display' } & DisplayCaptureRequest)
     | ({ operation: 'commit-region' } & CommitRegionRequest)
@@ -352,13 +356,14 @@ class StubHost implements PlatformHost {
       preview: {
         filePath: '/tmp/frozen-region.png',
         mediaType: 'image/png',
-        pixelSize: { width: 3024, height: 1964 },
+        pixelSize: { width: 1512, height: 982 },
       },
       leaseMilliseconds: 60_000,
     },
   ) {}
 
   public getCapabilities(): Promise<PlatformCapabilities> {
+    this.capabilitiesRequests += 1
     return Promise.resolve(this.capabilities)
   }
 

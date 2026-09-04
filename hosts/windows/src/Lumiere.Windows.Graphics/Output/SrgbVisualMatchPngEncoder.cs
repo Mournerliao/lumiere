@@ -27,7 +27,7 @@ internal sealed class SrgbVisualMatchPngEncoder : IOutputPngEncoder
         return new OutputEncodedArtifact(await EncodeAsPngAsync(image), "png");
     }
 
-    private static async Task<byte[]> EncodeAsPngAsync(SrgbVisualMatchImage image)
+    internal static async Task<byte[]> EncodeAsPngAsync(SrgbVisualMatchImage image)
     {
         using var stream = new InMemoryRandomAccessStream();
         var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
